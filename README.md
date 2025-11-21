@@ -63,6 +63,7 @@ sep_evaluacion_diagnostica/
 ├── 📊 ANALISIS_DETALLADO_PSP_RUP.md       # Análisis completo PSP/RUP
 ├── 🔧 ANALISIS_TECNICO_COMPLEMENTARIO.md  # Detalles técnicos
 ├── 📈 RESUMEN_EJECUTIVO_STAKEHOLDERS.md   # Resumen para directivos
+├── 📋 REQUERIMIENTOS_Y_CASOS_DE_USO.md    # Especificación de requerimientos
 │
 ├── 📁 MACROS Evaluacion Diagnostica/
 │   │

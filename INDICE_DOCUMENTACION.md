@@ -19,7 +19,13 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 
 **LEER PRIMERO:**
 
-1. **[FLUJO_OPERATIVO_OFICIAL.md](FLUJO_OPERATIVO_OFICIAL.md)** ⭐ NUEVO - **LECTURA OBLIGATORIA**
+1. **[REQUERIMIENTOS_Y_CASOS_DE_USO.md](REQUERIMIENTOS_Y_CASOS_DE_USO.md)** ⭐ NUEVO - **ESPECIFICACIÓN FORMAL**
+   - ⏱️ Tiempo de lectura: 30-40 minutos
+   - 📊 Contiene: 38 requerimientos funcionales, 31 no funcionales, 12 casos de uso
+   - 🎯 Objetivo: Especificación técnica completa del sistema
+   - ⚠️ Crítico: Documenta 7 incumplimientos de seguridad LGPDP
+
+2. **[FLUJO_OPERATIVO_OFICIAL.md](FLUJO_OPERATIVO_OFICIAL.md)** ⭐ NUEVO - **LECTURA OBLIGATORIA**
    - ⏱️ Tiempo de lectura: 20 minutos
    - 📊 Contiene: Flujo completo basado en documentación oficial DGADAE/SEP
    - 🎯 Objetivo: Entender contexto operativo completo con 10 equipos de validación
