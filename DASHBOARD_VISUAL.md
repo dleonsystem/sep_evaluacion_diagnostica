@@ -73,7 +73,7 @@ graph LR
     
     subgraph "Estado Futuro - Moderno"
         B1[React/Blazor<br/>.NET 8<br/>✅ LTS 2026]
-        B2[(PostgreSQL<br/>Express<br/>✅ Sin límites)]
+        B2[(PostgreSQL<br/>✅ Sin límites)]
         B3[Telerik/RDLC<br/>✅ Moderno]
         B4[.NET Controls<br/>✅ Actuales]
         
