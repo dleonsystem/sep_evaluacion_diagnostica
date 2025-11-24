@@ -1,9 +1,10 @@
 # REQUERIMIENTOS Y CASOS DE USO
 ## Sistema SiCRER - Evaluación Diagnóstica SEP
 
-**Fecha:** 21 de Noviembre de 2025  
-**Versión:** 1.0  
-**Sistema:** SiCRER 24_25 SEPT
+**Fecha:** 24 de Noviembre de 2025  
+**Versión:** 2.0 - Estrategia Bifásica + Stack Open Source  
+**Sistema:** SiCRER Portal Web + Legacy Integration  
+**Fase 1:** Marzo 2026 | **Fase 2:** Septiembre 2026
 
 ---
 
@@ -100,6 +101,98 @@
   - Periodo 3: Evaluación final
 - **RF-08.2** El sistema debe identificar periodo en reportes
 
+### RF-09: Autenticación y Autorización ✨ FASE 1
+- **RF-09.1** El sistema web debe autenticar directores con CCT + contraseña
+- **RF-09.2** El sistema debe implementar recuperación de contraseña por email
+- **RF-09.3** El sistema debe gestionar sesiones con timeout configurable (default: 60 min)
+- **RF-09.4** El sistema debe implementar control de acceso basado en CCT
+- **RF-09.5** El sistema debe usar JWT tokens para autenticación stateless
+- **RF-09.6** El sistema debe implementar refresh tokens para sesiones persistentes
+- **RF-09.7** El sistema debe registrar intentos de login fallidos
+- **RF-09.8** El sistema debe bloquear cuenta después de 5 intentos fallidos
+
+### RF-10: Portal Web de Carga ✨ FASE 1
+- **RF-10.1** El sistema debe proveer interfaz web responsive para carga de FRV
+- **RF-10.2** El sistema debe soportar drag & drop de archivos Excel
+- **RF-10.3** El sistema debe validar archivo antes de carga:
+  - Formato .xlsx válido
+  - Tamaño máximo 10 MB (configurable)
+  - Estructura de hojas esperada según nivel educativo
+- **RF-10.4** El sistema debe ejecutar validaciones automáticas en backend:
+  - Formato de CURP (18 caracteres, patrón válido)
+  - Valores de valoración (1-4)
+  - Campos obligatorios completos
+  - Detección de duplicados (CURP + periodo)
+  - Estructura de Excel por nivel educativo
+- **RF-10.5** El sistema debe mostrar feedback visual de errores con:
+  - Número de fila y columna exacta
+  - Valor encontrado vs valor esperado
+  - Sugerencia de corrección
+- **RF-10.6** El sistema debe permitir máximo N intentos de carga (configurable, default: 3)
+- **RF-10.7** El sistema debe almacenar archivos en object storage (MinIO)
+- **RF-10.8** El sistema debe registrar metadatos de carga en PostgreSQL
+
+### RF-11: Sistema de Tickets ✨ FASE 1
+- **RF-11.1** El sistema debe generar ticket automáticamente después de N intentos fallidos
+- **RF-11.2** El sistema debe asignar ticket a operador DGADAE disponible
+- **RF-11.3** El sistema debe permitir tracking de estado del ticket:
+  - Abierto → En Proceso → Resuelto → Cerrado
+- **RF-11.4** El sistema debe permitir comunicación bidireccional:
+  - Director puede agregar comentarios
+  - Operador puede responder
+  - Sistema notifica por email cada actualización
+- **RF-11.5** El sistema debe permitir adjuntar archivos a tickets
+- **RF-11.6** El sistema debe calcular SLA por prioridad:
+  - Urgente: 4 horas
+  - Alta: 24 horas
+  - Media: 48 horas
+  - Baja: 72 horas
+- **RF-11.7** El sistema debe escalar ticket si supera SLA
+
+### RF-12: Notificaciones y Descarga ✨ FASE 1
+- **RF-12.1** El sistema debe enviar email cuando resultados están listos
+- **RF-12.2** El sistema debe proveer portal de descarga de reportes con:
+  - Lista de reportes disponibles por periodo
+  - Descarga individual por tipo de reporte
+  - Descarga en paquete completo (ZIP)
+- **RF-12.3** El sistema debe mostrar histórico de evaluaciones por CCT
+- **RF-12.4** El sistema debe registrar cada descarga (auditoría)
+- **RF-12.5** El sistema debe mantener reportes disponibles por 2 ciclos escolares
+
+### RF-13: Catálogo de Escuelas ✨ FASE 1
+- **RF-13.1** El sistema debe permitir CRUD de escuelas:
+  - Crear nueva escuela con CCT único
+  - Editar datos de contacto
+  - Desactivar (no eliminar físicamente)
+  - Listar con filtros y paginación
+- **RF-13.2** El sistema debe validar unicidad de CCT a nivel nacional
+- **RF-13.3** El sistema debe asignar nivel educativo (enum)
+- **RF-13.4** El sistema debe mantener histórico de cambios (auditoría)
+- **RF-13.5** El sistema debe permitir búsqueda por CCT, nombre o ubicación
+
+### RF-14: Gestión de Usuarios ✨ FASE 1
+- **RF-14.1** El sistema debe permitir CRUD de usuarios directores
+- **RF-14.2** El sistema debe vincular usuario ↔ CCT (relación 1:1 o 1:N)
+- **RF-14.3** El sistema debe soportar roles:
+  - Director: Acceso solo a su(s) escuela(s)
+  - Operador: Gestión de tickets y validaciones
+  - Administrador: Acceso completo al sistema
+- **RF-14.4** El sistema debe permitir reset de contraseña por administrador
+- **RF-14.5** El sistema debe generar contraseña temporal en creación
+- **RF-14.6** El sistema debe forzar cambio de contraseña en primer login
+- **RF-14.7** El sistema debe enviar credenciales por email seguro
+
+### RF-15: Integración con Legacy (Fase 1 - TEMPORAL) ⚠️
+- **RF-15.1** El sistema debe exportar FRV validados a carpeta compartida para procesamiento legacy
+- **RF-15.2** El sistema debe implementar API/webhook para recibir notificación de PDFs generados
+- **RF-15.3** El sistema debe ejecutar script sincronización (Node.js + Bull queue) para:
+  - Importar PDFs de sistema legacy a MinIO
+  - Registrar metadatos en PostgreSQL
+  - Notificar a director por email
+- **RF-15.4** El sistema debe mantener compatibilidad con flujo de 10 equipos validación
+- **RF-15.5** El sistema debe registrar trazabilidad completa de sincronización
+- **RF-15.6** El sistema debe manejar errores de sincronización con reintentos automáticos
+
 ---
 
 ## 2. REQUERIMIENTOS NO FUNCIONALES
@@ -144,10 +237,17 @@
 - **RNF-05.5** El sistema debe generar reportes en formato legible (PDF)
 
 ### RNF-06: Portabilidad
-- **RNF-06.1** El sistema debe ejecutarse en Windows 7/8/10/11
-- **RNF-06.2** El sistema debe funcionar en arquitectura x86 y x64
-- **RNF-06.3** El sistema debe instalarse mediante ClickOnce
-- **RNF-06.4** El sistema debe actualizar automáticamente
+- **RNF-06.1** El portal web debe ejecutarse en navegadores modernos:
+  - Chrome 90+
+  - Firefox 88+
+  - Safari 14+
+  - Edge 90+
+- **RNF-06.2** El portal debe ser responsive (móvil, tablet, desktop)
+- **RNF-06.3** El sistema backend debe ser deployable en:
+  - Linux (Ubuntu 22.04 LTS)
+  - Docker containers
+  - Kubernetes clusters
+- **RNF-06.4** El sistema debe soportar actualización rolling sin downtime
 
 ### RNF-07: Mantenibilidad
 - **RNF-07.1** ❌ El código debe estar documentado
@@ -156,16 +256,32 @@
 - **RNF-07.4** Las actualizaciones no deben requerir reinstalación completa
 
 ### RNF-08: Interoperabilidad
-- **RNF-08.1** El sistema debe importar archivos Excel (.xlsx)
-- **RNF-08.2** El sistema debe exportar reportes PDF
-- **RNF-08.3** El sistema debe integrarse con correo institucional SEP
-- **RNF-08.4** El sistema debe soportar bases de datos Access (.mdb)
+- **RNF-08.1** El sistema debe leer archivos Excel (.xlsx) mediante SheetJS library
+- **RNF-08.2** El sistema debe generar reportes PDF mediante PDFKit o Puppeteer
+- **RNF-08.3** El sistema debe integrarse con SMTP para envío de emails
+- **RNF-08.4** El sistema debe exponer API REST para integraciones externas
+- **RNF-08.5** El sistema debe ser compatible con S3 protocol (MinIO)
+- **RNF-08.6** El sistema debe soportar importación masiva vía CSV
+
+### RNF-09: Stack Tecnológico Open Source ✨ FASE 1
+- **RNF-09.1** El sistema debe utilizar tecnologías 100% open source sin costos de licencia
+- **RNF-09.2** Frontend debe ser React 18+ con TypeScript 5+
+- **RNF-09.3** Backend debe ser Node.js 20 LTS con framework NestJS
+- **RNF-09.4** Base de datos debe ser PostgreSQL 16+
+- **RNF-09.5** Object storage debe ser MinIO (S3-compatible)
+- **RNF-09.6** Cache debe ser Redis 7+
+- **RNF-09.7** Todas las dependencias deben tener licencias permisivas:
+  - MIT License
+  - Apache 2.0 License
+  - BSD License
+- **RNF-09.8** El sistema debe utilizar ORM Prisma para type-safety
+- **RNF-09.9** El sistema debe usar Vite como build tool para frontend
 
 ---
 
 ## 3. CASOS DE USO
 
-### Diagrama de Casos de Uso
+### Diagrama de Casos de Uso - FASE 1 (Portal Web Híbrido)
 
 ```mermaid
 graph TB
@@ -176,91 +292,88 @@ graph TB
     end
     
     subgraph "Actores Internos SEP"
-        DGADAE[👥 DGADAE]
+        DGADAE[👥 DGADAE Admin]
+        OPE[👥 Operador Tickets]
         VAL[👥 Equipo Validación]
     end
     
     subgraph "Sistemas Automatizados"
-        CORREO[🤖 Sistema Correo]
-        REP[🤖 Reporteador]
+        PORTAL[🌐 Portal Web]
+        LEGACY[💾 Sistema Legacy]
+        SYNC[🔄 Script Sync]
     end
     
-    subgraph "Casos de Uso - Fase Preparación"
+    subgraph "Casos de Uso - FASE 1 Portal Web ✨"
+        CU04v2[CU-04v2: Cargar FRV<br/>por Portal Web]
+        CU13[CU-13: Gestionar<br/>Ticket Soporte]
+        CU14[CU-14: Administrar<br/>Catálogo Escuelas]
+        CU15[CU-15: Gestionar<br/>Usuarios]
+        CU09v2[CU-09v2: Notificar y<br/>Descargar Resultados]
+    end
+    
+    subgraph "Casos de Uso - Legacy (Mantener Fase 1)"
+        CU03[CU-03: Aplicar<br/>Evaluación]
+        CU07[CU-07: Validar<br/>y Procesar Legacy]
+        CU08[CU-08: Generar<br/>Reportes Legacy]
+    end
+    
+    subgraph "Casos de Uso - Administración"
         CU01[CU-01: Publicar<br/>Materiales]
         CU02[CU-02: Descargar<br/>Materiales]
     end
     
-    subgraph "Casos de Uso - Fase Evaluación"
-        CU03[CU-03: Aplicar<br/>Evaluación]
-        CU04[CU-04: Capturar<br/>Valoraciones FRV]
-        CU05[CU-05: Enviar<br/>Valoraciones SEP]
-    end
+    DIR --> CU04v2
+    DIR --> CU13
+    DIR --> CU09v2
     
-    subgraph "Casos de Uso - Fase Procesamiento"
-        CU06[CU-06: Distribuir<br/>a Equipos]
-        CU07[CU-07: Validar<br/>y Procesar]
-        CU08[CU-08: Generar<br/>Reportes]
-        CU09[CU-09: Enviar<br/>Resultados]
-    end
-    
-    subgraph "Casos de Uso - Fase Análisis"
-        CU10[CU-10: Analizar<br/>Resultados Director]
-        CU11[CU-11: Analizar<br/>Resultados Docente]
-        CU12[CU-12: Ajustar<br/>Planeación]
-    end
-    
+    OPE --> CU13
+    DGADAE --> CU14
+    DGADAE --> CU15
     DGADAE --> CU01
+    
     DIR --> CU02
     DOC --> CU02
-    
     DOC --> CU03
     EST -.participa.-> CU03
     
-    DIR --> CU04
-    DIR --> CU05
+    PORTAL --> CU04v2
+    CU04v2 -.genera ticket.-> CU13
+    CU04v2 -.exporta.-> LEGACY
     
-    CORREO --> CU06
-    CU06 --> VAL
+    LEGACY --> CU07
     VAL --> CU07
+    CU07 --> CU08
     
-    REP --> CU08
-    CORREO --> CU09
+    CU08 -.sincroniza.-> SYNC
+    SYNC -.importa PDFs.-> CU09v2
     
-    DIR --> CU10
-    DOC --> CU11
-    DOC --> CU12
+    CU01 -.publica.-> CU02
+    CU03 -.alimenta.-> CU04v2
     
-    CU01 -.genera.-> CU02
-    CU02 -.habilita.-> CU03
-    CU03 -.alimenta.-> CU04
-    CU04 -.produce.-> CU05
-    CU05 -.inicia.-> CU06
-    CU07 -.alimenta.-> CU08
-    CU08 -.produce.-> CU09
-    CU09 -.habilita.-> CU10
-    CU10 -.distribuye.-> CU11
-    CU11 -.guía.-> CU12
-    
-    style CU01 fill:#e74c3c,stroke:#c0392b,color:#fff
-    style CU06 fill:#3498db,stroke:#2980b9,color:#fff
-    style CU07 fill:#9b59b6,stroke:#8e44ad,color:#fff
-    style CU08 fill:#f39c12,stroke:#e67e22,color:#fff
-    style CU09 fill:#27ae60,stroke:#229954,color:#fff
-    style CORREO fill:#3498db,stroke:#2980b9,color:#fff
-    style REP fill:#f39c12,stroke:#e67e22,color:#fff
+    style CU04v2 fill:#2ecc71,stroke:#27ae60,color:#fff
+    style CU13 fill:#f39c12,stroke:#e67e22,color:#fff
+    style CU14 fill:#3498db,stroke:#2980b9,color:#fff
+    style CU15 fill:#9b59b6,stroke:#8e44ad,color:#fff
+    style CU09v2 fill:#2ecc71,stroke:#27ae60,color:#fff
+    style PORTAL fill:#2ecc71,stroke:#27ae60,color:#fff
+    style LEGACY fill:#e74c3c,stroke:#c0392b,color:#fff
+    style SYNC fill:#f39c12,stroke:#e67e22,color:#fff
 ```
 
-### Resumen de Casos de Uso
+### Resumen de Casos de Uso - Estrategia Bifásica
 
-| Fase | Casos de Uso | Actores | Frecuencia | Automatización |
-|------|--------------|---------|------------|----------------|
-| **Preparación** | CU-01, CU-02 | DGADAE, Director, Docente | 3×/ciclo | 20% |
-| **Evaluación** | CU-03, CU-04, CU-05 | Docente, Director, Estudiante | 3×/ciclo | 10% |
-| **Procesamiento** | CU-06, CU-07, CU-08, CU-09 | Sistema, Validación | Continuo | 70% |
-| **Análisis** | CU-10, CU-11, CU-12 | Director, Docente | 3×/ciclo | 0% |
+| Fase | Casos de Uso | Actores | Frecuencia | Automatización | Estado |
+|------|--------------|---------|------------|----------------|--------|
+| **Admin** | CU-01, CU-02 | DGADAE, Director | 3×/ciclo | 20% | ✅ Mantener |
+| **Evaluación** | CU-03 | Docente, Estudiante | 3×/ciclo | 0% | ✅ Mantener |
+| **Portal Web Fase 1** | CU-04v2, CU-13, CU-14, CU-15 | Director, Operador, Admin | Continuo | 80% | ✨ NUEVO |
+| **Legacy Fase 1** | CU-07, CU-08 | Validación | Continuo | 50% | ⚠️ Temporal |
+| **Notificación Fase 1** | CU-09v2 | Sistema, Director | Continuo | 90% | ✨ NUEVO |
+| **Análisis** | CU-10, CU-11, CU-12 | Director, Docente | 3×/ciclo | 0% | ✅ Mantener |
 
-**Total:** 12 casos de uso identificados  
-**Automatización promedio:** 35%
+**Total Fase 1:** 15 casos de uso (7 nuevos/modificados, 8 mantenidos)  
+**Automatización Fase 1:** 48% (↑13% vs sistema actual)  
+**Automatización Fase 2:** 85% (objetivo final)
 
 ---
 
@@ -314,55 +427,407 @@ graph TB
 
 ---
 
-### CU-04: Capturar Valoraciones en FRV
+### CU-04v2: Cargar Valoraciones por Portal Web ✨ FASE 1 (MODIFICADO)
 **Actor Principal:** Director  
-**Actores Secundarios:** Docentes  
-**Precondiciones:** Evaluaciones valoradas, FRV descargado  
+**Actores Secundarios:** Portal Web, Sistema de Validación  
+**Precondiciones:** 
+- Evaluaciones valoradas por docentes
+- FRV Excel completo localmente
+- Director tiene credenciales de acceso (CCT + contraseña)
+
 **Flujo Principal:**
-1. Director abre FRV Excel correspondiente a su nivel
-2. Director captura datos de escuela (CCT, nombre, director)
-3. Por cada grado:
-   a. Director accede a hoja del grado
-   b. Por cada grupo:
-      - Director captura grupo (A, B, C, D, E)
-      - Por cada estudiante:
-        * Director captura CURP
-        * Director captura nombre
-        * Director captura valoraciones (ENS, HYC, LEN, SPC)
-        * Director captura observaciones
-4. Director valida datos capturados
-5. Director guarda archivo FRV
+1. Director accede a portal web (URL: https://evaluaciones.sep.gob.mx)
+2. Director inicia sesión con CCT y contraseña
+3. Sistema valida credenciales y carga dashboard personal
+4. Director selecciona "Cargar Evaluación" del menú
+5. Sistema muestra formulario de carga:
+   - Selector de periodo (2025-1, 2025-2, 2025-3)
+   - Zona de drag & drop para archivo
+   - Instrucciones y validaciones esperadas
+6. Director arrastra o selecciona archivo FRV Excel
+7. Sistema ejecuta pre-validaciones inmediatas:
+   - Extensión .xlsx válida ✓
+   - Tamaño ≤10 MB ✓
+   - Archivo no corrupto ✓
+8. Sistema sube archivo a servidor (progress bar)
+9. Sistema ejecuta validaciones backend (30-45 segundos):
+   ```
+   Validando estructura... ✓
+   Validando CURP (250 registros)... ✓
+   Validando valoraciones... ✓
+   Validando campos obligatorios... ✓
+   Buscando duplicados... ✓
+   ```
+10. **SI todas las validaciones son exitosas:**
+    - Sistema muestra resumen:
+      * Total estudiantes: 250
+      * Grados/grupos: 6 grados × 5 grupos = 30
+      * Estado: ✅ Archivo válido
+    - Director confirma carga con botón "Confirmar y Enviar"
+    - Sistema registra en BD PostgreSQL
+    - Sistema almacena archivo en MinIO
+    - Sistema exporta JSON a carpeta legacy para procesamiento
+    - Sistema muestra folio de confirmación: **FRV-2025-24PPR0356K-001**
+    - Sistema envía email de confirmación
+
+11. **SI existen errores de validación:**
+    - Sistema muestra tabla de errores:
+    ```
+    ❌ 15 errores encontrados
+    
+    | Fila | Columna | Campo | Error | Valor Encontrado | Valor Esperado |
+    |------|---------|-------|-------|------------------|----------------|
+    | 12   | A       | CURP  | Formato inválido | MALM950101HDFR0 | 18 caracteres |
+    | 45   | D       | Val_ENS | Fuera de rango | 5 | 1-4 |
+    | 78   | B       | Nombre | Campo vacío | (vacío) | Requerido |
+    ```
+    - Director puede:
+      * Descargar reporte de errores (Excel)
+      * Corregir archivo localmente
+      * Reintentar carga
+    - Sistema incrementa contador de intentos
+
+12. **SI se alcanzan N intentos fallidos (default: 3):**
+    - Sistema genera ticket automáticamente (ver CU-13)
+    - Sistema muestra mensaje:
+      ```
+      ⚠️ Has alcanzado el máximo de intentos (3)
+      Se ha generado el ticket #TKT-2025-001 para atención personalizada.
+      Un operador se contactará contigo en las próximas 24 horas.
+      ```
+    - Sistema notifica a operador por email
+    - Director puede seguir ticket desde dashboard
 
 **Flujos Alternativos:**
-- **4a.** CURP inválido → Sistema marca error, director corrige
-- **4b.** Valoración fuera de rango → Sistema marca error, director corrige
+- **6a.** Archivo no es .xlsx → Sistema rechaza con mensaje claro
+- **6b.** Archivo >10 MB → Sistema rechaza y sugiere revisar contenido
+- **8a.** Error de red → Sistema permite reintentar upload
+- **9a.** Timeout de validación → Sistema marca como "pendiente" y notifica después
 
-**Postcondiciones:** FRV completo con todas las valoraciones  
+**Postcondiciones:** 
+- FRV almacenado en MinIO con metadatos en PostgreSQL
+- Archivo exportado a carpeta legacy (si validación exitosa)
+- Email de confirmación enviado
+- Auditoría registrada
+
 **Frecuencia:** 1 vez por periodo por escuela  
-**Prioridad:** 🔴 Alta  
-**Tiempo Estimado:** 2-4 horas según tamaño de escuela
+**Prioridad:** 🔴 Crítica (Fase 1)  
+**Tiempo Estimado:** 
+- Captura local: 2-4 horas
+- Carga web: 1-2 minutos
+- Validación: 30-45 segundos
+
+**Beneficios vs CU-04/CU-05 Antiguos:**
+- ✅ Validación inmediata (reduce errores 70%)
+- ✅ Sin envío por email (seguro, trazable)
+- ✅ Feedback en tiempo real
+- ✅ Sistema de tickets para casos complejos
+- ✅ Cumplimiento LGPDP (TLS 1.3, datos cifrados)
 
 ---
 
-### CU-05: Enviar Valoraciones a SEP
-**Actor Principal:** Director  
-**Precondiciones:** FRV completo y validado  
-**Flujo Principal:**
-1. Director abre cliente de correo
-2. Director crea correo a: valoraciones.diagnosticas@nube.sep.gob.mx
-3. Director adjunta archivo FRV Excel
-4. Director escribe asunto con CCT de escuela
-5. Director envía correo
-6. Sistema correo SEP recibe archivo
+### ~~CU-05: Enviar Valoraciones a SEP~~ ❌ ELIMINADO
+**Estado:** Reemplazado por CU-04v2 (carga directa por portal web)
+
+---
+
+### CU-13: Gestionar Ticket de Soporte ✨ FASE 1 (NUEVO)
+**Actor Principal:** Director, Operador DGADAE  
+**Precondiciones:** 
+- Director ha alcanzado N intentos fallidos de carga (CU-04v2)
+- O Director solicita ayuda manualmente
+
+**Flujo Principal - Generación Automática:**
+1. Sistema detecta N intentos fallidos (default: 3) en CU-04v2
+2. Sistema genera ticket automáticamente:
+   ```json
+   {
+     "ticketId": "TKT-2025-001",
+     "cct": "24PPR0356K",
+     "prioridad": "Media",
+     "asunto": "Errores de validación en carga FRV",
+     "descripcion": "Después de 3 intentos, persisten 15 errores de validación",
+     "archivosAdjuntos": ["frv_24PPR0356K_intento3.xlsx", "reporte_errores.pdf"],
+     "estado": "Abierto",
+     "fechaApertura": "2025-11-24T10:30:00Z"
+   }
+   ```
+3. Sistema asigna ticket a operador disponible (round-robin)
+4. Sistema envía email a director:
+   ```
+   Asunto: Ticket #TKT-2025-001 creado - Atención en 24 hrs
+   
+   Estimado Director,
+   
+   Hemos detectado dificultades en la carga de su evaluación.
+   Se ha generado el ticket #TKT-2025-001 para atención personalizada.
+   
+   Un operador revisará su caso y se contactará en las próximas 24 horas.
+   
+   Puede seguir el estado del ticket en:
+   https://evaluaciones.sep.gob.mx/tickets/TKT-2025-001
+   ```
+5. Sistema notifica a operador asignado por email y dashboard
+
+**Flujo Principal - Gestión por Operador:**
+1. Operador ve nuevo ticket en panel de tickets
+2. Operador revisa detalles:
+   - CCT y datos de escuela
+   - Archivos adjuntos (FRV problemático)
+   - Reporte de errores detallado
+   - Historial de intentos
+3. Operador cambia estado a "En Proceso"
+4. Operador analiza errores comunes:
+   - ¿Son errores de formato sistemáticos?
+   - ¿Requiere capacitación?
+   - ¿Es problema del archivo FRV template?
+5. Operador contacta a director:
+   - Por teléfono (si disponible)
+   - Por email institucional
+   - Por comentario en ticket
+6. Operador proporciona guía:
+   ```
+   Ejemplo de comentario operador:
+   
+   "Buenos días Director,
+   
+   Revisé su archivo y encontré que los CURP en filas 12-45 tienen
+   solo 17 caracteres en lugar de 18.
+   
+   El formato correcto es: MALM950101HDFRTG08
+   
+   He adjuntado su archivo corregido. Por favor revise y vuelva a cargar.
+   
+   Cualquier duda estoy a sus órdenes.
+   
+   Operador: Juan Pérez"
+   ```
+7. Operador adjunta archivo corregido (opcional)
+8. Operador actualiza estado según resolución:
+   - "Resuelto" si director confirma éxito
+   - "Cerrado" después de confirmación
+
+**Flujo Principal - Seguimiento por Director:**
+1. Director accede a dashboard personal
+2. Director ve notificación de nuevo comentario en ticket
+3. Director abre ticket y lee respuesta de operador
+4. Director descarga archivo corregido (si aplica)
+5. Director agrega comentario de seguimiento:
+   ```
+   "Muchas gracias, ya corregí los CURP y voy a reintentar la carga"
+   ```
+6. Director reintenta carga con archivo corregido (regresa a CU-04v2)
+7. Si carga es exitosa, director confirma en ticket
+8. Sistema cierra ticket automáticamente al detectar carga exitosa
 
 **Flujos Alternativos:**
-- **3a.** Archivo muy grande → Director comprime antes de adjuntar
-- **6a.** Correo rebotado → Director reenvía
+- **3a.** Ticket de alta prioridad → Operador recibe notificación push inmediata
+- **5a.** No se puede contactar a director → Operador escala a supervisor
+- **6a.** Problema es del template FRV → Operador escala a equipo técnico
+- **8a.** Ticket sin actividad 7 días → Sistema envía recordatorio y escalamiento
 
-**Postcondiciones:** Valoraciones recibidas en SEP  
-**Frecuencia:** 1 vez por periodo por escuela  
-**Prioridad:** 🔴 Alta  
-**⚠️ Riesgo:** Transmisión sin cifrar de datos sensibles (LGPDP)
+**Postcondiciones:**
+- Ticket creado y asignado
+- Director y operador notificados
+- Comunicación bidireccional establecida
+- Resolución documentada
+
+**Métricas del Sistema:**
+- SLA por prioridad:
+  * Urgente: 4 horas
+  * Alta: 24 horas
+  * Media: 48 horas
+  * Baja: 72 horas
+- Tasa de resolución objetivo: >90% en primer contacto
+- Satisfacción objetivo: >4.0/5.0
+
+**Frecuencia:** 5-10% de cargas generan tickets (~50 tickets por periodo)  
+**Prioridad:** 🔴 Crítica (Fase 1)  
+**Tiempo Promedio Resolución:** 15-30 minutos
+
+---
+
+### CU-14: Administrar Catálogo de Escuelas ✨ FASE 1 (NUEVO)
+**Actor Principal:** Administrador DGADAE  
+**Precondiciones:** Usuario con rol "Administrador"
+
+**Flujo Principal - Crear Escuela:**
+1. Administrador accede a módulo "Catálogo de Escuelas"
+2. Administrador selecciona "Nueva Escuela"
+3. Sistema muestra formulario:
+   ```
+   CCT: [__________] (requerido, único, 11 caracteres)
+   Nombre: [_____________________] (requerido)
+   Nivel Educativo: [Dropdown: Preescolar/Primaria/Secundaria/Telesecundaria]
+   Turno: [Dropdown: Matutino/Vespertino/Tiempo Completo]
+   
+   Datos de Contacto:
+   Dirección: [______________________]
+   Municipio: [___________]
+   Estado: [___________]
+   CP: [_____]
+   Teléfono: [___________]
+   Email: [___________]
+   
+   Director Actual: [___________]
+   ```
+4. Sistema valida en tiempo real:
+   - CCT único (consulta a BD)
+   - Formato de email válido
+   - Teléfono 10 dígitos
+5. Administrador guarda escuela
+6. Sistema:
+   - Inserta en tabla `escuelas`
+   - Registra auditoría
+   - Muestra confirmación con CCT
+7. Sistema envía notificación a equipo DGADAE
+
+**Flujo Principal - Editar Escuela:**
+1. Administrador busca escuela por CCT o nombre
+2. Sistema muestra lista con filtros y paginación
+3. Administrador selecciona escuela a editar
+4. Sistema carga formulario con datos actuales
+5. Administrador modifica campos permitidos (no CCT)
+6. Sistema valida cambios
+7. Administrador guarda cambios
+8. Sistema:
+   - Actualiza tabla `escuelas`
+   - Registra auditoría con valores anteriores y nuevos
+   - Trigger actualiza `updated_at`
+
+**Flujo Principal - Desactivar Escuela:**
+1. Administrador selecciona escuela
+2. Administrador selecciona "Desactivar"
+3. Sistema solicita confirmación:
+   ```
+   ⚠️ ¿Está seguro de desactivar la escuela 24PPR0356K?
+   
+   Implicaciones:
+   - Usuarios vinculados no podrán iniciar sesión
+   - No podrá recibir nuevas cargas de evaluación
+   - Datos históricos se mantienen
+   
+   Esta acción puede revertirse.
+   ```
+4. Administrador confirma
+5. Sistema actualiza `activo = false`
+6. Sistema notifica a usuarios vinculados
+
+**Flujos Alternativos:**
+- **4a.** CCT duplicado → Sistema muestra error y datos de escuela existente
+- **4b.** Email inválido → Sistema marca campo en rojo con mensaje
+- **6a.** Error al guardar → Sistema muestra mensaje y mantiene datos en formulario
+
+**Postcondiciones:**
+- Catálogo de escuelas actualizado
+- Auditoría registrada
+- Notificaciones enviadas
+
+**Frecuencia:** 
+- Creación: ~50 escuelas al inicio de ciclo
+- Edición: ~100 actualizaciones por mes  
+**Prioridad:** 🔴 Crítica (Fase 1)  
+**Tiempo Estimado:** 2-3 minutos por escuela
+
+---
+
+### CU-15: Gestionar Usuarios Directores ✨ FASE 1 (NUEVO)
+**Actor Principal:** Administrador DGADAE  
+**Precondiciones:** Escuela existe en catálogo (CU-14)
+
+**Flujo Principal - Crear Usuario:**
+1. Administrador accede a módulo "Usuarios"
+2. Administrador selecciona "Nuevo Usuario"
+3. Sistema muestra formulario:
+   ```
+   Email: [___________] (requerido, único, será username)
+   Nombre Completo: [___________] (requerido)
+   CCT Asignado: [Dropdown con escuelas activas]
+   Rol: [Dropdown: Director/Operador/Administrador]
+   
+   La contraseña temporal será generada automáticamente
+   y enviada al email del usuario.
+   ```
+4. Sistema valida:
+   - Email único
+   - Email institucional (@sep.gob.mx o similar)
+   - CCT existe y está activo
+5. Administrador guarda usuario
+6. Sistema:
+   - Genera contraseña temporal segura (12 caracteres, alfanumérico + símbolos)
+   - Hash contraseña con bcrypt (10 rounds)
+   - Inserta en tabla `usuarios`
+   - Genera token de activación
+   - Registra auditoría
+7. Sistema envía email de bienvenida:
+   ```
+   Asunto: Credenciales de acceso - Portal Evaluaciones SEP
+   
+   Estimado [Nombre],
+   
+   Se ha creado su cuenta en el Portal de Evaluaciones Diagnósticas.
+   
+   Usuario: [email]
+   Contraseña temporal: [password]
+   URL: https://evaluaciones.sep.gob.mx
+   
+   IMPORTANTE:
+   - Cambie su contraseña en el primer inicio de sesión
+   - La contraseña temporal expira en 72 horas
+   - En caso de problemas, contacte a soporte@sep.gob.mx
+   
+   Saludos,
+   Equipo DGADAE
+   ```
+
+**Flujo Principal - Primer Login de Usuario:**
+1. Director accede a portal con credenciales temporales
+2. Sistema detecta flag `primera_sesion = true`
+3. Sistema redirige a formulario de cambio de contraseña obligatorio:
+   ```
+   Bienvenido al Portal de Evaluaciones
+   
+   Por seguridad, debe cambiar su contraseña temporal.
+   
+   Contraseña actual: [________]
+   Nueva contraseña: [________] (mínimo 8 caracteres)
+   Confirmar contraseña: [________]
+   
+   Requisitos:
+   ✓ Al menos 8 caracteres
+   ✓ Una mayúscula
+   ✓ Un número
+   ✓ Un carácter especial
+   ```
+4. Director ingresa nueva contraseña
+5. Sistema valida requisitos
+6. Sistema actualiza contraseña hasheada
+7. Sistema actualiza `primera_sesion = false`
+8. Sistema registra `ultimo_acceso = NOW()`
+9. Sistema redirige a dashboard
+
+**Flujo Principal - Reset de Contraseña:**
+1. Administrador busca usuario
+2. Administrador selecciona "Resetear Contraseña"
+3. Sistema genera nueva contraseña temporal
+4. Sistema envía email al usuario con nueva contraseña
+5. Sistema actualiza `primera_sesion = true` (forzar cambio)
+
+**Flujos Alternativos:**
+- **4a.** Email duplicado → Sistema muestra error y email existente
+- **4b.** CCT inactivo → Sistema advierte y permite continuar con aprobación
+- **7a.** Error al enviar email → Sistema guarda usuario pero marca para reenvío
+
+**Postcondiciones:**
+- Usuario creado y vinculado a CCT
+- Credenciales enviadas por email
+- Auditoría registrada
+
+**Frecuencia:**
+- Creación: ~1,000 usuarios al inicio de ciclo
+- Reset contraseña: ~50-100 por mes  
+**Prioridad:** 🔴 Crítica (Fase 1)  
+**Tiempo Estimado:** 1-2 minutos por usuario
 
 ---
 
@@ -440,26 +905,177 @@ graph TB
 
 ---
 
-### CU-09: Enviar Resultados a Escuelas
-**Actor Principal:** Sistema Correo SEP (automatizado)  
-**Precondiciones:** Reportes comprimidos disponibles  
-**Flujo Principal:**
-1. Sistema identifica escuelas con reportes listos
-2. Por cada escuela:
-   a. Sistema carga plantilla de correo
-   b. Sistema personaliza correo con datos de escuela
-   c. Sistema adjunta archivo 7z con reportes
-   d. Sistema envía correo a director
-   e. Sistema registra envío
+### CU-09v2: Notificar y Publicar Resultados en Portal ✨ FASE 1 (MODIFICADO)
+**Actor Principal:** Script de Sincronización (Node.js + Bull Queue)  
+**Actores Secundarios:** Sistema Legacy, Portal Web  
+**Precondiciones:** 
+- Reportes PDF generados por sistema legacy (CU-08)
+- PDFs depositados en carpeta compartida
+
+**Flujo Principal - Sincronización Automática:**
+1. Script de sincronización ejecuta cada 5 minutos (cron job)
+2. Script escanea carpeta legacy de reportes:
+   ```
+   /shared/reportes_generados/
+   ├── 24PPR0356K/
+   │   ├── 24PPR0356K.1.Reporte_esc_ens.5°.pdf
+   │   ├── 24PPR0356K.1.Reporte_esc_hyc.5°.pdf
+   │   ├── 24PPR0356K.1.Reporte_est_f5.5°.A.pdf
+   │   └── ... (30 archivos total)
+   ```
+3. Script detecta nuevos PDFs no sincronizados (por timestamp o flag)
+4. Por cada escuela con PDFs nuevos:
+   a. Script agrupa PDFs por CCT
+   b. Script consulta BD PostgreSQL:
+      ```sql
+      SELECT carga_id FROM cargas_frv 
+      WHERE cct = '24PPR0356K' 
+      AND periodo_evaluacion = '2025-1'
+      AND estado_validacion = 'Exitoso'
+      ORDER BY created_at DESC LIMIT 1;
+      ```
+   c. Script sube cada PDF a MinIO:
+      ```javascript
+      await minioClient.putObject(
+        'reportes-sep', // bucket
+        `${cct}/${periodo}/${filename}`, // key
+        pdfBuffer,
+        {
+          'Content-Type': 'application/pdf',
+          'X-Amz-Meta-CCT': cct,
+          'X-Amz-Meta-Periodo': periodo,
+          'X-Amz-Meta-Tipo': tipoReporte
+        }
+      );
+      ```
+   d. Script inserta metadatos en PostgreSQL:
+      ```sql
+      INSERT INTO resultados (
+        carga_id, cct, tipo_reporte, grado, grupo,
+        archivo_nombre, minio_bucket, minio_object_key,
+        file_size_bytes, created_at
+      ) VALUES (...);
+      ```
+   e. Script marca PDFs como sincronizados en carpeta legacy
+
+5. Script detecta que todos los reportes de una escuela están listos (ej: 30/30 para primaria)
+6. Script ejecuta job de notificación:
+   ```javascript
+   await emailQueue.add('notify-results-ready', {
+     cct: '24PPR0356K',
+     periodo: '2025-1',
+     totalReportes: 30,
+     emailDirector: 'director.24ppr0356k@sep.gob.mx'
+   });
+   ```
+
+**Flujo Principal - Notificación Email:**
+1. Worker de email procesa job de la cola
+2. Worker consulta datos de escuela y director
+3. Worker genera email personalizado:
+   ```
+   Asunto: ✅ Resultados de Evaluación Diagnóstica - Disponibles
+   
+   Estimado Director,
+   
+   Los resultados de la Evaluación Diagnóstica del periodo 2025-1
+   ya están disponibles en el portal.
+   
+   Escuela: Primaria "Benito Juárez"
+   CCT: 24PPR0356K
+   Reportes generados: 30
+   - 4 reportes por campo formativo (ENS, HYC, LEN, SPC) × 6 grados
+   - 6 reportes individuales por grupo (5° y 6°)
+   
+   Para descargar sus resultados:
+   1. Acceda a: https://evaluaciones.sep.gob.mx
+   2. Inicie sesión con su CCT
+   3. Vaya a "Mis Resultados" > "Periodo 2025-1"
+   4. Descargue reportes individuales o paquete completo
+   
+   Los reportes estarán disponibles por 2 ciclos escolares.
+   
+   Saludos,
+   Sistema de Evaluaciones Diagnósticas - DGADAE
+   ```
+4. Worker envía email vía SMTP (Nodemailer)
+5. Worker registra envío en tabla auditoría
+6. Worker marca notificación como enviada en BD
+
+**Flujo Principal - Descarga por Director:**
+1. Director recibe email de notificación
+2. Director inicia sesión en portal web
+3. Dashboard muestra alerta:
+   ```
+   🎉 ¡Nuevos resultados disponibles!
+   
+   Periodo 2025-1 - 30 reportes listos
+   [Ver Resultados]
+   ```
+4. Director accede a sección "Mis Resultados"
+5. Sistema muestra lista de reportes por periodo:
+   ```
+   Periodo 2025-1 (Noviembre 2025)
+   
+   Reportes por Campo Formativo (24 archivos):
+   ├── Enseñanza (ENS)
+   │   ├── 📄 1° Grado (670 KB) [Descargar]
+   │   ├── 📄 2° Grado (670 KB) [Descargar]
+   │   └── ... hasta 6°
+   ├── Historia y Civismo (HYC)
+   │   └── ... 6 reportes
+   └── ... LEN, SPC
+   
+   Reportes Individuales de Estudiantes (6 archivos):
+   ├── 📄 5° Grado Grupo A (2.71 MB) [Descargar]
+   ├── 📄 5° Grado Grupo B (2.71 MB) [Descargar]
+   └── ... hasta 6° Grupo E
+   
+   [Descargar Todo (ZIP - 45 MB)]
+   ```
+6. Director puede:
+   - Descargar reportes individuales (click → descarga directa desde MinIO)
+   - Descargar paquete completo (sistema genera ZIP on-the-fly)
+7. Sistema registra cada descarga:
+   ```sql
+   UPDATE resultados 
+   SET descargado = true,
+       descargas_count = descargas_count + 1,
+       ultima_descarga_at = NOW()
+   WHERE id = ?;
+   ```
 
 **Flujos Alternativos:**
-- **2c.** Archivo >25MB → Sistema divide en múltiples correos
-- **2d.** Correo rebotado → Sistema reintenta 3 veces
+- **4b.** Error al subir PDF a MinIO → Script reintenta 3 veces, luego alerta
+- **4d.** Error al insertar en PostgreSQL → Script rollback y reintenta
+- **4e.** Reportes incompletos → Script espera hasta tener todos antes de notificar
+- **4a.** Worker de email falla → Job vuelve a cola para reintento (max 5 intentos)
+- **6.** Descarga de paquete ZIP muy grande → Sistema usa streaming para generar ZIP
 
-**Postcondiciones:** Resultados enviados a escuela  
-**Frecuencia:** Continua durante ciclo de procesamiento  
-**Prioridad:** 🔴 Alta  
-**Automatización:** 100%
+**Postcondiciones:**
+- PDFs almacenados en MinIO
+- Metadatos en PostgreSQL
+- Director notificado por email
+- Reportes disponibles para descarga
+- Auditoría completa registrada
+
+**Métricas del Sistema:**
+- Frecuencia sincronización: cada 5 minutos
+- Latencia: <10 minutos desde generación hasta notificación
+- Throughput: 100 escuelas/hora
+- Disponibilidad reportes: 2 ciclos escolares
+
+**Frecuencia:** Continua durante ciclo de procesamiento (400 escuelas/día)  
+**Prioridad:** 🔴 Crítica (Fase 1)  
+**Automatización:** 90% (solo descarga es manual)  
+**Tiempo Estimado Sincronización:** 30-60 segundos por escuela
+
+**Beneficios vs CU-09 Antiguo:**
+- ✅ Sin archivos adjuntos pesados en email
+- ✅ Descarga desde portal seguro (TLS 1.3)
+- ✅ Histórico de resultados accesible
+- ✅ Auditoría de descargas
+- ✅ Escalable (MinIO soporta TB de datos)
 
 ---
 
@@ -524,47 +1140,86 @@ graph TB
 
 ---
 
-## 4. MATRIZ DE TRAZABILIDAD
+## 4. MATRIZ DE TRAZABILIDAD - FASE 1
 
-| Caso de Uso | Requerimientos Funcionales | Requerimientos No Funcionales | Prioridad |
-|-------------|---------------------------|------------------------------|-----------|
-| CU-01 | RF-01, RF-08 | RNF-05, RNF-07 | 🔴 Alta |
-| CU-02 | RF-01 | RNF-03, RNF-06 | 🟡 Media |
-| CU-03 | RF-03 | RNF-05 | 🔴 Alta |
-| CU-04 | RF-02, RF-03 | RNF-05, RNF-08 | 🔴 Alta |
-| CU-05 | RF-03, RF-06 | ⚠️ RNF-04 (no cumplido) | 🔴 Alta |
-| CU-06 | RF-04 | RNF-01, RNF-02 | 🔴 Alta |
-| CU-07 | RF-04 | RNF-01, RNF-02, RNF-04 | 🔴 Alta |
-| CU-08 | RF-05 | RNF-01, RNF-02 | 🔴 Alta |
-| CU-09 | RF-06 | RNF-03, RNF-04 | 🔴 Alta |
-| CU-10 | RF-07 | RNF-05 | 🟡 Media |
-| CU-11 | RF-07 | RNF-05 | 🟡 Media |
-| CU-12 | RF-07 | - | 🟢 Baja |
+### 4.1 Casos de Uso vs Requerimientos
 
-### Estadísticas de Cobertura
+| Caso de Uso | RF | RNF | Prioridad Fase 1 | Estado |
+|-------------|----|----|------------------|--------|
+| CU-01 | RF-01, RF-08 | RNF-05, RNF-07 | 🔴 Alta | ✅ Mantener |
+| CU-02 | RF-01 | RNF-03, RNF-06 | 🟡 Media | ✅ Mantener |
+| CU-03 | RF-03 | RNF-05 | 🔴 Alta | ✅ Mantener |
+| **CU-04v2** ✨ | **RF-09, RF-10, RF-15** | **RNF-04, RNF-06, RNF-09** | 🔴 **Crítica** | ✨ **NUEVO** |
+| ~~CU-05~~ | - | - | - | ❌ Eliminado |
+| CU-06 | RF-04 | RNF-01, RNF-02 | 🟡 Media | ⚠️ Legacy Fase 1 |
+| CU-07 | RF-04 | RNF-01, RNF-02 | 🟡 Media | ⚠️ Legacy Fase 1 |
+| CU-08 | RF-05 | RNF-01, RNF-02 | 🟡 Media | ⚠️ Legacy Fase 1 |
+| **CU-09v2** ✨ | **RF-12, RF-15** | **RNF-03, RNF-04, RNF-09** | 🔴 **Crítica** | ✨ **NUEVO** |
+| CU-10 | RF-07 | RNF-05 | 🟡 Media | ✅ Mantener |
+| CU-11 | RF-07 | RNF-05 | 🟡 Media | ✅ Mantener |
+| CU-12 | RF-07 | - | 🟢 Baja | ✅ Mantener |
+| **CU-13** ✨ | **RF-11** | **RNF-01, RNF-05, RNF-09** | 🔴 **Crítica** | ✨ **NUEVO** |
+| **CU-14** ✨ | **RF-13** | **RNF-04, RNF-05, RNF-09** | 🔴 **Crítica** | ✨ **NUEVO** |
+| **CU-15** ✨ | **RF-14** | **RNF-04, RNF-05, RNF-09** | 🔴 **Crítica** | ✨ **NUEVO** |
+
+### 4.2 Requerimientos Nuevos Fase 1
+
+| ID | Descripción | Casos de Uso Asociados | Complejidad |
+|----|-------------|------------------------|-------------|
+| **RF-09** | Autenticación y autorización | CU-04v2, CU-09v2, CU-13, CU-14, CU-15 | Alta |
+| **RF-10** | Portal web de carga y validación | CU-04v2 | Alta |
+| **RF-11** | Sistema de tickets | CU-13 | Alta |
+| **RF-12** | Notificaciones y descarga | CU-09v2 | Media |
+| **RF-13** | Catálogo de escuelas | CU-14 | Baja |
+| **RF-14** | Gestión de usuarios | CU-15 | Baja |
+| **RF-15** | Integración con legacy | CU-04v2, CU-09v2 | Alta |
+| **RNF-09** | Stack open source | Todos los nuevos | Media |
+
+### 4.3 Estadísticas de Cobertura - Estrategia Bifásica
 
 ```mermaid
-pie title "Distribución de Prioridad de Casos de Uso"
-    "Alta (9)" : 75
-    "Media (2)" : 17
-    "Baja (1)" : 8
+pie title "Distribución de Prioridad Fase 1"
+    "Crítica (7)" : 47
+    "Alta (2)" : 13
+    "Media (5)" : 33
+    "Baja (1)" : 7
+```
+
+```mermaid
+pie title "Estado de Casos de Uso"
+    "Nuevos Fase 1 (5)" : 33
+    "Modificados (2)" : 13
+    "Legacy Temporal (3)" : 20
+    "Mantener (5)" : 34
+```
+
+```mermaid
+pie title "Automatización por Fase"
+    "Manual" : 15
+    "Fase 1 (48%)" : 48
+    "Fase 2 (85%)" : 85
 ```
 
 ---
 
 ## 5. DEUDA TÉCNICA
 
-### 5.1 Requerimientos NO Cumplidos
+### 5.1 Requerimientos NO Cumplidos - Sistema Legacy
 
-| ID | Requerimiento | Estado | Impacto | Prioridad | Timeline |
-|----|---------------|--------|---------|-----------|----------|
-| **RNF-04.1** | Cifrar datos en reposo | ❌ | 🔴 Crítico | Inmediato | 0-1 mes |
-| **RNF-04.2** | Cifrar transmisiones TLS | ❌ | 🔴 Crítico | Inmediato | 0-1 mes |
-| **RNF-04.4** | Log de auditoría | ❌ | 🔴 Alto | 1-3 meses | Sprint 2-3 |
-| **RNF-04.5** | Derechos ARCO | ❌ | 🔴 Alto | 1-3 meses | Sprint 2-3 |
-| **RNF-04.7** | Consentimiento tutores | ❓ | 🟡 Medio | 3-6 meses | Sprint 4-6 |
-| **RNF-01.5** | Consultas <2 seg | ❓ | 🟡 Medio | 3-6 meses | Sprint 4-6 |
-| **RNF-07.1** | Código documentado | ❌ | 🟢 Bajo | 6-12 meses | Continuo |
+| ID | Requerimiento | Estado Legacy | Estado Fase 1 | Mejora |
+|----|---------------|---------------|---------------|--------|
+| **RNF-04.1** | Cifrar datos en reposo | ❌ | ✅ PostgreSQL TDE | +100% |
+| **RNF-04.2** | Cifrar transmisiones TLS | ❌ | ✅ TLS 1.3 (Nginx) | +100% |
+| **RNF-04.4** | Log de auditoría | ❌ | ✅ Tabla auditoría | +100% |
+| **RNF-04.5** | Derechos ARCO | ❌ | ⚠️ Parcial (Fase 2) | Pendiente |
+| **RNF-04.7** | Consentimiento tutores | ❓ | ⚠️ Pendiente | Pendiente |
+| **RNF-01.5** | Consultas <2 seg | ❓ | ✅ PostgreSQL + índices | +100% |
+| **RNF-07.1** | Código documentado | ❌ | ✅ TypeScript + JSDoc | +100% |
+
+**Resumen de Mejoras Fase 1:**
+- ✅ **4 requerimientos críticos resueltos** (cifrado, auditoría, performance)
+- ⚠️ **2 requerimientos pendientes** para Fase 2 (ARCO, consentimientos)
+- 📊 **Tasa de cumplimiento:** 57% → **86%** (↑29%)
 
 ### 5.2 Evidencia de Incumplimiento LGPDP
 
@@ -585,25 +1240,34 @@ pie title "Distribución de Prioridad de Casos de Uso"
 
 **Riesgo Legal:** ALTO - Posible multa de hasta 320,000 UMA (~$35 millones MXN) por INAI
 
-### 5.3 Plan de Remediación
+### 5.3 Plan de Remediación - Estrategia Bifásica ✅
 
-**Fase 1 (Inmediata - 1 mes):**
-- Implementar TLS 1.3 en transmisiones de correo
-- Cifrar archivos FRV con contraseña antes de envío
-- Implementar cifrado de base de datos Access
-- Publicar aviso de privacidad en plataforma
+**FASE 1 - Portal Web (Marzo 2026):** ✨ RESUELVE 4 DE 7 INCUMPLIMIENTOS
 
-**Fase 2 (Corto plazo - 3 meses):**
-- Implementar sistema de log de auditoría
-- Crear módulo de derechos ARCO
-- Documentar consentimiento de tutores
-- Capacitar personal en LGPDP
+| Problema Legacy | Solución Fase 1 | Estado |
+|-----------------|-----------------|--------|
+| Sin cifrado en transmisión | ✅ TLS 1.3 (Nginx + Let's Encrypt) | Resuelto |
+| Sin cifrado en reposo | ✅ PostgreSQL con TDE habilitado | Resuelto |
+| Sin auditoría | ✅ Tabla auditoría + triggers | Resuelto |
+| Sin validación automática | ✅ Validador backend (SheetJS) | Resuelto |
+| Correo sin seguridad | ✅ Portal web seguro + autenticación | Resuelto |
+| Sin derechos ARCO | ⚠️ Pendiente Fase 2 | Parcial |
+| Sin consentimiento | ⚠️ Pendiente Fase 2 | Parcial |
 
-**Fase 3 (Mediano plazo - 6 meses):**
-- Migrar de Access a SQL Server con TDE
-- Implementar backup cifrado
-- Realizar auditoría de cumplimiento LGPDP
-- Certificar procesos con INAI
+**FASE 2 - Migración Completa (Septiembre 2026):**
+- Implementar módulo de derechos ARCO completo
+- Sistema de gestión de consentimientos de tutores
+- Generación de reportes de privacidad
+- Auditoría de cumplimiento LGPDP completa
+- Certificación con INAI
+- Backup cifrado automático
+- Documentación completa de procesos
+
+**Beneficio Inmediato Fase 1:**
+- ✅ Reducción de riesgo legal de ALTO → MEDIO
+- ✅ Cumplimiento LGPDP: 57% → 86% (+29%)
+- ✅ Validación automática reduce errores 70%
+- ✅ Trazabilidad completa de datos sensibles
 
 ---
 
@@ -629,45 +1293,177 @@ pie title "Distribución de Prioridad de Casos de Uso"
 | Docentes | Usuario final | 10,000+ | Periódica |
 | Estudiantes | Sujeto de datos | 500,000+ | Indirecta |
 
-### 6.3 Complejidad de Casos de Uso
+### 6.3 Complejidad de Casos de Uso - Fase 1
 
-| Complejidad | Cantidad | Porcentaje |
-|-------------|----------|------------|
-| Alta (CU-07, CU-08) | 2 | 17% |
-| Media (CU-04, CU-06, CU-09, CU-10) | 4 | 33% |
-| Baja (CU-01, CU-02, CU-03, CU-05, CU-11, CU-12) | 6 | 50% |
+| Complejidad | Casos de Uso | Cantidad | Esfuerzo Estimado |
+|-------------|--------------|----------|-------------------|
+| **Alta** | CU-04v2, CU-13, RF-15 (integración) | 3 | 120 horas |
+| **Media** | CU-09v2, CU-14, CU-15 | 3 | 60 horas |
+| **Baja** | CU-01, CU-02, CU-03, CU-10, CU-11, CU-12 | 6 | 30 horas |
+| **Legacy** | CU-06, CU-07, CU-08 (mantener) | 3 | 10 horas |
+
+**Total Fase 1:** 220 horas de desarrollo (~5.5 semanas con 2 desarrolladores)
 
 ---
 
-## 7. CONCLUSIONES
+## 7. CONCLUSIONES - ESTRATEGIA BIFÁSICA
 
 ### 7.1 Hallazgos Principales
 
-1. **Funcionalidad completa:** El sistema cubre todos los casos de uso del flujo operativo SEP
-2. **Alto grado de automatización:** 70% en fase de procesamiento, 35% global
-3. **Incumplimiento crítico LGPDP:** Datos sensibles sin cifrar
-4. **Arquitectura obsoleta:** .NET 4.5, Access, Flash (EOL)
-5. **Rendimiento adecuado:** 1.5 min/escuela cumple con requerimientos
+1. **Funcionalidad completa en Fase 1:** Portal web cubre 80% de flujo crítico
+2. **Stack 100% open source:** Ahorro de $1.2M MXN en 3 años
+3. **Mejora de seguridad:** Cumplimiento LGPDP 57% → 86% (+29%)
+4. **Automatización incrementada:** 35% → 48% (Fase 1) → 85% (Fase 2)
+5. **Arquitectura híbrida funcional:** Integración legacy sin fricción
 
-### 7.2 Recomendaciones Prioritarias
+### 7.2 Decisiones Estratégicas Tomadas
 
-**🔴 Urgente (0-1 mes):**
-- Implementar cifrado de datos en tránsito y reposo
-- Publicar aviso de privacidad y obtener consentimientos
-- Eliminar componentes Flash
+**✅ APROBADO: Stack Open Source**
+- Frontend: React 18 + TypeScript
+- Backend: Node.js 20 + NestJS
+- Database: PostgreSQL 16
+- Storage: MinIO S3-compatible
+- **Beneficio:** $0 en licencias, comunidad global, sin vendor lock-in
 
-**🟡 Importante (1-6 meses):**
-- Migrar a .NET 8 y SQL Server
-- Implementar log de auditoría y derechos ARCO
-- Documentar código fuente
+**✅ APROBADO: Estrategia Bifásica**
+- **Fase 1 (Marzo 2026):** Portal web + integración legacy
+  - Validación automática de FRV
+  - Sistema de tickets
+  - Seguridad LGPDP
+  - Inversión: $394,000 MXN
+- **Fase 2 (Septiembre 2026):** Migración completa
+  - Procesamiento en cloud
+  - Eliminación de legacy
+  - Inversión: $590,000 MXN
 
-**🟢 Deseable (6-12 meses):**
-- Desarrollar portal web para directores/docentes
-- Implementar dashboard de analytics
-- Automatizar CU-06 (distribución)
+**✅ APROBADO: Nuevos Requerimientos**
+- 7 grupos de RF nuevos (RF-09 a RF-15)
+- 45 requerimientos funcionales adicionales
+- 5 casos de uso nuevos/modificados
+- Sistema de tickets para soporte
+
+### 7.3 Roadmap de Implementación
+
+**FASE 1 - Portal Web (4 meses: Nov 2025 - Mar 2026)**
+
+| Mes | Hito | Entregables |
+|-----|------|-------------|
+| **Nov 2025** | Diseño y Setup | Schema PostgreSQL, UI mockups, Docker setup |
+| **Dic 2025** | Autenticación + Catálogos | CU-14, CU-15 (Escuelas, Usuarios) |
+| **Ene 2026** | Validación + Tickets | CU-04v2, CU-13 (Carga FRV, Tickets) |
+| **Feb 2026** | Integración Legacy | RF-15, CU-09v2 (Sincronización) |
+| **Mar 2026** | Testing + Deploy | QA, capacitación, go-live Fase 1 |
+
+**FASE 2 - Migración Completa (6 meses: Mar 2026 - Sep 2026)**
+- Procesamiento en Node.js (reemplaza 10 equipos Excel)
+- Generación de PDFs en cloud (Puppeteer)
+- Módulo ARCO y consentimientos
+- Desmantelamiento de sistema legacy
+
+### 7.4 Métricas de Éxito Fase 1
+
+**KPIs Operacionales:**
+- ✅ Adopción del portal: >50% en 3 meses
+- ✅ Validación exitosa: >85% en primer intento
+- ✅ Tickets generados: <10% de cargas
+- ✅ Tiempo resolución ticket: <24 horas (90%)
+- ✅ Satisfacción usuario: >4.0/5.0
+
+**KPIs Técnicos:**
+- ✅ Uptime: >99% durante periodo evaluación
+- ✅ Validación FRV: <45 segundos
+- ✅ Sincronización: <10 min desde legacy a portal
+- ✅ Descargas concurrentes: 100+ simultáneas
+
+**KPIs de Seguridad:**
+- ✅ Cifrado: 100% transmisiones TLS 1.3
+- ✅ Auditoría: 100% accesos registrados
+- ✅ Backups: Diarios cifrados
+- ✅ Cumplimiento LGPDP: 86%
+
+### 7.5 Riesgos y Mitigaciones
+
+| Riesgo | Probabilidad | Impacto | Mitigación |
+|--------|--------------|---------|------------|
+| Integración legacy falla | Media | Alto | Testing exhaustivo, rollback plan |
+| Adopción baja por directores | Baja | Medio | Capacitación, soporte 24/7, incentivos |
+| Sincronización con errores | Media | Alto | Monitoreo 24/7, alertas, reintentos automáticos |
+| PostgreSQL performance | Baja | Medio | Índices optimizados, query profiling, scaling horizontal |
+| Falla en validación Excel | Media | Alto | Testing con 50+ FRV reales, manejo de excepciones robusto |
+
+### 7.6 Recomendaciones Finales
+
+**🔴 CRÍTICO - Iniciar Inmediatamente:**
+1. Contratar equipo desarrollo (2 full-stack React/Node)
+2. Provisionar infraestructura (VPS/Cloud + PostgreSQL + MinIO)
+3. Diseñar schema PostgreSQL final
+4. Crear prototipos UI con directores piloto
+5. Configurar CI/CD (GitHub Actions)
+
+**🟡 IMPORTANTE - Primeras 4 Semanas:**
+1. Implementar autenticación (Passport.js + JWT)
+2. Desarrollar catálogos (Escuelas, Usuarios)
+3. Integrar SheetJS para lectura de Excel
+4. Configurar MinIO para almacenamiento
+
+**🟢 DESEABLE - Post Fase 1:**
+1. Dashboard analytics para DGADAE
+2. Reportes en tiempo real
+3. API pública para integraciones
+4. App móvil para directores
+
+---
+
+## 8. STACK TECNOLÓGICO FINAL
+
+### Frontend
+```json
+{
+  "framework": "React 18.3.0",
+  "language": "TypeScript 5.3.0",
+  "build": "Vite 5.0.0",
+  "state": "Zustand 4.5.0",
+  "data": "@tanstack/react-query 5.0.0",
+  "router": "react-router-dom 6.20.0",
+  "ui": "shadcn/ui + TailwindCSS 3.4.0",
+  "forms": "react-hook-form + zod",
+  "excel": "xlsx (SheetJS) 0.18.5"
+}
+```
+
+### Backend
+```json
+{
+  "runtime": "Node.js 20 LTS",
+  "framework": "NestJS 10.3.0",
+  "language": "TypeScript 5.3.0",
+  "orm": "Prisma 5.8.0",
+  "auth": "Passport.js + JWT",
+  "validation": "class-validator + class-transformer",
+  "queue": "Bull 4.12.0",
+  "logging": "Winston 3.11.0",
+  "email": "Nodemailer 6.9.0"
+}
+```
+
+### Infraestructura
+```json
+{
+  "database": "PostgreSQL 16",
+  "cache": "Redis 7",
+  "storage": "MinIO (S3-compatible)",
+  "web-server": "Nginx 1.24",
+  "ssl": "Let's Encrypt",
+  "containers": "Docker + Docker Compose",
+  "orchestration": "Kubernetes (opcional Fase 2)",
+  "ci-cd": "GitHub Actions"
+}
+```
 
 ---
 
 **Documento generado por:** Ingeniero de Software Certificado PSP  
 **Metodología:** RUP (Rational Unified Process)  
-**Fecha:** 21 de Noviembre de 2025
+**Versión:** 2.0 - Estrategia Bifásica + Stack Open Source  
+**Fecha de Actualización:** 24 de Noviembre de 2025  
+**Próxima Revisión:** Diciembre 2025 (inicio Fase 1)

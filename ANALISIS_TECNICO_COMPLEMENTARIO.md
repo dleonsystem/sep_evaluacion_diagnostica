@@ -1,9 +1,1125 @@
 # ANÁLISIS TÉCNICO COMPLEMENTARIO
 ## Sistema SiCRER - Evaluación Diagnóstica SEP
+### Versión 2.0 - Stack Open Source (React + Node.js + PostgreSQL)
+
+**Fecha Actualización:** 25 de Noviembre de 2025  
+**Stack Tecnológico:** React 18 + NestJS 10 + PostgreSQL 16 + MinIO + Redis 7  
+**Estrategia:** Bifásica (Fase 1 Híbrida + Fase 2 Completa)
 
 ---
 
-## 1. ANÁLISIS DE DEPENDENCIAS
+## 0. ARQUITECTURA OPEN SOURCE - FASE 2 (Septiembre 2026)
+
+### 0.1 Schema PostgreSQL 16 Completo
+
+**Base de Datos:** `sicrer_db` (PostgreSQL 16 con TDE encryption)
+
+```sql
+-- ============================================
+-- SCHEMA: Sistema SiCRER - Stack Open Source
+-- PostgreSQL 16 con TDE Encryption
+-- Autor: Ingeniero PSP Certificado
+-- Fecha: 25 Nov 2025
+-- ============================================
+
+-- Extensiones requeridas
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- Full-text search
+
+-- ============================================
+-- ENUMS
+-- ============================================
+
+CREATE TYPE nivel_educativo AS ENUM (
+  'PREESCOLAR',
+  'PRIMARIA',
+  'SECUNDARIA_TECNICA',
+  'TELESECUNDARIA'
+);
+
+CREATE TYPE estado_ticket AS ENUM (
+  'PENDIENTE',
+  'EN_PROCESO',
+  'RESUELTO',
+  'CERRADO'
+);
+
+CREATE TYPE nivel_logro AS ENUM (
+  'NIVEL_1',
+  'NIVEL_2',
+  'NIVEL_3',
+  'NIVEL_4'
+);
+
+CREATE TYPE rol_usuario AS ENUM (
+  'DIRECTOR',
+  'OPERADOR_SEP',
+  'ADMINISTRADOR'
+);
+
+CREATE TYPE estado_frv AS ENUM (
+  'PENDIENTE_VALIDACION',
+  'VALIDADO',
+  'RECHAZADO',
+  'PROCESADO'
+);
+
+-- ============================================
+-- TABLA: escuelas
+-- ============================================
+
+CREATE TABLE escuelas (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  cct VARCHAR(10) UNIQUE NOT NULL, -- Clave Centro Trabajo
+  nombre VARCHAR(200) NOT NULL,
+  nivel nivel_educativo NOT NULL,
+  turno VARCHAR(20) NOT NULL,
+  municipio VARCHAR(100) NOT NULL,
+  estado VARCHAR(50) NOT NULL,
+  director_nombre VARCHAR(150),
+  director_email VARCHAR(100),
+  director_telefono VARCHAR(15),
+  activo BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  
+  -- Índices
+  CONSTRAINT cct_format_check CHECK (cct ~ '^[0-9]{2}[A-Z]{3}[0-9]{4}[A-Z]$')
+);
+
+CREATE INDEX idx_escuelas_cct ON escuelas(cct);
+CREATE INDEX idx_escuelas_nivel ON escuelas(nivel);
+CREATE INDEX idx_escuelas_municipio ON escuelas USING gin(municipio gin_trgm_ops);
+
+-- ============================================
+-- TABLA: usuarios (Directores y Operadores)
+-- ============================================
+
+CREATE TABLE usuarios (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  escuela_id UUID REFERENCES escuelas(id) ON DELETE CASCADE,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL, -- bcrypt hash
+  rol rol_usuario NOT NULL DEFAULT 'DIRECTOR',
+  nombre_completo VARCHAR(150) NOT NULL,
+  activo BOOLEAN DEFAULT true,
+  ultimo_acceso TIMESTAMP,
+  intentos_fallidos INT DEFAULT 0,
+  bloqueado_hasta TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_usuarios_email ON usuarios(email);
+CREATE INDEX idx_usuarios_escuela ON usuarios(escuela_id);
+
+-- ============================================
+-- TABLA: sesiones (JWT Redis Cache)
+-- ============================================
+
+CREATE TABLE sesiones (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  usuario_id UUID REFERENCES usuarios(id) ON DELETE CASCADE,
+  token_hash VARCHAR(255) NOT NULL,
+  ip_address INET,
+  user_agent TEXT,
+  expira_en TIMESTAMP NOT NULL,
+  revocado BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_sesiones_token ON sesiones(token_hash);
+CREATE INDEX idx_sesiones_usuario ON sesiones(usuario_id);
+
+-- ============================================
+-- TABLA: archivos_frv (MinIO Storage)
+-- ============================================
+
+CREATE TABLE archivos_frv (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  escuela_id UUID REFERENCES escuelas(id) ON DELETE CASCADE,
+  usuario_id UUID REFERENCES usuarios(id),
+  ciclo_escolar VARCHAR(9) NOT NULL, -- '2024-2025'
+  nivel nivel_educativo NOT NULL,
+  estado estado_frv DEFAULT 'PENDIENTE_VALIDACION',
+  
+  -- MinIO metadata
+  minio_bucket VARCHAR(100) NOT NULL, -- 'frv-uploads'
+  minio_object_key VARCHAR(255) NOT NULL, -- 'cct/2024-2025/upload.xlsx'
+  filename_original VARCHAR(255) NOT NULL,
+  file_size BIGINT NOT NULL,
+  mime_type VARCHAR(50) DEFAULT 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  
+  -- Validación
+  validacion_resultado JSONB, -- {errores: [], advertencias: []}
+  validado_en TIMESTAMP,
+  
+  -- Procesamiento
+  procesado_en TIMESTAMP,
+  total_estudiantes INT,
+  
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_frv_escuela ON archivos_frv(escuela_id);
+CREATE INDEX idx_frv_ciclo ON archivos_frv(ciclo_escolar);
+CREATE INDEX idx_frv_estado ON archivos_frv(estado);
+CREATE INDEX idx_frv_validacion ON archivos_frv USING gin(validacion_resultado);
+
+-- ============================================
+-- TABLA: estudiantes
+-- ============================================
+
+CREATE TABLE estudiantes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  escuela_id UUID REFERENCES escuelas(id) ON DELETE CASCADE,
+  archivo_frv_id UUID REFERENCES archivos_frv(id),
+  
+  -- Datos personales (LGPDP sensibles)
+  curp VARCHAR(18) UNIQUE NOT NULL,
+  nombre VARCHAR(100) NOT NULL,
+  apellido_paterno VARCHAR(50) NOT NULL,
+  apellido_materno VARCHAR(50),
+  
+  -- Datos académicos
+  grado INT NOT NULL CHECK (grado BETWEEN 1 AND 6),
+  grupo VARCHAR(2) NOT NULL,
+  ciclo_escolar VARCHAR(9) NOT NULL,
+  
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  
+  CONSTRAINT curp_format_check CHECK (curp ~ '^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[0-9A-Z][0-9]$')
+);
+
+CREATE INDEX idx_estudiantes_curp ON estudiantes(curp);
+CREATE INDEX idx_estudiantes_escuela ON estudiantes(escuela_id);
+CREATE INDEX idx_estudiantes_ciclo ON estudiantes(ciclo_escolar);
+
+-- ============================================
+-- TABLA: valoraciones
+-- ============================================
+
+CREATE TABLE valoraciones (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  estudiante_id UUID REFERENCES estudiantes(id) ON DELETE CASCADE,
+  archivo_frv_id UUID REFERENCES archivos_frv(id),
+  
+  -- Materias
+  materia VARCHAR(50) NOT NULL, -- 'ENS', 'HYC', 'LEN', 'SPC'
+  nivel_logro nivel_logro NOT NULL,
+  observaciones TEXT,
+  
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_valoraciones_estudiante ON valoraciones(estudiante_id);
+CREATE INDEX idx_valoraciones_materia ON valoraciones(materia);
+
+-- ============================================
+-- TABLA: tickets_soporte
+-- ============================================
+
+CREATE TABLE tickets_soporte (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  numero_ticket VARCHAR(20) UNIQUE NOT NULL, -- 'TKT-2025-00001'
+  escuela_id UUID REFERENCES escuelas(id),
+  usuario_id UUID REFERENCES usuarios(id),
+  archivo_frv_id UUID REFERENCES archivos_frv(id),
+  
+  asunto VARCHAR(200) NOT NULL,
+  descripcion TEXT NOT NULL,
+  estado estado_ticket DEFAULT 'PENDIENTE',
+  prioridad VARCHAR(10) DEFAULT 'MEDIA', -- 'BAJA', 'MEDIA', 'ALTA'
+  
+  -- Asignación
+  asignado_a UUID REFERENCES usuarios(id),
+  asignado_en TIMESTAMP,
+  
+  -- Resolución
+  resolucion TEXT,
+  resuelto_en TIMESTAMP,
+  cerrado_en TIMESTAMP,
+  
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_tickets_numero ON tickets_soporte(numero_ticket);
+CREATE INDEX idx_tickets_escuela ON tickets_soporte(escuela_id);
+CREATE INDEX idx_tickets_estado ON tickets_soporte(estado);
+
+-- ============================================
+-- TABLA: reportes_generados (PDFs en MinIO)
+-- ============================================
+
+CREATE TABLE reportes_generados (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  escuela_id UUID REFERENCES escuelas(id),
+  ciclo_escolar VARCHAR(9) NOT NULL,
+  tipo_reporte VARCHAR(50) NOT NULL, -- 'ESCUELA_ENS', 'GRUPO_LEN', etc.
+  
+  -- MinIO metadata
+  minio_bucket VARCHAR(100) NOT NULL, -- 'reportes-pdf'
+  minio_object_key VARCHAR(255) NOT NULL,
+  filename VARCHAR(255) NOT NULL,
+  file_size BIGINT,
+  
+  -- Metadata
+  parametros JSONB, -- {grado: 1, grupo: 'A'}
+  generado_por UUID REFERENCES usuarios(id),
+  generado_en TIMESTAMP DEFAULT NOW(),
+  descargado BOOLEAN DEFAULT false,
+  descargado_en TIMESTAMP
+);
+
+CREATE INDEX idx_reportes_escuela ON reportes_generados(escuela_id);
+CREATE INDEX idx_reportes_tipo ON reportes_generados(tipo_reporte);
+
+-- ============================================
+-- TABLA: consentimientos_lgpdp (Fase 2)
+-- ============================================
+
+CREATE TABLE consentimientos_lgpdp (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  estudiante_id UUID REFERENCES estudiantes(id) ON DELETE CASCADE,
+  escuela_id UUID REFERENCES escuelas(id),
+  
+  tipo_consentimiento VARCHAR(50) NOT NULL, -- 'USO_DATOS', 'EVALUACION_DIAGNOSTICA'
+  consentimiento_otorgado BOOLEAN NOT NULL,
+  tutor_nombre VARCHAR(150) NOT NULL,
+  tutor_firma_digital TEXT, -- Base64 signature
+  
+  ip_address INET,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_consentimientos_estudiante ON consentimientos_lgpdp(estudiante_id);
+
+-- ============================================
+-- TABLA: audit_log (Trazabilidad LGPDP)
+-- ============================================
+
+CREATE TABLE audit_log (
+  id BIGSERIAL PRIMARY KEY,
+  tabla VARCHAR(50) NOT NULL,
+  registro_id UUID NOT NULL,
+  accion VARCHAR(20) NOT NULL, -- 'INSERT', 'UPDATE', 'DELETE', 'SELECT'
+  usuario_id UUID REFERENCES usuarios(id),
+  datos_anteriores JSONB,
+  datos_nuevos JSONB,
+  ip_address INET,
+  user_agent TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_audit_tabla ON audit_log(tabla);
+CREATE INDEX idx_audit_usuario ON audit_log(usuario_id);
+CREATE INDEX idx_audit_fecha ON audit_log(created_at);
+
+-- ============================================
+-- TRIGGERS
+-- ============================================
+
+-- Trigger: Actualizar updated_at automáticamente
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_escuelas_updated_at BEFORE UPDATE ON escuelas
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_usuarios_updated_at BEFORE UPDATE ON usuarios
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_archivos_frv_updated_at BEFORE UPDATE ON archivos_frv
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger: Generar número de ticket automático
+CREATE OR REPLACE FUNCTION generar_numero_ticket()
+RETURNS TRIGGER AS $$
+DECLARE
+  anio INT := EXTRACT(YEAR FROM NOW());
+  siguiente_num INT;
+BEGIN
+  SELECT COALESCE(MAX(CAST(SUBSTRING(numero_ticket FROM 10) AS INT)), 0) + 1
+  INTO siguiente_num
+  FROM tickets_soporte
+  WHERE numero_ticket LIKE 'TKT-' || anio || '-%';
+  
+  NEW.numero_ticket := 'TKT-' || anio || '-' || LPAD(siguiente_num::TEXT, 5, '0');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER generar_numero_ticket_trigger BEFORE INSERT ON tickets_soporte
+  FOR EACH ROW EXECUTE FUNCTION generar_numero_ticket();
+
+-- ============================================
+-- VIEWS MATERIALIZADAS (Performance)
+-- ============================================
+
+-- Vista: Estadísticas por escuela
+CREATE MATERIALIZED VIEW estadisticas_escuela AS
+SELECT 
+  e.id AS escuela_id,
+  e.cct,
+  e.nombre,
+  e.nivel,
+  COUNT(DISTINCT est.id) AS total_estudiantes,
+  COUNT(DISTINCT afr.id) AS total_archivos_frv,
+  AVG(CASE WHEN v.nivel_logro = 'NIVEL_4' THEN 4
+           WHEN v.nivel_logro = 'NIVEL_3' THEN 3
+           WHEN v.nivel_logro = 'NIVEL_2' THEN 2
+           ELSE 1 END) AS promedio_nivel_logro,
+  MAX(afr.created_at) AS ultima_carga
+FROM escuelas e
+LEFT JOIN estudiantes est ON e.id = est.escuela_id
+LEFT JOIN archivos_frv afr ON e.id = afr.escuela_id
+LEFT JOIN valoraciones v ON est.id = v.estudiante_id
+GROUP BY e.id, e.cct, e.nombre, e.nivel;
+
+CREATE UNIQUE INDEX idx_estadisticas_escuela_id ON estadisticas_escuela(escuela_id);
+
+-- Refrescar vista cada hora (configurar en cron)
+-- REFRESH MATERIALIZED VIEW CONCURRENTLY estadisticas_escuela;
+
+-- ============================================
+-- FUNCIONES ALMACENADAS
+-- ============================================
+
+-- Función: Obtener estadísticas de valoraciones por materia
+CREATE OR REPLACE FUNCTION obtener_estadisticas_materia(
+  p_escuela_id UUID,
+  p_ciclo VARCHAR(9),
+  p_materia VARCHAR(50)
+)
+RETURNS TABLE (
+  nivel_logro nivel_logro,
+  cantidad BIGINT,
+  porcentaje NUMERIC(5,2)
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    v.nivel_logro,
+    COUNT(*) AS cantidad,
+    ROUND((COUNT(*) * 100.0 / SUM(COUNT(*)) OVER ()), 2) AS porcentaje
+  FROM valoraciones v
+  JOIN estudiantes e ON v.estudiante_id = e.id
+  WHERE e.escuela_id = p_escuela_id
+    AND e.ciclo_escolar = p_ciclo
+    AND v.materia = p_materia
+  GROUP BY v.nivel_logro
+  ORDER BY v.nivel_logro;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================
+-- DATOS SEMILLA (Testing)
+-- ============================================
+
+-- Insertar escuela de prueba
+INSERT INTO escuelas (cct, nombre, nivel, turno, municipio, estado)
+VALUES 
+  ('09DPR0001A', 'Escuela Primaria Benito Juárez', 'PRIMARIA', 'MATUTINO', 'Ciudad de México', 'CDMX'),
+  ('09DES0001B', 'Secundaria Técnica 1', 'SECUNDARIA_TECNICA', 'VESPERTINO', 'Guadalajara', 'Jalisco');
+
+-- Insertar usuario director de prueba (password: 'Test1234!')
+INSERT INTO usuarios (escuela_id, username, email, password_hash, rol, nombre_completo)
+VALUES 
+  ((SELECT id FROM escuelas WHERE cct = '09DPR0001A'), 
+   'director.juarez', 
+   'director@primaria-juarez.edu.mx',
+   '$2b$10$rKjQZ8Y7xH.vP8aG2.8Zxe7kW5qJ3mH8N2pL9rT4vS6uY1wX3zA0C', -- bcrypt hash
+   'DIRECTOR',
+   'Juan Carlos Pérez López');
+
+COMMIT;
+
+-- ============================================
+-- PERMISOS
+-- ============================================
+
+-- Usuario aplicación (NestJS)
+CREATE USER sicrer_app WITH PASSWORD 'CHANGE_ME_IN_PRODUCTION';
+GRANT CONNECT ON DATABASE sicrer_db TO sicrer_app;
+GRANT USAGE ON SCHEMA public TO sicrer_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO sicrer_app;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO sicrer_app;
+
+-- Usuario solo lectura (Analytics)
+CREATE USER sicrer_readonly WITH PASSWORD 'READONLY_PASSWORD';
+GRANT CONNECT ON DATABASE sicrer_db TO sicrer_readonly;
+GRANT USAGE ON SCHEMA public TO sicrer_readonly;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO sicrer_readonly;
+```
+
+### 0.2 Prisma Schema Definition
+
+**Archivo:** `backend/prisma/schema.prisma`
+
+```prisma
+// ============================================
+// Prisma Schema - SiCRER Open Source
+// PostgreSQL 16 ORM Type-Safe
+// ============================================
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum NivelEducativo {
+  PREESCOLAR
+  PRIMARIA
+  SECUNDARIA_TECNICA
+  TELESECUNDARIA
+}
+
+enum EstadoTicket {
+  PENDIENTE
+  EN_PROCESO
+  RESUELTO
+  CERRADO
+}
+
+enum NivelLogro {
+  NIVEL_1
+  NIVEL_2
+  NIVEL_3
+  NIVEL_4
+}
+
+enum RolUsuario {
+  DIRECTOR
+  OPERADOR_SEP
+  ADMINISTRADOR
+}
+
+enum EstadoFRV {
+  PENDIENTE_VALIDACION
+  VALIDADO
+  RECHAZADO
+  PROCESADO
+}
+
+// ============================================
+// MODELOS
+// ============================================
+
+model Escuela {
+  id              String          @id @default(uuid()) @db.Uuid
+  cct             String          @unique @db.VarChar(10)
+  nombre          String          @db.VarChar(200)
+  nivel           NivelEducativo
+  turno           String          @db.VarChar(20)
+  municipio       String          @db.VarChar(100)
+  estado          String          @db.VarChar(50)
+  directorNombre  String?         @map("director_nombre") @db.VarChar(150)
+  directorEmail   String?         @map("director_email") @db.VarChar(100)
+  directorTelefono String?        @map("director_telefono") @db.VarChar(15)
+  activo          Boolean         @default(true)
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamp()
+
+  // Relaciones
+  usuarios        Usuario[]
+  archivosFrv     ArchivoFRV[]
+  estudiantes     Estudiante[]
+  tickets         TicketSoporte[]
+  reportes        ReporteGenerado[]
+  consentimientos ConsentimientoLGPDP[]
+
+  @@map("escuelas")
+}
+
+model Usuario {
+  id                String    @id @default(uuid()) @db.Uuid
+  escuelaId         String?   @map("escuela_id") @db.Uuid
+  username          String    @unique @db.VarChar(50)
+  email             String    @unique @db.VarChar(100)
+  passwordHash      String    @map("password_hash") @db.VarChar(255)
+  rol               RolUsuario @default(DIRECTOR)
+  nombreCompleto    String    @map("nombre_completo") @db.VarChar(150)
+  activo            Boolean   @default(true)
+  ultimoAcceso      DateTime? @map("ultimo_acceso") @db.Timestamp()
+  intentosFallidos  Int       @default(0) @map("intentos_fallidos")
+  bloqueadoHasta    DateTime? @map("bloqueado_hasta") @db.Timestamp()
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamp()
+
+  // Relaciones
+  escuela           Escuela?  @relation(fields: [escuelaId], references: [id], onDelete: Cascade)
+  sesiones          Sesion[]
+  archivosFrv       ArchivoFRV[]
+  ticketsCreados    TicketSoporte[] @relation("CreadorTicket")
+  ticketsAsignados  TicketSoporte[] @relation("AsignadoTicket")
+  reportes          ReporteGenerado[]
+  auditLogs         AuditLog[]
+
+  @@map("usuarios")
+}
+
+model ArchivoFRV {
+  id                  String      @id @default(uuid()) @db.Uuid
+  escuelaId           String      @map("escuela_id") @db.Uuid
+  usuarioId           String?     @map("usuario_id") @db.Uuid
+  cicloEscolar        String      @map("ciclo_escolar") @db.VarChar(9)
+  nivel               NivelEducativo
+  estado              EstadoFRV   @default(PENDIENTE_VALIDACION)
+  
+  minioBucket         String      @map("minio_bucket") @db.VarChar(100)
+  minioObjectKey      String      @map("minio_object_key") @db.VarChar(255)
+  filenameOriginal    String      @map("filename_original") @db.VarChar(255)
+  fileSize            BigInt      @map("file_size")
+  mimeType            String      @map("mime_type") @db.VarChar(50) @default("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+  
+  validacionResultado Json?       @map("validacion_resultado")
+  validadoEn          DateTime?   @map("validado_en") @db.Timestamp()
+  procesadoEn         DateTime?   @map("procesado_en") @db.Timestamp()
+  totalEstudiantes    Int?        @map("total_estudiantes")
+  
+  createdAt           DateTime    @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt           DateTime    @updatedAt @map("updated_at") @db.Timestamp()
+
+  // Relaciones
+  escuela             Escuela     @relation(fields: [escuelaId], references: [id], onDelete: Cascade)
+  usuario             Usuario?    @relation(fields: [usuarioId], references: [id])
+  estudiantes         Estudiante[]
+  valoraciones        Valoracion[]
+  tickets             TicketSoporte[]
+
+  @@map("archivos_frv")
+}
+
+model Estudiante {
+  id                String      @id @default(uuid()) @db.Uuid
+  escuelaId         String      @map("escuela_id") @db.Uuid
+  archivoFrvId      String?     @map("archivo_frv_id") @db.Uuid
+  
+  curp              String      @unique @db.VarChar(18)
+  nombre            String      @db.VarChar(100)
+  apellidoPaterno   String      @map("apellido_paterno") @db.VarChar(50)
+  apellidoMaterno   String?     @map("apellido_materno") @db.VarChar(50)
+  
+  grado             Int
+  grupo             String      @db.VarChar(2)
+  cicloEscolar      String      @map("ciclo_escolar") @db.VarChar(9)
+  
+  createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt         DateTime    @updatedAt @map("updated_at") @db.Timestamp()
+
+  // Relaciones
+  escuela           Escuela     @relation(fields: [escuelaId], references: [id], onDelete: Cascade)
+  archivoFrv        ArchivoFRV? @relation(fields: [archivoFrvId], references: [id])
+  valoraciones      Valoracion[]
+  consentimientos   ConsentimientoLGPDP[]
+
+  @@map("estudiantes")
+}
+
+model Valoracion {
+  id              String      @id @default(uuid()) @db.Uuid
+  estudianteId    String      @map("estudiante_id") @db.Uuid
+  archivoFrvId    String?     @map("archivo_frv_id") @db.Uuid
+  
+  materia         String      @db.VarChar(50)
+  nivelLogro      NivelLogro  @map("nivel_logro")
+  observaciones   String?     @db.Text
+  
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamp()
+
+  // Relaciones
+  estudiante      Estudiante  @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  archivoFrv      ArchivoFRV? @relation(fields: [archivoFrvId], references: [id])
+
+  @@map("valoraciones")
+}
+
+model TicketSoporte {
+  id              String        @id @default(uuid()) @db.Uuid
+  numeroTicket    String        @unique @map("numero_ticket") @db.VarChar(20)
+  escuelaId       String?       @map("escuela_id") @db.Uuid
+  usuarioId       String?       @map("usuario_id") @db.Uuid
+  archivoFrvId    String?       @map("archivo_frv_id") @db.Uuid
+  
+  asunto          String        @db.VarChar(200)
+  descripcion     String        @db.Text
+  estado          EstadoTicket  @default(PENDIENTE)
+  prioridad       String        @db.VarChar(10) @default("MEDIA")
+  
+  asignadoA       String?       @map("asignado_a") @db.Uuid
+  asignadoEn      DateTime?     @map("asignado_en") @db.Timestamp()
+  
+  resolucion      String?       @db.Text
+  resueltoEn      DateTime?     @map("resuelto_en") @db.Timestamp()
+  cerradoEn       DateTime?     @map("cerrado_en") @db.Timestamp()
+  
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamp()
+
+  // Relaciones
+  escuela         Escuela?      @relation(fields: [escuelaId], references: [id])
+  usuario         Usuario?      @relation("CreadorTicket", fields: [usuarioId], references: [id])
+  asignado        Usuario?      @relation("AsignadoTicket", fields: [asignadoA], references: [id])
+  archivoFrv      ArchivoFRV?   @relation(fields: [archivoFrvId], references: [id])
+
+  @@map("tickets_soporte")
+}
+
+model ReporteGenerado {
+  id              String    @id @default(uuid()) @db.Uuid
+  escuelaId       String?   @map("escuela_id") @db.Uuid
+  cicloEscolar    String    @map("ciclo_escolar") @db.VarChar(9)
+  tipoReporte     String    @map("tipo_reporte") @db.VarChar(50)
+  
+  minioBucket     String    @map("minio_bucket") @db.VarChar(100)
+  minioObjectKey  String    @map("minio_object_key") @db.VarChar(255)
+  filename        String    @db.VarChar(255)
+  fileSize        BigInt?   @map("file_size")
+  
+  parametros      Json?
+  generadoPor     String?   @map("generado_por") @db.Uuid
+  generadoEn      DateTime  @default(now()) @map("generado_en") @db.Timestamp()
+  descargado      Boolean   @default(false)
+  descargadoEn    DateTime? @map("descargado_en") @db.Timestamp()
+
+  // Relaciones
+  escuela         Escuela?  @relation(fields: [escuelaId], references: [id])
+  usuario         Usuario?  @relation(fields: [generadoPor], references: [id])
+
+  @@map("reportes_generados")
+}
+
+model ConsentimientoLGPDP {
+  id                      String    @id @default(uuid()) @db.Uuid
+  estudianteId            String    @map("estudiante_id") @db.Uuid
+  escuelaId               String?   @map("escuela_id") @db.Uuid
+  
+  tipoConsentimiento      String    @map("tipo_consentimiento") @db.VarChar(50)
+  consentimientoOtorgado  Boolean   @map("consentimiento_otorgado")
+  tutorNombre             String    @map("tutor_nombre") @db.VarChar(150)
+  tutorFirmaDigital       String?   @map("tutor_firma_digital") @db.Text
+  
+  ipAddress               String?   @map("ip_address")
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamp()
+
+  // Relaciones
+  estudiante              Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  escuela                 Escuela?   @relation(fields: [escuelaId], references: [id])
+
+  @@map("consentimientos_lgpdp")
+}
+
+model Sesion {
+  id          String    @id @default(uuid()) @db.Uuid
+  usuarioId   String    @map("usuario_id") @db.Uuid
+  tokenHash   String    @map("token_hash") @db.VarChar(255)
+  ipAddress   String?   @map("ip_address")
+  userAgent   String?   @map("user_agent") @db.Text
+  expiraEn    DateTime  @map("expira_en") @db.Timestamp()
+  revocado    Boolean   @default(false)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp()
+
+  // Relaciones
+  usuario     Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("sesiones")
+}
+
+model AuditLog {
+  id                BigInt    @id @default(autoincrement())
+  tabla             String    @db.VarChar(50)
+  registroId        String    @map("registro_id") @db.Uuid
+  accion            String    @db.VarChar(20)
+  usuarioId         String?   @map("usuario_id") @db.Uuid
+  datosAnteriores   Json?     @map("datos_anteriores")
+  datosNuevos       Json?     @map("datos_nuevos")
+  ipAddress         String?   @map("ip_address")
+  userAgent         String?   @map("user_agent") @db.Text
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamp()
+
+  // Relaciones
+  usuario           Usuario?  @relation(fields: [usuarioId], references: [id])
+
+  @@map("audit_log")
+}
+```
+
+### 0.3 Estructura Proyecto NestJS (Backend)
+
+**Arquitectura:** Modular con Domain-Driven Design (DDD)
+
+```
+backend/
+├── src/
+│   ├── main.ts                     # Bootstrap aplicación
+│   ├── app.module.ts               # Módulo raíz
+│   │
+│   ├── config/                     # Configuración
+│   │   ├── database.config.ts      # Prisma + PostgreSQL
+│   │   ├── minio.config.ts         # MinIO S3 Client
+│   │   ├── redis.config.ts         # Redis cache + queue
+│   │   ├── jwt.config.ts           # JWT tokens
+│   │   └── email.config.ts         # Nodemailer SMTP
+│   │
+│   ├── common/                     # Utilidades compartidas
+│   │   ├── decorators/
+│   │   │   ├── roles.decorator.ts
+│   │   │   ├── public.decorator.ts
+│   │   │   └── current-user.decorator.ts
+│   │   ├── guards/
+│   │   │   ├── jwt-auth.guard.ts
+│   │   │   ├── roles.guard.ts
+│   │   │   └── throttle.guard.ts
+│   │   ├── filters/
+│   │   │   ├── http-exception.filter.ts
+│   │   │   └── prisma-exception.filter.ts
+│   │   ├── interceptors/
+│   │   │   ├── logging.interceptor.ts
+│   │   │   ├── transform.interceptor.ts
+│   │   │   └── timeout.interceptor.ts
+│   │   ├── pipes/
+│   │   │   ├── validation.pipe.ts
+│   │   │   └── parse-uuid.pipe.ts
+│   │   └── constants/
+│   │       ├── roles.constants.ts
+│   │       └── error-messages.constants.ts
+│   │
+│   ├── modules/
+│   │   │
+│   │   ├── auth/                   # Módulo Autenticación
+│   │   │   ├── auth.module.ts
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── auth.service.ts
+│   │   │   ├── strategies/
+│   │   │   │   ├── jwt.strategy.ts
+│   │   │   │   └── local.strategy.ts
+│   │   │   └── dto/
+│   │   │       ├── login.dto.ts
+│   │   │       ├── register.dto.ts
+│   │   │       └── change-password.dto.ts
+│   │   │
+│   │   ├── escuelas/               # Módulo Escuelas
+│   │   │   ├── escuelas.module.ts
+│   │   │   ├── escuelas.controller.ts
+│   │   │   ├── escuelas.service.ts
+│   │   │   ├── escuelas.repository.ts
+│   │   │   └── dto/
+│   │   │       ├── create-escuela.dto.ts
+│   │   │       ├── update-escuela.dto.ts
+│   │   │       └── escuela-response.dto.ts
+│   │   │
+│   │   ├── usuarios/               # Módulo Usuarios
+│   │   │   ├── usuarios.module.ts
+│   │   │   ├── usuarios.controller.ts
+│   │   │   ├── usuarios.service.ts
+│   │   │   ├── usuarios.repository.ts
+│   │   │   └── dto/
+│   │   │       ├── create-usuario.dto.ts
+│   │   │       ├── update-usuario.dto.ts
+│   │   │       └── reset-password.dto.ts
+│   │   │
+│   │   ├── frv/                    # Módulo FRV (Core Negocio)
+│   │   │   ├── frv.module.ts
+│   │   │   ├── frv.controller.ts
+│   │   │   ├── frv.service.ts
+│   │   │   ├── frv-validator.service.ts  # ⭐ SheetJS validator
+│   │   │   ├── frv-processor.service.ts  # Worker threads
+│   │   │   ├── frv.repository.ts
+│   │   │   ├── dto/
+│   │   │   │   ├── upload-frv.dto.ts
+│   │   │   │   ├── validacion-result.dto.ts
+│   │   │   │   └── frv-response.dto.ts
+│   │   │   └── validators/
+│   │   │       ├── preescolar.validator.ts
+│   │   │       ├── primaria.validator.ts
+│   │   │       ├── secundaria.validator.ts
+│   │   │       └── base.validator.ts
+│   │   │
+│   │   ├── tickets/                # Módulo Tickets Soporte
+│   │   │   ├── tickets.module.ts
+│   │   │   ├── tickets.controller.ts
+│   │   │   ├── tickets.service.ts
+│   │   │   ├── tickets.repository.ts
+│   │   │   └── dto/
+│   │   │       ├── create-ticket.dto.ts
+│   │   │       ├── update-ticket.dto.ts
+│   │   │       └── ticket-response.dto.ts
+│   │   │
+│   │   ├── reportes/               # Módulo Generación PDFs
+│   │   │   ├── reportes.module.ts
+│   │   │   ├── reportes.controller.ts
+│   │   │   ├── reportes.service.ts
+│   │   │   ├── reportes-generator.service.ts  # ⭐ Puppeteer
+│   │   │   ├── reportes.repository.ts
+│   │   │   ├── templates/
+│   │   │   │   ├── escuela-ens.hbs         # Handlebars
+│   │   │   │   ├── escuela-hyc.hbs
+│   │   │   │   ├── grupo.hbs
+│   │   │   │   └── estudiante.hbs
+│   │   │   └── dto/
+│   │   │       ├── generar-reporte.dto.ts
+│   │   │       └── reporte-response.dto.ts
+│   │   │
+│   │   ├── storage/                # Módulo MinIO Storage
+│   │   │   ├── storage.module.ts
+│   │   │   ├── storage.service.ts
+│   │   │   └── dto/
+│   │   │       ├── upload-file.dto.ts
+│   │   │       └── download-file.dto.ts
+│   │   │
+│   │   ├── notifications/          # Módulo Notificaciones Email
+│   │   │   ├── notifications.module.ts
+│   │   │   ├── notifications.service.ts
+│   │   │   └── templates/
+│   │   │       ├── frv-validado.hbs
+│   │   │       ├── frv-rechazado.hbs
+│   │   │       ├── reporte-disponible.hbs
+│   │   │       └── ticket-creado.hbs
+│   │   │
+│   │   ├── queue/                  # Módulo Bull Queue
+│   │   │   ├── queue.module.ts
+│   │   │   ├── processors/
+│   │   │   │   ├── frv-processing.processor.ts
+│   │   │   │   ├── pdf-generation.processor.ts
+│   │   │   │   └── email.processor.ts
+│   │   │   └── dto/
+│   │   │       └── queue-job.dto.ts
+│   │   │
+│   │   └── analytics/              # Módulo Analytics (Fase 2)
+│   │       ├── analytics.module.ts
+│   │       ├── analytics.controller.ts
+│   │       ├── analytics.service.ts
+│   │       └── dto/
+│   │           └── estadisticas.dto.ts
+│   │
+│   ├── prisma/                     # Prisma Client
+│   │   ├── prisma.module.ts
+│   │   ├── prisma.service.ts
+│   │   └── schema.prisma           # (referencia arriba)
+│   │
+│   └── workers/                    # Worker Threads
+│       ├── frv-processor.worker.ts
+│       └── statistics.worker.ts
+│
+├── test/                           # Tests e2e
+│   ├── auth.e2e-spec.ts
+│   ├── frv.e2e-spec.ts
+│   └── tickets.e2e-spec.ts
+│
+├── .env.example                    # Variables entorno
+├── .gitignore
+├── docker-compose.yml              # PostgreSQL + Redis + MinIO
+├── Dockerfile
+├── nest-cli.json
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+### 0.4 Componentes React (Frontend)
+
+**Arquitectura:** Feature-Based con Atomic Design
+
+```
+frontend/
+├── src/
+│   ├── main.tsx                    # Entry point
+│   ├── App.tsx                     # App root
+│   │
+│   ├── config/
+│   │   ├── api.config.ts           # Axios instance
+│   │   ├── routes.config.ts        # React Router routes
+│   │   └── constants.ts            # App constants
+│   │
+│   ├── features/                   # Features (módulos)
+│   │   │
+│   │   ├── auth/                   # Feature: Autenticación
+│   │   │   ├── components/
+│   │   │   │   ├── LoginForm.tsx
+│   │   │   │   ├── LoginForm.module.css
+│   │   │   │   └── PasswordReset.tsx
+│   │   │   ├── pages/
+│   │   │   │   ├── LoginPage.tsx
+│   │   │   │   └── ResetPasswordPage.tsx
+│   │   │   ├── hooks/
+│   │   │   │   ├── useAuth.ts
+│   │   │   │   └── useLogin.ts
+│   │   │   ├── services/
+│   │   │   │   └── auth.service.ts
+│   │   │   └── types/
+│   │   │       └── auth.types.ts
+│   │   │
+│   │   ├── frv/                    # Feature: Upload FRV (Core)
+│   │   │   ├── components/
+│   │   │   │   ├── FRVUploadZone.tsx        # ⭐ React Dropzone
+│   │   │   │   ├── FRVUploadZone.module.css
+│   │   │   │   ├── FRVValidationResults.tsx  # Errores/warnings
+│   │   │   │   ├── FRVProgress.tsx          # Barra progreso
+│   │   │   │   └── FRVHistory.tsx           # Historial cargas
+│   │   │   ├── pages/
+│   │   │   │   ├── UploadPage.tsx
+│   │   │   │   └── ValidacionPage.tsx
+│   │   │   ├── hooks/
+│   │   │   │   ├── useUploadFRV.ts
+│   │   │   │   └── useFRVValidation.ts
+│   │   │   ├── services/
+│   │   │   │   └── frv.service.ts
+│   │   │   └── types/
+│   │   │       └── frv.types.ts
+│   │   │
+│   │   ├── tickets/                # Feature: Sistema Tickets
+│   │   │   ├── components/
+│   │   │   │   ├── TicketForm.tsx
+│   │   │   │   ├── TicketList.tsx
+│   │   │   │   ├── TicketDetail.tsx
+│   │   │   │   └── TicketStatus.tsx
+│   │   │   ├── pages/
+│   │   │   │   ├── TicketsPage.tsx
+│   │   │   │   └── TicketDetailPage.tsx
+│   │   │   ├── hooks/
+│   │   │   │   ├── useTickets.ts
+│   │   │   │   └── useCreateTicket.ts
+│   │   │   ├── services/
+│   │   │   │   └── tickets.service.ts
+│   │   │   └── types/
+│   │   │       └── ticket.types.ts
+│   │   │
+│   │   ├── reportes/               # Feature: Descarga Reportes
+│   │   │   ├── components/
+│   │   │   │   ├── ReportesList.tsx
+│   │   │   │   ├── ReporteDownload.tsx
+│   │   │   │   └── ReportesFilter.tsx
+│   │   │   ├── pages/
+│   │   │   │   └── ReportesPage.tsx
+│   │   │   ├── hooks/
+│   │   │   │   └── useReportes.ts
+│   │   │   ├── services/
+│   │   │   │   └── reportes.service.ts
+│   │   │   └── types/
+│   │   │       └── reporte.types.ts
+│   │   │
+│   │   └── dashboard/              # Feature: Dashboard Analytics
+│   │       ├── components/
+│   │       │   ├── DashboardStats.tsx
+│   │       │   ├── EstadisticasChart.tsx    # ⭐ Recharts
+│   │       │   ├── LogrosDistribucion.tsx
+│   │       │   └── ActividadReciente.tsx
+│   │       ├── pages/
+│   │       │   └── DashboardPage.tsx
+│   │       ├── hooks/
+│   │       │   └── useDashboard.ts
+│   │       ├── services/
+│   │       │   └── analytics.service.ts
+│   │       └── types/
+│   │           └── dashboard.types.ts
+│   │
+│   ├── components/                 # Componentes compartidos (Atomic)
+│   │   ├── atoms/
+│   │   │   ├── Button/
+│   │   │   │   ├── Button.tsx
+│   │   │   │   └── Button.module.css
+│   │   │   ├── Input/
+│   │   │   │   ├── Input.tsx
+│   │   │   │   └── Input.module.css
+│   │   │   ├── Badge/
+│   │   │   │   ├── Badge.tsx
+│   │   │   │   └── Badge.module.css
+│   │   │   └── Spinner/
+│   │   │       ├── Spinner.tsx
+│   │   │       └── Spinner.module.css
+│   │   ├── molecules/
+│   │   │   ├── Card/
+│   │   │   │   ├── Card.tsx
+│   │   │   │   └── Card.module.css
+│   │   │   ├── Alert/
+│   │   │   │   ├── Alert.tsx
+│   │   │   │   └── Alert.module.css
+│   │   │   └── Modal/
+│   │   │       ├── Modal.tsx
+│   │   │       └── Modal.module.css
+│   │   └── organisms/
+│   │       ├── Navbar/
+│   │       │   ├── Navbar.tsx
+│   │       │   └── Navbar.module.css
+│   │       ├── Sidebar/
+│   │       │   ├── Sidebar.tsx
+│   │       │   └── Sidebar.module.css
+│   │       └── Footer/
+│   │           ├── Footer.tsx
+│   │           └── Footer.module.css
+│   │
+│   ├── hooks/                      # Custom hooks globales
+│   │   ├── useLocalStorage.ts
+│   │   ├── useDebounce.ts
+│   │   ├── useIntersectionObserver.ts
+│   │   └── useMediaQuery.ts
+│   │
+│   ├── services/                   # API services (Axios)
+│   │   ├── api.service.ts          # Base API client
+│   │   └── interceptors.ts         # Auth interceptors
+│   │
+│   ├── store/                      # State management (Zustand)
+│   │   ├── authStore.ts
+│   │   ├── frvStore.ts
+│   │   ├── ticketStore.ts
+│   │   └── uiStore.ts
+│   │
+│   ├── utils/                      # Utilidades
+│   │   ├── format.utils.ts
+│   │   ├── validation.utils.ts
+│   │   └── date.utils.ts
+│   │
+│   ├── types/                      # TypeScript types globales
+│   │   ├── index.ts
+│   │   ├── api.types.ts
+│   │   └── common.types.ts
+│   │
+│   ├── styles/                     # Estilos globales
+│   │   ├── index.css
+│   │   ├── variables.css
+│   │   └── reset.css
+│   │
+│   └── assets/                     # Assets estáticos
+│       ├── images/
+│       │   └── logo-sep.svg
+│       └── fonts/
+│
+├── public/
+│   ├── favicon.ico
+│   └── index.html
+│
+├── .env.example
+├── .gitignore
+├── Dockerfile
+├── index.html
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── README.md
+```
+
+---
+
+## 1. ANÁLISIS DE DEPENDENCIAS LEGACY (Pre-Migración)
 
 ### 1.1 Árbol de Dependencias
 
@@ -1027,9 +2143,693 @@ TOTAL TIEMPO ROLLBACK: 3.75 horas
 
 ---
 
-## 8. CONCLUSIONES TÉCNICAS
+## 8. CÓDIGO TypeScript - VALIDADOR FRV CON SheetJS
 
-### 8.0 Arquitectura Propuesta para Modernización Completa
+### 8.1 Implementación Completa del Validador FRV
+
+**Archivo:** `backend/src/modules/frv/frv-validator.service.ts`
+
+```typescript
+// ============================================
+// FRV Validator Service - SheetJS Implementation
+// Valida archivos Excel FRV según especificaciones SEP
+// ============================================
+
+import { Injectable, Logger } from '@nestjs/common';
+import * as XLSX from 'xlsx';
+import { NivelEducativo } from '@prisma/client';
+
+// ============================================
+// INTERFACES Y TIPOS
+// ============================================
+
+export interface ValidationError {
+  severity: 'ERROR' | 'WARNING';
+  sheet: string;
+  row?: number;
+  column?: string;
+  field: string;
+  message: string;
+  value?: any;
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  errors: ValidationError[];
+  warnings: ValidationError[];
+  metadata: {
+    totalSheets: number;
+    totalStudents: number;
+    cct?: string;
+    directorNombre?: string;
+    processingTime: number;
+  };
+}
+
+export interface EstudianteData {
+  curp: string;
+  nombre: string;
+  apellidoPaterno: string;
+  apellidoMaterno: string;
+  grado: number;
+  grupo: string;
+  valoraciones: {
+    ENS?: string;
+    HYC?: string;
+    LEN?: string;
+    SPC?: string;
+  };
+}
+
+// ============================================
+// SERVICIO PRINCIPAL
+// ============================================
+
+@Injectable()
+export class FrvValidatorService {
+  private readonly logger = new Logger(FrvValidatorService.name);
+
+  // Expresiones regulares de validación
+  private readonly CURP_REGEX = /^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[0-9A-Z][0-9]$/;
+  private readonly CCT_REGEX = /^[0-9]{2}[A-Z]{3}[0-9]{4}[A-Z]$/;
+  private readonly NIVELES_LOGRO = ['NIVEL 1', 'NIVEL 2', 'NIVEL 3', 'NIVEL 4'];
+
+  /**
+   * Método principal de validación
+   */
+  async validateFRV(
+    fileBuffer: Buffer,
+    nivel: NivelEducativo,
+  ): Promise<ValidationResult> {
+    const startTime = Date.now();
+    const errors: ValidationError[] = [];
+    const warnings: ValidationError[] = [];
+
+    try {
+      this.logger.log(`Iniciando validación FRV nivel: ${nivel}`);
+
+      // Parsear archivo Excel con SheetJS
+      const workbook = XLSX.read(fileBuffer, {
+        type: 'buffer',
+        cellDates: true,
+        cellNF: false,
+        cellText: false,
+      });
+
+      // Validar estructura del workbook
+      this.validateWorkbookStructure(workbook, nivel, errors);
+
+      if (errors.length > 0) {
+        return this.buildValidationResult(
+          false,
+          errors,
+          warnings,
+          workbook,
+          Date.now() - startTime,
+        );
+      }
+
+      // Validar hoja de datos de escuela
+      const escuelaData = this.validateDatosEscuela(workbook, errors, warnings);
+
+      // Validar hojas de estudiantes por grado
+      const estudiantesData = await this.validateEstudiantes(
+        workbook,
+        nivel,
+        errors,
+        warnings,
+      );
+
+      // Validación cruzada (duplicados CURP, etc.)
+      this.validateCrossReferences(estudiantesData, errors, warnings);
+
+      const result = this.buildValidationResult(
+        errors.length === 0,
+        errors,
+        warnings,
+        workbook,
+        Date.now() - startTime,
+        escuelaData,
+        estudiantesData.length,
+      );
+
+      this.logger.log(
+        `Validación completada: ${errors.length} errores, ${warnings.length} advertencias`,
+      );
+
+      return result;
+    } catch (error) {
+      this.logger.error('Error durante validación FRV', error.stack);
+      errors.push({
+        severity: 'ERROR',
+        sheet: 'GENERAL',
+        field: 'file',
+        message: `Error al procesar archivo: ${error.message}`,
+      });
+
+      return this.buildValidationResult(
+        false,
+        errors,
+        warnings,
+        null,
+        Date.now() - startTime,
+      );
+    }
+  }
+
+  // ============================================
+  // VALIDACIÓN DE ESTRUCTURA
+  // ============================================
+
+  private validateWorkbookStructure(
+    workbook: XLSX.WorkBook,
+    nivel: NivelEducativo,
+    errors: ValidationError[],
+  ): void {
+    const sheetNames = workbook.SheetNames;
+
+    // Validar que existe hoja "Datos Escuela"
+    if (!sheetNames.includes('Datos Escuela')) {
+      errors.push({
+        severity: 'ERROR',
+        sheet: 'ESTRUCTURA',
+        field: 'sheets',
+        message: 'Falta la hoja obligatoria "Datos Escuela"',
+      });
+    }
+
+    // Validar hojas de grados según nivel educativo
+    const expectedSheets = this.getExpectedSheets(nivel);
+    const missingSheets = expectedSheets.filter(
+      (sheet) => !sheetNames.includes(sheet),
+    );
+
+    if (missingSheets.length > 0) {
+      errors.push({
+        severity: 'ERROR',
+        sheet: 'ESTRUCTURA',
+        field: 'sheets',
+        message: `Faltan hojas obligatorias: ${missingSheets.join(', ')}`,
+      });
+    }
+  }
+
+  private getExpectedSheets(nivel: NivelEducativo): string[] {
+    switch (nivel) {
+      case 'PREESCOLAR':
+        return ['Datos Escuela', '1° Grado', '2° Grado', '3° Grado'];
+      case 'PRIMARIA':
+        return [
+          'Datos Escuela',
+          '1° Grado',
+          '2° Grado',
+          '3° Grado',
+          '4° Grado',
+          '5° Grado',
+          '6° Grado',
+        ];
+      case 'SECUNDARIA_TECNICA':
+      case 'TELESECUNDARIA':
+        return ['Datos Escuela', '1° Grado', '2° Grado', '3° Grado'];
+      default:
+        return ['Datos Escuela'];
+    }
+  }
+
+  // ============================================
+  // VALIDACIÓN DATOS ESCUELA
+  // ============================================
+
+  private validateDatosEscuela(
+    workbook: XLSX.WorkBook,
+    errors: ValidationError[],
+    warnings: ValidationError[],
+  ): { cct?: string; directorNombre?: string } {
+    const sheet = workbook.Sheets['Datos Escuela'];
+    if (!sheet) return {};
+
+    // Convertir hoja a JSON
+    const data: any[] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+    let cct: string | undefined;
+    let directorNombre: string | undefined;
+
+    // Buscar CCT (usualmente en B2)
+    if (data[1] && data[1][1]) {
+      cct = String(data[1][1]).trim();
+
+      if (!this.CCT_REGEX.test(cct)) {
+        errors.push({
+          severity: 'ERROR',
+          sheet: 'Datos Escuela',
+          row: 2,
+          column: 'B',
+          field: 'cct',
+          message: `CCT inválido: ${cct}. Formato esperado: 09DPR0001A`,
+          value: cct,
+        });
+      }
+    } else {
+      errors.push({
+        severity: 'ERROR',
+        sheet: 'Datos Escuela',
+        row: 2,
+        column: 'B',
+        field: 'cct',
+        message: 'CCT es obligatorio',
+      });
+    }
+
+    // Buscar nombre del director (usualmente en B4)
+    if (data[3] && data[3][1]) {
+      directorNombre = String(data[3][1]).trim();
+
+      if (directorNombre.length < 5) {
+        warnings.push({
+          severity: 'WARNING',
+          sheet: 'Datos Escuela',
+          row: 4,
+          column: 'B',
+          field: 'directorNombre',
+          message: 'Nombre del director parece incompleto',
+          value: directorNombre,
+        });
+      }
+    } else {
+      warnings.push({
+        severity: 'WARNING',
+        sheet: 'Datos Escuela',
+        row: 4,
+        column: 'B',
+        field: 'directorNombre',
+        message: 'Nombre del director no especificado',
+      });
+    }
+
+    return { cct, directorNombre };
+  }
+
+  // ============================================
+  // VALIDACIÓN ESTUDIANTES
+  // ============================================
+
+  private async validateEstudiantes(
+    workbook: XLSX.WorkBook,
+    nivel: NivelEducativo,
+    errors: ValidationError[],
+    warnings: ValidationError[],
+  ): Promise<EstudianteData[]> {
+    const estudiantesData: EstudianteData[] = [];
+    const gradoSheets = this.getExpectedSheets(nivel).filter(
+      (s) => s !== 'Datos Escuela',
+    );
+
+    for (const sheetName of gradoSheets) {
+      const sheet = workbook.Sheets[sheetName];
+      if (!sheet) continue;
+
+      // Convertir a JSON con headers
+      const data: any[] = XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        defval: '',
+      });
+
+      // Validar headers (fila 1)
+      this.validateHeaders(sheetName, data[0], errors);
+
+      // Validar cada estudiante (filas 2 en adelante)
+      for (let i = 1; i < data.length; i++) {
+        const rowData = data[i];
+        const rowNumber = i + 1;
+
+        // Saltar filas vacías
+        if (this.isEmptyRow(rowData)) continue;
+
+        const estudiante = this.parseEstudianteRow(
+          sheetName,
+          rowData,
+          rowNumber,
+          nivel,
+          errors,
+          warnings,
+        );
+
+        if (estudiante) {
+          estudiantesData.push(estudiante);
+        }
+      }
+    }
+
+    return estudiantesData;
+  }
+
+  private validateHeaders(
+    sheetName: string,
+    headerRow: any[],
+    errors: ValidationError[],
+  ): void {
+    const requiredHeaders = [
+      'CURP',
+      'Nombre',
+      'Apellido Paterno',
+      'Apellido Materno',
+      'Grupo',
+      'ENS',
+      'HYC',
+      'LEN',
+      'SPC',
+    ];
+
+    for (let i = 0; i < requiredHeaders.length; i++) {
+      const expected = requiredHeaders[i];
+      const actual = headerRow[i] ? String(headerRow[i]).trim() : '';
+
+      if (actual !== expected) {
+        errors.push({
+          severity: 'ERROR',
+          sheet: sheetName,
+          row: 1,
+          column: this.getColumnLetter(i),
+          field: 'headers',
+          message: `Encabezado incorrecto. Esperado: "${expected}", Encontrado: "${actual}"`,
+        });
+      }
+    }
+  }
+
+  private parseEstudianteRow(
+    sheetName: string,
+    rowData: any[],
+    rowNumber: number,
+    nivel: NivelEducativo,
+    errors: ValidationError[],
+    warnings: ValidationError[],
+  ): EstudianteData | null {
+    const estudiante: Partial<EstudianteData> = {};
+    let hasErrors = false;
+
+    // Columna 0: CURP
+    const curp = String(rowData[0] || '').trim().toUpperCase();
+    if (!curp) {
+      errors.push({
+        severity: 'ERROR',
+        sheet: sheetName,
+        row: rowNumber,
+        column: 'A',
+        field: 'curp',
+        message: 'CURP es obligatorio',
+      });
+      hasErrors = true;
+    } else if (!this.CURP_REGEX.test(curp)) {
+      errors.push({
+        severity: 'ERROR',
+        sheet: sheetName,
+        row: rowNumber,
+        column: 'A',
+        field: 'curp',
+        message: `CURP inválido: ${curp}. Formato: AAAA######HAAAA##`,
+        value: curp,
+      });
+      hasErrors = true;
+    } else {
+      estudiante.curp = curp;
+    }
+
+    // Columna 1: Nombre
+    const nombre = String(rowData[1] || '').trim();
+    if (!nombre) {
+      errors.push({
+        severity: 'ERROR',
+        sheet: sheetName,
+        row: rowNumber,
+        column: 'B',
+        field: 'nombre',
+        message: 'Nombre es obligatorio',
+      });
+      hasErrors = true;
+    } else {
+      estudiante.nombre = nombre;
+    }
+
+    // Columna 2: Apellido Paterno
+    const apellidoPaterno = String(rowData[2] || '').trim();
+    if (!apellidoPaterno) {
+      errors.push({
+        severity: 'ERROR',
+        sheet: sheetName,
+        row: rowNumber,
+        column: 'C',
+        field: 'apellidoPaterno',
+        message: 'Apellido Paterno es obligatorio',
+      });
+      hasErrors = true;
+    } else {
+      estudiante.apellidoPaterno = apellidoPaterno;
+    }
+
+    // Columna 3: Apellido Materno (opcional)
+    estudiante.apellidoMaterno = String(rowData[3] || '').trim();
+
+    // Columna 4: Grupo
+    const grupo = String(rowData[4] || '').trim().toUpperCase();
+    if (!grupo.match(/^[A-E]$/)) {
+      errors.push({
+        severity: 'ERROR',
+        sheet: sheetName,
+        row: rowNumber,
+        column: 'E',
+        field: 'grupo',
+        message: `Grupo inválido: ${grupo}. Debe ser A, B, C, D o E`,
+        value: grupo,
+      });
+      hasErrors = true;
+    } else {
+      estudiante.grupo = grupo;
+    }
+
+    // Extraer grado del nombre de la hoja
+    const gradoMatch = sheetName.match(/(\d+)°/);
+    estudiante.grado = gradoMatch ? parseInt(gradoMatch[1]) : 1;
+
+    // Columnas 5-8: Valoraciones (ENS, HYC, LEN, SPC)
+    estudiante.valoraciones = {};
+    const materias = ['ENS', 'HYC', 'LEN', 'SPC'];
+
+    for (let i = 0; i < materias.length; i++) {
+      const materia = materias[i];
+      const valoracion = String(rowData[5 + i] || '').trim().toUpperCase();
+
+      if (valoracion) {
+        if (!this.NIVELES_LOGRO.includes(valoracion)) {
+          errors.push({
+            severity: 'ERROR',
+            sheet: sheetName,
+            row: rowNumber,
+            column: this.getColumnLetter(5 + i),
+            field: `valoracion_${materia}`,
+            message: `Valoración inválida para ${materia}: "${valoracion}". Debe ser: NIVEL 1, NIVEL 2, NIVEL 3 o NIVEL 4`,
+            value: valoracion,
+          });
+          hasErrors = true;
+        } else {
+          estudiante.valoraciones[materia] = valoracion;
+        }
+      } else {
+        warnings.push({
+          severity: 'WARNING',
+          sheet: sheetName,
+          row: rowNumber,
+          column: this.getColumnLetter(5 + i),
+          field: `valoracion_${materia}`,
+          message: `Valoración ${materia} vacía para estudiante ${curp}`,
+        });
+      }
+    }
+
+    return hasErrors ? null : (estudiante as EstudianteData);
+  }
+
+  // ============================================
+  // VALIDACIÓN CRUZADA
+  // ============================================
+
+  private validateCrossReferences(
+    estudiantes: EstudianteData[],
+    errors: ValidationError[],
+    warnings: ValidationError[],
+  ): void {
+    // Validar CURPs duplicados
+    const curpMap = new Map<string, number>();
+
+    estudiantes.forEach((est) => {
+      const count = curpMap.get(est.curp) || 0;
+      curpMap.set(est.curp, count + 1);
+    });
+
+    curpMap.forEach((count, curp) => {
+      if (count > 1) {
+        errors.push({
+          severity: 'ERROR',
+          sheet: 'VALIDACIÓN_CRUZADA',
+          field: 'curp_duplicado',
+          message: `CURP duplicado ${count} veces: ${curp}`,
+          value: curp,
+        });
+      }
+    });
+
+    // Validar al menos un estudiante por grado
+    if (estudiantes.length === 0) {
+      warnings.push({
+        severity: 'WARNING',
+        sheet: 'VALIDACIÓN_CRUZADA',
+        field: 'estudiantes',
+        message: 'No se encontraron estudiantes válidos en el archivo',
+      });
+    }
+  }
+
+  // ============================================
+  // UTILIDADES
+  // ============================================
+
+  private isEmptyRow(rowData: any[]): boolean {
+    return rowData.every((cell) => !cell || String(cell).trim() === '');
+  }
+
+  private getColumnLetter(index: number): string {
+    let letter = '';
+    while (index >= 0) {
+      letter = String.fromCharCode((index % 26) + 65) + letter;
+      index = Math.floor(index / 26) - 1;
+    }
+    return letter;
+  }
+
+  private buildValidationResult(
+    valid: boolean,
+    errors: ValidationError[],
+    warnings: ValidationError[],
+    workbook: XLSX.WorkBook | null,
+    processingTime: number,
+    escuelaData?: { cct?: string; directorNombre?: string },
+    totalStudents?: number,
+  ): ValidationResult {
+    return {
+      valid,
+      errors,
+      warnings,
+      metadata: {
+        totalSheets: workbook ? workbook.SheetNames.length : 0,
+        totalStudents: totalStudents || 0,
+        cct: escuelaData?.cct,
+        directorNombre: escuelaData?.directorNombre,
+        processingTime,
+      },
+    };
+  }
+}
+```
+
+### 8.2 Uso del Validador en el Controller
+
+**Archivo:** `backend/src/modules/frv/frv.controller.ts`
+
+```typescript
+import {
+  Controller,
+  Post,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+  Body,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { FrvValidatorService } from './frv-validator.service';
+import { NivelEducativo } from '@prisma/client';
+
+@Controller('api/frv')
+export class FrvController {
+  constructor(private readonly validatorService: FrvValidatorService) {}
+
+  @Post('validate')
+  @UseInterceptors(FileInterceptor('file', {
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB máx
+    fileFilter: (req, file, cb) => {
+      if (!file.originalname.match(/\.(xlsx|xls)$/)) {
+        return cb(new BadRequestException('Solo archivos Excel permitidos'), false);
+      }
+      cb(null, true);
+    },
+  }))
+  async validateFRV(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('nivel') nivel: NivelEducativo,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Archivo FRV requerido');
+    }
+
+    const result = await this.validatorService.validateFRV(
+      file.buffer,
+      nivel,
+    );
+
+    return {
+      success: result.valid,
+      data: result,
+      message: result.valid
+        ? 'Validación exitosa'
+        : `Encontrados ${result.errors.length} errores`,
+    };
+  }
+}
+```
+
+### 8.3 Configuración MinIO S3
+
+**Archivo:** `backend/src/config/minio.config.ts`
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as Minio from 'minio';
+
+@Injectable()
+export class MinioConfigService {
+  public readonly client: Minio.Client;
+
+  constructor(private configService: ConfigService) {
+    this.client = new Minio.Client({
+      endPoint: this.configService.get<string>('MINIO_ENDPOINT', 'localhost'),
+      port: this.configService.get<number>('MINIO_PORT', 9000),
+      useSSL: this.configService.get<boolean>('MINIO_USE_SSL', false),
+      accessKey: this.configService.get<string>('MINIO_ACCESS_KEY'),
+      secretKey: this.configService.get<string>('MINIO_SECRET_KEY'),
+    });
+
+    this.initializeBuckets();
+  }
+
+  private async initializeBuckets(): Promise<void> {
+    const buckets = ['frv-uploads', 'reportes-pdf'];
+
+    for (const bucket of buckets) {
+      const exists = await this.client.bucketExists(bucket);
+      if (!exists) {
+        await this.client.makeBucket(bucket, 'us-east-1');
+        console.log(`Bucket creado: ${bucket}`);
+      }
+    }
+  }
+}
+```
+
+---
+
+## 9. CONCLUSIONES TÉCNICAS - STACK OPEN SOURCE
+
+### 9.0 Arquitectura Propuesta para Modernización Completa
 
 #### 8.0.1 Visión de Arquitectura Futura (Fase 3 - Largo Plazo)
 

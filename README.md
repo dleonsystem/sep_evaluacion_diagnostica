@@ -1,11 +1,105 @@
 # Sistema SiCRER - Evaluación Diagnóstica SEP
+## Versión 2.0 - Stack Open Source
 
+### Badges Legacy (Pre-Migración)
 ![Licencia](https://img.shields.io/badge/license-MIT-blue.svg)
-![Estado](https://img.shields.io/badge/estado-En%20Producci%C3%B3n-green.svg)
-![Versión](https://img.shields.io/badge/versi%C3%B3n-1.0.0.14-blue.svg)
+![Estado Legacy](https://img.shields.io/badge/estado-Deprecando-orange.svg)
+![Versión Legacy](https://img.shields.io/badge/versi%C3%B3n-1.0.0.14-blue.svg)
 ![.NET](https://img.shields.io/badge/.NET-4.5-purple.svg)
 
+### Badges Nuevo Stack (Post-Migración)
+![React](https://img.shields.io/badge/React-18.3.0-61dafb?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.3.0-3178c6?logo=typescript&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-20_LTS-339933?logo=node.js&logoColor=white)
+![NestJS](https://img.shields.io/badge/NestJS-10.3.0-e535ab?logo=nestjs&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)
+![MinIO](https://img.shields.io/badge/MinIO-S3_Compatible-c72c48?logo=minio&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7.2-dc382d?logo=redis&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-24.x-2496ed?logo=docker&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-5.8.0-2d3748?logo=prisma&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-5.0.0-646cff?logo=vite&logoColor=white)
+
 Sistema de Captura y Reporteo de Evaluación Diagnóstica para la Secretaría de Educación Pública (SEP) de México.
+
+---
+
+## 🚀 ESTRATEGIA BIFÁSICA DE MODERNIZACIÓN
+
+### **FASE 1: Portal Web Híbrido** (Marzo 2026)
+
+**Objetivo:** Implementar portal web moderno manteniendo procesamiento legacy
+
+**Stack Tecnológico:**
+- 🌐 **Frontend:** React 18 + TypeScript 5 + Vite 5
+- ⚙️ **Backend:** Node.js 20 LTS + NestJS 10 + Prisma 5
+- 💾 **Base de Datos:** PostgreSQL 16 (catálogos)
+- 📦 **Storage:** MinIO S3-compatible (FRV + PDFs)
+- ⚡ **Cache:** Redis 7 (sesiones JWT + Bull Queue)
+- 🔐 **Auth:** Passport.js + JWT tokens
+- 📊 **Excel:** SheetJS (validación FRV)
+
+**Funcionalidades:**
+- ✅ Login directores por CCT + contraseña
+- 📤 Upload FRV con drag & drop (React Dropzone)
+- ⚡ Validación automática en 30 segundos (vs 15 min manual)
+- 🎫 Sistema tickets automático tras N fallos
+- 📥 Descarga reportes PDF desde portal
+- 🔄 Sincronización nocturna con SiCRER legacy
+
+**Desarrollo:** Recursos internos SEP (DGADAI + DGTIC)  
+**Inversión Infraestructura:** $7,100 USD ($142,000 MXN) en 4 meses
+
+---
+
+### **FASE 2: Migración Completa** (Septiembre 2026)
+
+**Objetivo:** Eliminar dependencias legacy, 100% open source
+
+**Nuevas Funcionalidades:**
+- ⚡ Procesamiento nativo Node.js (elimina SiCRER.exe)
+- 📄 Generación PDF con Puppeteer + Handlebars (elimina Crystal Reports)
+- 🔒 Módulo ARCO completo (Acceso, Rectificación, Cancelación, Oposición)
+- 📋 Gestor consentimientos LGPDP (padres/tutores)
+- 📈 Dashboard analytics con Recharts (visualizaciones interactivas)
+- 🔍 API pública REST (integración externa)
+- 📊 Migración datos históricos 5 años (MS Access → PostgreSQL)
+
+**Resultado:** 
+- ❌ Desactivación completa de SiCRER.exe
+- ❌ Eliminación de MS Access
+- ❌ Eliminación de Crystal Reports
+- ✅ 100% compliance LGPDP
+- ✅ $0 costos licenciamiento anual
+- ✅ Escalabilidad 300K escuelas concurrentes
+
+**Desarrollo:** Recursos internos SEP (DGADAI + DGTIC)  
+**Inversión Infraestructura:** $9,500 USD ($190,000 MXN) en 6 meses
+
+---
+
+## 💰 ANÁLISIS FINANCIERO
+
+### Inversión Total Estrategia Bifásica (Desarrollo Interno SEP)
+| Fase | Costo USD | Costo MXN | Recursos | Timeline |
+|------|-----------|-----------|----------|----------|
+| Fase 1 (Híbrido) | $7,100 | $142,000 | DGADAI + DGTIC | 4 meses |
+| Fase 2 (Completo) | $9,500 | $190,000 | DGADAI + DGTIC | 6 meses |
+| **TOTAL** | **$16,600** | **$332,000** | **6 personas SEP** | **10 meses** |
+
+**🎯 Ventaja:** Desarrollo con recursos propios SEP (DGADAI + DGTIC). Ahorro de **$890K MXN** vs contratación externa.
+
+### Ahorro en Licencias (3 años)
+| Componente | Microsoft | Open Source | Ahorro |
+|-----------|-----------|-------------|--------|
+| SQL Server | $45,000 | $0 | $45,000 |
+| Crystal Reports | $9,000 | $0 | $9,000 |
+| Azure Blob | $12,600 | $0 | $12,600 |
+| Otros | $18,438 | $5,400 | $13,038 |
+| **TOTAL 3 AÑOS** | **$85,038** | **$5,400** | **💰 $85,038** |
+
+**ROI:** Break-even en **5.8 meses** con desarrollo interno SEP (inversión $16.6K vs ahorro $85K)
+
+**Justificación:** Eliminación de riesgos críticos (Flash CVE-2020-9746, .NET 4.5 EOL) + Compliance LGPDP 100%
 
 ---
 

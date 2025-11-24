@@ -1,8 +1,173 @@
 # 📊 DASHBOARD VISUAL - SiCRER 24/25 SEPT
+## Versión 2.0 - Métricas Estrategia Bifásica
 
 > **Panel de Métricas y Visualizaciones del Análisis Técnico**  
 > Sistema de Captura de Resultados de Evaluación y Registro  
-> Secretaría de Educación Pública (SEP)
+> Secretaría de Educación Pública (SEP)  
+> **Stack Open Source:** React + Node.js + PostgreSQL + MinIO
+
+---
+
+## 🚀 ROADMAP VISUAL ESTRATEGIA BIFÁSICA
+
+```mermaid
+gantt
+    title Implementación Estrategia Bifásica (Nov 2025 - Sept 2026)
+    dateFormat YYYY-MM-DD
+    
+    section Fase 1: Portal Híbrido
+    Arquitectura & Diseño           :done, f1_1, 2025-11-01, 15d
+    Desarrollo Frontend React       :active, f1_2, 2025-11-16, 60d
+    Desarrollo Backend NestJS       :active, f1_3, 2025-11-16, 60d
+    Validador SheetJS               :f1_4, 2025-12-16, 30d
+    Sistema Tickets                 :f1_5, 2026-01-01, 30d
+    Script Sincronización           :f1_6, 2026-01-15, 30d
+    Testing Integral                :f1_7, 2026-02-15, 30d
+    Deploy Producción Fase 1        :milestone, f1_m, 2026-03-15, 1d
+    
+    section Fase 2: Migración Completa
+    Procesamiento Nativo Node       :f2_1, 2026-03-15, 90d
+    Generador PDF Puppeteer         :f2_2, 2026-04-15, 75d
+    Módulo ARCO LGPDP               :f2_3, 2026-05-01, 60d
+    Migración Datos Históricos      :f2_4, 2026-06-01, 45d
+    Dashboard Analytics             :f2_5, 2026-06-15, 45d
+    Testing Carga 10K Users         :f2_6, 2026-07-15, 45d
+    Deploy Producción Fase 2        :milestone, f2_m, 2026-09-01, 1d
+    Desactivación Legacy            :crit, f2_7, 2026-09-01, 15d
+```
+
+---
+
+## 💰 ANÁLISIS FINANCIERO VISUAL
+
+### Comparativa Costos Microsoft vs Open Source (3 Años)
+
+```mermaid
+%%{init: {'theme':'base'}}%%
+pie title Costos Totales 3 Años (USD)
+    "Microsoft Stack: $90,438" : 90438
+    "Open Source Stack: $5,400" : 5400
+```
+
+### Desglose Ahorro por Componente
+
+```mermaid
+graph TB
+    A[Ahorro Total<br/>$85,038 USD] --> B[Licencias<br/>$55,838]
+    A --> C[Hosting<br/>$9,000]
+    A --> D[Herramientas<br/>$1,497]
+    A --> E[Servicios Cloud<br/>$18,600]
+    
+    B --> B1[SQL Server<br/>$45,000]
+    B --> B2[Crystal Reports<br/>$9,000]
+    B --> B3[Office Interop<br/>$1,341]
+    B --> B4[SSL Certs<br/>$600]
+    
+    E --> E1[Azure Blob<br/>$12,600]
+    E --> E2[App Insights<br/>$6,000]
+    
+    style A fill:#69db7c,stroke:#2f9e44,color:#000
+    style B fill:#ffd43b,stroke:#fab005
+    style C fill:#ffd43b,stroke:#fab005
+    style E fill:#ff8787,stroke:#c92a2a
+```
+
+### Proyección Financiera 5 Años (Desarrollo Interno SEP)
+
+```mermaid
+xychart-beta
+    title "Análisis Break-Even (Break-even: 5.8 meses)"
+    x-axis [Año 1, Año 2, Año 3, Año 4, Año 5]
+    y-axis "Ahorro Neto (Miles USD)" -20 --> 200
+    line "Infraestructura" [16.6, 16.6, 16.6, 16.6, 16.6]
+    line "Ahorro Acumulado" [21.7, 60.0, 98.3, 136.6, 174.9]
+```
+
+**🎯 Nota:** Gráfico muestra solo costos de infraestructura. Personal DGADAI + DGTIC ya presupuestado.
+
+---
+
+## 🎯 KPIs FASE 1 (Portal Híbrido - Marzo 2026)
+
+```mermaid
+%%{init: {'theme':'base'}}%%
+quadrantChart
+    title Métricas de Éxito Fase 1
+    x-axis Bajo Impacto --> Alto Impacto
+    y-axis Baja Urgencia --> Alta Urgencia
+    quadrant-1 Prioridad Crítica
+    quadrant-2 Implementar Rápido
+    quadrant-3 Monitorear
+    quadrant-4 Optimizar Después
+    
+    Adopción Web 50%: [0.8, 0.9]
+    Validación 30seg: [0.9, 0.8]
+    Tickets -70%: [0.7, 0.9]
+    Uptime 99.5%: [0.9, 0.95]
+    Satisfacción 8/10: [0.6, 0.7]
+    LGPDP 86%: [0.85, 0.85]
+```
+
+### Tabla KPIs Detallada
+
+| KPI | Baseline (Legacy) | Target Fase 1 | Target Fase 2 | Métrica |
+|-----|-------------------|---------------|---------------|----------|
+| **Uptime** | 95% | 99.5% | 99.9% | Disponibilidad sistema |
+| **Tiempo Validación FRV** | 15 min (manual) | 30 seg (auto) | 15 seg (opt.) | Procesamiento |
+| **Adopción Portal Web** | 0% | 50% (150K escuelas) | 100% (300K) | Usuarios activos |
+| **Compliance LGPDP** | 57% | 86% | 100% | Cumplimiento legal |
+| **Costos Licencias Anuales** | $16,000 | $8,000 (híbrido) | $0 | Ahorro financiero |
+| **Tiempo Deploy Cambios** | 2 semanas | 3 días | 1 hora (CI/CD) | Agilidad |
+| **Incidentes Seguridad** | 3/año (Flash) | 0/año | 0/año | Vulnerabilidades |
+| **Tickets Soporte** | 500/mes | 150/mes (-70%) | 50/mes (-90%) | Validación auto |
+| **Satisfacción Usuarios** | 6.5/10 | 8.0/10 | 9.0/10 | NPS Score |
+| **Capacidad Concurrente** | 5K escuelas | 50K escuelas | 300K escuelas | Escalabilidad |
+
+---
+
+## 🏗️ ARQUITECTURA HÍBRIDA FASE 1
+
+```mermaid
+graph TB
+    subgraph "NUEVOS COMPONENTES - Open Source"
+        A1[Portal React 18<br/>TypeScript 5]
+        A2[Backend NestJS 10<br/>Prisma 5]
+        A3[PostgreSQL 16<br/>Catálogos]
+        A4[MinIO S3<br/>Storage FRV]
+        A5[Redis 7<br/>Cache + Queue]
+        A6[Validador SheetJS<br/>30 seg]
+        A7[Sistema Tickets<br/>Automático]
+    end
+    
+    subgraph "LEGACY - Temporal Fase 1"
+        B1[SiCRER.exe<br/>.NET 4.5]
+        B2[MS Access<br/>bd24.25.1.mdb]
+        B3[Crystal Reports<br/>Generación PDF]
+    end
+    
+    subgraph "SINCRONIZACIÓN"
+        C1[Script Node.js<br/>Nocturno 2 AM]
+    end
+    
+    A1 --> A6
+    A6 --> A4
+    A6 --> A7
+    A4 --> C1
+    C1 --> B2
+    B1 --> B2
+    B1 --> B3
+    B3 --> A4
+    A2 --> A3
+    A2 --> A5
+    
+    style A1 fill:#61dafb,stroke:#0088cc
+    style A2 fill:#e535ab,stroke:#c92a2a
+    style A3 fill:#336791,stroke:#0066cc
+    style A4 fill:#c72c48,stroke:#8b0000
+    style B1 fill:#ff6b6b,stroke:#c92a2a
+    style B2 fill:#ff6b6b,stroke:#c92a2a
+    style C1 fill:#ffd43b,stroke:#fab005
+```
 
 ---
 

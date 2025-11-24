@@ -1,7 +1,9 @@
 # 📋 FLUJO OPERATIVO OFICIAL - SISTEMA SiCRER
+## Versión 2.0 - Estrategia Bifásica
 
 > **Documentación basada en diagramas oficiales de la SEP**  
-> Estrategia para la Recuperación de la Información - Ciclo 2024-2025
+> Estrategia para la Recuperación de la Información - Ciclo 2024-2025  
+> **ACTUALIZACIÓN:** Migración a Stack Open Source (React + Node.js + PostgreSQL)
 
 ---
 
@@ -9,9 +11,89 @@
 
 Este documento detalla el **flujo operativo completo** del Sistema de Captura de Resultados de Evaluación y Registro (SiCRER), basado en la documentación oficial proporcionada por la Dirección General de Administración y Análisis de Evaluación (**DGADAE**) de la Secretaría de Educación Pública.
 
+### 🚀 ESTRATEGIA DE MODERNIZACIÓN BIFÁSICA
+
+**Fase 1 (Marzo 2026):** Portal Web Híbrido
+- 🌐 Portal web React para directores (upload FRV, descarga PDFs)
+- ✅ Validación automatizada con SheetJS (30 seg vs 15 min manual)
+- 🎫 Sistema de tickets para errores de validación
+- 🔄 Sincronización nocturna con legacy para procesamiento
+- 📊 Adopción esperada: 115K-150K escuelas públicas (de ~230K según SEP 2024)
+
+**Fase 2 (Septiembre 2026):** Migración Completa
+- ⚡ Procesamiento nativo Node.js (elimina SiCRER.exe)
+- 📄 Generación PDF con Puppeteer (elimina Crystal Reports)
+- 🔒 Compliance LGPDP 100% (módulo ARCO + consentimientos)
+- 📈 Dashboard analytics con Recharts
+
+```mermaid
+graph TB
+    subgraph "FASE 1: Híbrido (Marzo 2026)"
+        A1[Portal Web React]
+        A2[Validador SheetJS]
+        A3[MinIO Storage]
+        A4[Script Sync]
+        A5[SiCRER Legacy]
+        
+        A1 --> A2
+        A2 --> A3
+        A3 --> A4
+        A4 --> A5
+    end
+    
+    subgraph "FASE 2: Completo (Sept 2026)"
+        B1[Portal Web React]
+        B2[Backend NestJS]
+        B3[PostgreSQL 16]
+        B4[Puppeteer PDF]
+        
+        B1 --> B2
+        B2 --> B3
+        B2 --> B4
+    end
+    
+    A5 -."Desactivación".-> B2
+    
+    style A1 fill:#61dafb,stroke:#0088cc
+    style A5 fill:#ff6b6b,stroke:#c92a2a
+    style B1 fill:#69db7c,stroke:#2f9e44
+    style B2 fill:#e535ab,stroke:#c92a2a
+```
+
 ---
 
 ## 👥 ACTORES DEL SISTEMA
+
+### 🆕 0. PORTAL WEB (Fase 1 - Nuevo)
+
+**Rol Principal:** Interfaz moderna para directores
+
+**Responsabilidades:**
+- 🔐 Autenticación JWT (CCT + contraseña)
+- 📤 Upload FRV con drag & drop (React Dropzone)
+- ✅ Validación en tiempo real (30 segundos)
+- 🎫 Generación automática de tickets tras N fallos
+- 📥 Descarga de reportes PDF desde navegador
+- 📊 Dashboard con estado de cargas
+
+**Stack Tecnológico:**
+- Frontend: React 18 + TypeScript 5 + Vite 5
+- Backend: NestJS 10 + Prisma 5 + PostgreSQL 16
+- Storage: MinIO S3-compatible
+- Cache: Redis 7 (sesiones JWT)
+
+**Volumetría Fase 1:**
+- Escuelas objetivo: 115K-150K públicas (de ~230K totales según estadísticas SEP 2024)
+- Uploads concurrentes: 5,000 escuelas/día
+- Tamaño promedio FRV: 200 KB
+- Tiempo validación: 30 seg (vs 15 min manual)
+- Reducción tickets: 70% (validación automática)
+
+**Nota sobre volumetría:** México cuenta con aproximadamente 230,000 escuelas públicas de educación básica (preescolar, primaria, secundaria). La Fase 1 se enfoca en escuelas con mayor capacidad tecnológica, estimando 50-65% de adopción inicial.
+
+---
+
+## 👥 ACTORES DEL SISTEMA (Legacy + Nuevos)
 
 ### 1. DGADAE (Dirección General de Administración y Análisis de Evaluación)
 
@@ -70,7 +152,7 @@ Este documento detalla el **flujo operativo completo** del Sistema de Captura de
 - 📏 "Rúbricas"
 
 **Tiempo:**
-- Sin definir (Procedimiento externo de terceros)
+- Sin definir (Procedimiento coordinado por DGADAE)
 
 ### 4. CORREO SEP (Sistema Automatizado)
 
