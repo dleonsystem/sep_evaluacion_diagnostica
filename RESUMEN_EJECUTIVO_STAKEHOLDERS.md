@@ -59,37 +59,45 @@ timeline
 | Hosting Premium | $14,400 | $5,400 | $9,000 |
 | **TOTAL 3 AÑOS** | **$90,438** | **$5,400** | **💰 $85,038** |
 
-**Balance Financiero (Desarrollo Interno SEP):**
-- **Ahorro Total 3 años:** $85,038 USD = **$1,700,760 MXN**
-- **Inversión Única:** $16,600 USD = **$332,000 MXN** (infraestructura solamente)
-- **Ahorro Neto 3 años:** $68,438 USD = **$1,368,760 MXN**
-- **ROI:** 5.8 meses (recuperación de inversión en medio año)
-- **Ventaja Adicional:** Personal SEP adquiere conocimiento técnico permanente del sistema
+**Balance Financiero (Desarrollo Interno SEP + Centro Datos Triara):**
+- **Ahorro Total 3 años:** $1,700,760 MXN ($85,038 USD)
+- **Inversión Confirmada:** $180,000 MXN (capacitación remota + herramientas)
+- **Inversión Triara:** **PENDIENTE** (validar contrato actual)
+- **Ahorro Neto 3 años:** **Por calcular** (pendiente costos Triara)
+- **ROI:** **Por calcular** (pendiente costos Triara)
+- **Ventaja Adicional:** Personal SEP + infraestructura institucional + conocimiento permanente
 
-### 📊 ROI Y PAYBACK (Desarrollo Interno SEP)
+**📋 PENDIENTE:** Solicitar a DGTIC costos de servidores en contrato SEP-Triara para completar análisis financiero
+
+### 📊 ROI Y PAYBACK (Desarrollo Interno SEP + Centro Datos Triara)
+
+**⚠️ CÁLCULO PENDIENTE:** Requiere validación de costos de servidores en contrato SEP-Triara
 
 ```mermaid
 gantt
-    title Retorno de Inversión (Break-even en 5.8 meses)
+    title Proyección Retorno de Inversión (Pendiente validación Triara)
     dateFormat YYYY-MM
     axisFormat %b %Y
     
-    section Inversión
-    Fase 1 $7.1K          :done, 2025-12, 2026-04
-    Fase 2 $9.5K          :done, 2026-03, 2026-09
+    section Inversión Confirmada MXN
+    Fase 1 $75K           :done, 2025-12, 2026-04
+    Fase 2 $105K          :done, 2026-03, 2026-09
+    Triara (por validar)  :crit, 2026-09, 2026-10
     
-    section Ahorro Mensual
-    Break-even $16.6K     :crit, 2026-09, 2027-03
-    Año 1: $21.7K ahorro neto :2027-03, 2027-12
-    Año 2: $38.3K ahorro   :2027-12, 2028-12
-    Año 3: $38.3K ahorro   :2028-12, 2029-12
+    section Ahorro Anual MXN
+    Año 1: $566K ahorro   :2026-09, 2027-09
+    Año 2: $566K ahorro   :2027-09, 2028-09
+    Año 3: $566K ahorro   :2028-09, 2029-09
 ```
 
-**Cálculo ROI (Recursos Internos):**
-- Ahorro anual: $28,346 USD (licencias) + $10,000 USD (mantenimiento) = **$38,346 USD/año**
-- Inversión infraestructura: $16,600 USD
-- **Payback period: 5.8 meses** ($16,600 / $38,346 anual = 0.43 años)
-- **ROI a 3 años: +312%** ($68,438 ahorro / $16,600 inversión)
+**Cálculo ROI (Recursos Internos + Infraestructura SEP):**
+- Ahorro anual: $566,920 MXN ($28,346 USD licencias + $10,000 USD mantenimiento)
+- Inversión confirmada: $180,000 MXN (capacitación remota + herramientas)
+- Inversión Triara: **PENDIENTE** (servidores QA/Producción 10 meses)
+- **Payback period: Por calcular** (pendiente costos Triara)
+- **ROI a 3 años: Por calcular** (pendiente costos Triara)
+
+**📋 ACCIÓN INMEDIATA:** Coordinar con DGTIC para obtener costos actuales del contrato Triara
 
 ### ⚠️ JUSTIFICACIÓN NO FINANCIERA (CRÍTICA)
 
@@ -194,11 +202,15 @@ graph LR
 
 ### Inversión Requerida para Modernización (Desarrollo Interno SEP)
 
-| Fase | Descripción | Costo Infraestructura | Recursos Humanos | Tiempo |
-|------|-------------|----------------------|------------------|--------|
-| **Fase 1** | Portal Híbrido + Validador | $7,100 USD | DGADAI + DGTIC (6 personas) | 4 meses |
-| **Fase 2** | Migración Completa Open Source | $9,500 USD | DGADAI + DGTIC (6 personas) | 6 meses |
-| **TOTAL** | Modernización completa | **$16,600 USD** | **Personal SEP existente** | **10 meses** |
+| Fase | Descripción | Costo Confirmado (MXN) | Recursos Humanos | Tiempo |
+|------|-------------|------------------------|------------------|--------|
+| **Fase 1** | Portal Híbrido + Validador | $75,000 | DGADAI + DGTIC (6 personas) | 4 meses |
+| **Fase 2** | Migración Completa Open Source | $105,000 | DGADAI + DGTIC (6 personas) | 6 meses |
+| **SUBTOTAL** | Modernización completa | **$180,000 MXN** | **Personal SEP + Centro datos Triara** | **10 meses** |
+
+**📋 OPTIMIZACIÓN:** Capacitación remota/digital reduce costos $12K MXN y permite alcance nacional instantáneo
+
+**📋 PENDIENTE:** Validar costos de servidores QA/Producción en contrato actual SEP-Triara (10 meses)
 
 **🎯 Ventaja Estratégica:** Desarrollo con recursos propios SEP elimina dependencia de proveedores externos y genera capacidades internas permanentes.
 

@@ -47,7 +47,8 @@ Sistema de Captura y Reporteo de Evaluación Diagnóstica para la Secretaría de
 - 🔄 Sincronización nocturna con SiCRER legacy
 
 **Desarrollo:** Recursos internos SEP (DGADAI + DGTIC)  
-**Inversión Infraestructura:** $7,100 USD ($142,000 MXN) en 4 meses
+**Inversión:** $75,000 MXN + **costos Triara PENDIENTES** (4 meses)  
+**Capacitación:** Remota/digital para alcance nacional
 
 ---
 
@@ -73,20 +74,25 @@ Sistema de Captura y Reporteo de Evaluación Diagnóstica para la Secretaría de
 - ✅ Escalabilidad 300K escuelas concurrentes
 
 **Desarrollo:** Recursos internos SEP (DGADAI + DGTIC)  
-**Inversión Infraestructura:** $9,500 USD ($190,000 MXN) en 6 meses
+**Inversión:** $105,000 MXN + **costos Triara PENDIENTES** (6 meses)
 
 ---
 
 ## 💰 ANÁLISIS FINANCIERO
 
 ### Inversión Total Estrategia Bifásica (Desarrollo Interno SEP)
-| Fase | Costo USD | Costo MXN | Recursos | Timeline |
-|------|-----------|-----------|----------|----------|
-| Fase 1 (Híbrido) | $7,100 | $142,000 | DGADAI + DGTIC | 4 meses |
-| Fase 2 (Completo) | $9,500 | $190,000 | DGADAI + DGTIC | 6 meses |
-| **TOTAL** | **$16,600** | **$332,000** | **6 personas SEP** | **10 meses** |
+| Fase | Costo Confirmado (MXN) | Infraestructura | Recursos | Timeline |
+|------|------------------------|-----------------|----------|----------|
+| Fase 1 (Híbrido) | $75,000 | Centro datos SEP-Triara | DGADAI + DGTIC | 4 meses |
+| Fase 2 (Completo) | $105,000 | Centro datos SEP-Triara | DGADAI + DGTIC | 6 meses |
+| **SUBTOTAL** | **$180,000 MXN** | **+ costos Triara PENDIENTES** | **6 personas SEP** | **10 meses** |
 
-**🎯 Ventaja:** Desarrollo con recursos propios SEP (DGADAI + DGTIC). Ahorro de **$890K MXN** vs contratación externa.
+**📋 PENDIENTE:** Validar costos de servidores QA/Producción en contrato actual SEP-Triara
+
+**🎯 Ventajas:** 
+- Desarrollo con recursos propios SEP + centro de datos institucional
+- Capacitación remota/digital para alcance nacional (150K directores)
+- Ahorro estimado **$1,042K+ MXN** vs contratación externa + presencial
 
 ### Ahorro en Licencias (3 años)
 | Componente | Microsoft | Open Source | Ahorro |
@@ -97,7 +103,7 @@ Sistema de Captura y Reporteo de Evaluación Diagnóstica para la Secretaría de
 | Otros | $18,438 | $5,400 | $13,038 |
 | **TOTAL 3 AÑOS** | **$85,038** | **$5,400** | **💰 $85,038** |
 
-**ROI:** Break-even en **5.8 meses** con desarrollo interno SEP (inversión $16.6K vs ahorro $85K)
+**ROI:** **Por calcular** (pendiente validación costos Triara). Proyección: Break-even < 6 meses con desarrollo interno SEP
 
 **Justificación:** Eliminación de riesgos críticos (Flash CVE-2020-9746, .NET 4.5 EOL) + Compliance LGPDP 100%
 

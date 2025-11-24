@@ -20,14 +20,16 @@ El repositorio **sep_evaluacion_diagnostica** contiene el Sistema **SiCRER** (Si
 **Decisión de Negocio:** Se ha aprobado una estrategia de migración en dos fases para modernizar el sistema SiCRER, eliminando dependencias tecnológicas obsoletas y migrando a un stack 100% open source que elimina costos de licenciamiento y mejora la seguridad.
 
 **Justificación Financiera (Desarrollo Interno SEP):**
-- **Ahorro en Licencias:** $56,400 USD en 3 años (SQL Server, Crystal Reports, .NET licenses)
-- **Ahorro en Hosting:** $28,638 USD en 3 años (Azure → infraestructura propia optimizada)
-- **Inversión en Infraestructura:** $16,600 USD ($332,000 MXN) única vez
-  - **Fase 1 (Híbrido):** $7,100 USD - Marzo 2026
-  - **Fase 2 (Completo):** $9,500 USD - Septiembre 2026
-- **Ahorro Neto:** $68,438 USD ($1,368,760 MXN) en 3 años
-- **ROI:** 5.8 meses ($16,600 / $28,346 ahorro anual)
-- **🎯 Ventaja Estratégica:** Personal SEP adquiere conocimiento permanente del sistema
+- **Ahorro en Licencias:** $1,128,000 MXN en 3 años (SQL Server, Crystal Reports, .NET licenses)
+- **Ahorro en Hosting:** $572,760 MXN en 3 años (Azure → Centro de datos SEP-Triara)
+- **Inversión en Infraestructura:** $180,000 MXN confirmados + **costos Triara PENDIENTES**
+  - **Fase 1 (Híbrido):** $75,000 MXN + costos Triara - Marzo 2026
+  - **Fase 2 (Completo):** $105,000 MXN + costos Triara - Septiembre 2026
+- **Ahorro Neto:** **Por calcular** (pendiente validación costos Triara)
+- **ROI:** **Por calcular** (pendiente validación costos Triara)
+- **🎯 Ventaja Estratégica:** Personal SEP + infraestructura propia + conocimiento permanente
+
+**📋 PENDIENTE:** Solicitar a DGTIC el desglose de costos en contrato actual SEP-Triara para completar análisis financiero
 
 ### Métricas Sistema Legacy (Pre-Migración)
 - **Tamaño Total del Repositorio:** ~255 MB
@@ -110,11 +112,12 @@ gantt
 #### 1.3.2 Fase 1: Portal Web Híbrido (Marzo 2026)
 
 **Duración:** 4 meses (Noviembre 2025 - Marzo 2026)  
-**Inversión:** $394,000 MXN (infraestructura + capacitación)  
+**Inversión:** $75,000 MXN confirmados + **costos Triara PENDIENTES** (por validar con contrato actual)  
 **Equipo SEP Interno:**
 - **DGADAI:** Equipo técnico (2 desarrolladores full-stack, 1 QA)
 - **DGTIC:** Subdirector de Coordinación de Proyectos (arquitectura), Área de Calidad (testing), Directora de Aplicaciones y BD (coordinación técnica)
-- **Total:** 6 personas de estructura SEP existente
+- **Infraestructura:** Centro de datos SEP con Triara (contrato existente)
+- **Total:** 6 personas + servidores QA/Producción + staging DGTIC
 
 **Objetivos Estratégicos:**
 1. **Reducir Carga Operativa:** Automatizar validación de FRV layouts (actualmente manual)
@@ -241,26 +244,37 @@ graph TB
 
 **Costos Fase 1 (Recursos Internos SEP):**
 
-| Concepto | Monto (MXN) | Monto (USD) | Justificación |
-|---------|-------------|-------------|---------------|
-| **Personal SEP (640 hrs)** | $0 | $0 | Recursos DGADAI + DGTIC ya presupuestados |
-| **Infraestructura (4 meses)** | $32,000 | $1,600 | Servidores VPS + dominios + SSL ($400/mes) |
-| **Herramientas DevOps** | $40,000 | $2,000 | Docker Enterprise, monitoring, CI/CD |
-| **Capacitación técnica** | $50,000 | $2,500 | Cursos React/NestJS/PostgreSQL para equipo |
-| **Capacitación usuarios** | $20,000 | $1,000 | 2 días presenciales para directores |
-| **Licencias Open Source** | $0 | $0 | 🎉 100% gratuitas |
-| **TOTAL FASE 1** | **$142,000** | **$7,100** | **Personal interno ya presupuestado** |
+| Concepto | Monto (MXN) | Justificación |
+|---------|-------------|---------------|
+| **Personal SEP (640 hrs)** | $0 | Recursos DGADAI + DGTIC ya presupuestados |
+| **Servidor QA (Triara - 4 meses)** | **PENDIENTE** | ⚠️ Validar costos en contrato actual SEP-Triara<br/>Especificación: 2 vCPU, 4GB RAM, 50GB SSD |
+| **Servidor Producción (Triara - 4 meses)** | **PENDIENTE** | ⚠️ Validar costos en contrato actual SEP-Triara<br/>Especificación: 4 vCPU, 8GB RAM, 100GB SSD |
+| **Staging (DGTIC)** | $0 | Ambiente existente DGTIC (sin costo adicional) |
+| **Backup diario (4 meses)** | **PENDIENTE** | ⚠️ Validar si incluido en contrato Triara<br/>Requerimiento: 30 días retención |
+| **Monitoreo NOC 24/7 (4 meses)** | **PENDIENTE** | ⚠️ Validar si incluido en contrato Triara<br/>Requerimiento: Monitoreo 24/7 |
+| **Dominio + SSL** | $2,000 | Dominio gob.mx + certificados (estimado) |
+| **Herramientas DevOps** | $15,000 | CI/CD, Docker Registry, Grafana Cloud |
+| **Capacitación técnica** | $50,000 | Cursos React/NestJS/PostgreSQL para equipo |
+| **Capacitación usuarios (remota)** | $8,000 | Plataforma digital + videos tutoriales + webinars<br/>Alcance: ~150K directores nivel nacional |
+| **Licencias Open Source** | $0 | 🎉 100% gratuitas |
+| **SUBTOTAL CONFIRMADO FASE 1** | **$75,000 MXN** | **+ costos Triara por validar** |
 
-**⚠️ NOTA:** Costo real de $142K MXN vs $524K si se contratara externamente. Ahorro: **$382,000 MXN** por uso de recursos propios.
+**📊 AHORRO CAPACITACIÓN REMOTA:** $12,000 MXN vs modalidad presencial (elimina viáticos, logística, venues)
+
+**📋 ACCIÓN REQUERIDA:** Solicitar a DGTIC desglose de costos en contrato actual SEP-Triara para:
+- Servidor QA (2 vCPU, 4GB RAM, 50GB SSD) por 4 meses
+- Servidor Producción (4 vCPU, 8GB RAM, 100GB SSD) por 4 meses
+- Servicio de backup y monitoreo 24/7
 
 #### 1.3.3 Fase 2: Migración Completa (Septiembre 2026)
 
 **Duración:** 6 meses (Marzo 2026 - Septiembre 2026)  
-**Inversión:** $190,000 MXN (infraestructura + capacitación avanzada)  
+**Inversión:** $105,000 MXN confirmados + **costos Triara PENDIENTES** (por validar con contrato actual)  
 **Equipo SEP Interno:**
 - **DGADAI:** Equipo técnico completo (3 desarrolladores, 1 QA, 1 DevOps)
 - **DGTIC:** Subdirector de Coordinación de Proyectos, Área de Calidad, Directora de Aplicaciones y BD
-- **Total:** 6 personas dedicadas + soporte DGTIC
+- **Infraestructura:** Centro de datos SEP-Triara (contrato corporativo)
+- **Total:** 6 personas dedicadas + servidores dedicados
 
 **Objetivos Estratégicos:**
 1. **Eliminar Dependencias Legacy:** Desactivar SiCRER.exe + MS Access + Crystal Reports
@@ -373,18 +387,30 @@ export class PdfGeneratorService {
 
 **Costos Fase 2 (Recursos Internos SEP):**
 
-| Concepto | Monto (MXN) | Monto (USD) | Ahorro vs Microsoft |
-|---------|-------------|-------------|---------------------|
-| **Personal SEP (960 hrs)** | $0 | $0 | Recursos DGADAI + DGTIC ya presupuestados |
-| **Infraestructura (6 meses)** | $60,000 | $3,000 | Servidores PostgreSQL production ($500/mes) |
-| **Herramientas + Licencias** | $50,000 | $2,500 | Puppeteer Enterprise, monitoring avanzado |
-| **Migración de datos** | $40,000 | $2,000 | Scripts automatizados Access → PostgreSQL |
-| **Capacitación avanzada** | $40,000 | $2,000 | PostgreSQL DBA, Node.js avanzado |
-| **TOTAL FASE 2** | **$190,000** | **$9,500** | **Ahorro: $18K/año en licencias** |
+| Concepto | Monto (MXN) | Ahorro vs Microsoft |
+|---------|-------------|---------------------|
+| **Personal SEP (960 hrs)** | $0 | Recursos DGADAI + DGTIC ya presupuestados |
+| **Servidor QA (Triara - 6 meses)** | **PENDIENTE** | ⚠️ Validar costos en contrato actual SEP-Triara<br/>Especificación: 2 vCPU, 4GB RAM |
+| **Servidor Producción (Triara - 6 meses)** | **PENDIENTE** | ⚠️ Validar costos en contrato actual SEP-Triara<br/>Especificación: 4 vCPU, 8GB RAM |
+| **Staging (DGTIC)** | $0 | Ambiente existente (sin costo) |
+| **Backup diario (6 meses)** | **PENDIENTE** | ⚠️ Validar si incluido en contrato Triara |
+| **Monitoreo NOC 24/7 (6 meses)** | **PENDIENTE** | ⚠️ Validar si incluido en contrato Triara |
+| **Almacenamiento adicional** | **PENDIENTE** | ⚠️ Validar costo 200GB extra en contrato Triara |
+| **Herramientas + Licencias** | $25,000 | Puppeteer Cloud, monitoring avanzado |
+| **Migración de datos** | $40,000 | Scripts automatizados Access → PostgreSQL |
+| **Capacitación avanzada** | $40,000 | PostgreSQL DBA, Node.js avanzado |
+| **SUBTOTAL CONFIRMADO FASE 2** | **$105,000 MXN** | **+ costos Triara por validar** |
 
-**TOTAL INVERSIÓN 2 FASES:** $332,000 MXN ($16,600 USD) en infraestructura
+**TOTAL INVERSIÓN 2 FASES:** $180,000 MXN confirmados + **costos Triara PENDIENTES**
 
-**⚠️ AHORRO POR RECURSOS INTERNOS:** $890,000 MXN vs desarrollo externo ($1,222,000 - $332,000)
+**📊 AHORRO TOTAL POR OPTIMIZACIONES:**
+- Capacitación remota vs presencial: $12,000 MXN
+- Recursos internos vs externos: $1,030,000+ MXN
+- **Total ahorros:** $1,042,000+ MXN
+
+**📋 ACCIÓN REQUERIDA:** Solicitar a DGTIC desglose de costos en contrato actual SEP-Triara para Fase 2 (6 meses adicionales)
+
+**⚠️ AHORRO POR RECURSOS INTERNOS:** $1,030,000+ MXN vs desarrollo externo (cálculo final pendiente de costos Triara)
 
 **⚠️ NOTA FINANCIERA:** Las cifras utilizan tipo de cambio $20 MXN/USD para simplificación. No considera inflación ni TIR (Tasa Interna de Retorno). Para análisis financiero detallado, consultar sección de ROI en RESUMEN_EJECUTIVO_STAKEHOLDERS.md.
 
