@@ -238,7 +238,7 @@ graph LR
     
     subgraph "Estado Futuro - Moderno"
         B1[React/Blazor<br/>.NET 8<br/>✅ LTS 2026]
-        B2[(SQL Server<br/>Express<br/>✅ Sin límites)]
+        B2[(PostgreSQL<br/>✅ Sin límites)]
         B3[Telerik/RDLC<br/>✅ Moderno]
         B4[.NET Controls<br/>✅ Actuales]
         
@@ -272,7 +272,7 @@ gantt
     dateFormat YYYY-MM-DD
     section Fase 1: Estabilización
     Backup y Análisis           :done, f1a, 2025-01-01, 1w
-    Migrar BD a SQL Server      :done, f1b, after f1a, 2w
+    Migrar BD a postgreSQL      :done, f1b, after f1a, 2w
     Eliminar Flash Components   :active, f1c, after f1b, 1w
     Testing & Validación        :f1d, after f1c, 1w
     
@@ -384,7 +384,7 @@ graph TB
     subgraph "Stack Propuesto - 2025+"
         B1[.NET 8.0 LTS<br/>📅 Soporte hasta 2026<br/>✅ Moderno]
         B2[Blazor/React<br/>🌐 Web multiplataforma<br/>✅ Responsive]
-        B3[SQL Server Express<br/>💾 Sin límite 2GB<br/>✅ Enterprise-grade]
+        B3[postgreSQL<br/>💾 Sin límite 2GB<br/>✅ Enterprise-grade]
         B4[Entity Framework Core<br/>🔧 ORM moderno<br/>✅ Type-safe + LINQ]
         B5[Telerik Reporting<br/>📄 .NET Core compatible<br/>✅ Moderna]
         B6[.NET Standard Controls<br/>🎨 Modernos<br/>✅ Seguros]
