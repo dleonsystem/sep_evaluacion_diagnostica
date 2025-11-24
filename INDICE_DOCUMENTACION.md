@@ -619,7 +619,7 @@ R: Usa RESUMEN_EJECUTIVO_STAKEHOLDERS.md como base para tu presentación.
 ### Contacto
 
 - **Repositorio:** github.com/dleonsystem/sep_evaluacion_diagnostica
-- **Propietario:** dleonsystem
+- **Propietario:** SEP
 - **Issues:** Usa el sistema de issues de GitHub
 
 ---

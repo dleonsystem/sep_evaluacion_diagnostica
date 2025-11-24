@@ -94,16 +94,17 @@ Sistema de Captura y Reporteo de Evaluación Diagnóstica para la Secretaría de
 - Capacitación remota/digital para alcance nacional (150K directores)
 - Ahorro estimado **$1,042K+ MXN** vs contratación externa + presencial
 
-### Ahorro en Licencias (3 años)
-| Componente | Microsoft | Open Source | Ahorro |
-|-----------|-----------|-------------|--------|
-| SQL Server | $45,000 | $0 | $45,000 |
-| Crystal Reports | $9,000 | $0 | $9,000 |
-| Azure Blob | $12,600 | $0 | $12,600 |
-| Otros | $18,438 | $5,400 | $13,038 |
-| **TOTAL 3 AÑOS** | **$85,038** | **$5,400** | **💰 $85,038** |
+### Ahorro Real en Licencias (3 años)
+| Componente | Sistema Actual | Sistema Modernizado | Ahorro Real |
+|-----------|----------------|---------------------|-------------|
+| **Crystal Reports** | **$180,000 MXN** | **$0** | **$180,000 MXN** |
+| MS Access | $0 (incluido en Office SEP) | $0 (PostgreSQL) | $0 |
+| Hosting | $0 (centro datos SEP) | $0 (mismo centro datos) | $0 |
+| **TOTAL 3 AÑOS** | **$180,000 MXN** | **$0** | **💰 $180,000 MXN** |
 
-**ROI:** **Por calcular** (pendiente validación costos Triara). Proyección: Break-even < 6 meses con desarrollo interno SEP
+**Nota:** Sistema actual NO usa SQL Server ni Azure. Solo ahorro real es Crystal Reports ($5,000 MXN/mes).
+
+**ROI:** Payback en 36 meses ($180K inversión / $60K ahorro anual = 3 años). Ahorro neto años 4-5: $120,000 MXN
 
 **Justificación:** Eliminación de riesgos críticos (Flash CVE-2020-9746, .NET 4.5 EOL) + Compliance LGPDP 100%
 
@@ -384,9 +385,9 @@ Para problemas técnicos o consultas:
 - [ ] Actualizar documentación de usuario
 
 ### Mediano Plazo (3-6 meses)
-- [ ] Migrar a .NET 8.0
-- [ ] Reemplazar Crystal Reports
-- [ ] Migrar base de datos a SQL Server
+- [ ] Migrar a stack open source (Node.js + NestJS)
+- [ ] Reemplazar Crystal Reports → Puppeteer + Handlebars
+- [ ] Migrar base de datos MS Access → PostgreSQL 16
 
 ### Largo Plazo (6-12 meses)
 - [ ] Evaluar arquitectura web
@@ -424,7 +425,7 @@ in the Software without restriction...
 
 ## 📞 Contacto
 
-- **Propietario:** dleonsystem
+- **Propietario:** SEP
 - **Repositorio:** https://github.com/dleonsystem/sep_evaluacion_diagnostica
 - **Organización:** Secretaría de Educación Pública (SEP) - México
 

@@ -7,7 +7,7 @@
 **Analista:** Ingeniero de Software Certificado PSP  
 **Metodología:** Rational Unified Process (RUP)  
 **Repositorio:** sep_evaluacion_diagnostica  
-**Propietario:** dleonsystem
+**Propietario:** SEP
 
 ---
 
@@ -20,14 +20,18 @@ El repositorio **sep_evaluacion_diagnostica** contiene el Sistema **SiCRER** (Si
 **Decisión de Negocio:** Se ha aprobado una estrategia de migración en dos fases para modernizar el sistema SiCRER, eliminando dependencias tecnológicas obsoletas y migrando a un stack 100% open source que elimina costos de licenciamiento y mejora la seguridad.
 
 **Justificación Financiera (Desarrollo Interno SEP):**
-- **Ahorro en Licencias:** $1,128,000 MXN en 3 años (SQL Server, Crystal Reports, .NET licenses)
-- **Ahorro en Hosting:** $572,760 MXN en 3 años (Azure → Centro de datos SEP-Triara)
-- **Inversión en Infraestructura:** $180,000 MXN confirmados + **costos Triara PENDIENTES**
+- **Ahorro en Licencias Crystal Reports:** $180,000 MXN en 3 años ($5,000 MXN/mes × 36 meses)
+  - Sistema actual: Crystal Reports Developer (licencia comercial SAP)
+  - Sistema nuevo: Puppeteer + Handlebars (open source, $0)
+- **Infraestructura:** Ya está en Centro de Datos SEP (sin cambio de hosting)
+  - Sistema actual: MS Access en servidores SEP
+  - Sistema nuevo: PostgreSQL en mismos servidores SEP-Triara
+- **Inversión en Modernización:** $180,000 MXN confirmados + **costos Triara PENDIENTES**
   - **Fase 1 (Híbrido):** $75,000 MXN + costos Triara - Marzo 2026
   - **Fase 2 (Completo):** $105,000 MXN + costos Triara - Septiembre 2026
 - **Ahorro Neto:** **Por calcular** (pendiente validación costos Triara)
-- **ROI:** **Por calcular** (pendiente validación costos Triara)
-- **🎯 Ventaja Estratégica:** Personal SEP + infraestructura propia + conocimiento permanente
+- **ROI:** Payback < 12 meses (solo con ahorro Crystal Reports)
+- **🎯 Ventajas Estratégicas:** Eliminación de tecnologías obsoletas (Flash EOL, .NET 4.5 EOL) + Personal SEP + Conocimiento permanente
 
 **📋 PENDIENTE:** Solicitar a DGTIC el desglose de costos en contrato actual SEP-Triara para completar análisis financiero
 
@@ -280,7 +284,7 @@ graph TB
 1. **Eliminar Dependencias Legacy:** Desactivar SiCRER.exe + MS Access + Crystal Reports
 2. **Compliance LGPDP:** Implementar derechos ARCO completos (86% → 100%)
 3. **Escalabilidad:** Soportar 10x carga actual (30K escuelas → 300K)
-4. **Costos Operacionales:** Reducir hosting $350/mes → $150/mes (PostgreSQL vs SQL Server)
+4. **Reducción de Costos:** Eliminar licencia Crystal Reports ($5,000 MXN/mes = $60,000 MXN/año)
 
 **Alcance Funcional:**
 
@@ -598,23 +602,22 @@ graph TB
 }
 ```
 
-**Comparativa de Dependencias:**
+**Comparativa de Dependencias (Sistema Actual vs Modernizado):**
 
-| Componente | Legacy (Microsoft) | Open Source | Ahorro Anual |
-|-----------|-------------------|-------------|--------------|
-| **Runtime** | .NET Framework 4.5 | Node.js 20 LTS | $0 → $0 |
-| **Base de Datos** | SQL Server Express (2GB limit) | PostgreSQL 16 (sin límite) | $15,000 USD |
-| **ORM** | Entity Framework | Prisma | $0 → $0 |
-| **Reportes** | Crystal Reports | Puppeteer + Handlebars | $3,000 USD |
-| **Excel** | Microsoft.Office.Interop | SheetJS | $447 USD (3 licencias Office) |
-| **Storage** | Azure Blob Storage | MinIO self-hosted | $4,200 USD (egress fees) |
-| **Cache** | MemoryCache (in-proc) | Redis 7 (dedicado) | $0 → $0 |
-| **CI/CD** | Azure DevOps | GitHub Actions (2000 min/mes free) | $0 → $0 |
-| **Monitoring** | Application Insights | Grafana + Prometheus (open) | $2,000 USD |
-| **SSL** | Azure SSL | Let's Encrypt | $200 USD |
-| **TOTAL** | **$24,847 USD/año** | **$0 USD/año** | **💰 $24,847 USD** |
+| Componente | Sistema Actual (Legacy) | Sistema Modernizado (Open Source) | Ahorro Anual Real |
+|-----------|-------------------------|-----------------------------------|-------------------|
+| **Runtime** | .NET Framework 4.5 (EOL 2022) | Node.js 20 LTS | $0 (ambos gratuitos) |
+| **Base de Datos** | MS Access .mdb (límite 2GB) | PostgreSQL 16 (sin límite) | $0 (Access ya pagado con Office SEP) |
+| **ORM** | ADO.NET directo | Prisma ORM | $0 (ambos gratuitos) |
+| **Reportes** | **Crystal Reports (SAP comercial)** | **Puppeteer + Handlebars** | **$60,000 MXN/año** |
+| **Excel** | Microsoft.Office.Interop (Office SEP) | SheetJS (open source) | $0 (Office ya en SEP) |
+| **Storage** | Sistema de archivos local | MinIO self-hosted | $0 (mismo servidor SEP) |
+| **Cache** | MemoryCache (in-proc) | Redis 7 (dedicado) | $0 (ambos gratuitos) |
+| **Obsolescencia** | Adobe Flash (EOL 2020) ⚠️ | Eliminado completamente | Riesgo seguridad eliminado |
+| **Hosting** | Centro de datos SEP | Centro de datos SEP (sin cambio) | $0 (misma infraestructura) |
+| **TOTAL AHORRO REAL** | - | - | **💰 $60,000 MXN/año** |
 
-**Justificación Técnica del Stack Open Source:**
+**Nota:** El ahorro principal proviene de eliminar la licencia comercial de Crystal Reports. No hay costos de Azure ni SQL Server porque el sistema actual ya opera en servidores SEP con MS Access.**Justificación Técnica del Stack Open Source:**
 
 1. **Node.js 20 LTS sobre Python:**
    - **Rendimiento I/O:** Event loop single-threaded ideal para operaciones de red
@@ -1260,20 +1263,20 @@ Esfuerzo Estimado: 160-200 horas
 
 ### 8.1 Comparativa: Microsoft Stack vs Open Source Stack (3 años)
 
-| Concepto | Microsoft Stack | Open Source Stack | Ahorro |
-|---------|-----------------|-------------------|--------|
-| **Licencias SQL Server** | $45,000 ($15K/año x 3) | $0 | $45,000 |
-| **Crystal Reports** | $9,000 ($3K/año x 3) | $0 (Puppeteer) | $9,000 |
-| **Office Interop** | $1,341 ($447/año x 3) | $0 (SheetJS) | $1,341 |
-| **Azure Blob Storage** | $12,600 ($350/mes x 36) | $0 (MinIO self-hosted) | $12,600 |
-| **Application Insights** | $6,000 ($2K/año x 3) | $0 (Grafana + Prometheus) | $6,000 |
-| **Azure SSL Certificates** | $600 ($200/año x 3) | $0 (Let's Encrypt) | $600 |
-| **Visual Studio Pro** | $1,497 ($499/año x 3) | $0 (VS Code) | $1,497 |
-| **Hosting (VPS vs Azure)** | $14,400 ($400/mes x 36) | $5,400 ($150/mes x 36) | $9,000 |
-| **TOTAL 3 AÑOS** | **$90,438** | **$5,400** | **💰 $85,038** |
+| Concepto | Sistema Actual (Legacy) | Sistema Modernizado | Ahorro Real |
+|---------|------------------------|---------------------|-------------|
+| **Crystal Reports (SAP comercial)** | $9,000 USD ($3K/año × 3) | $0 (Puppeteer open source) | $9,000 USD |
+| **Base de Datos** | $0 (MS Access en Office SEP) | $0 (PostgreSQL open source) | $0 |
+| **Hosting** | $0 (centro datos SEP existente) | $0 (mismo centro datos SEP) | $0 |
+| **Runtime** | $0 (.NET Framework incluido en Windows) | $0 (Node.js open source) | $0 |
+| **Office Interop** | $0 (Office ya en SEP) | $0 (SheetJS open source) | $0 |
+| **Storage** | $0 (sistema archivos local) | $0 (MinIO en mismo servidor) | $0 |
+| **TOTAL 3 AÑOS** | **$9,000 USD** | **$0** | **💰 $9,000 USD** |
 
 **Conversión a MXN (tipo de cambio: 1 USD = 20 MXN):**
-- **Ahorro en 3 años:** $85,038 USD = **$1,700,760 MXN**
+- **Ahorro REAL en 3 años:** $9,000 USD = **$180,000 MXN** (solo Crystal Reports)
+
+**⚠️ ACLARACIÓN IMPORTANTE:** Sistema actual NO usa SQL Server, Azure Blob, ni Azure SSL. Opera con MS Access + Crystal Reports en centro de datos SEP. El único costo de licencia comercial eliminable es Crystal Reports.
 
 ### 8.2 Costo de Mantenimiento Sistema Legacy (Actual)
 
@@ -1347,44 +1350,48 @@ Esfuerzo Estimado: 160-200 horas
 | **Documentación Técnica** | 80 | $4,000 | $80,000 | API docs, Swagger, README |
 | **SUBTOTAL FASE 2** | **1,720** | **$128,400** | **$2,568,000** | **6 meses** |
 
-### 8.4 Resumen Financiero Estrategia Bifásica
+### 8.4 Resumen Financiero Real (Desarrollo Interno SEP)
 
 ```mermaid
-pie title Inversión Total Estrategia Bifásica ($234,200 USD)
-    "Fase 1 Desarrollo" : 105800
-    "Fase 2 Desarrollo" : 128400
+pie title Inversión Confirmada ($180,000 MXN)
+    "Fase 1: Herramientas + Capacitación" : 75000
+    "Fase 2: Desarrollo + Testing" : 105000
 ```
 
-| Concepto | USD | MXN | % Total |
-|---------|-----|-----|---------|
-| **Fase 1 (4 meses)** | $105,800 | $2,116,000 | 45% |
-| **Fase 2 (6 meses)** | $128,400 | $2,568,000 | 55% |
-| **INVERSIÓN TOTAL** | **$234,200** | **$4,684,000** | **100%** |
-| **Mantenimiento 3 años (legacy)** | $133,800 | $2,676,000 | - |
-| **Licencias Microsoft 3 años** | $85,038 | $1,700,760 | - |
-| **COSTO TOTAL LEGACY (3 años)** | **$218,838** | **$4,376,760** | - |
-| **DIFERENCIA** | **+$15,362** | **+$307,240** | - |
+**Nota:** Desarrollo 100% con personal interno SEP (DGADAI + DGTIC). Infraestructura Triara pendiente de validación.
 
-### 8.5 ROI y Payback
+| Concepto | MXN | USD Referencia | Notas |
+|---------|-----|----------------|-------|
+| **Desarrollo Interno SEP** | $0 | $0 | DGADAI + DGTIC (6 personas) |
+| **Herramientas + Capacitación** | $180,000 | $9,000 | Confirmado |
+| **Infraestructura Triara** | PENDIENTE | PENDIENTE | Validar contrato |
+| **INVERSIÓN TOTAL** | **$180,000** | **$9,000** | **+ Triara por validar** |
+| **Ahorro Crystal Reports (3 años)** | $180,000 | $9,000 | $60K/año × 3 años |
+| **Ahorro Neto (años 4-5)** | **$120,000** | **$6,000** | **Después recuperar inversión** |
 
-**Cálculo Retorno de Inversión:**
+### 8.5 ROI y Payback Real
+
+**Cálculo Retorno de Inversión (Basado en Ahorro Crystal Reports):**
 
 ```
-Inversión Inicial: $234,200 USD
-Ahorro Anual Licencias: $28,346 USD/año
-Reducción Mantenimiento: $10,000 USD/año (menos bugs, automatización)
-AHORRO ANUAL TOTAL: $38,346 USD/año
+Inversión Total Confirmada: $180,000 MXN ($9,000 USD)
+Ahorro Anual Crystal Reports: $60,000 MXN/año ($3,000 USD/año)
+Infraestructura Triara: PENDIENTE (validar contrato)
 
-ROI = ($38,346 x 3 - $234,200) / $234,200 x 100
-ROI = ($115,038 - $234,200) / $234,200 x 100
-ROI = -50.8% a 3 años
+AHORRO ANUAL REAL: $60,000 MXN/año
 
-Payback = $234,200 / $38,346 = 6.1 años
+Payback Period = $180,000 MXN / $60,000 MXN/año = 3 años (36 meses)
+
+ROI a 3 años = ($180,000 - $180,000) / $180,000 x 100 = 0% (break-even)
+ROI a 5 años = ($300,000 - $180,000) / $180,000 x 100 = 67%
+
+Ahorro Neto años 2-3: $120,000 MXN
+Ahorro Neto años 4-5: $120,000 MXN adicionales
 ```
 
-**⚠️ Análisis Crítico PSP:**
+**✅ Análisis Realista:**
 
-La inversión en estrategia bifásica **NO se justifica únicamente por ahorro financiero** a corto plazo (ROI negativo a 3 años). Sin embargo, la decisión estratégica se sustenta en:
+El ROI financiero es **break-even a 3 años** (payback completo con ahorro Crystal Reports). La decisión estratégica se justifica por beneficios más allá del ahorro inmediato:
 
 1. **Riesgos Tecnológicos Críticos (eliminados):**
    - Adobe Flash: CVE-2020-9746 (CVSS 9.8/10) - **Explotación remota sin autenticación**
@@ -1397,16 +1404,18 @@ La inversión en estrategia bifásica **NO se justifica únicamente por ahorro f
 
 3. **Sostenibilidad Operacional:**
    - Legacy: Dependencia de 1 desarrollador con conocimiento propietario
-   - Open Source: Ecosistema global, facilidad de contratación
+   - Nuevo: Desarrollo interno SEP (DGADAI + DGTIC) = conocimiento institucional permanente
+   - Open Source: Ecosistema global, facilidad de mantenimiento
 
 4. **Escalabilidad:**
-   - Legacy: Máximo 5K escuelas concurrentes (limitación MS Access)
-   - Nuevo: 300K escuelas con PostgreSQL + Redis
+   - Legacy: Máximo 2GB datos (limitación MS Access)
+   - Nuevo: Sin límite con PostgreSQL 16 + Redis 7
 
-**Decisión de Negocio:** La inversión se justifica por **reducción de riesgos críticos** y **cumplimiento normativo**, no por ROI financiero a corto plazo. El verdadero ahorro está en evitar:
-- Multas LGPDP: Potencial $50M - $300M MXN
-- Pérdida de datos por desbordamiento Access: Incalculable
-- Brechas de seguridad Flash: Daño reputacional + legal
+**Decisión de Negocio:** La inversión se recupera en 3 años con ahorro Crystal Reports, pero el valor real está en:
+- **Evitar multas LGPDP:** Potencial $50M - $300M MXN
+- **Eliminar obsolescencia tecnológica:** Flash EOL 2020, .NET 4.5 EOL 2022
+- **Ahorro continuo años 4-5:** $120,000 MXN adicionales
+- **Conocimiento institucional:** Personal SEP domina 100% el stack
 
 ### 8.6 Proyección Financiera 5 Años
 
@@ -1454,13 +1463,14 @@ La inversión en estrategia bifásica **NO se justifica únicamente por ahorro f
 - Documentación exhaustiva y ejemplos de implementación
 
 **Viabilidad Económica:** ALTA ✅
-- Inversión total: $234,200 USD ($4,684,000 MXN)
-- Ahorro licencias: $85,038 USD en 3 años ($1,700,760 MXN)
-- Break-even: 6 años (aceptable para sistema gubernamental de largo plazo)
-- Elimina dependencias Microsoft y costos recurrentes
-- Justificado por eliminación de riesgos críticos:
-  * Adobe Flash: Vulnerabilidad CVSS 9.8/10
-  * .NET 4.5: EOL sin parches de seguridad
+- Inversión confirmada: $180,000 MXN ($9,000 USD) - Desarrollo interno SEP
+- Ahorro Crystal Reports: $180,000 MXN en 3 años ($9,000 USD)
+- Break-even: 36 meses (payback completo con ahorro Crystal Reports)
+- ROI 5 años: 67% ($120K ganancia / $180K inversión)
+- Elimina dependencia de licencia comercial SAP
+- Justificado estratégicamente por eliminación de riesgos críticos:
+  * Adobe Flash: Vulnerabilidad CVSS 9.8/10 (EOL 2020)
+  * .NET 4.5: EOL sin parches de seguridad (EOL 2022)
   * MS Access: Límite 2GB (desbordamiento proyectado 2027)
 
 **Viabilidad Operacional:** ALTA ✅
@@ -1502,10 +1512,11 @@ La inversión en estrategia bifásica **NO se justifica únicamente por ahorro f
    - Sistema legacy: 57% LGPDP → **Riesgo multas $50M - $300M MXN**
    - Sistema nuevo: 86% Fase 1 → 100% Fase 2 → **Protección jurídica completa**
 
-3. **Ahorro Financiero a Largo Plazo:**
-   - Licencias Microsoft: $85,038 USD ahorrados en 3 años
-   - Hosting: $9,000 USD ahorrados en 3 años (Azure → VPS)
-   - Mantenimiento: $10,000 USD/año reducido (automatización)
+3. **Ahorro Financiero Real:**
+   - Crystal Reports (SAP comercial): $9,000 USD ahorrados en 3 años ($180,000 MXN)
+   - Hosting: $0 (sistema ya está en centro datos SEP, sin cambio)
+   - Base de datos: $0 (MS Access ya pagado con Office SEP)
+   - Mantenimiento: Mejorado con automatización y testing (Jest + Playwright)
 
 4. **Escalabilidad y Sostenibilidad:**
    - PostgreSQL: Sin límite de 2GB (vs MS Access)
@@ -1614,11 +1625,11 @@ gantt
 
 Este análisis ha sido realizado bajo metodología **PSP (Personal Software Process)** con certificación y **RUP (Rational Unified Process)** siguiendo las 4 fases estándar. La recomendación técnica es **PROCEDER CON ESTRATEGIA BIFÁSICA** por:
 
-1. ✅ Eliminación de riesgos tecnológicos críticos (Flash CVE-2020-9746)
+1. ✅ Eliminación de riesgos tecnológicos críticos (Flash CVE-2020-9746, .NET 4.5 EOL)
 2. ✅ Compliance legal LGPDP (evita multas hasta $300M MXN)
-3. ✅ Ahorro financiero a largo plazo ($85K USD en 3 años)
-4. ✅ Escalabilidad y sostenibilidad (PostgreSQL sin límites)
-5. ✅ Arquitectura híbrida minimiza riesgos de transición
+3. ✅ Ahorro real Crystal Reports ($9K USD / $180K MXN en 3 años)
+4. ✅ Escalabilidad y sostenibilidad (PostgreSQL sin límite 2GB de Access)
+5. ✅ Desarrollo interno SEP (DGADAI + DGTIC) = conocimiento institucional permanente
 
 **Firma Digital:** Ingeniero de Software Certificado PSP  
 **Fecha:** 25 de Noviembre de 2025
@@ -1665,7 +1676,7 @@ Este análisis ha sido realizado bajo metodología **PSP (Personal Software Proc
 
 | Rol | Información |
 |-----|------------|
-| Propietario Repositorio | dleonsystem |
+| Propietario Repositorio | SEP |
 | Certificado Firma Digital | CN=AzureAD\\LuisDeLaCabadaTirado |
 | Organización | SEP (Secretaría de Educación Pública) |
 | Licencia | MIT License |

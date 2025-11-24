@@ -45,59 +45,71 @@ timeline
 
 **🎯 Ventaja Desarrollo Interno:** Ahorro de **$217,600 USD** ($4,352,000 MXN) vs contratación externa
 
-**Comparativa Costos Operativos 3 Años:**
+**Comparativa Costos Operativos Reales 3 Años:**
 
-| Concepto | Microsoft Stack | Open Source Stack | **Ahorro** |
-|----------|----------------|-------------------|------------|
-| Licencias SQL Server | $45,000 | $0 | $45,000 |
-| Crystal Reports | $9,000 | $0 (Puppeteer) | $9,000 |
-| Azure Blob Storage | $12,600 | $0 (MinIO) | $12,600 |
-| Office Interop | $1,341 | $0 (SheetJS) | $1,341 |
-| Monitoring (AppInsights) | $6,000 | $0 (Grafana) | $6,000 |
-| SSL Certificates | $600 | $0 (Let's Encrypt) | $600 |
-| Visual Studio Pro | $1,497 | $0 (VS Code) | $1,497 |
-| Hosting Premium | $14,400 | $5,400 | $9,000 |
-| **TOTAL 3 AÑOS** | **$90,438** | **$5,400** | **💰 $85,038** |
+| Concepto | Sistema Actual (Legacy) | Sistema Modernizado | **Ahorro Real** |
+|----------|------------------------|---------------------|------------------|
+| **Crystal Reports (SAP comercial)** | **$180,000 MXN** | **$0 (Puppeteer open source)** | **$180,000 MXN** |
+| Base de Datos | $0 (MS Access en Office SEP) | $0 (PostgreSQL open source) | $0 |
+| Hosting | $0 (centro datos SEP existente) | $0 (mismo centro datos SEP) | $0 |
+| Runtime | $0 (.NET Framework) | $0 (Node.js) | $0 |
+| Storage | $0 (sistema archivos local) | $0 (MinIO en mismo servidor) | $0 |
+| **TOTAL 3 AÑOS** | **$180,000 MXN** | **$0** | **💰 $180,000 MXN** |
 
-**Balance Financiero (Desarrollo Interno SEP + Centro Datos Triara):**
-- **Ahorro Total 3 años:** $1,700,760 MXN ($85,038 USD)
+**Aclaración:** Sistema actual NO utiliza SQL Server ni Azure. Opera con MS Access en centro de datos SEP. Único costo de licencia eliminable es Crystal Reports ($5,000 MXN/mes = $60,000 MXN/año).
+
+**Balance Financiero Real (Desarrollo Interno SEP + Centro Datos Triara):**
+- **Ahorro Total 3 años (Crystal Reports):** $180,000 MXN ($60,000/año × 3)
 - **Inversión Confirmada:** $180,000 MXN (capacitación remota + herramientas)
-- **Inversión Triara:** **PENDIENTE** (validar contrato actual)
-- **Ahorro Neto 3 años:** **Por calcular** (pendiente costos Triara)
-- **ROI:** **Por calcular** (pendiente costos Triara)
-- **Ventaja Adicional:** Personal SEP + infraestructura institucional + conocimiento permanente
+- **Inversión Triara:** **PENDIENTE** (validar si hay costos adicionales en contrato actual)
+- **Break-even:** 36 meses ($180K inversión / $60K ahorro anual = 3 años)
+- **Ahorro Neto años 4-5:** $120,000 MXN (después de recuperar inversión)
+- **ROI a 5 años:** 67% ($120K ganancia / $180K inversión)
+- **Ventajas Adicionales:** Eliminación tecnologías EOL + Personal SEP + Conocimiento permanente
 
 **📋 PENDIENTE:** Solicitar a DGTIC costos de servidores en contrato SEP-Triara para completar análisis financiero
 
 ### 📊 ROI Y PAYBACK (Desarrollo Interno SEP + Centro Datos Triara)
 
-**⚠️ CÁLCULO PENDIENTE:** Requiere validación de costos de servidores en contrato SEP-Triara
+**Cálculo Basado en Ahorros Reales (Solo Crystal Reports):**
 
 ```mermaid
 gantt
-    title Proyección Retorno de Inversión (Pendiente validación Triara)
+    title Retorno de Inversión Real - Solo Ahorro Crystal Reports
     dateFormat YYYY-MM
     axisFormat %b %Y
     
-    section Inversión Confirmada MXN
-    Fase 1 $75K           :done, 2025-12, 2026-04
-    Fase 2 $105K          :done, 2026-03, 2026-09
-    Triara (por validar)  :crit, 2026-09, 2026-10
+    section Inversión MXN
+    Fase 1 $75K           :done, inv1, 2025-12, 2026-04
+    Fase 2 $105K          :done, inv2, 2026-03, 2026-09
+    Total: $180K          :milestone, 2026-09, 0d
     
-    section Ahorro Anual MXN
-    Año 1: $566K ahorro   :2026-09, 2027-09
-    Año 2: $566K ahorro   :2027-09, 2028-09
-    Año 3: $566K ahorro   :2028-09, 2029-09
+    section Ahorro Anual MXN (Crystal Reports)
+    Año 1: $60K ahorro    :save1, 2026-09, 2027-09
+    Año 2: $60K ahorro    :save2, 2027-09, 2028-09
+    Año 3: $60K ahorro    :save3, 2028-09, 2029-09
+    
+    section Break-Even
+    Recuperación inversión :crit, break, 2026-09, 2029-09
+    Break-even (36 meses) :milestone, 2029-09, 0d
 ```
 
-**Cálculo ROI (Recursos Internos + Infraestructura SEP):**
-- Ahorro anual: $566,920 MXN ($28,346 USD licencias + $10,000 USD mantenimiento)
-- Inversión confirmada: $180,000 MXN (capacitación remota + herramientas)
-- Inversión Triara: **PENDIENTE** (servidores QA/Producción 10 meses)
-- **Payback period: Por calcular** (pendiente costos Triara)
-- **ROI a 3 años: Por calcular** (pendiente costos Triara)
+**Cálculo ROI Real (Solo Eliminación Crystal Reports):**
+- **Ahorro anual REAL:** $60,000 MXN ($5,000 MXN/mes × 12 meses)
+- **Inversión total:** $180,000 MXN (desarrollo + capacitación + herramientas)
+- **Inversión Triara:** $0 (infraestructura ya existente en centro datos SEP)
+- **Payback period:** 36 meses ($180K inversión / $60K ahorro anual = 3 años)
+- **ROI a 3 años:** 0% (break-even exacto)
+- **ROI a 5 años:** 67% ($120K ganancia / $180K inversión)
 
-**📋 ACCIÓN INMEDIATA:** Coordinar con DGTIC para obtener costos actuales del contrato Triara
+**✅ Justificación Estratégica (Más Allá del ROI Financiero):**
+1. **Eliminación de riesgos críticos:** Adobe Flash (CVE-2020-9746 EOL), .NET 4.5 (EOL 2022)
+2. **Modernización tecnológica:** Stack open source moderno y mantenible
+3. **Independencia tecnológica:** Sin dependencias de licencias comerciales
+4. **Conocimiento institucional:** Personal SEP domina 100% la plataforma
+5. **Escalabilidad futura:** PostgreSQL sin límite 2GB de Access
+
+**Nota:** Sistema actual NO usa SQL Server ni Azure, solo MS Access + Crystal Reports en centro de datos SEP existente.
 
 ### ⚠️ JUSTIFICACIÓN NO FINANCIERA (CRÍTICA)
 
@@ -277,10 +289,10 @@ timeline
         Mes 3 : Testing y validación
               : Despliegue de parches de seguridad
     section Fase 2: Modernización
-        Mes 4 : Migración a SQL Server
-              : Inicio upgrade .NET 8.0
-        Mes 5 : Finalización .NET 8.0
-              : Reemplazo Crystal Reports
+        Mes 4 : Migración MS Access → PostgreSQL
+              : Inicio desarrollo stack open source
+        Mes 5 : Desarrollo Node.js + NestJS
+              : Reemplazo Crystal Reports → Puppeteer
         Mes 6 : Testing integral
               : Despliegue en producción
     section Fase 3: Transformación
@@ -312,17 +324,17 @@ timeline
 ### Fase 2: Modernización (Meses 4-6) - **PRIORIDAD ALTA**
 
 **Objetivos:**
-- Migrar a tecnologías soportadas
-- Mejorar escalabilidad
-- Reducir dependencias comerciales
+- Migrar a stack 100% open source
+- Mejorar escalabilidad (eliminar límite 2GB de Access)
+- Eliminar dependencias comerciales (Crystal Reports)
 
 **Entregables:**
-1. Migración a .NET 8.0 (soporte hasta 2026)
-2. Base de datos SQL Server Express
-3. Reemplazo de Crystal Reports por RDLC
-4. Suite de pruebas automatizadas
+1. Migración MS Access → PostgreSQL 16 (sin límite de tamaño)
+2. Backend Node.js 20 LTS + NestJS 10
+3. Reemplazo Crystal Reports → Puppeteer + Handlebars (open source)
+4. Suite de pruebas automatizadas con Jest
 
-**Inversión:** $29,200 | **ROI:** 5-7 años
+**Inversión:** $105,000 MXN | **ROI:** 36 meses (break-even con ahorro Crystal Reports)
 
 ---
 
@@ -613,29 +625,29 @@ Futuras actualizaciones de Windows podrían romper compatibilidad. Esto requerir
 
 | Rol | Cantidad | Perfil |
 |-----|----------|--------|
-| Líder Técnico | 1 | Senior .NET Developer |
-| Desarrollador | 2 | Mid-level .NET Developer |
-| QA Engineer | 1 | Testing specialist |
-| DBA | 1 | SQL Server expert (part-time) |
-| DevOps | 1 | CI/CD specialist (part-time) |
+| Líder Técnico | 1 | Senior Full-stack Developer (Node.js + React) |
+| Desarrollador Full-stack | 2 | Mid-level TypeScript/Node.js Developer |
+| QA Engineer | 1 | Testing specialist (Jest + Playwright) |
+| DBA | 1 | PostgreSQL expert (part-time) |
+| DevOps | 1 | CI/CD specialist (GitHub Actions, part-time) |
 
-### B. Herramientas y Tecnologías
+### B. Herramientas y Tecnologías (Stack Open Source)
 
 **Desarrollo:**
-- Visual Studio 2022
-- .NET 8.0 SDK
-- SQL Server Express 2022
+- Visual Studio Code (gratuito)
+- Node.js 20 LTS + NestJS 10
+- PostgreSQL 16 (open source)
 - Git / GitHub
 
 **Testing:**
-- xUnit / NUnit
-- Selenium (UI tests)
-- SQL Server Data Tools
+- Jest (unit tests)
+- Playwright (UI tests)
+- pgTAP (database tests)
 
 **Infraestructura:**
-- Windows Server 2022
-- IIS 10
-- Azure DevOps (opcional)
+- Linux/Ubuntu Server (centro datos SEP-Triara)
+- Nginx / PM2
+- GitHub Actions (CI/CD gratuito)
 
 ### C. Cronograma Visual
 
