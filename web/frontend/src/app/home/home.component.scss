@@ -1,16 +1,49 @@
 .home-card {
-  background-color: #e70303;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px 32px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+}
 
-  h1 {
-    margin-top: 0;
-    color: #1f3b57;
+.home-card__eyebrow {
+  margin: 0 0 8px;
+  color: #a11d33;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.home-card__title {
+  margin: 0;
+  color: #111827;
+  font-size: 32px;
+  line-height: 1.2;
+}
+
+.home-card__body {
+  margin-top: 16px;
+  color: #374151;
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+.home-card__highlights {
+  margin: 16px 0 0;
+  padding-left: 20px;
+}
+
+.home-card__highlights li + li {
+  margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+  .home-card {
+    padding: 22px 20px;
   }
 
-  p {
-    color: #334155;
-    line-height: 1.5;
+  .home-card__title {
+    font-size: 26px;
   }
 }
