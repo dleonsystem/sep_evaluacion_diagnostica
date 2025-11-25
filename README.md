@@ -92,7 +92,10 @@ Sistema de Captura y Reporteo de Evaluación Diagnóstica para la Secretaría de
 **🎯 Ventajas:** 
 - Desarrollo con recursos propios SEP + centro de datos institucional
 - Capacitación remota/digital para alcance nacional (150K directores)
-- Ahorro estimado **$1,042K+ MXN** vs contratación externa + presencial
+- **Ahorros totales proyectados:** $1,222,000 MXN
+  - Desarrollo interno vs externo: ~$1,030,000 MXN
+  - Capacitación remota vs presencial: $12,000 MXN
+  - Licencias Crystal Reports (3 años): $180,000 MXN
 
 ### Ahorro Real en Licencias (3 años)
 | Componente | Sistema Actual | Sistema Modernizado | Ahorro Real |

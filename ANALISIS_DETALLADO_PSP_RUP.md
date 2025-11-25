@@ -407,14 +407,15 @@ export class PdfGeneratorService {
 
 **TOTAL INVERSIÓN 2 FASES:** $180,000 MXN confirmados + **costos Triara PENDIENTES**
 
-**📊 AHORRO TOTAL POR OPTIMIZACIONES:**
-- Capacitación remota vs presencial: $12,000 MXN
-- Recursos internos vs externos: $1,030,000+ MXN
-- **Total ahorros:** $1,042,000+ MXN
+**📊 AHORROS TOTALES PROYECTADOS:**
+1. **Desarrollo interno vs externo:** ~$1,030,000 MXN (recursos DGADAI + DGTIC)
+2. **Capacitación remota vs presencial:** $12,000 MXN (modalidad digital nacional)
+3. **Licencias Crystal Reports (3 años):** $180,000 MXN (migración a Puppeteer open source)
+- **Total ahorros proyectados:** $1,222,000 MXN
 
 **📋 ACCIÓN REQUERIDA:** Solicitar a DGTIC desglose de costos en contrato actual SEP-Triara para Fase 2 (6 meses adicionales)
 
-**⚠️ AHORRO POR RECURSOS INTERNOS:** $1,030,000+ MXN vs desarrollo externo (cálculo final pendiente de costos Triara)
+**⚠️ NOTA:** Ahorro por desarrollo interno ($1,030,000 MXN) representa el costo evitado de contratar empresa externa para mismo alcance. Cálculo final de ROI pendiente de validar costos infraestructura Triara.
 
 **⚠️ NOTA FINANCIERA:** Las cifras utilizan tipo de cambio $20 MXN/USD para simplificación. No considera inflación ni TIR (Tasa Interna de Retorno). Para análisis financiero detallado, consultar sección de ROI en RESUMEN_EJECUTIVO_STAKEHOLDERS.md.
 
@@ -1048,18 +1049,16 @@ gantt
     Implementar backups          :crit, f1c, 2025-12-29, 1w
     Documentación completa       :f1d, 2026-01-05, 3w
     
-    section Fase 2: Modernización
-    Migración SQL Server         :f2a, 2026-02-01, 4w
-    Upgrade .NET 8.0            :f2b, 2026-03-01, 4w
-    Reemplazar Crystal Reports   :f2c, 2026-04-01, 4w
-    Testing integral            :f2d, 2026-05-01, 2w
-    
-    section Fase 3: Transformación
-    Arquitectura Web            :f3a, 2026-06-01, 8w
-    APIs de integración         :f3b, 2026-08-01, 6w
-    Sistema autenticación       :f3c, 2026-09-15, 4w
-    Deploy y capacitación       :f3d, 2026-10-15, 4w
+    section Fase 2: Migración Completa
+    Migración MS Access → PostgreSQL :f2a, 2026-04-01, 4w
+    Backend Node.js + NestJS        :f2b, 2026-04-15, 8w
+    Reemplazar Crystal → Puppeteer  :f2c, 2026-05-15, 4w
+    Módulo ARCO LGPDP              :f2d, 2026-06-15, 4w
+    Testing integral 10K users     :f2e, 2026-07-15, 4w
+    Deploy Producción Fase 2       :milestone, f2f, 2026-09-01, 1d
 ```
+
+**⚠️ NOTA:** Estrategia actualizada a **bifásica con stack open source** (Node.js + NestJS + PostgreSQL). No incluye .NET 8 ni SQL Server.
 
 ### 6.1 Acciones Inmediatas (0-3 meses)
 
@@ -1109,35 +1108,33 @@ Esfuerzo Estimado: 8-12 horas
 
 #### 4. **Migrar a .NET Moderno** 🟡 ALTO
 ```
-Objetivo: .NET 8.0 LTS (soporte hasta 2026)
+**⚠️ SECCIÓN OBSOLETA - Estrategia actualizada a stack open source**
 
-Plan de Migración:
-1. Evaluar compatibilidad de componentes
-2. Migrar Windows Forms → WPF o Avalonia
-3. Actualizar dependencias ADO → Entity Framework Core
-4. Testing exhaustivo
+**Estrategia Aprobada:** Migración a Node.js 20 LTS + NestJS 10 (no .NET 8)
 
-Beneficios:
-- Soporte a largo plazo
-- Mejor rendimiento
-- Compatibilidad con Windows 11+
-- Posibilidad de cross-platform
+Plan de Migración Aprobado:
+1. **Fase 1:** Portal web React + backend NestJS (híbrido con legacy)
+2. **Fase 2:** Migración completa MS Access → PostgreSQL
+3. Reemplazo Crystal Reports → Puppeteer + Handlebars
+4. Testing con Jest + Playwright
 
-Esfuerzo Estimado: 200-300 horas
+Beneficios Stack Open Source:
+- Eliminación completa de licencias comerciales
+- Comunidad global y soporte activo
+- TypeScript end-to-end (React + NestJS)
+- Escalabilidad sin límites (PostgreSQL)
 ```
 
 #### 5. **Reemplazar Crystal Reports** 🟠 MEDIO
 ```
-Opciones:
-A) FastReport.NET (licencia comercial)
-B) Telerik Reporting (licencia comercial)
-C) ReportViewer + RDLC (gratuito Microsoft)
-D) Solución custom con iTextSharp/PdfSharp
+**Solución Aprobada:** Puppeteer + Handlebars (Open Source)
 
-Recomendación: ReportViewer (RDLC)
-- Gratuito
-- Integración nativa .NET
-- Migración relativamente sencilla
+Ventajas:
+- 100% gratuito (sin licencias)
+- Plantillas HTML flexibles con Handlebars
+- Generación PDF nativa con Puppeteer
+- Fácil mantenimiento y personalización
+- Ahorro: $60,000 MXN/año ($180K en 3 años)
 
 Esfuerzo Estimado: 120-160 horas
 ```
@@ -1145,70 +1142,77 @@ Esfuerzo Estimado: 120-160 horas
 #### 6. **Migrar Base de Datos** 🟡 ALTO
 ```
 Origen: Microsoft Access (.mdb)
-Destino: SQL Server Express (gratuito)
+**⚠️ SECCIÓN OBSOLETA - Estrategia actualizada**
 
-Beneficios:
-- Sin límite de 2GB
-- Mejor integridad de datos
-- Concurrencia robusta
-- Backups automáticos
-- Escalabilidad
+**Destino Aprobado:** PostgreSQL 16 (open source, no SQL Server)
 
-Plan:
-1. Exportar esquema y datos
-2. Crear base SQL Server
-3. Actualizar cadenas de conexión
-4. Implementar stored procedures
-5. Testing de rendimiento
+Beneficios PostgreSQL:
+- 100% open source (sin licencias)
+- Sin límite de tamaño (vs 2GB de Access)
+- ACID compliant con transacciones robustas
+- JSON nativo (JSONB) con índices GIN
+- Full-text search integrado
+- Comunidad global activa
 
-Esfuerzo Estimado: 80-120 horas
+Plan de Migración Aprobado:
+1. Exportar esquema MS Access (.mdb)
+2. Crear base PostgreSQL 16 en servidor Triara
+3. Migrar datos con Prisma ORM
+4. Implementar índices y constraints
+5. Testing de carga con 10K usuarios concurrentes
+
+Esfuerzo Estimado: 120-160 horas (incluido en Fase 2)
 ```
 
 ### 6.3 Evolución a Largo Plazo (6-12 meses)
 
-#### 7. **Arquitectura Web Moderna** 🔵 ESTRATÉGICO
+#### 7. **Arquitectura Web Moderna** ✅ YA APROBADA E IMPLEMENTÁNDOSE
 ```
-Propuesta: Migración a arquitectura web
+**Estrategia Bifásica Aprobada (En Ejecución)**
 
 Backend:
-- ASP.NET Core 8.0 Web API
-- Entity Framework Core
-- SQL Server / PostgreSQL
+- Node.js 20 LTS + NestJS 10
+- Prisma ORM 5
+- PostgreSQL 16
 
 Frontend:
-- React / Blazor WebAssembly
-- Diseño responsive
-- PWA (Progressive Web App)
+- React 18 + TypeScript 5
+- Vite 5 (build tool)
+- TailwindCSS 3 (diseño responsive)
+- PWA ready
 
 Infraestructura:
-- Azure App Service / IIS
-- Azure SQL Database
-- Azure Blob Storage (reportes)
+- Centro de datos SEP-Triara (no Azure)
+- PostgreSQL en servidores SEP
+- MinIO self-hosted (storage S3-compatible)
+- Redis 7 (cache y sesiones)
 
 Beneficios:
-- Acceso desde cualquier dispositivo
-- Centralización de datos
-- Actualizaciones automáticas
-- Consolidación en tiempo real
-- Reducción de costos de distribución
+- 100% open source (sin licencias)
+- Acceso web desde cualquier dispositivo
+- Centralización de datos en PostgreSQL
+- Ahorro Crystal Reports: $180K MXN en 3 años
+- Personal SEP domina el stack completo
 
-Esfuerzo Estimado: 600-800 horas
+Estado: **FASE 1 EN DESARROLLO (Marzo 2026)**
 ```
 
-#### 8. **Sistema de Autenticación y Autorización** 🔵 ESTRATÉGICO
+#### 8. **Sistema de Autenticación y Autorización** ✅ INCLUIDO EN FASE 1
 ```
-Implementar:
-- Azure Active Directory / Identity Server
-- Roles: Admin, Director, Docente, Consulta
-- Permisos granulares por escuela/zona
-- Auditoría de acciones
+**Ya Implementado en Diseño:**
+- JWT (JSON Web Tokens) con Passport.js
+- Roles: Admin SEP, Director, Docente, Consulta
+- Permisos granulares por CCT (escuela)
+- Middleware de auditoría con Winston logger
+- Bcrypt para hash de contraseñas
 
-Justificación:
-- Datos educativos sensibles (LGPDP)
-- Trazabilidad de cambios
-- Cumplimiento normativo
+Justificación LGPDP:
+- Protección datos educativos sensibles
+- Trazabilidad completa de accesos
+- Cumplimiento artículos 6, 7, 8 LGPDP
+- Logs de auditoría 5 años
 
-Esfuerzo Estimado: 120-160 horas
+Estado: **INCLUIDO EN FASE 1 (NestJS + Passport)**
 ```
 
 #### 9. **API de Integración** 🔵 ESTRATÉGICO

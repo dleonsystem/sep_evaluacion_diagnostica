@@ -35,15 +35,20 @@ timeline
 
 ### 💰 ANÁLISIS FINANCIERO COMPARATIVO (3 AÑOS)
 
-**Inversión Única Estrategia Bifásica:**
+**Inversión Confirmada Estrategia Bifásica (Desarrollo Interno SEP):**
 
-| Fase | Inversión Infraestructura (USD) | Recursos Humanos | Timeline |
-|------|--------------------------------|------------------|----------|
-| **Fase 1** | $7,100 | DGADAI + DGTIC (6 personas) | 4 meses |
-| **Fase 2** | $9,500 | DGADAI + DGTIC (6 personas) | 6 meses |
-| **TOTAL** | **$16,600** ($332,000 MXN) | **Personal SEP interno** | **10 meses** |
+| Fase | Inversión Confirmada (MXN) | Recursos Humanos | Timeline |
+|------|----------------------------|------------------|----------|
+| **Fase 1** | $75,000 MXN | DGADAI + DGTIC (6 personas) | 4 meses |
+| **Fase 2** | $105,000 MXN | DGADAI + DGTIC (6 personas) | 6 meses |
+| **TOTAL** | **$180,000 MXN** | **Personal SEP interno** | **10 meses** |
+| Triara | **PENDIENTE validar** | Infraestructura SEP | Contrato actual |
 
-**🎯 Ventaja Desarrollo Interno:** Ahorro de **$217,600 USD** ($4,352,000 MXN) vs contratación externa
+**🎯 Ventajas Desarrollo Interno SEP:**
+- **Ahorro vs contratación externa:** ~$1,030,000 MXN (recursos propios DGADAI + DGTIC)
+- **Ahorro capacitación remota:** $12,000 MXN vs modalidad presencial
+- **Ahorro licencias Crystal Reports:** $180,000 MXN en 3 años
+- **Total ahorros proyectados:** **$1,222,000 MXN**
 
 **Comparativa Costos Operativos Reales 3 Años:**
 
