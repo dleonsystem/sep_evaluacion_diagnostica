@@ -1,0 +1,16 @@
+# Angular generated files
+/dist
+/.angular
+/node_modules
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+*.launch
+.settings/
+.vscode/
+
+# Misc
+npm-debug.log
+.yarn-integrity
