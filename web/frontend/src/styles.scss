@@ -1,0 +1,11 @@
+/* You can add global styles to this file, and also import other style files */
+:root {
+  --gov-header-height: 0px;
+}
+
+.navbar, .navbar-inverse .navbar-toggle
+
+ {
+    border: none;
+    z-index: 1050;
+}
