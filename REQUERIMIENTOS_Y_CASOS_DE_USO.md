@@ -129,7 +129,7 @@
   - Valor encontrado vs valor esperado
   - Sugerencia de corrección
 - **RF-10.6** El sistema debe permitir máximo N intentos de carga (configurable, default: 3)
-- **RF-10.7** El sistema debe almacenar archivos en object storage (MinIO)
+- **RF-10.7** El sistema debe almacenar archivos en filesystem estructurado por CCT/periodo
 - **RF-10.8** El sistema debe registrar metadatos de carga en PostgreSQL
 
 ### RF-11: Sistema de Tickets ✨ FASE 1
@@ -186,7 +186,7 @@
 - **RF-15.1** El sistema debe exportar FRV validados a carpeta compartida para procesamiento legacy
 - **RF-15.2** El sistema debe implementar API/webhook para recibir notificación de PDFs generados
 - **RF-15.3** El sistema debe ejecutar script sincronización (Node.js + Bull queue) para:
-  - Importar PDFs de sistema legacy a MinIO
+  - Importar PDFs de sistema legacy a filesystem organizado
   - Registrar metadatos en PostgreSQL
   - Notificar a director por email
 - **RF-15.4** El sistema debe mantener compatibilidad con flujo de 10 equipos validación
@@ -260,7 +260,7 @@
 - **RNF-08.2** El sistema debe generar reportes PDF mediante PDFKit o Puppeteer
 - **RNF-08.3** El sistema debe integrarse con SMTP para envío de emails
 - **RNF-08.4** El sistema debe exponer API REST para integraciones externas
-- **RNF-08.5** El sistema debe ser compatible con S3 protocol (MinIO)
+- **RNF-08.5** El sistema debe usar filesystem nativo con estructura /data/sicrer/{frv,pdfs}/{periodo}/{cct}/
 - **RNF-08.6** El sistema debe soportar importación masiva vía CSV
 
 ### RNF-09: Stack Tecnológico Open Source ✨ FASE 1
@@ -268,8 +268,8 @@
 - **RNF-09.2** Frontend debe ser React 18+ con TypeScript 5+
 - **RNF-09.3** Backend debe ser Node.js 20 LTS con framework NestJS
 - **RNF-09.4** Base de datos debe ser PostgreSQL 16+
-- **RNF-09.5** Object storage debe ser MinIO (S3-compatible)
-- **RNF-09.6** Cache debe ser Redis 7+
+- **RNF-09.5** Storage debe usar fs/promises nativo Node.js con estructura organizada
+- **RNF-09.6** Cache debe ser node-cache (in-memory nativo Node.js)
 - **RNF-09.7** Todas las dependencias deben tener licencias permisivas:
   - MIT License
   - Apache 2.0 License
@@ -465,7 +465,7 @@ graph TB
       * Estado: ✅ Archivo válido
     - Director confirma carga con botón "Confirmar y Enviar"
     - Sistema registra en BD PostgreSQL
-    - Sistema almacena archivo en MinIO
+    - Sistema almacena archivo en filesystem SSD
     - Sistema exporta JSON a carpeta legacy para procesamiento
     - Sistema muestra folio de confirmación: **FRV-2025-24PPR0356K-001**
     - Sistema envía email de confirmación
@@ -505,7 +505,7 @@ graph TB
 - **9a.** Timeout de validación → Sistema marca como "pendiente" y notifica después
 
 **Postcondiciones:** 
-- FRV almacenado en MinIO con metadatos en PostgreSQL
+- FRV almacenado en filesystem con metadatos (ruta, tamaño) en PostgreSQL
 - Archivo exportado a carpeta legacy (si validación exitosa)
 - Email de confirmación enviado
 - Auditoría registrada
@@ -952,7 +952,7 @@ graph TB
       ```sql
       INSERT INTO resultados (
         carga_id, cct, tipo_reporte, grado, grupo,
-        archivo_nombre, minio_bucket, minio_object_key,
+        archivo_nombre, file_path, file_size,
         file_size_bytes, created_at
       ) VALUES (...);
       ```
@@ -1034,7 +1034,7 @@ graph TB
    [Descargar Todo (ZIP - 45 MB)]
    ```
 6. Director puede:
-   - Descargar reportes individuales (click → descarga directa desde MinIO)
+   - Descargar reportes individuales (click → streaming desde filesystem)
    - Descargar paquete completo (sistema genera ZIP on-the-fly)
 7. Sistema registra cada descarga:
    ```sql
@@ -1046,14 +1046,14 @@ graph TB
    ```
 
 **Flujos Alternativos:**
-- **4b.** Error al subir PDF a MinIO → Script reintenta 3 veces, luego alerta
+- **4b.** Error al guardar PDF en filesystem → Script reintenta 3 veces, luego alerta
 - **4d.** Error al insertar en PostgreSQL → Script rollback y reintenta
 - **4e.** Reportes incompletos → Script espera hasta tener todos antes de notificar
 - **4a.** Worker de email falla → Job vuelve a cola para reintento (max 5 intentos)
 - **6.** Descarga de paquete ZIP muy grande → Sistema usa streaming para generar ZIP
 
 **Postcondiciones:**
-- PDFs almacenados en MinIO
+- PDFs almacenados en filesystem /data/sicrer/pdfs/{periodo}/{cct}/
 - Metadatos en PostgreSQL
 - Director notificado por email
 - Reportes disponibles para descarga
@@ -1322,7 +1322,7 @@ pie title "Automatización por Fase"
 - Frontend: React 18 + TypeScript
 - Backend: Node.js 20 + NestJS
 - Database: PostgreSQL 16
-- Storage: MinIO S3-compatible
+- Storage: Filesystem nativo SSD (fs/promises)
 - **Beneficio:** $0 en licencias, comunidad global, sin vendor lock-in
 
 **✅ APROBADO: Estrategia Bifásica**
@@ -1395,7 +1395,7 @@ pie title "Automatización por Fase"
 
 **🔴 CRÍTICO - Iniciar Inmediatamente:**
 1. Contratar equipo desarrollo (2 full-stack React/Node)
-2. Provisionar infraestructura (VPS/Cloud + PostgreSQL + MinIO)
+2. Provisionar infraestructura (VPS/Cloud + PostgreSQL + SSD storage)
 3. Diseñar schema PostgreSQL final
 4. Crear prototipos UI con directores piloto
 5. Configurar CI/CD (GitHub Actions)
@@ -1404,7 +1404,7 @@ pie title "Automatización por Fase"
 1. Implementar autenticación (Passport.js + JWT)
 2. Desarrollar catálogos (Escuelas, Usuarios)
 3. Integrar SheetJS para lectura de Excel
-4. Configurar MinIO para almacenamiento
+4. Configurar directorios filesystem para almacenamiento
 
 **🟢 DESEABLE - Post Fase 1:**
 1. Dashboard analytics para DGADAE
@@ -1450,8 +1450,9 @@ pie title "Automatización por Fase"
 ```json
 {
   "database": "PostgreSQL 16",
-  "cache": "Redis 7",
-  "storage": "MinIO (S3-compatible)",
+  "cache": "node-cache 5.1.2",
+  "jobs": "pg-boss 9.0.3",
+  "storage": "Filesystem SSD (fs/promises nativo)",
   "web-server": "Nginx 1.24",
   "ssl": "Let's Encrypt",
   "containers": "Docker + Docker Compose",

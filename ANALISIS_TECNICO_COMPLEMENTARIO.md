@@ -3,7 +3,7 @@
 ### Versión 2.0 - Stack Open Source (React + Node.js + PostgreSQL)
 
 **Fecha Actualización:** 25 de Noviembre de 2025  
-**Stack Tecnológico:** React 18 + NestJS 10 + PostgreSQL 16 + MinIO + Redis 7  
+**Stack Tecnológico:** React 18 + NestJS 10 + PostgreSQL 16 + Filesystem SSD + node-cache + pg-boss  
 **Estrategia:** Bifásica (Fase 1 Híbrida + Fase 2 Completa)
 
 ---
@@ -116,7 +116,7 @@ CREATE INDEX idx_usuarios_email ON usuarios(email);
 CREATE INDEX idx_usuarios_escuela ON usuarios(escuela_id);
 
 -- ============================================
--- TABLA: sesiones (JWT Redis Cache)
+-- TABLA: job_queue (pg-boss jobs)
 -- ============================================
 
 CREATE TABLE sesiones (
@@ -134,7 +134,7 @@ CREATE INDEX idx_sesiones_token ON sesiones(token_hash);
 CREATE INDEX idx_sesiones_usuario ON sesiones(usuario_id);
 
 -- ============================================
--- TABLA: archivos_frv (MinIO Storage)
+-- TABLA: archivos_frv (Filesystem Storage)
 -- ============================================
 
 CREATE TABLE archivos_frv (
@@ -145,9 +145,8 @@ CREATE TABLE archivos_frv (
   nivel nivel_educativo NOT NULL,
   estado estado_frv DEFAULT 'PENDIENTE_VALIDACION',
   
-  -- MinIO metadata
-  minio_bucket VARCHAR(100) NOT NULL, -- 'frv-uploads'
-  minio_object_key VARCHAR(255) NOT NULL, -- 'cct/2024-2025/upload.xlsx'
+  -- Filesystem metadata
+  file_path VARCHAR(500) NOT NULL, -- '/data/sicrer/frv/2024-2025/15ABC0001X/frv_2024-09-15.xlsx'
   filename_original VARCHAR(255) NOT NULL,
   file_size BIGINT NOT NULL,
   mime_type VARCHAR(50) DEFAULT 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -253,7 +252,7 @@ CREATE INDEX idx_tickets_escuela ON tickets_soporte(escuela_id);
 CREATE INDEX idx_tickets_estado ON tickets_soporte(estado);
 
 -- ============================================
--- TABLA: reportes_generados (PDFs en MinIO)
+-- TABLA: reportes_generados (PDFs en Filesystem)
 -- ============================================
 
 CREATE TABLE reportes_generados (
@@ -262,9 +261,8 @@ CREATE TABLE reportes_generados (
   ciclo_escolar VARCHAR(9) NOT NULL,
   tipo_reporte VARCHAR(50) NOT NULL, -- 'ESCUELA_ENS', 'GRUPO_LEN', etc.
   
-  -- MinIO metadata
-  minio_bucket VARCHAR(100) NOT NULL, -- 'reportes-pdf'
-  minio_object_key VARCHAR(255) NOT NULL,
+  -- Filesystem metadata
+  file_path VARCHAR(500) NOT NULL, -- '/data/sicrer/pdfs/2024-2025/15ABC0001X/reporte_escuela.pdf'
   filename VARCHAR(255) NOT NULL,
   file_size BIGINT,
   
@@ -585,8 +583,7 @@ model ArchivoFRV {
   nivel               NivelEducativo
   estado              EstadoFRV   @default(PENDIENTE_VALIDACION)
   
-  minioBucket         String      @map("minio_bucket") @db.VarChar(100)
-  minioObjectKey      String      @map("minio_object_key") @db.VarChar(255)
+  filePath            String      @map("file_path") @db.VarChar(500)
   filenameOriginal    String      @map("filename_original") @db.VarChar(255)
   fileSize            BigInt      @map("file_size")
   mimeType            String      @map("mime_type") @db.VarChar(50) @default("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -690,8 +687,7 @@ model ReporteGenerado {
   cicloEscolar    String    @map("ciclo_escolar") @db.VarChar(9)
   tipoReporte     String    @map("tipo_reporte") @db.VarChar(50)
   
-  minioBucket     String    @map("minio_bucket") @db.VarChar(100)
-  minioObjectKey  String    @map("minio_object_key") @db.VarChar(255)
+  filePath        String    @map("file_path") @db.VarChar(500)
   filename        String    @db.VarChar(255)
   fileSize        BigInt?   @map("file_size")
   
@@ -775,8 +771,8 @@ backend/
 │   │
 │   ├── config/                     # Configuración
 │   │   ├── database.config.ts      # Prisma + PostgreSQL
-│   │   ├── minio.config.ts         # MinIO S3 Client
-│   │   ├── redis.config.ts         # Redis cache + queue
+│   │   ├── storage.config.ts       # Filesystem Storage Config
+│   │   ├── cache.config.ts         # node-cache config
 │   │   ├── jwt.config.ts           # JWT tokens
 │   │   └── email.config.ts         # Nodemailer SMTP
 │   │
@@ -879,7 +875,7 @@ backend/
 │   │   │       ├── generar-reporte.dto.ts
 │   │   │       └── reporte-response.dto.ts
 │   │   │
-│   │   ├── storage/                # Módulo MinIO Storage
+│   │   ├── storage/                # Módulo Filesystem Storage
 │   │   │   ├── storage.module.ts
 │   │   │   ├── storage.service.ts
 │   │   │   └── dto/
@@ -927,7 +923,7 @@ backend/
 │
 ├── .env.example                    # Variables entorno
 ├── .gitignore
-├── docker-compose.yml              # PostgreSQL + Redis + MinIO
+├── docker-compose.yml              # PostgreSQL + Volúmenes filesystem
 ├── Dockerfile
 ├── nest-cli.json
 ├── package.json
@@ -1719,18 +1715,18 @@ flowchart LR
         C4[Validar Integridad]
     end
     
-    subgraph "Fase 3: Migración App"
-        D1[Upgrade .NET 8]
-        D2[Migrar ADO a EF Core]
+    subgraph "⚠️ [OBSOLETO] Fase 3 .NET - NO IMPLEMENTAR"
+        D1[❌ Upgrade .NET 8]
+        D2[❌ Migrar ADO a EF Core]
         D3[Eliminar Flash]
-        D4[Reemplazar Crystal]
+        D4[❌ Crystal → RDLC]
     end
     
-    subgraph "Estado Futuro"
-        E1[Windows Forms<br/>.NET 8]
-        E2[(SQL Server<br/>Express)]
-        E3[Microsoft RDLC<br/>o Telerik]
-        E4[Controles .NET<br/>✅ MODERNOS]
+    subgraph "✅ Estado Futuro Real: Open Source"
+        E1[React 18<br/>Web SPA]
+        E2[(PostgreSQL 16<br/>Open Source)]
+        E3[Puppeteer<br/>PDF Open Source]
+        E4[Filesystem SSD<br/>✅ SIMPLE]
     end
     
     A1 --> B1
@@ -1772,10 +1768,10 @@ DÍA 3-4: Análisis de dependencias
 ├── Mapear flujos de datos
 └── Documentar integraciones
 
-DÍA 5: Setup de entorno de desarrollo
-├── Instalar Visual Studio 2022
-├── Instalar .NET 8.0 SDK
-├── Instalar SQL Server Express
+DÍA 5: Setup de entorno de desarrollo ⚠️ [ACTUALIZAR A STACK OPEN SOURCE]
+├── ❌ Instalar Visual Studio 2022 → ✅ VS Code
+├── ❌ Instalar .NET 8.0 SDK → ✅ Node.js 20 LTS
+├── ❌ Instalar SQL Server Express → ✅ PostgreSQL 16
 └── Configurar Git repository
 ```
 
@@ -2786,41 +2782,45 @@ export class FrvController {
 }
 ```
 
-### 8.3 Configuración MinIO S3
+### 8.3 Configuración Filesystem Storage
 
-**Archivo:** `backend/src/config/minio.config.ts`
+**Archivo:** `backend/src/config/storage.config.ts`
 
 ```typescript
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as Minio from 'minio';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 @Injectable()
-export class MinioConfigService {
-  public readonly client: Minio.Client;
+export class StorageConfigService {
+  private readonly basePath: string;
+  private readonly frvPath: string;
+  private readonly pdfsPath: string;
 
   constructor(private configService: ConfigService) {
-    this.client = new Minio.Client({
-      endPoint: this.configService.get<string>('MINIO_ENDPOINT', 'localhost'),
-      port: this.configService.get<number>('MINIO_PORT', 9000),
-      useSSL: this.configService.get<boolean>('MINIO_USE_SSL', false),
-      accessKey: this.configService.get<string>('MINIO_ACCESS_KEY'),
-      secretKey: this.configService.get<string>('MINIO_SECRET_KEY'),
-    });
+    this.basePath = this.configService.get<string>('STORAGE_BASE_PATH', '/data/sicrer');
+    this.frvPath = path.join(this.basePath, 'frv');
+    this.pdfsPath = path.join(this.basePath, 'pdfs');
 
-    this.initializeBuckets();
+    this.initializeDirectories();
   }
 
-  private async initializeBuckets(): Promise<void> {
-    const buckets = ['frv-uploads', 'reportes-pdf'];
+  private async initializeDirectories(): Promise<void> {
+    const directories = [this.frvPath, this.pdfsPath];
 
-    for (const bucket of buckets) {
-      const exists = await this.client.bucketExists(bucket);
-      if (!exists) {
-        await this.client.makeBucket(bucket, 'us-east-1');
-        console.log(`Bucket creado: ${bucket}`);
-      }
+    for (const dir of directories) {
+      await fs.mkdir(dir, { recursive: true });
+      console.log(`Directorio inicializado: ${dir}`);
     }
+  }
+
+  public getFrvPath(periodo: string, cct: string): string {
+    return path.join(this.frvPath, periodo, cct);
+  }
+
+  public getPdfPath(periodo: string, cct: string): string {
+    return path.join(this.pdfsPath, periodo, cct);
   }
 }
 ```
@@ -2829,9 +2829,11 @@ export class MinioConfigService {
 
 ## 9. CONCLUSIONES TÉCNICAS - STACK OPEN SOURCE
 
-### 9.0 Arquitectura Propuesta para Modernización Completa
+### 9.0 Arquitectura Open Source Aprobada
 
-#### 8.0.1 Visión de Arquitectura Futura (Fase 3 - Largo Plazo)
+⚠️ **NOTA**: Las secciones 9.0.1 a 9.0.3 describen una arquitectura .NET 8 que fue **DESCARTADA**. La estrategia aprobada es **bifásica con stack open source** (React 18 + Node.js 20 LTS + NestJS 10 + PostgreSQL 16). Ver secciones 1-8 de este documento para arquitectura real.
+
+#### 9.0.1 ⚠️ [OBSOLETO] Visión Arquitectura .NET 8 (NO IMPLEMENTAR)
 
 ```mermaid
 graph TB
@@ -2870,9 +2872,9 @@ graph TB
     end
     
     subgraph "Capa de Persistencia"
-        F1[(SQL Server<br/>o Azure SQL Database)]
-        F2[Azure Blob Storage<br/>PDFs/Archivos]
-        F3[Redis Cache<br/>Sesiones/Consultas]
+        F1[(PostgreSQL 16<br/>Open Source)]
+        F2[Filesystem SSD<br/>PDFs/Archivos FRV]
+        F3[node-cache<br/>Cache Memoria]
     end
     
     subgraph "Servicios Externos"

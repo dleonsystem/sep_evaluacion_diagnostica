@@ -31,7 +31,7 @@ graph TB
     subgraph "FASE 1: Híbrido (Marzo 2026)"
         A1[Portal Web React]
         A2[Validador SheetJS]
-        A3[MinIO Storage]
+        A3[Filesystem SSD]
         A4[Script Sync]
         A5[SiCRER Legacy]
         
@@ -79,8 +79,8 @@ graph TB
 **Stack Tecnológico:**
 - Frontend: React 18 + TypeScript 5 + Vite 5
 - Backend: NestJS 10 + Prisma 5 + PostgreSQL 16
-- Storage: MinIO S3-compatible
-- Cache: Redis 7 (sesiones JWT)
+- Storage: Filesystem nativo SSD (~550 GB/año)
+- Cache: node-cache (memoria nativa) + pg-boss (jobs en PostgreSQL)
 
 **Volumetría Fase 1:**
 - Escuelas objetivo: 115K-150K públicas (de ~230K totales según estadísticas SEP 2024)
@@ -662,7 +662,7 @@ graph LR
    - Consultas en tiempo real
 
 6. **Modernizar Reporteador**
-   - Reemplazar Crystal Reports por Telerik/RDLC
+   - Reemplazar Crystal Reports por Puppeteer + Handlebars (open source)
    - Reducir tiempo de 1.5 min a 10 segundos por escuela
 
 ### Largo Plazo (6-12 meses)

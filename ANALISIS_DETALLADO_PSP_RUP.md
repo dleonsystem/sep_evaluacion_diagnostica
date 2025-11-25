@@ -49,8 +49,9 @@ El repositorio **sep_evaluacion_diagnostica** contiene el Sistema **SiCRER** (Si
 - **Frontend:** React 18.3.0 + TypeScript 5.3.0 (1.2 GB node_modules)
 - **Backend:** Node.js 20 LTS + NestJS 10.3.0 (800 MB node_modules)
 - **Base de Datos:** PostgreSQL 16 (≈ 1.5 GB con índices completos)
-- **Storage:** MinIO S3-compatible (escalable, sin límite de 2 GB)
-- **Cache:** Redis 7 (in-memory, 512 MB asignados)
+- **Storage:** Filesystem nativo SSD (discos duros estado sólido data center, ~550 GB/año)
+- **Cache:** node-cache (in-memory nativo Node.js, ~50 MB para 10K usuarios)
+- **Jobs Queue:** pg-boss (tabla en PostgreSQL, sin dependencia adicional)
 - **Licencias:** MIT / Apache 2.0 / BSD (100% open source)
 
 ---
@@ -135,7 +136,7 @@ gantt
 graph LR
     A[Director de Escuela] -->|1. Login CCT + Password| B[Portal Web React]
     B -->|2. Arrastra FRV Excel| C[Validador SheetJS]
-    C -->|3a. Validación OK| D[MinIO Storage]
+    C -->|3a. Validación OK| D[Filesystem SSD]
     C -->|3b. Errores Detectados| E[Sistema Tickets]
     D -->|4. Sincronización| F[Sistema Legacy SiCRER]
     F -->|5. Procesa + Genera PDF| G[Crystal Reports]
@@ -170,7 +171,7 @@ graph TB
         A[React 18<br/>Frontend SPA]
         B[NestJS 10<br/>REST API]
         C[(PostgreSQL 16<br/>Catálogos + Usuarios)]
-        D[MinIO<br/>S3 Storage FRV]
+        D[Filesystem SSD<br/>/data/sicrer/frv]
         E[Redis 7<br/>Cache Sesiones]
         F[SheetJS<br/>Validador Excel]
     end
@@ -220,7 +221,7 @@ graph TB
 2. **Carga de Archivos:**
    - Director arrastra FRV Excel al componente Dropzone
    - SheetJS valida estructura en cliente (rápido, sin round-trip)
-   - Si válido: upload a MinIO con metadata (CCT, fecha, ciclo)
+   - Si válido: guarda en filesystem con metadata (CCT, fecha, ciclo)
    - Si inválido: muestra errores específicos con números de fila
 
 3. **Sistema de Tickets:**
@@ -230,7 +231,7 @@ graph TB
    - Operador corrige FRV y lo carga manualmente
 
 4. **Sincronización Nocturna (03:00 AM):**
-   - Script Node.js consulta MinIO: FRV nuevos desde última sync
+   - Script Node.js consulta filesystem: FRV nuevos desde última sync
    - Lee FRV con SheetJS, transforma a formato MS Access
    - Inserta datos en bd24.25.1.mdb vía ODBC bridge
    - Actualiza estado en PostgreSQL: `sync_status = 'PROCESADO'`
@@ -239,12 +240,12 @@ graph TB
    - SiCRER.exe detecta nuevos registros en Access
    - Ejecuta lógica de negocio (cálculos, agregaciones)
    - Crystal Reports genera PDFs de resultados
-   - Script Node.js detecta PDFs nuevos, los mueve a MinIO
+   - Script Node.js detecta PDFs nuevos, los organiza en filesystem
 
 6. **Notificación y Descarga:**
-   - NestJS detecta PDFs disponibles en MinIO
+   - NestJS detecta PDFs disponibles en filesystem
    - Envía notificación email al director con link al portal
-   - Director descarga PDF desde portal (streaming desde MinIO)
+   - Director descarga PDF desde portal (streaming desde filesystem)
 
 **Costos Fase 1 (Recursos Internos SEP):**
 
@@ -296,7 +297,7 @@ graph LR
     D -->|4. Queue Job| E[Bull Worker]
     E -->|5. Procesa Estadísticas| D
     E -->|6. Genera PDF| F[Puppeteer]
-    F -->|7. Guarda PDF| G[MinIO]
+    F -->|7. Guarda PDF| G[Filesystem /data/sicrer/pdfs]
     G -->|8. Notifica| B
     B -->|9. Descarga| A
     A -->|10. Solicita ARCO| H[Módulo ARCO]
@@ -322,7 +323,7 @@ graph LR
 | **Procesador Estadísticas** | Node.js Worker Threads | Reemplaza lógica SiCRER.exe | 5x más rápido (paralelo) |
 | **Generador PDF** | Puppeteer 22 + Handlebars | Reemplaza Crystal Reports | Plantillas HTML, sin licencias |
 | **Módulo ARCO** | NestJS + PostgreSQL | Derechos LGPDP (Acceso, Rectificación, Cancelación, Oposición) | Compliance 100% |
-| **Gestor Consentimientos** | NestJS + Redis | Registro consentimientos padres | Trazabilidad completa |
+| **Gestor Consentimientos** | NestJS + PostgreSQL | Registro consentimientos padres con tabla dedicada | Trazabilidad completa |
 | **Dashboard Analytics** | Recharts 2.x | Visualizaciones interactivas | Crystal Reports solo PDF estático |
 
 **Migración de Base de Datos:**
@@ -384,7 +385,7 @@ export class PdfGeneratorService {
     });
     
     await browser.close();
-    return pdf; // Retorna Buffer para guardar en MinIO
+    return pdf; // Retorna Buffer para guardar en filesystem
   }
 }
 ```
@@ -411,7 +412,8 @@ export class PdfGeneratorService {
 1. **Desarrollo interno vs externo:** ~$1,030,000 MXN (recursos DGADAI + DGTIC)
 2. **Capacitación remota vs presencial:** $12,000 MXN (modalidad digital nacional)
 3. **Licencias Crystal Reports (3 años):** $180,000 MXN (migración a Puppeteer open source)
-- **Total ahorros proyectados:** $1,222,000 MXN
+4. **Infraestructura simplificada (3 años):** $54,000 MXN (sin Redis $30K + sin MinIO $54K = ahorro adicional vs arquitectura compleja)
+- **Total ahorros proyectados:** $1,276,000 MXN
 
 **📋 ACCIÓN REQUERIDA:** Solicitar a DGTIC desglose de costos en contrato actual SEP-Triara para Fase 2 (6 meses adicionales)
 
@@ -525,8 +527,8 @@ graph TB
     
     subgraph "PERSISTENCIA"
         L[(PostgreSQL 16<br/>ACID Compliant)]
-        M[Redis 7.2<br/>Cache + Queue]
-        N[MinIO<br/>S3 Object Storage]
+        M[node-cache<br/>Cache Memoria]
+        N[Filesystem SSD<br/>/data/sicrer (FRV + PDFs)]
     end
     
     subgraph "INFRAESTRUCTURA"
@@ -580,7 +582,7 @@ graph TB
     "@prisma/client": "^5.8.0",
     "bull": "^4.12.0",
     "ioredis": "^5.3.2",
-    "minio": "^7.1.3",
+
     "nodemailer": "^6.9.8",
     "puppeteer": "^22.0.0",
     "react": "^18.3.0",
@@ -612,8 +614,8 @@ graph TB
 | **ORM** | ADO.NET directo | Prisma ORM | $0 (ambos gratuitos) |
 | **Reportes** | **Crystal Reports (SAP comercial)** | **Puppeteer + Handlebars** | **$60,000 MXN/año** |
 | **Excel** | Microsoft.Office.Interop (Office SEP) | SheetJS (open source) | $0 (Office ya en SEP) |
-| **Storage** | Sistema de archivos local | MinIO self-hosted | $0 (mismo servidor SEP) |
-| **Cache** | MemoryCache (in-proc) | Redis 7 (dedicado) | $0 (ambos gratuitos) |
+| **Storage** | Sistema de archivos local | fs/promises nativo Node.js | $0 (filesystem directo, sin servidor adicional) |
+| **Cache** | MemoryCache (in-proc) | node-cache (in-memory nativo) | $0 (ambos gratuitos, sin servidor adicional) |
 | **Obsolescencia** | Adobe Flash (EOL 2020) ⚠️ | Eliminado completamente | Riesgo seguridad eliminado |
 | **Hosting** | Centro de datos SEP | Centro de datos SEP (sin cambio) | $0 (misma infraestructura) |
 | **TOTAL AHORRO REAL** | - | - | **💰 $60,000 MXN/año** |
@@ -638,11 +640,11 @@ graph TB
    - **Rendimiento:** Virtual DOM + Concurrent Features
    - **Mobile:** React Native permite app móvil futura
 
-4. **MinIO sobre AWS S3:**
-   - **Egress Fees:** $0 vs $0.09/GB en AWS
-   - **S3 Compatible:** Misma API, fácil migrar a cloud si necesario
-   - **Self-Hosted:** Control total sobre datos (importante para LGPDP)
-   - **Costo:** $0 licencias vs Azure Blob $0.02/GB + egress
+4. **Filesystem Nativo sobre Object Storage:**
+   - **Volumetría Real:** 550 GB/año (150K escuelas × 3.5 MB promedio)
+   - **Simplicidad:** fs/promises nativo Node.js, sin servidor adicional
+   - **Rendimiento:** SSDs data center > object storage para este volumen
+   - **Costo:** $0 vs MinIO server (2 vCPU, 4GB RAM, $18K/año)
 
 ### 2.2 Patrón de Despliegue
 
@@ -1183,9 +1185,9 @@ Frontend:
 
 Infraestructura:
 - Centro de datos SEP-Triara (no Azure)
-- PostgreSQL en servidores SEP
-- MinIO self-hosted (storage S3-compatible)
-- Redis 7 (cache y sesiones)
+- PostgreSQL en servidores SEP (datos + jobs con pg-boss)
+- Filesystem nativo SSD (fs/promises, ~550 GB/año)
+- node-cache (cache en memoria del proceso Node.js)
 
 Beneficios:
 - 100% open source (sin licencias)
@@ -1274,7 +1276,7 @@ Esfuerzo Estimado: 160-200 horas
 | **Hosting** | $0 (centro datos SEP existente) | $0 (mismo centro datos SEP) | $0 |
 | **Runtime** | $0 (.NET Framework incluido en Windows) | $0 (Node.js open source) | $0 |
 | **Office Interop** | $0 (Office ya en SEP) | $0 (SheetJS open source) | $0 |
-| **Storage** | $0 (sistema archivos local) | $0 (MinIO en mismo servidor) | $0 |
+| **Storage** | $0 (sistema archivos local) | $0 (filesystem nativo en servidor) | $0 |
 | **TOTAL 3 AÑOS** | **$9,000 USD** | **$0** | **💰 $9,000 USD** |
 
 **Conversión a MXN (tipo de cambio: 1 USD = 20 MXN):**
@@ -1318,7 +1320,7 @@ Esfuerzo Estimado: 160-200 horas
 | **Desarrollo Backend NestJS** | 320 | $25,600 | $512,000 | API REST, validación, tickets, JWT |
 | **Validador SheetJS** | 80 | $6,400 | $128,000 | Parser Excel, reglas negocio |
 | **Integración PostgreSQL** | 60 | $4,800 | $96,000 | Schema, migraciones Prisma |
-| **Integración MinIO** | 40 | $3,200 | $64,000 | Upload/download S3-compatible |
+| **Módulo Storage Filesystem** | 24 | $3,200 | $76,800 | fs/promises con estructura organizada |
 | **Sistema de Tickets** | 80 | $6,400 | $128,000 | CRUD tickets, notificaciones email |
 | **Script Sincronización Legacy** | 80 | $6,400 | $128,000 | Node.js → MS Access ODBC bridge |
 | **Testing e2e** | 160 | $4,800 | $96,000 | Cypress, Jest, Supertest |
@@ -1413,7 +1415,7 @@ El ROI financiero es **break-even a 3 años** (payback completo con ahorro Cryst
 
 4. **Escalabilidad:**
    - Legacy: Máximo 2GB datos (limitación MS Access)
-   - Nuevo: Sin límite con PostgreSQL 16 + Redis 7
+   - Nuevo: Sin límite con PostgreSQL 16 (datos + jobs con pg-boss)
 
 **Decisión de Negocio:** La inversión se recupera en 3 años con ahorro Crystal Reports, pero el valor real está en:
 - **Evitar multas LGPDP:** Potencial $50M - $300M MXN
@@ -1524,8 +1526,8 @@ El ROI financiero es **break-even a 3 años** (payback completo con ahorro Cryst
 
 4. **Escalabilidad y Sostenibilidad:**
    - PostgreSQL: Sin límite de 2GB (vs MS Access)
-   - Redis: 100K operaciones/seg para cache (vs in-memory .NET)
-   - MinIO: Escalable a PB de datos (vs Azure Blob con egress fees)
+   - node-cache: ~1M operaciones/seg en memoria (sin latencia de red)
+   - Filesystem: Suficiente para 550 GB/año (vs overkill object storage)
    - Node.js: Comunidad activa, 50M descargas/semana
 
 **Roadmap de Implementación Aprobado:**
@@ -1570,7 +1572,7 @@ gantt
 **Prioridad 2 - DESARROLLO FASE 1 (Diciembre 2025 - Febrero 2026):**
 1. Desarrollo Frontend: Portal React con login CCT + upload FRV + download PDFs
 2. Desarrollo Backend: NestJS con JWT auth + validador SheetJS + sistema tickets
-3. Integración: PostgreSQL (catálogos) + MinIO (storage) + Redis (cache)
+3. Integración: PostgreSQL (catálogos + jobs) + Filesystem SSD (storage) + node-cache (memoria)
 4. Script Sincronización: Node.js → MS Access (ODBC bridge) para procesamiento legacy
 5. Testing: Cypress e2e + Jest unit tests + Supertest API tests
 
@@ -1603,14 +1605,14 @@ gantt
 
 3. **Seguridad:**
    - ✅ Autenticación: JWT tokens + bcrypt passwords + rate limiting
-   - ✅ Cifrado: TLS 1.3 + PostgreSQL TDE + MinIO encryption at rest
+   - ✅ Cifrado: TLS 1.3 + PostgreSQL TDE + Filesystem encryption (LUKS/BitLocker)
    - ✅ Audit logging: Winston + rotación diaria + retención 1 año
    - ✅ Backups: Automatizados diarios con retención 30 días
 
 4. **Escalabilidad:**
    - ✅ PostgreSQL: Soporta 300K escuelas (vs 5K actual con Access)
-   - ✅ Redis: 100K ops/seg para sesiones JWT
-   - ✅ MinIO: Escalable a petabytes de PDFs generados
+   - ✅ JWT stateless: Sin necesidad de almacenamiento de sesión
+   - ✅ Filesystem: Adecuado para 550 GB/año, expandible a 5-10 TB (10+ años)
    - ✅ Horizontal scaling: Kubernetes ready para futura expansión
 
 **Métricas de Éxito KPIs:**

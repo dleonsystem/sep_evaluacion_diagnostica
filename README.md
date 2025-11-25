@@ -13,8 +13,8 @@
 ![Node.js](https://img.shields.io/badge/Node.js-20_LTS-339933?logo=node.js&logoColor=white)
 ![NestJS](https://img.shields.io/badge/NestJS-10.3.0-e535ab?logo=nestjs&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)
-![MinIO](https://img.shields.io/badge/MinIO-S3_Compatible-c72c48?logo=minio&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-7.2-dc382d?logo=redis&logoColor=white)
+![node-cache](https://img.shields.io/badge/node--cache-5.1.2-green?logo=node.js&logoColor=white)
+![Filesystem](https://img.shields.io/badge/Storage-Filesystem_SSD-blue?logo=files&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-24.x-2496ed?logo=docker&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-5.8.0-2d3748?logo=prisma&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5.0.0-646cff?logo=vite&logoColor=white)
@@ -33,8 +33,8 @@ Sistema de Captura y Reporteo de Evaluación Diagnóstica para la Secretaría de
 - 🌐 **Frontend:** React 18 + TypeScript 5 + Vite 5
 - ⚙️ **Backend:** Node.js 20 LTS + NestJS 10 + Prisma 5
 - 💾 **Base de Datos:** PostgreSQL 16 (catálogos)
-- 📦 **Storage:** MinIO S3-compatible (FRV + PDFs)
-- ⚡ **Cache:** Redis 7 (sesiones JWT + Bull Queue)
+- 📦 **Storage:** Filesystem nativo SSD (FRV + PDFs, ~550 GB/año)
+- ⚡ **Cache:** node-cache (in-memory nativo) + pg-boss (jobs en PostgreSQL)
 - 🔐 **Auth:** Passport.js + JWT tokens
 - 📊 **Excel:** SheetJS (validación FRV)
 
@@ -92,10 +92,12 @@ Sistema de Captura y Reporteo de Evaluación Diagnóstica para la Secretaría de
 **🎯 Ventajas:** 
 - Desarrollo con recursos propios SEP + centro de datos institucional
 - Capacitación remota/digital para alcance nacional (150K directores)
-- **Ahorros totales proyectados:** $1,222,000 MXN
+- Arquitectura simplificada: Eliminado Redis + MinIO (filesystem nativo)
+- **Ahorros totales proyectados:** $1,276,000 MXN
   - Desarrollo interno vs externo: ~$1,030,000 MXN
   - Capacitación remota vs presencial: $12,000 MXN
   - Licencias Crystal Reports (3 años): $180,000 MXN
+  - Infraestructura simplificada (3 años): $54,000 MXN (sin Redis ni MinIO)
 
 ### Ahorro Real en Licencias (3 años)
 | Componente | Sistema Actual | Sistema Modernizado | Ahorro Real |

@@ -4,7 +4,7 @@
 > **Panel de Métricas y Visualizaciones del Análisis Técnico**  
 > Sistema de Captura de Resultados de Evaluación y Registro  
 > Secretaría de Educación Pública (SEP)  
-> **Stack Open Source:** React + Node.js + PostgreSQL + MinIO
+> **Stack Open Source:** React + Node.js + PostgreSQL + Filesystem SSD
 
 ---
 
@@ -132,9 +132,9 @@ graph TB
     subgraph "NUEVOS COMPONENTES - Open Source"
         A1[Portal React 18<br/>TypeScript 5]
         A2[Backend NestJS 10<br/>Prisma 5]
-        A3[PostgreSQL 16<br/>Catálogos]
-        A4[MinIO S3<br/>Storage FRV]
-        A5[Redis 7<br/>Cache + Queue]
+        A3[PostgreSQL 16<br/>Catálogos + Jobs]
+        A4[Filesystem SSD<br/>/data/sicrer/frv]
+        A5[node-cache<br/>Cache Memoria]
         A6[Validador SheetJS<br/>30 seg]
         A7[Sistema Tickets<br/>Automático]
     end
@@ -236,11 +236,11 @@ graph LR
         A1 --> A4
     end
     
-    subgraph "Estado Futuro - Moderno"
-        B1[React/Blazor<br/>.NET 8<br/>✅ LTS 2026]
-        B2[(PostgreSQL<br/>✅ Sin límites)]
-        B3[Telerik/RDLC<br/>✅ Moderno]
-        B4[.NET Controls<br/>✅ Actuales]
+    subgraph "Estado Futuro - Stack Open Source Aprobado"
+        B1[React 18<br/>Node.js 20 LTS<br/>✅ Estrategia Bifásica]
+        B2[(PostgreSQL 16<br/>✅ Sin límites)]
+        B3[Puppeteer<br/>✅ Open Source]
+        B4[fs/promises<br/>✅ Filesystem SSD]
         
         B1 --> B2
         B1 --> B3
@@ -276,17 +276,17 @@ gantt
     Eliminar Flash Components   :active, f1c, after f1b, 1w
     Testing & Validación        :f1d, after f1c, 1w
     
-    section Fase 2: Modernización
-    Upgrade .NET 4.5 → .NET 8   :f2a, after f1d, 3w
-    Migrar ADODB → EF Core      :f2b, after f2a, 2w
-    Reemplazar Crystal Reports  :f2c, after f2b, 3w
-    Implementar Seguridad LGPDP :f2d, after f2c, 2w
+    section Fase 1 Real: Portal Híbrido (4 meses)
+    Frontend React 18           :f2a, after f1d, 6w
+    Backend NestJS 10           :f2b, after f2a, 6w
+    Validador SheetJS           :f2c, after f2b, 3w
+    Sistema Tickets             :f2d, after f2c, 2w
     
-    section Fase 3: Transformación
-    Diseño Arquitectura Web     :f3a, after f2d, 2w
-    Desarrollo API REST         :f3b, after f3a, 4w
-    Frontend React/Blazor       :f3c, after f3b, 6w
-    Testing E2E & Deploy        :f3d, after f3c, 2w
+    section Fase 2 Real: Migración Completa (6 meses)
+    Reemplazar Crystal→Puppeteer:f3a, after f2d, 8w
+    Migrar MS Access→PostgreSQL :f3b, after f3a, 6w
+    Módulo ARCO LGPDP           :f3c, after f3b, 6w
+    Dashboard Analytics         :f3d, after f3c, 4w
 ```
 
 **Duración Total:** 26 semanas (6.5 meses)  
@@ -381,13 +381,13 @@ graph TB
         A6[Flash Controls<br/>🎮 Adobe EOL 2020<br/>❌ Vulnerabilidades]
     end
     
-    subgraph "Stack Propuesto - 2025+"
-        B1[.NET 8.0 LTS<br/>📅 Soporte hasta 2026<br/>✅ Moderno]
-        B2[Blazor/React<br/>🌐 Web multiplataforma<br/>✅ Responsive]
-        B3[postgreSQL<br/>💾 Sin límite 2GB<br/>✅ Enterprise-grade]
-        B4[Entity Framework Core<br/>🔧 ORM moderno<br/>✅ Type-safe + LINQ]
-        B5[Telerik Reporting<br/>📄 .NET Core compatible<br/>✅ Moderna]
-        B6[.NET Standard Controls<br/>🎨 Modernos<br/>✅ Seguros]
+    subgraph "Stack Aprobado Open Source - 2025+"
+        B1[Node.js 20 LTS<br/>📅 Soporte hasta 2026<br/>✅ Open Source]
+        B2[React 18<br/>🌐 Web multiplataforma<br/>✅ Responsive]
+        B3[PostgreSQL 16<br/>💾 Sin límite 2GB<br/>✅ Enterprise-grade]
+        B4[Prisma ORM<br/>🔧 ORM moderno<br/>✅ Type-safe]
+        B5[Puppeteer<br/>📄 PDF generation<br/>✅ Open Source]
+        B6[Filesystem SSD<br/>📦 Storage directo<br/>✅ Simple]
     end
     
     A1 -.upgrade.-> B1
@@ -579,21 +579,22 @@ timeline
                   : ⚠️ Componentes Obsoletos
                   : 📊 Este Análisis
     
-    section Futuro Inmediato
-        2025 Q1 : Fase 1 - Estabilización
-                : Backup + Migrar BD
-                : Eliminar Flash
+    section Estrategia Bifásica Aprobada
+        2025 Q4 : Preparación
+                : Análisis + Planeación
+                : Conformar equipo SEP
         
-        2025 Q2 : Fase 2 - Modernización
-                : .NET 8 Upgrade
-                : EF Core + Reportes
+        2026 Q1 : Fase 1 - Portal Híbrido
+                : React 18 + NestJS 10
+                : Validador + Tickets
+                : Deploy Marzo 2026
         
-        2025 Q3 : Fase 3 - Transformación
-                : Arquitectura Web
-                : APIs REST
-                : Frontend Moderno
+        2026 Q3 : Fase 2 - Migración Completa
+                : Puppeteer (elimina Crystal)
+                : PostgreSQL 16 completo
+                : Módulo ARCO LGPDP
         
-        2025 Q4 : Producción v2.0
+        2026 Q4 : Producción 100% Open Source
                 : Sistema Modernizado
                 : ✅ Sin Deuda Técnica
 ```

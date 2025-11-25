@@ -48,7 +48,8 @@ timeline
 - **Ahorro vs contratación externa:** ~$1,030,000 MXN (recursos propios DGADAI + DGTIC)
 - **Ahorro capacitación remota:** $12,000 MXN vs modalidad presencial
 - **Ahorro licencias Crystal Reports:** $180,000 MXN en 3 años
-- **Total ahorros proyectados:** **$1,222,000 MXN**
+- **Arquitectura simplificada:** $54,000 MXN en 3 años (sin Redis/MinIO)
+- **Total ahorros proyectados:** **$1,276,000 MXN**
 
 **Comparativa Costos Operativos Reales 3 Años:**
 
@@ -58,7 +59,7 @@ timeline
 | Base de Datos | $0 (MS Access en Office SEP) | $0 (PostgreSQL open source) | $0 |
 | Hosting | $0 (centro datos SEP existente) | $0 (mismo centro datos SEP) | $0 |
 | Runtime | $0 (.NET Framework) | $0 (Node.js) | $0 |
-| Storage | $0 (sistema archivos local) | $0 (MinIO en mismo servidor) | $0 |
+| Storage | $0 (sistema archivos local) | $0 (filesystem nativo en servidor) | $0 |
 | **TOTAL 3 AÑOS** | **$180,000 MXN** | **$0** | **💰 $180,000 MXN** |
 
 **Aclaración:** Sistema actual NO utiliza SQL Server ni Azure. Opera con MS Access en centro de datos SEP. Único costo de licencia eliminable es Crystal Reports ($5,000 MXN/mes = $60,000 MXN/año).
@@ -131,7 +132,7 @@ gantt
 
 3. **📈 Escalabilidad:**
    - Legacy: Máximo 5K escuelas concurrentes (Access)
-   - Nuevo: **300K escuelas** con PostgreSQL + Redis
+   - Nuevo: **300K escuelas** con PostgreSQL + node-cache
 
 4. **🌍 Sostenibilidad:**
    - Legacy: Dependencia 1 desarrollador con conocimiento propietario
@@ -335,9 +336,9 @@ timeline
 
 **Entregables:**
 1. Migración MS Access → PostgreSQL 16 (sin límite de tamaño)
-2. Backend Node.js 20 LTS + NestJS 10
+2. Backend Node.js 20 LTS + NestJS 10 (jobs con pg-boss en PostgreSQL)
 3. Reemplazo Crystal Reports → Puppeteer + Handlebars (open source)
-4. Suite de pruebas automatizadas con Jest
+4. Suite de pruebas automatizadas con Jest + cache node-cache (sin Redis)
 
 **Inversión:** $105,000 MXN | **ROI:** 36 meses (break-even con ahorro Crystal Reports)
 
@@ -641,7 +642,8 @@ Futuras actualizaciones de Windows podrían romper compatibilidad. Esto requerir
 **Desarrollo:**
 - Visual Studio Code (gratuito)
 - Node.js 20 LTS + NestJS 10
-- PostgreSQL 16 (open source)
+- PostgreSQL 16 (open source, incluye pg-boss para jobs)
+- node-cache (cache en memoria nativo)
 - Git / GitHub
 
 **Testing:**
