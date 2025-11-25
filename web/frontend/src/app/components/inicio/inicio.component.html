@@ -1,0 +1,97 @@
+
+
+
+<!-- ✅ BANNER PRINCIPAL -->
+<div class="banner-container">
+  <picture class="banner-wrapper">
+    <source srcset="/assets/images/bannerMuses.jpg" type="image/jpeg">
+    <img src="/assets/images/Banner_MUSES.png" alt="Banner Reuniones de Actualización Curricular"
+      class="banner-image" loading="lazy">
+  </picture>
+</div>
+
+<!-- ✅ SECCIÓN DE REGISTRO -->
+<div class="registration-background" *ngIf="!usuarioAutenticado">
+  <div class="registration-container">
+    <div class="key-image">
+      <img src="assets/images/llave.jpg" alt="Llave MX" class="llave-mx">
+    </div>
+    <div class="registration-content">
+      <p class="registration-title">Regístrate o inicia sesión</p>
+      <div class="registration-buttons">
+        <button class="btn register-btn" (click)="llaveMx()">Registrarme</button>
+        <button class="btn login-btn" (click)="iniciarSesion()">Iniciar sesión</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ CONTENEDOR PRINCIPAL -->
+<div class="container-fluid inicio-width pt-4 mb-5">
+
+  <!-- ✅ SECCIÓN DESCRIPTIVA -->
+  <section class="descripcion bg-gris-claro py-4 px-4 mb-4 rounded mt-5">
+    <h2 class="text-verde h2 font-weight-bold mb-4 text-center ">
+      Objetivo de MUSES para capturistas
+    </h2>
+    <p class="mb-3">
+      MUEMS concentra en un solo lugar la captura del ciclo académico:
+        inscripciones, asistencias, evaluaciones finales y trámites de
+        certificación para Educación Media Superior, ayudándote a mantener la
+        operación diaria del plantel al día.
+    </p>
+    <p class="mb-3">
+      Puedes trabajar registro por registro o subir lotes completos con la
+        plantilla institucional en Excel; la plataforma valida los datos,
+        identifica errores y te entrega reportes claros para corregir antes de
+        enviar la información.
+    </p>
+    <p class="mb-3">
+      Los catálogos oficiales y la bitácora de movimientos aseguran que cada
+        registro sea consistente y rastreable, y pronto habilitaremos el acceso
+        mediante LlaveMX para reforzar la seguridad.
+    </p>
+
+
+      <ul class="objective__list">
+        <li>
+          Atención a inscripciones, asistencias, evaluaciones y titulaciones en
+          un flujo guiado.
+        </li>
+        <li>
+          Captura individual y carga masiva con validaciones automáticas y
+          reportes descargables.
+        </li>
+        <li>
+          Catálogos institucionales y bitácora de acciones para garantizar
+          coherencia y trazabilidad.
+        </li>
+        <li>
+          Preparado para iniciar sesión con LlaveMX en cuanto se active la
+          integración.
+        </li>
+      </ul>
+
+
+  </section>
+
+  <section class="acciones-captura mt-5 mb-10">
+    <h3 class="acciones-captura__titulo">Elige cómo registrar tus movimientos</h3>
+    <p class="acciones-captura__descripcion">
+      Si necesitas ingresar a un estudiante a la vez, utiliza la captura manual. Para acelerar lotes
+      completos, prepara la plantilla CSV y súbela con la carga masiva.
+    </p>
+    <div class="acciones-captura__botones">
+      <a class="acciones-captura__boton acciones-captura__boton--primario" routerLink="/inscripcion">
+        Captura individual
+      </a>
+      <a class="acciones-captura__boton acciones-captura__boton--secundario" routerLink="/carga-masiva">
+        Carga masiva (CSV)
+      </a>
+    </div>
+    <p class="acciones-captura__nota">
+      Ambos flujos validan con los catálogos oficiales y te permitirán generar el acuse una vez que el
+      backend esté disponible.
+    </p>
+  </section>
+</div>
