@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 import { InicioComponent } from './components/inicio/inicio.component';
+import { LoginComponent } from './components/login/login.component';
+import { RegistroComponent } from './components/registro/registro.component';
 
 
 export const routes: Routes = [
@@ -11,6 +13,16 @@ export const routes: Routes = [
   {
     path: 'inicio',
     component: InicioComponent,
+    pathMatch: 'full',
+  },
+  {
+    path: 'login',
+    component: LoginComponent,
+    pathMatch: 'full',
+  },
+  {
+    path: 'registro',
+    component: RegistroComponent,
     pathMatch: 'full',
   },
  /*  {

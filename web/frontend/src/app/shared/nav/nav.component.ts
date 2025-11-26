@@ -81,14 +81,6 @@ export class NavComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  iniciarSesion(): void {
-    this.router.navigate(['/login']);
-  }
-
-  registrarse(): void {
-    this.router.navigate(['/registro']);
-  }
-
   /** ✅ Cargar datos del usuario autenticado */
   loadUserData(): void {
     const currentUser = this.authService.getUsuarioActual();
