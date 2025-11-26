@@ -1,10 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { LoginResponse, Usuario } from '../../interfaces/models';
+import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
@@ -29,7 +34,6 @@ export class LoginComponent implements OnInit {
 
   constructor(
     private apiService: ApiService,
-    private eventosService: EventosService,
     private authService: AuthService,
     private router: Router,
     private route: ActivatedRoute
@@ -40,7 +44,7 @@ export class LoginComponent implements OnInit {
     this.generateCaptcha();
 
     // Comprobar si ya hay un usuario logueado
-    this.eventosService.usuario$.subscribe(usuario => {
+    this.authService.usuarioActual$.subscribe((usuario: Usuario | null) => {
       if (usuario) {
         // Si ya está logueado, redirigir a eventos
         const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/eventos';
@@ -170,7 +174,7 @@ export class LoginComponent implements OnInit {
 
       // Llamar al servicio para iniciar sesión
       this.apiService.login({ email: this.email, password: this.password }, tokenFicticio).subscribe({
-        next: (response) => {
+        next: (response: LoginResponse) => {
           this.cargando = false;
           console.log('Respuesta de login:', response);
 
@@ -182,8 +186,8 @@ export class LoginComponent implements OnInit {
               localStorage.removeItem('emailUsuario');
             }
 
-            // Actualizar el usuario en el EventosService
-            const usuario = {
+            // Crear objeto de usuario autenticado
+            const usuario: Usuario = {
               id: response.usuario.id,
               nombre: response.usuario.nombre,
               apellidoPaterno: response.usuario.apellidoPaterno,
@@ -202,7 +206,6 @@ export class LoginComponent implements OnInit {
             };
 
             this.authService.setAuthenticated(usuario, response.token);
-            this.eventosService.actualizarUsuario(usuario);
 
             // Obtener la URL de retorno de los parámetros de consulta
             const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/eventos';
