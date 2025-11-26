@@ -1,0 +1,182 @@
+<nav class="navbar navbar-expand-xl navbar-dark bg-sep-guinda sub-navbar fixed-top">
+  <div class="container-fluid px-3">  <!-- antes era .container -->
+    <a class="navbar-brand" href="#"></a>
+    <button type="button" class="navbar-toggler" (click)="toggleMenu()">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="navbar-collapse" [class.show]="menuAbierto">
+      <ul class="navbar-nav ml-auto">
+        <!-- Enlaces para usuarios autenticados -->
+        <ng-container *ngIf="isAuthenticated()">
+
+          <!-- Inicio -->
+          <li class="nav-item">
+            <a class="nav-link subnav-link" [routerLink]="['/inicio']">
+              <i class="fas fa-home mr-1"></i>
+              <strong>Inicio</strong>
+            </a>
+          </li>
+
+
+          <!-- Eventos -->
+          <!-- <li class="nav-item">
+            <a class="nav-link subnav-link" [routerLink]="['/eventos']">
+              <i class="fas fa-calendar-alt mr-1"></i>
+              <strong>Todos los Eventos</strong>
+            </a>
+          </li>
+ -->
+
+
+          <!-- Eventos Próximos -->
+          <!-- <li class="nav-item">
+            <a class="nav-link subnav-link" [routerLink]="['/proximos-eventos']">
+              <i class="fas fa-calendar-alt mr-1"></i>
+              <strong>Próximos Eventos</strong>
+            </a>
+          </li> -->
+
+          <!-- Eventos Pasados -->
+          <!-- <li class="nav-item">
+            <a class="nav-link subnav-link" [routerLink]="['/eventos-pasados']">
+              <i class="fas fa-calendar-times mr-1"></i>
+              <strong class="d-none d-md-inline">Eventos Pasados</strong>
+              <strong class="d-inline d-md-none">Pasados</strong>
+            </a>
+          </li> -->
+
+          <!-- ✅ NUEVO: Enlaces Interés para usuarios NO autenticados -->
+          <!-- <li class="nav-item">
+            <a class="nav-link subnav-link" [routerLink]="['/enlaces-interes']">
+              <i class="fas fa-external-link-alt mr-1"></i>
+              <strong class="d-none d-md-inline">Enlaces de Interés</strong>
+              <strong class="d-inline d-md-none">Enlaces</strong>
+            </a>
+          </li> -->
+
+          <!-- <li class="nav-item">
+            <a class="nav-link subnav-link" [routerLink]="['/capacitacion']">
+              <i class="fas fa-graduation-cap mr-1"></i>
+              <strong>Capacitación</strong>
+            </a>
+          </li> -->
+
+          <!-- Separador visual (opcional) -->
+          <li class="nav-item d-none d-md-block">
+            <span class="nav-link subnav-link subnav-separator">|</span>
+          </li>
+
+          <!-- Usuario con menú desplegable -->
+          <li class="nav-item dropdown">
+            <a class="nav-link subnav-link dropdown-toggle" href="javascript:void(0)" id="userDropdown"
+              role="button" (click)="toggleUserMenu()" aria-expanded="false">
+              <i class="fas fa-user-circle mr-1"></i> <!-- Icono de usuario -->
+              <strong>{{ getNombreUsuario() }}</strong>
+
+            </a>
+            <div class="dropdown-menu" [class.show]="userMenuOpen">
+              <!-- <a class="dropdown-item" [routerLink]="['/eventos']">
+                <i class="fas fa-calendar-alt mr-2"></i>Todos los Eventos
+              </a> -->
+
+              <!-- <a class="dropdown-item" [routerLink]="['/perfil']">
+                <i class="fas fa-user mr-2"></i>Mi Perfil
+              </a> -->
+
+              <!-- <a class="dropdown-item" [routerLink]="['/eventos-pasados']">
+                <i class="fas fa-calendar-times mr-2"></i>Eventos Anteriores
+              </a> -->
+
+              <!-- ✅ NUEVO: Enlaces Interés para usuarios autenticados -->
+              <!--  <a class="dropdown-item" [routerLink]="['/enlaces-interes']">
+                <i class="fas fa-external-link-alt mr-2"></i>Enlaces Interés
+              </a> -->
+
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="javascript:void(0)" (click)="cerrarSesion()">
+                <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
+              </a>
+            </div>
+          </li>
+        </ng-container>
+
+        <!-- Enlaces para usuarios NO autenticados -->
+        <ng-container *ngIf="!isAuthenticated()">
+          <!-- Inicio -->
+          <li class="nav-item">
+            <a class="nav-link subnav-link" [routerLink]="['/inicio']">
+              <i class="fas fa-home mr-1"></i>
+              <strong>Inicio</strong>
+            </a>
+          </li>
+          <!-- Eventos -->
+          <!-- <li class="nav-item">
+            <a class="nav-link subnav-link" [routerLink]="['/eventos']">
+              <i class="fas fa-calendar-alt mr-1"></i>
+              <strong>Todos los Eventos</strong>
+            </a>
+          </li> -->
+
+          <!-- Eventos Próximos -->
+          <!-- <li class="nav-item">
+            <a class="nav-link subnav-link" [routerLink]="['/proximos-eventos']">
+              <i class="fas fa-calendar-alt mr-1"></i>
+              <strong>Próximos Eventos</strong>
+            </a>
+          </li> -->
+
+          <!-- Eventos Pasados -->
+          <!-- <li class="nav-item">
+            <a class="nav-link subnav-link" [routerLink]="['/eventos-pasados']">
+              <i class="fas fa-calendar-times mr-1"></i>
+              <strong class="d-none d-md-inline">Eventos Pasados</strong>
+              <strong class="d-inline d-md-none">Pasados</strong>
+            </a>
+          </li> -->
+
+          <!-- ✅ NUEVO: Enlaces Interés para usuarios NO autenticados -->
+          <!-- <li class="nav-item">
+            <a class="nav-link subnav-link" [routerLink]="['/enlaces-interes']">
+              <i class="fas fa-external-link-alt mr-1"></i>
+              <strong class="d-none d-md-inline">Enlaces de Interés</strong>
+              <strong class="d-inline d-md-none">Enlaces</strong>
+            </a>
+          </li> -->
+
+          <!-- <li class="nav-item">
+            <a class="nav-link subnav-link" [routerLink]="['/capacitacion']">
+              <i class="fas fa-graduation-cap mr-1"></i>
+              <strong>Capacitación</strong>
+            </a>
+          </li> -->
+
+          <!-- Separador visual (opcional) -->
+          <li class="nav-item d-none d-md-block">
+            <span class="nav-link subnav-link subnav-separator">|</span>
+          </li>
+
+          <!-- Iniciar Sesión -->
+          <!-- Iniciar Sesión -->
+          <li class="nav-item">
+            <a class="nav-link subnav-link" href="javascript:void(0)" (click)="iniciarSesion()">
+              <i class="fas fa-sign-in-alt mr-1"></i>
+              <strong class="d-none d-md-inline">Iniciar Sesión</strong>
+              <strong class="d-inline d-md-none">Login</strong>
+            </a>
+          </li>
+
+          <!-- Registrarse -->
+          <li class="nav-item">
+            <a class="nav-link subnav-link" href="javascript:void(0)" (click)="registrarse()">
+              <i class="fas fa-user-plus mr-1"></i>
+              <strong class="d-none d-md-inline">Registrarse</strong>
+              <strong class="d-inline d-md-none">Registro</strong>
+            </a>
+          </li>
+        </ng-container>
+      </ul>
+    </div>
+  </div>
+</nav>
+
