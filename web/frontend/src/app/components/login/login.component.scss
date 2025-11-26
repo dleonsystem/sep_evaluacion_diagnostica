@@ -1,0 +1,152 @@
+$sep-burgundy: #691C32;
+$sep-red: #9F2241;
+$sep-gold: #DDC9A3;
+
+.form-label {
+  .label-icon {
+    color: $sep-burgundy;
+  }
+}
+
+.login-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8f9fb 0%, #ffffff 55%, #eef1f5 100%);
+  display: flex;
+  align-items: center;
+}
+
+.brand-emblem {
+  width: 80px;
+  height: 80px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, $sep-burgundy 0%, $sep-red 100%);
+  color: #fff;
+  font-size: 2rem;
+  box-shadow: 0 10px 30px rgba($sep-burgundy, 0.25);
+}
+
+.bg-soft-burgundy {
+  background-color: rgba($sep-burgundy, 0.08);
+}
+
+.link-brand {
+  color: $sep-burgundy;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover,
+  &:focus {
+    color: $sep-red;
+    text-decoration: underline;
+  }
+}
+
+.btn-brand {
+  background: linear-gradient(135deg, $sep-burgundy 0%, $sep-red 100%);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 10px 18px rgba($sep-burgundy, 0.25);
+
+  &:hover,
+  &:focus {
+    background: linear-gradient(135deg, $sep-red 0%, $sep-burgundy 100%);
+    color: #fff;
+    box-shadow: 0 12px 20px rgba($sep-burgundy, 0.35);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    box-shadow: none;
+  }
+}
+
+.btn-outline-brand {
+  border: 1px solid $sep-burgundy;
+  color: $sep-burgundy;
+  background-color: transparent;
+
+  &:hover,
+  &:focus {
+    background-color: $sep-burgundy;
+    color: #fff;
+  }
+}
+
+.password-field {
+  position: relative;
+
+  .form-control {
+    padding-right: 3rem;
+  }
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  transform: translateY(-50%);
+  background-color: transparent;
+  border: none;
+  color: $sep-burgundy;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease, color 0.2s ease;
+
+  &:hover,
+  &:focus {
+    background-color: rgba($sep-burgundy, 0.08);
+    color: $sep-red;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba($sep-burgundy, 0.2);
+  }
+}
+
+.captcha-group {
+  .form-control {
+    height: 100%;
+  }
+
+  .btn {
+    white-space: nowrap;
+  }
+}
+
+.captcha-display {
+  min-width: 140px;
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  border: 2px solid rgba($sep-burgundy, 0.25);
+  background: linear-gradient(135deg, rgba($sep-gold, 0.25), rgba(#ffffff, 0.9));
+  letter-spacing: 0.4rem;
+  font-family: 'Courier New', Courier, monospace;
+  color: #2d3748;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 576px) {
+  .login-page {
+    padding: 3rem 0;
+  }
+
+  .captcha-display {
+    width: 100%;
+    text-align: center;
+  }
+
+  .brand-emblem {
+    width: 64px;
+    height: 64px;
+    font-size: 1.5rem;
+  }
+}
