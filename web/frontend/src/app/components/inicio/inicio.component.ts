@@ -1,15 +1,18 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-inicio',
+  standalone: true,
   imports: [CommonModule],
   templateUrl: './inicio.component.html',
   styleUrl: './inicio.component.scss'
 })
 export class InicioComponent {
+  constructor(private readonly router: Router) {}
 
-usuarioAutenticado = false;
+  usuarioAutenticado = false;
   readonly llaveMxImage =
     'data:image/png;base64,' +
     'iVBORw0KGgoAAAANSUhEUgAAAlgAAAEYCAIAAAAPtB96AAAH+ElEQVR42u3dwU3rQBSFYYqgC2qgFCqgEKphCXWwoQIKAdZEQcnYE9+55/t0tg+ZYM+vSI9w9w0Awe68BAAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQBCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCyFlvLw9eBAAh7Ny57fMyAghhVvl0EUAIxU8UAYRQ/xQRQAglUA4BhFD/FBFACCVQDgGEUALlEEAIJVAOAYRQA' +
@@ -21,8 +24,7 @@ usuarioAutenticado = false;
   }
 
   iniciarSesion(): void {
-    // TODO: Integrar flujo de inicio de sesión cuando esté disponible
-    console.log('Redirigir a inicio de sesión de LlaveMX');
+    this.router.navigate(['/login']);
   }
 }
 
