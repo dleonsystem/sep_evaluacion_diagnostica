@@ -1,19 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { LoginResponse, Usuario } from '../../interfaces/models';
-import { ApiService } from '../../services/api.service';
+import { Component } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule],
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss']
+  styleUrl: './login.component.scss'
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent {
+
   // Variables para el formulario de login
   email: string = '';
   password: string = '';
@@ -44,13 +43,13 @@ export class LoginComponent implements OnInit {
     this.generateCaptcha();
 
     // Comprobar si ya hay un usuario logueado
-    this.authService.usuarioActual$.subscribe((usuario: Usuario | null) => {
+    /* this.eventosService.usuario$.subscribe(usuario => {
       if (usuario) {
-        // Si ya está logueado, redirigir a eventos
+
         const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/eventos';
         this.router.navigate([returnUrl]);
       }
-    });
+    }); */
 
     // Comprobar si hay un email guardado en localStorage
     const emailGuardado = localStorage.getItem('emailUsuario');
@@ -174,7 +173,7 @@ export class LoginComponent implements OnInit {
 
       // Llamar al servicio para iniciar sesión
       this.apiService.login({ email: this.email, password: this.password }, tokenFicticio).subscribe({
-        next: (response: LoginResponse) => {
+        next: (response) => {
           this.cargando = false;
           console.log('Respuesta de login:', response);
 
@@ -186,8 +185,8 @@ export class LoginComponent implements OnInit {
               localStorage.removeItem('emailUsuario');
             }
 
-            // Crear objeto de usuario autenticado
-            const usuario: Usuario = {
+            // Actualizar el usuario en el EventosService
+            const usuario = {
               id: response.usuario.id,
               nombre: response.usuario.nombre,
               apellidoPaterno: response.usuario.apellidoPaterno,
@@ -206,6 +205,7 @@ export class LoginComponent implements OnInit {
             };
 
             this.authService.setAuthenticated(usuario, response.token);
+            /* this.eventosService.actualizarUsuario(usuario); */
 
             // Obtener la URL de retorno de los parámetros de consulta
             const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/eventos';
@@ -266,3 +266,4 @@ export class LoginComponent implements OnInit {
            this.userCaptcha === this.captchaCode;
   }
 }
+
