@@ -11,9 +11,10 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss']
+  styleUrl: './login.component.scss'
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent {
+
   // Variables para el formulario de login
   email: string = '';
   password: string = '';
@@ -46,11 +47,11 @@ export class LoginComponent implements OnInit {
     // Comprobar si ya hay un usuario logueado
     this.authService.usuarioActual$.subscribe((usuario: Usuario | null) => {
       if (usuario) {
-        // Si ya está logueado, redirigir a eventos
+
         const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/eventos';
         this.router.navigate([returnUrl]);
       }
-    });
+    }); */
 
     // Comprobar si hay un email guardado en localStorage
     const emailGuardado = localStorage.getItem('emailUsuario');
@@ -266,3 +267,4 @@ export class LoginComponent implements OnInit {
            this.userCaptcha === this.captchaCode;
   }
 }
+
