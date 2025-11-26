@@ -1,17 +1,10 @@
-import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Router, RouterModule, ActivatedRoute } from '@angular/router';
-import { EventosService } from '../../services/eventos.service';
-import { ApiService } from '../../services/api.service';
-import { AuthService } from '../../services/auth.service';
-// ✅ COMENTADO: Google reCAPTCHA no se necesita más
-// declare const grecaptcha: any;
+import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
