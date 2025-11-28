@@ -1,0 +1,213 @@
+Sub ProcesarCorreosAdjuntos()
+    Dim olApp As Outlook.Application
+    Dim olNs As Outlook.Namespace
+    Dim inbox As Outlook.Folder
+    Dim item As Object
+    Dim mail As MailItem
+    Dim adjunto As Attachment
+    Dim rutaDescarga As String
+    Dim fechaObjetivo As String
+    Dim correoExtraido As String
+    Dim IDExtraido As String
+    Dim nombreArchivo As String
+    Dim fso As FileSystemObject
+    Dim xlApp As Excel.Application
+    Dim xlWb As Workbook
+    Dim hojaESC As Worksheet
+    Dim ultimaColumna As Long
+    Dim fila As Long
+    Dim archivosProcesados As Collection
+    Dim diasDescarga As Collection
+    Dim fechaMail As String
+    Dim modoPrueba As Boolean
+
+    ' ?? Configura aquí si estás en modo de prueba (True = procesa correos del mismo día)
+    modoPrueba = False
+    'modoPrueba = True
+    
+    Set olApp = Outlook.Application
+    Set olNs = olApp.GetNamespace("MAPI")
+    Set inbox = olNs.GetDefaultFolder(olFolderInbox)
+    Set fso = New FileSystemObject
+    Set xlApp = New Excel.Application
+    xlApp.Visible = False
+    Set archivosProcesados = New Collection
+    Set diasDescarga = New Collection
+
+    ' ?? Carpeta destino
+    rutaDescarga = "C:\RECIBE_SiCRER.25_26.SEPT\ADJUNTOS\"
+    
+    ' Si ya existe la carpeta, eliminarla completamente
+    If fso.FolderExists(rutaDescarga) Then
+        fso.DeleteFolder Mid(rutaDescarga, 1, Len(rutaDescarga) - 1), True
+    End If
+    
+    ' Crear carpeta principal
+    fso.CreateFolder rutaDescarga
+    
+    ' Crear subcarpetas internas
+    fso.CreateFolder rutaDescarga & "XLSPRI\"
+    fso.CreateFolder rutaDescarga & "XLSSEC\"
+    fso.CreateFolder rutaDescarga & "XLSPRE\"
+
+    ' ?? Determinar fechas a descargar
+    If modoPrueba Then
+        diasDescarga.Add Format(Date, "yyyy-mm-dd")
+    Else
+        Select Case Weekday(Date, vbMonday)
+            Case 1 ' Lunes: viernes, sábado, domingo
+                diasDescarga.Add Format(Date - 1, "yyyy-mm-dd")
+                diasDescarga.Add Format(Date - 2, "yyyy-mm-dd")
+                diasDescarga.Add Format(Date - 3, "yyyy-mm-dd")
+            Case 2 To 5 ' Martes a viernes: día anterior
+                diasDescarga.Add Format(Date - 1, "yyyy-mm-dd")
+            Case Else ' Sábado o domingo
+                MsgBox "? Hoy no se ejecuta la descarga (fin de semana)."
+                Exit Sub
+        End Select
+    End If
+
+    ' ?? Recorrer correos
+    For Each item In inbox.Items
+        If TypeOf item Is MailItem Then
+            Set mail = item
+            fechaMail = Format(mail.ReceivedTime, "yyyy-mm-dd")
+
+            If ContieneFecha(diasDescarga, fechaMail) And mail.Subject = "Evaluacion Diagnostica tabla de datos" Then
+
+                correoExtraido = ExtraerCorreo(mail.Body)
+                IDExtraido = ExtraerID(mail.Body)
+
+                For Each adjunto In mail.Attachments
+                    Dim contador As Long
+                    Dim baseNombre As String
+                    Dim extension As String
+
+                    baseNombre = fso.GetBaseName(adjunto.Filename)
+                    extension = fso.GetExtensionName(adjunto.Filename)
+                    nombreArchivo = rutaDescarga & baseNombre & "." & extension
+                    contador = 1
+
+                    Do While fso.FileExists(nombreArchivo)
+                        nombreArchivo = rutaDescarga & baseNombre & "_" & contador & "." & extension
+                        contador = contador + 1
+                    Loop
+
+                    adjunto.SaveAsFile nombreArchivo
+
+                    ' Descomprimir si es ZIP
+                    If LCase(extension) = "zip" Then
+                        Shell "powershell -command ""Expand-Archive '" & nombreArchivo & "' '" & rutaDescarga & "' -Force""", vbHide
+                    Else
+ '                       archivosProcesados.Add nombreArchivo
+                    If LCase(extension) = "zip" Then
+                        Shell "powershell -command ""Expand-Archive '" & nombreArchivo & "' '" & rutaDescarga & "' -Force""", vbHide
+                    Else
+                        ' Procesar directamente el archivo Excel aquí
+                        If LCase(extension) Like "*xls*" Then
+                            Set xlWb = xlApp.Workbooks.Open(nombreArchivo)
+                            On Error Resume Next
+                            Set hojaESC = xlWb.Sheets("ESC")
+                            On Error GoTo 0
+                
+                             Dim hojaExiste As Boolean
+    Dim ws As Worksheet
+
+    hojaExiste = False
+
+    For Each ws In xlWb.Worksheets
+        If ws.Name = "ESC" Then
+            hojaExiste = True
+            Exit For
+        End If
+    Next ws
+
+    If hojaExiste Then
+                            'If Not hojaESC Is Nothing Then
+                                hojaESC.Range("D20").Value = IDExtraido & "|" & correoExtraido
+                                'hojaESC.Range("C20").Value = IDExtraido
+                            End If
+                
+                            xlWb.Save
+                            xlWb.Close
+                        End If
+                    End If
+                    End If
+                Next adjunto
+            End If
+        End If
+    Next item
+
+    ' ?? Procesar cada archivo .xlsx
+'    Dim archivoPath As Variant
+'    For Each archivoPath In archivosProcesados
+'        If LCase(fso.GetExtensionName(archivoPath)) Like "*xls*" Then
+'            Set xlWb = xlApp.Workbooks.Open(archivoPath)
+'            On Error Resume Next
+'            Set hojaESC = xlWb.Sheets("ESC")
+'            On Error GoTo 0
+
+'            If Not hojaESC Is Nothing Then
+'                hojaESC.Range("D20").Value = correoExtraido
+'                hojaESC.Range("C20").Value = IDExtraido
+'            End If
+
+'            xlWb.Save
+'            xlWb.Close
+'        End If
+'    Next archivoPath
+
+    xlApp.Quit
+    MsgBox "Los archivos se han descargado y se recupero el correo del remitente."
+End Sub
+
+Function ExtraerCorreo(texto As String) As String
+    Dim regex As Object, coincidencias As Object
+    Set regex = CreateObject("VBScript.RegExp")
+    regex.Pattern = "[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}"
+    regex.Global = True
+    regex.IgnoreCase = True
+
+    If regex.Test(texto) Then
+        Set coincidencias = regex.Execute(texto)
+        ExtraerCorreo = coincidencias(0)
+    Else
+        ExtraerCorreo = "No encontrado"
+    End If
+End Function
+Function ExtraerID(texto As String) As String
+    Dim inicioID As Long
+    Dim finID As Long
+    Dim resultado As String
+
+    ' Buscar la posición de "ID:"
+    inicioID = InStr(1, texto, "ID:", vbTextCompare)
+
+    If inicioID > 0 Then
+        ' Buscar la posición del siguiente "|"
+        finID = InStr(inicioID + 3, texto, "|")
+
+        If finID > 0 Then
+            ' Extraer el texto entre "ID:" y "|"
+            resultado = Mid(texto, inicioID + 3, finID - (inicioID + 3))
+            ExtraerID = Trim(resultado)
+        Else
+            ExtraerID = "Delimitador '|' no encontrado"
+        End If
+    Else
+        ExtraerID = "ID: no encontrado"
+    End If
+End Function
+
+
+Function ContieneFecha(col As Collection, valor As String) As Boolean
+    Dim item As Variant
+    ContieneFecha = False
+    For Each item In col
+        If item = valor Then
+            ContieneFecha = True
+            Exit Function
+        End If
+    Next item
+End Function
+
