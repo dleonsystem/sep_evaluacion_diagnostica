@@ -1,0 +1,704 @@
+Function ObtenerLibroAbierto(nombreLibro As String) As Workbook
+    Dim wb As Workbook
+    For Each wb In Application.Workbooks
+        If wb.Name = nombreLibro Then
+            Set ObtenerLibroAbierto = wb
+            Exit Function
+        End If
+    Next wb
+    Set ObtenerLibroAbierto = Nothing
+End Function
+ Function BuscarColumnaPorEncabezado(ws As Worksheet, nombreEncabezado As String) As Long
+    Dim c As Range
+    For Each c In ws.Rows(1).Cells
+        If Trim(UCase(c.Value)) = UCase(nombreEncabezado) Then
+            BuscarColumnaPorEncabezado = c.Column
+            Exit Function
+        End If
+    Next c
+    BuscarColumnaPorEncabezado = 0 ' No encontrado
+End Function
+Sub ProcesarArchivosEnCarpeta()
+    Dim rutaCarpeta As String
+    Dim rutaAlternativa As String
+    Dim archivoBase As String
+    Dim wbBase As Workbook, wbNuevo As Workbook, wbPlantilla As Workbook
+    Dim hoja As Worksheet
+    Dim timestamp As String
+    Dim nombreConFecha As String
+    Dim rutaFinal As String
+    Dim i As Long
+    Dim ws As Worksheet
+    Dim ultimaFilaVisible As Long
+    Dim totalFilas As Long
+    Dim fileName As String
+    Dim fileName1 As String
+    Dim networkPath As String
+    Dim networkPath12 As String
+    Dim userName As String
+    
+    rutaCarpeta = "C:\RECIBE_SiCRER.25_26.SEPT\NIVELES\"
+    rutaAlternativa = "C:\RECIBE_SiCRER.25_26.SEPT\"
+    archivoBase = "0000000000_TODOS.xlsx"
+
+    Application.ScreenUpdating = False
+    Application.EnableEvents = False
+    Application.DisplayAlerts = False
+
+    If Dir(rutaAlternativa, vbDirectory) = "" Then MkDir rutaAlternativa
+
+    ' Abrir archivo base
+    Set wbBase = Workbooks.Open(rutaCarpeta & archivoBase)
+
+    For Each ws In ThisWorkbook.Worksheets
+        With ws
+            ' Verifica si hay contenido visible en la columna A
+            If Application.WorksheetFunction.CountA(.Range("A:A")) > 0 Then
+                ultimaFilaVisible = .Range("A1").End(xlDown).Row
+                totalFilas = .Rows.Count
+
+                If ultimaFilaVisible < totalFilas Then
+                    .Rows(ultimaFilaVisible + 1 & ":" & totalFilas).Delete
+                End If
+            End If
+        End With
+    Next ws
+    
+
+
+    ' Procesar libro completo
+    
+    Call CalculoNiveles(wbBase)
+    Call Reemplazar7PorVacioEnRango(wbBase)
+    Call Macro1
+    
+    ' Guardar copia con timestamp
+    timestamp = Format(Now, "yyyymmdd_hhnnss")
+    nombreConFecha = "0000000000_TODOS_" & timestamp & ".xlsx"
+    userName = Environ("Username")
+    
+    ' Define the file name
+    fileName = "Reporte_" & userName & Format(Now, "yyyymmdd_hhmmss") & ".xlsx"
+    
+
+    ' Define the network path using IP address
+    'networkPath = "\\10.3.10.146\Compartido\" & fileName
+
+    ' Save the active workbook to the network location
+    'wbBase.SaveAs fileName:=networkPath, FileFormat:=xlOpenXMLWorkbook
+
+    wbBase.SaveAs rutaCarpeta & nombreConFecha
+    
+    '-------------------------------------------------------------------------------------------------
+'Sub GenerarCSVCorreos()
+
+    Dim wbOrigen As Workbook, wbDestino As Workbook
+    Dim wsOrigen As Worksheet, wsDestino As Worksheet
+    Dim hojaNombre As Variant
+    Dim j As Long, lastRow As Long
+    Dim correo1 As String, correo2 As String
+    Dim cct As String, turno As String, id As String
+    Dim filaDestino As Long
+    Dim rutaArchivoOrigen As String
+    Dim fileName12 As String, networkPath123 As String
+    'Dim userName As String, timestamp As String
+    'Dim rutaCarpeta1 As String
+
+    ' Ajusta estas variables según tu entorno
+    'rutaCarpeta1 = "\\10.3.10.146\Resultados\Compartido\"
+    'nombreConFecha = "archivo_origen.xlsx" ' ? Cambia esto al nombre real del archivo
+
+    rutaArchivoOrigen = rutaCarpeta & nombreConFecha
+
+    Set wbOrigen = Workbooks.Open(rutaArchivoOrigen)
+    Set wbDestino = Workbooks.Add
+    Set wsDestino = wbDestino.Sheets(1)
+    wsDestino.Name = "Correos"
+
+    wsDestino.Cells(1, 1).Value = "ID"
+    wsDestino.Cells(1, 2).Value = "correo"
+    wsDestino.Cells(1, 3).Value = "adjunto"
+    filaDestino = 2
+
+    Dim hojas() As Variant
+    hojas = Array("PRE3", "PRI1", "PRI2", "PRI3", "PRI4", "PRI5", "PRI6", "SEC1", "SEC2", "SEC3")
+
+    For Each hojaNombre In hojas
+        On Error Resume Next
+        Set wsOrigen = wbOrigen.Sheets(hojaNombre)
+        On Error GoTo 0
+
+        If Not wsOrigen Is Nothing Then
+            lastRow = wsOrigen.Cells(wsOrigen.Rows.Count, "A").End(xlUp).Row
+
+            For j = 2 To lastRow
+                cct = Trim(wsOrigen.Cells(j, 1).Value)
+                turno = Trim(wsOrigen.Cells(j, 2).Value)
+                correo1 = Trim(wsOrigen.Cells(j, 7).Value)
+                correo2 = Trim(wsOrigen.Cells(j, 8).Value)
+                id = Trim(wsOrigen.Cells(j, 44).Value)
+
+                If cct <> "" And turno <> "" And id <> "" Then
+                    Dim adjunto As String
+                    adjunto = cct & "." & Mid(turno, 1, 3) & "." & id & ".7z"
+
+                    If correo1 <> "" Then
+                        wsDestino.Cells(filaDestino, 1).Value = cct
+                        wsDestino.Cells(filaDestino, 2).Value = correo1
+                        wsDestino.Cells(filaDestino, 3).Value = adjunto
+                        filaDestino = filaDestino + 1
+                    End If
+
+                    If correo2 <> "" Then
+                        wsDestino.Cells(filaDestino, 1).Value = cct
+                        wsDestino.Cells(filaDestino, 2).Value = correo2
+                        wsDestino.Cells(filaDestino, 3).Value = adjunto
+                        filaDestino = filaDestino + 1
+                    End If
+                End If
+            Next j
+        End If
+    Next hojaNombre
+
+    Application.UseSystemSeparators = False
+    Application.DecimalSeparator = "."
+    Application.ThousandsSeparator = ","
+
+    userName = Environ("USERNAME")
+    timestamp = Format(Now, "yyyymmdd_hhmmss")
+    fileName12 = "listado_correos_" & Mid(userName, 13, 2) & "_" & timestamp & ".csv"
+    networkPath123 = "\\10.3.10.146\Resultados\Correos\" & fileName12
+    
+    Cells.Select
+    ActiveSheet.Range("$A:$C").RemoveDuplicates Columns:=Array(1, 2, 3), _
+        Header:=xlNo
+    Range("A1").Select
+    
+    'wbDestino.SaveAs fileName:=networkPath123, FileFormat:=xlCSV
+    wbDestino.SaveAs "C:\RECIBE_SiCRER.25_26.SEPT\ENVIAR\" & fileName12, FileFormat:=xlCSV
+
+    'wbDestino.Close SaveChanges:=False
+    'wbOrigen.Close SaveChanges:=False
+    Application.UseSystemSeparators = True
+
+    'MsgBox "? Archivo CSV generado correctamente: " & fileName12
+
+'End Sub
+
+
+    
+    
+    
+    
+    
+    
+    '-------------------------------------------------------------------------------------------------
+
+    ' Crear archivo PRE
+    Set wbNuevo = Workbooks.Add
+    On Error Resume Next
+    wbBase.Sheets("PRE3").Copy After:=wbNuevo.Sheets(wbNuevo.Sheets.Count)
+    On Error GoTo 0
+    For i = wbNuevo.Sheets.Count To 1 Step -1
+        If wbNuevo.Sheets(i).Name <> "PRE3" Then wbNuevo.Sheets(i).Delete
+    Next i
+    If Dir(rutaAlternativa & "0000000000_MAT_PRE.xlsx") <> "" Then Kill rutaAlternativa & "0000000000_MAT_PRE.xlsx"
+    wbNuevo.SaveAs rutaAlternativa & timestamp & "PRE.xlsx"
+    wbNuevo.Close False
+
+    ' Crear archivo PRI
+    Set wbNuevo = Workbooks.Add
+    For Each hoja In wbBase.Sheets
+        If Left(hoja.Name, 3) = "PRI" Then
+            hoja.Copy After:=wbNuevo.Sheets(wbNuevo.Sheets.Count)
+        End If
+    Next hoja
+    For i = wbNuevo.Sheets.Count To 1 Step -1
+        If Left(wbNuevo.Sheets(i).Name, 3) <> "PRI" Then wbNuevo.Sheets(i).Delete
+    Next i
+    If Dir(rutaAlternativa & "0000000000_MAT_PRI.xlsx") <> "" Then Kill rutaAlternativa & "0000000000_MAT_PRI.xlsx"
+    wbNuevo.SaveAs rutaAlternativa & timestamp & "PRI.xlsx"
+    wbNuevo.Close False
+
+    ' Crear archivo SEC
+    Set wbNuevo = Workbooks.Add
+    For Each hoja In wbBase.Sheets
+        If Left(hoja.Name, 3) = "SEC" Then
+            hoja.Copy After:=wbNuevo.Sheets(wbNuevo.Sheets.Count)
+        End If
+    Next hoja
+    For i = wbNuevo.Sheets.Count To 1 Step -1
+        If Left(wbNuevo.Sheets(i).Name, 3) <> "SEC" Then wbNuevo.Sheets(i).Delete
+    Next i
+    If Dir(rutaAlternativa & "0000000000_MAT_SEC.xlsx") <> "" Then Kill rutaAlternativa & "0000000000_MAT_SEC.xlsx"
+    wbNuevo.SaveAs rutaAlternativa & timestamp & "SEC.xlsx"
+    wbNuevo.Close False
+    
+    wbBase.Close SaveChanges:=True
+    ' Limpiar datos desde la fila 2 en las hojas del libro base
+    Set wbPlantilla = Workbooks.Open(rutaCarpeta & archivoBase)
+    Dim hojasLimpiar As Variant
+    hojasLimpiar = Array("PRE3", "PRI1", "PRI2", "PRI3", "PRI4", "PRI5", "PRI6", "SEC1", "SEC2", "SEC3", "ERROR_INT", "ERROR_VAL", "INT_REPORT", "RESUMEN_NCT")
+
+    For i = LBound(hojasLimpiar) To UBound(hojasLimpiar)
+        On Error Resume Next
+        Set hoja = wbPlantilla.Sheets(hojasLimpiar(i))
+        If Not hoja Is Nothing Then
+            hoja.Rows("2:" & hoja.Rows.Count).Delete Shift:=xlUp
+            hoja.Range("A1").Select
+        End If
+        On Error GoTo 0
+    Next i
+
+    wbPlantilla.Close SaveChanges:=True
+   
+
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+
+    MsgBox "Se han asignado los niveles de forma correcta y se crearon los archivos para el reporteador."
+    Application.DisplayAlerts = True
+
+End Sub
+
+
+   
+    Sub CalculoNiveles(wb As Workbook)
+        
+        Dim nombreArchivo As String
+        Dim nombreSinExtension As String
+        Dim ultimosTres As String
+        
+        Dim pesos_pre As Variant
+        Dim pesos_pri13 As Variant
+        Dim pesos_pri46 As Variant
+        Dim pesos_sec As Variant
+        
+        Dim ws As Worksheet
+        Dim pesos As Variant
+        Dim producto(30) As Double
+        Dim encabezado As String
+        Dim i As Long, fila As Long, col As Long
+        Dim totalFilas As Long, totalColumnas As Long
+        Dim pesoActual As Double
+        
+        Dim grado As Long
+       
+        Dim PLEN As Double
+        Dim PSPC As Double
+        Dim PENS As Double
+        Dim PHYC As Double
+            
+        Dim colPLEN As Long, colPSPC As Long, colPENS As Long, colPHYC As Long
+        
+        nombreArchivo = ActiveWorkbook.Name
+        'nombreArchivo = wb
+        nombreSinExtension = Left(nombreArchivo, InStrRev(nombreArchivo, ".") - 1)
+    
+        nivel = Right(nombreSinExtension, 3)
+      
+        pesos_pre = Array( _
+            Array("PRE3EIA1_C1_A1", CDbl(1.10000002384186)), _
+            Array("PRE3EIA1_C2_A1", CDbl(1.10000002384186)), _
+            Array("PRE3EIA1_C3_A1", CDbl(1.10000002384186)), _
+            Array("PRE3EIA2_C1_A1", CDbl(3.33333325386047)), _
+            Array("PRE3EIA2_C2_A1", CDbl(1.66666662693024)), _
+            Array("PRE3EIA2_C3_A1", CDbl(3.33333325386047)), _
+            Array("PRE3EIA1_C2_A2", CDbl(3.33333325386047)), _
+            Array("PRE3EIA1_C1_A2", CDbl(3.33333325386047)), _
+            Array("PRE3EIA1_C3_A2", CDbl(3.33333325386047)), _
+            Array("PRE3EIA2_C4_A1", CDbl(1.66666662693024)), _
+            Array("PRE3EIA2_C4_A2", CDbl(3.33333325386047)) _
+            )
+            
+        pesos_pri13 = Array( _
+            Array("PRI1EIA1_C1_A1", CDbl(3.33333325386047)), Array("PRI1EIA1_C2_A2", CDbl(2#)), Array("PRI1EIA1_C3_A1", CDbl(3.33333325386047)), Array("PRI1EIA1_C4_A1", CDbl(3.33333325386047)), Array("PRI1EIA2_C1_A1", CDbl(1#)), Array("PRI1EIA2_C2_A1", CDbl(3.33333325386047)), Array("PRI1EIA2_C3_A1", CDbl(3.33333325386047)), Array("PRI1EIA2_C4_A1", CDbl(3.33333325386047)), Array("PRI2EIA1_C1_A1", CDbl(3.33333325386047)), Array("PRI2EIA1_C2_A1", CDbl(1.33333337306976)), Array("PRI2EIA1_C3_A1", CDbl(3.33333325386047)), _
+            Array("PRI2EIA1_C4_A1", CDbl(3.33333325386047)), Array("PRI2EIA2_C1_A1", CDbl(1#)), Array("PRI2EIA2_C2_A1", CDbl(3.33333325386047)), Array("PRI2EIA2_C3_A1", CDbl(3.33333325386047)), Array("PRI2EIA2_C4_A1", CDbl(3.33333325386047)), Array("PRI3EIA1_C1_A1", CDbl(0.666666686534882)), Array("PRI3EIA1_C1_A2", CDbl(0.666666686534882)), Array("PRI3EIA1_C1_B3", CDbl(0.666666686534882)), Array("PRI3EIA1_C1_B1", CDbl(0.666666686534882)), _
+            Array("PRI3EIA1_C1_B2", CDbl(0.666666686534882)), Array("PRI3EIA1_C2_A1", CDbl(0.666666686534882)), Array("PRI3EIA1_C2_A2", CDbl(0.666666686534882)), Array("PRI3EIA1_C2_A3", CDbl(0.666666686534882)), Array("PRI3EIA1_C2_B1", CDbl(1.33333337306976)), Array("PRI3EIA1_C3_A1", CDbl(2#)), Array("PRI3EIA1_C3_B1", CDbl(1.33333337306976)), Array("PRI2EIA2_C3_A2", CDbl(2.33333325386047)), Array("PRI2EIA1_C2_A2", CDbl(2#)), _
+            Array("PRI3EIA1_C4_A1", CDbl(1#)), Array("PRI3EIA1_C4_A2", CDbl(1.66666662693024)), Array("PRI3EIA1_C4_A3", CDbl(0.666666686534882)), Array("PRI3EIA2_C1_A1", CDbl(0.666666686534882)), Array("PRI3EIA2_C1_B1", CDbl(0.666666686534882)), Array("PRI1EIA2_C3_A2", CDbl(2.33333325386047)), Array("PRI3EIA2_C2_A1", CDbl(3.33333325386047)), Array("PRI3EIA2_C3_A1", CDbl(1.33333337306976)), Array("PRI3EIA2_C3_B1", CDbl(0.333333343267441)), _
+            Array("PRI3EIA2_C3_C1", CDbl(0.333333343267441)), Array("PRI3EIA2_C4_A1", CDbl(1#)), Array("PRI3EIA2_C3_C2", CDbl(1.33333337306976)), Array("PRI3EIA2_C4_B1", CDbl(1#)), Array("PRI3EIA2_C5_A1", CDbl(2#)), Array("PRI3EIA2_C5_A2", CDbl(0.666666686534882)), Array("PRI3EIA2_C5_A3", CDbl(0.666666686534882)), Array("PRI1EIA1_C2_A1", CDbl(1.33333337306976)) _
+            )
+        
+        pesos_pri46 = Array( _
+            Array("PRI4EIA1_C1_A1", CDbl(0.666666686534882)), Array("PRI4EIA1_C1_A2", CDbl(0.666666686534882)), Array("PRI4EIA1_C1_B3", CDbl(0.666666686534882)), Array("PRI4EIA1_C1_B1", CDbl(0.666666686534882)), Array("PRI4EIA1_C1_B2", CDbl(0.666666686534882)), Array("PRI4EIA1_C2_A1", CDbl(0.666666686534882)), Array("PRI5EIA1_C1_A1", CDbl(1.33333337306976)), Array("PRI5EIA1_C1_B1", CDbl(1.33333337306976)), Array("PRI5EIA1_C2_A1", CDbl(1.33333337306976)), _
+            Array("PRI5EIA1_C2_B1", CDbl(1.33333337306976)), Array("PRI5EIA1_C2_C1", CDbl(0.666666686534882)), Array("PRI5EIA1_C3_A1", CDbl(1.66666662693024)), Array("PRI5EIA1_C3_B1", CDbl(1.66666662693024)), Array("PRI5EIA1_C4_A1", CDbl(1.66666662693024)), Array("PRI5EIA1_C4_B1", CDbl(1.66666662693024)), Array("PRI5EIA2_C1_B1", CDbl(0.666666686534882)), Array("PRI5EIA2_C1_C1", CDbl(0.666666686534882)), Array("PRI5EIA2_C1_C2", CDbl(0.666666686534882)), _
+            Array("PRI5EIA2_C2_A1", CDbl(0.666666686534882)), Array("PRI5EIA2_C2_B1", CDbl(1#)), Array("PRI5EIA2_C2_C1", CDbl(0.666666686534882)), Array("PRI5EIA2_C3_A2", CDbl(0.666666686534882)), Array("PRI5EIA2_C3_B1", CDbl(0.666666686534882)), Array("PRI5EIA2_C3_C1", CDbl(1#)), Array("PRI5EIA2_C4_A1", CDbl(1.66666662693024)), Array("PRI5EIA2_C4_B1", CDbl(1.66666662693024)), Array("PRI6EIA1_C1_A1", CDbl(1.33333337306976)), _
+            Array("PRI6EIA1_C1_B1", CDbl(1.33333337306976)), Array("PRI6EIA1_C2_A1", CDbl(1.33333337306976)), Array("PRI6EIA1_C2_B1", CDbl(1.33333337306976)), Array("PRI6EIA1_C2_C1", CDbl(0.666666686534882)), Array("PRI6EIA1_C3_A1", CDbl(1.66666662693024)), Array("PRI6EIA1_C3_B1", CDbl(1.66666662693024)), Array("PRI6EIA1_C4_A1", CDbl(1.66666662693024)), Array("PRI6EIA1_C4_B1", CDbl(1.66666662693024)), Array("PRI6EIA2_C1_B1", CDbl(0.666666686534882)), _
+            Array("PRI6EIA2_C1_C1", CDbl(0.666666686534882)), Array("PRI6EIA2_C1_C2", CDbl(0.666666686534882)), Array("PRI6EIA2_C2_A1", CDbl(0.666666686534882)), Array("PRI6EIA2_C2_B1", CDbl(1#)), Array("PRI6EIA2_C2_C1", CDbl(0.666666686534882)), Array("PRI6EIA2_C3_A2", CDbl(0.666666686534882)), Array("PRI6EIA2_C3_B1", CDbl(0.666666686534882)), Array("PRI6EIA2_C3_C1", CDbl(1#)), Array("PRI6EIA2_C4_A1", CDbl(1.66666662693024)), _
+            Array("PRI6EIA2_C4_B1", CDbl(1.66666662693024)), Array("PRI4EIA1_C2_A2", CDbl(0.666666686534882)), Array("PRI4EIA1_C2_A3", CDbl(0.666666686534882)), Array("PRI4EIA1_C2_B1", CDbl(1.33333337306976)), Array("PRI4EIA1_C3_A1", CDbl(2#)), Array("PRI4EIA1_C3_B1", CDbl(1.33333337306976)), Array("PRI4EIA1_C4_A1", CDbl(1#)), Array("PRI4EIA1_C4_A2", CDbl(1.66666662693024)), Array("PRI4EIA1_C4_A3", CDbl(0.666666686534882)), _
+            Array("PRI4EIA2_C1_A1", CDbl(0.666666686534882)), Array("PRI4EIA2_C1_B1", CDbl(0.666666686534882)), Array("PRI4EIA2_C2_A1", CDbl(3.33333325386047)), Array("PRI4EIA2_C3_A1", CDbl(1.33333337306976)), _
+            Array("PRI4EIA2_C3_B1", CDbl(0.333333343267441)), Array("PRI4EIA2_C3_C1", CDbl(0.333333343267441)), Array("PRI4EIA2_C4_A1", CDbl(1#)), Array("PRI4EIA2_C3_C2", CDbl(1.33333337306976)), Array("PRI4EIA2_C4_B1", CDbl(1#)), Array("PRI5EIA1_C1_B2", CDbl(0.666666686534882)), Array("PRI5EIA2_C1_A1", CDbl(0.666666686534882)), Array("PRI5EIA2_C1_C3", CDbl(0.666666686534882)), Array("PRI5EIA2_C2_D1", CDbl(1#)), Array("PRI5EIA2_C3_A1", CDbl(1#)), Array("PRI6EIA1_C1_B2", CDbl(0.666666686534882)), Array("PRI6EIA2_C1_A1", CDbl(0.666666686534882)), Array("PRI6EIA2_C1_C3", CDbl(0.666666686534882)), Array("PRI6EIA2_C2_D1", CDbl(1#)), Array("PRI6EIA2_C3_A1", CDbl(1#)), Array("PRI4EIA2_C5_A1", CDbl(2#)), Array("PRI4EIA2_C5_A2", CDbl(0.666666686534882)), Array("PRI4EIA2_C5_A3", CDbl(0.666666686534882)) _
+            )
+        
+        pesos_sec = Array( _
+    Array("SEC1EIA1_C1_A2", CDbl(0.333333343267441)), Array("SEC1EIA1_C2_A2", CDbl(1.16666662693024)), Array("SEC1EIA1_C5_A1", CDbl(1.33333337306976)), Array("SEC1EIA1_C5_B1", CDbl(0.666666686534882)), Array("SEC1EIA1_C5_C1", CDbl(1.33333337306976)), Array("SEC1EIA2_C1_A1", CDbl(2#)), Array("SEC1EIA2_C2_A2", CDbl(0.666666686534882)), Array("SEC1EIA2_C2_B2", CDbl(0.666666686534882)), Array("SEC1EIA2_C3_A1", CDbl(1#)), Array("SEC1EIA2_C3_B1", CDbl(1.33333337306976)), Array("SEC1EIA2_C3_C1", CDbl(1#)), Array("SEC3EIA1_C1_A3", CDbl(1#)), Array("SEC3EIA1_C2_A2", CDbl(0.666666686534882)), Array("SEC3EIA1_C3_A2", CDbl(1#)), Array("SEC3EIA1_C2_B1", CDbl(1.33333337306976)), Array("SEC3EIA1_C4_A2", CDbl(1.66666662693024)), Array("SEC3EIA2_C1_A3", CDbl(1#)), Array("SEC3EIA2_C2_A2", CDbl(1.66666662693024)), Array("SEC3EIA2_C3_A3", CDbl(1#)), Array("SEC3EIA2_C4_A1", CDbl(1.66666662693024)), _
+    Array("SEC1EIA1_C1_A1", CDbl(1.16666662693024)), Array("SEC1EIA1_C2_A1", CDbl(0.333333343267441)), Array("SEC1EIA1_C3_A1", CDbl(3.33333325386047)), Array("SEC1EIA1_C4_A1", CDbl(1.33333337306976)), Array("SEC1EIA1_C1_A3", CDbl(0.333333343267441)), Array("SEC1EIA2_C2_A1", CDbl(1#)), Array("SEC1EIA2_C1_A2", CDbl(1.33333337306976)), Array("SEC1EIA2_C2_B1", CDbl(1#)), Array("SEC1EIA2_C4_A1", CDbl(3.33333325386047)), Array("SEC2EIA1_C1_A1", CDbl(1.16666662693024)), Array("SEC2EIA1_C1_A2", CDbl(0.333333343267441)), Array("SEC2EIA1_C2_A1", CDbl(0.333333343267441)), Array("SEC2EIA1_C2_A2", CDbl(1.16666662693024)), Array("SEC2EIA1_C3_A1", CDbl(3.33333325386047)), Array("SEC2EIA1_C1_A3", CDbl(0.333333343267441)), Array("SEC2EIA1_C4_A1", CDbl(1.33333337306976)), Array("SEC2EIA1_C4_B1", CDbl(2#)), Array("SEC2EIA1_C5_A1", CDbl(1.33333337306976)), Array("SEC2EIA1_C5_B1", CDbl(0.666666686534882)), Array("SEC2EIA1_C5_C1", CDbl(1.33333337306976)), _
+    Array("SEC2EIA2_C1_A1", CDbl(2#)), Array("SEC2EIA2_C1_A2", CDbl(1.33333337306976)), Array("SEC2EIA2_C2_A1", CDbl(1#)), Array("SEC2EIA2_C2_A2", CDbl(0.666666686534882)), Array("SEC2EIA2_C2_B1", CDbl(1#)), Array("SEC2EIA2_C2_B2", CDbl(0.666666686534882)), Array("SEC2EIA2_C3_A1", CDbl(1#)), Array("SEC2EIA2_C3_B1", CDbl(1.33333337306976)), Array("SEC2EIA2_C4_A1", CDbl(3.33333325386047)), Array("SEC2EIA2_C3_C1", CDbl(1#)), Array("SEC3EIA1_C1_A2", CDbl(1.33333337306976)), Array("SEC3EIA1_C1_A1", CDbl(1#)), Array("SEC3EIA1_C2_A1", CDbl(1.33333337306976)), Array("SEC3EIA1_C3_A1", CDbl(2.33333325386047)), Array("SEC3EIA1_C4_A1", CDbl(1.66666662693024)), Array("SEC3EIA2_C1_A2", CDbl(1#)), Array("SEC3EIA2_C1_A1", CDbl(1.33333337306976)), Array("SEC3EIA2_C2_A1", CDbl(1.66666662693024)), Array("SEC3EIA2_C3_A2", CDbl(1.33333337306976)), Array("SEC3EIA2_C3_A1", CDbl(1#)), _
+    Array("SEC3EIA2_C4_A2", CDbl(1.66666662693024)), Array("SEC1EIA1_C4_B1", CDbl(2#)) _
+    )
+        
+    Dim hoja As Worksheet
+    Dim nombreHoja As String
+    Dim consigna As Integer
+    For Each hoja In ActiveWorkbook.Sheets
+        nombreHoja = Mid(hoja.Name, 1, 3)
+        Select Case nombreHoja
+            Case "PRE"
+                        'nombreHoja = ActiveSheet.Name
+                        Set ws = ActiveWorkbook.Sheets("PRE3")
+                        ActiveWorkbook.Sheets("PRE3").Activate
+                        nombreHoja = ActiveSheet.Name
+                        totalFilas = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+                        For fila = 2 To totalFilas
+                            For col = 14 To 24
+                                encabezado = ws.Cells(1, col).Value
+                                For i = LBound(pesos_pre) To UBound(pesos_pre)
+                                    If pesos_pre(i)(0) = nombreHoja & encabezado Then
+                                        pesoActual = pesos_pre(i)(1)
+                                        Exit For
+                                    End If
+                                Next i
+                                If IsNumeric(ws.Cells(fila, col).Value) Then
+                                    consigna = IIf(ws.Cells(fila, col).Value > 3, 0, ws.Cells(fila, col).Value)
+                                    producto(col - 14) = consigna * pesoActual
+                                Else
+                                    producto(col - 14) = 0
+                                End If
+                            Next col
+                            PLEN = producto(0) + _
+                                   producto(2) + _
+                                   producto(4) + _
+                                   producto(7) + _
+                                   producto(9)
+    
+                            PSPC = producto(3) + _
+                                   producto(6)
+                            
+                            PENS = producto(5) + _
+                                   producto(8)
+                                   
+                            PHYC = producto(1) + _
+                                   producto(10)
+                            
+                            
+                            colPLEN = BuscarColumnaPorEncabezado(ws, "PLEN")
+                            colPSPC = BuscarColumnaPorEncabezado(ws, "PSPC")
+                            colPENS = BuscarColumnaPorEncabezado(ws, "PENS")
+                            colPHYC = BuscarColumnaPorEncabezado(ws, "PHYC")
+                            
+                            If colPLEN > 0 Then ws.Cells(fila, colPLEN).Value = IIf(PLEN = 0, "SE", IIf(PLEN <= 8, "RA", IIf(PLEN <= 16, "EPD", "AD")))
+                            If colPSPC > 0 Then ws.Cells(fila, colPSPC).Value = IIf(PSPC = 0, "SE", IIf(PSPC <= 8, "RA", IIf(PSPC <= 16, "EPD", "AD")))
+                            If colPENS > 0 Then ws.Cells(fila, colPENS).Value = IIf(PENS = 0, "SE", IIf(PENS <= 8, "RA", IIf(PENS <= 16, "EPD", "AD")))
+                            If colPHYC > 0 Then ws.Cells(fila, colPHYC).Value = IIf(PHYC = 0, "SE", IIf(PHYC <= 8, "RA", IIf(PHYC <= 16, "EPD", "AD")))
+                        Next fila
+                        
+    
+    
+            Case "PRI"
+                grado = Mid(hoja.Name, 4, 1)
+                    If grado < 4 Then
+                        Set ws = ActiveWorkbook.Sheets("PRI" & CStr(grado))
+                        ActiveWorkbook.Sheets("PRI" & CStr(grado)).Activate
+                        nombreHoja = ActiveSheet.Name
+                        totalFilas = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+                        For fila = 2 To totalFilas
+                            For col = 14 To IIf(grado < 3, 23, 39)
+                                encabezado = ws.Cells(1, col).Value
+                                For i = LBound(pesos_pri13) To UBound(pesos_pri13)
+                                    If pesos_pri13(i)(0) = nombreHoja & encabezado Then
+                                        pesoActual = pesos_pri13(i)(1)
+                                        Exit For
+                                    End If
+                                Next i
+                                If IsNumeric(ws.Cells(fila, col).Value) Then
+                                    consigna = IIf(ws.Cells(fila, col).Value > 3, 0, ws.Cells(fila, col).Value)
+                                    producto(col - 14) = consigna * pesoActual
+                                Else
+                                    producto(col - 14) = 0
+                                End If
+                            Next col
+                            
+                            PLEN = IIf(grado < 3, _
+                                        producto(0) + _
+                                        producto(7), _
+                                        producto(11) + _
+                                        producto(12) + _
+                                        producto(13) + _
+                                        producto(23) + _
+                                        producto(24) + _
+                                        producto(25))
+    
+    
+                            PSPC = IIf(grado < 3, _
+                                        producto(1) + _
+                                        producto(2) + _
+                                        producto(6), _
+                                        producto(0) + _
+                                        producto(1) + _
+                                        producto(2) + _
+                                        producto(3) + _
+                                        producto(4) + _
+                                        producto(14) + _
+                                        producto(15) + _
+                                        producto(21) + _
+                                        producto(22))
+                            
+                            PENS = IIf(grado < 3, _
+                                        producto(3) + _
+                                        producto(5) + _
+                                        producto(8), _
+                                        producto(5) + _
+                                        producto(6) + _
+                                        producto(7) + _
+                                        producto(8) + _
+                                        producto(16))
+    
+                            PHYC = IIf(grado < 3, _
+                                        producto(4) + _
+                                        producto(9), _
+                                        producto(9) + _
+                                        producto(10) + _
+                                        producto(17) + _
+                                        producto(18) + _
+                                        producto(19) + _
+                                        producto(20))
+                            
+                            colPLEN = BuscarColumnaPorEncabezado(ws, "PLEN")
+                            colPSPC = BuscarColumnaPorEncabezado(ws, "PSPC")
+                            colPENS = BuscarColumnaPorEncabezado(ws, "PENS")
+                            colPHYC = BuscarColumnaPorEncabezado(ws, "PHYC")
+                            
+                            If colPLEN > 0 Then ws.Cells(fila, colPLEN).Value = IIf(PLEN = 0, "SE", IIf(PLEN <= 8, "RA", IIf(PLEN <= 16, "EPD", "AD")))
+                            If colPSPC > 0 Then ws.Cells(fila, colPSPC).Value = IIf(PSPC = 0, "SE", IIf(PSPC <= 8, "RA", IIf(PSPC <= 16, "EPD", "AD")))
+                            If colPENS > 0 Then ws.Cells(fila, colPENS).Value = IIf(PENS = 0, "SE", IIf(PENS <= 8, "RA", IIf(PENS <= 16, "EPD", "AD")))
+                            If colPHYC > 0 Then ws.Cells(fila, colPHYC).Value = IIf(PHYC = 0, "SE", IIf(PHYC <= 8, "RA", IIf(PHYC <= 16, "EPD", "AD")))
+
+                        Next fila
+                    Else
+                        Set ws = ActiveWorkbook.Sheets("PRI" & CStr(grado))
+                        ActiveWorkbook.Sheets("PRI" & CStr(grado)).Activate
+                        nombreHoja = ActiveSheet.Name
+                        totalFilas = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+                        For fila = 2 To totalFilas
+                            For col = 14 To IIf(grado > 4, 38, 39)
+                                encabezado = ws.Cells(1, col).Value
+                                For i = LBound(pesos_pri46) To UBound(pesos_pri46)
+                                    If pesos_pri46(i)(0) = nombreHoja & encabezado Then
+                                        pesoActual = pesos_pri46(i)(1)
+                                        Exit For
+                                    End If
+                                Next i
+                                If IsNumeric(ws.Cells(fila, col).Value) Then
+                                    consigna = IIf(ws.Cells(fila, col).Value > 3, 0, ws.Cells(fila, col).Value)
+                                    producto(col - 14) = consigna * pesoActual
+                                Else
+                                    producto(col - 14) = 0
+                                End If
+                            Next col
+                            
+                            PLEN = IIf(grado > 4, _
+                                        producto(8) + _
+                                        producto(9) + _
+                                        producto(19) + _
+                                        producto(20) + _
+                                        producto(21) + _
+                                        producto(22), _
+                                        producto(11) + _
+                                        producto(12) + _
+                                        producto(13) + _
+                                        producto(23) + _
+                                        producto(24) + _
+                                        producto(25))
+    
+    
+                            PSPC = IIf(grado > 4, _
+                                        producto(6) + _
+                                        producto(7) + _
+                                        producto(10) + _
+                                        producto(11) + _
+                                        producto(12) + _
+                                        producto(13) + _
+                                        producto(14), _
+                                        producto(0) + _
+                                        producto(1) + _
+                                        producto(2) + _
+                                        producto(3) + _
+                                        producto(4) + _
+                                        producto(14) + _
+                                        producto(15) + _
+                                        producto(21) + _
+                                        producto(22))
+                            
+                            PENS = IIf(grado > 4, _
+                                        producto(3) + _
+                                        producto(4) + _
+                                        producto(5) + _
+                                        producto(23) + _
+                                        producto(24), _
+                                        producto(5) + _
+                                        producto(6) + _
+                                        producto(7) + _
+                                        producto(8) + _
+                                        producto(16))
+    
+                            PHYC = IIf(grado > 4, _
+                                        producto(0) + _
+                                        producto(1) + _
+                                        producto(2) + _
+                                        producto(15) + _
+                                        producto(16) + _
+                                        producto(17) + _
+                                        producto(18), _
+                                        producto(9) + _
+                                        producto(10) + _
+                                        producto(17) + _
+                                        producto(18) + _
+                                        producto(19) + _
+                                        producto(20))
+                            
+                            colPLEN = BuscarColumnaPorEncabezado(ws, "PLEN")
+                            colPSPC = BuscarColumnaPorEncabezado(ws, "PSPC")
+                            colPENS = BuscarColumnaPorEncabezado(ws, "PENS")
+                            colPHYC = BuscarColumnaPorEncabezado(ws, "PHYC")
+                            
+                            If colPLEN > 0 Then ws.Cells(fila, colPLEN).Value = IIf(PLEN = 0, "SE", IIf(PLEN <= 8, "RA", IIf(PLEN <= 16, "EPD", "AD")))
+                            If colPSPC > 0 Then ws.Cells(fila, colPSPC).Value = IIf(PSPC = 0, "SE", IIf(PSPC <= 8, "RA", IIf(PSPC <= 16, "EPD", "AD")))
+                            If colPENS > 0 Then ws.Cells(fila, colPENS).Value = IIf(PENS = 0, "SE", IIf(PENS <= 8, "RA", IIf(PENS <= 16, "EPD", "AD")))
+                            If colPHYC > 0 Then ws.Cells(fila, colPHYC).Value = IIf(PHYC = 0, "SE", IIf(PHYC <= 8, "RA", IIf(PHYC <= 16, "EPD", "AD")))
+                        Next fila
+                    End If
+                'Next grado
+    
+            Case "SEC"
+                For grado = 1 To 3
+                        Set ws = ActiveWorkbook.Sheets("SEC" & CStr(grado))
+                        ActiveWorkbook.Sheets("SEC" & CStr(grado)).Activate
+                        nombreHoja = ActiveSheet.Name
+                        totalFilas = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+                        For fila = 2 To totalFilas
+                            For col = 14 To IIf(grado < 3, 34, 33)
+                                encabezado = ws.Cells(1, col).Value
+                                For i = LBound(pesos_sec) To UBound(pesos_sec)
+                                    If pesos_sec(i)(0) = nombreHoja & encabezado Then
+                                        pesoActual = pesos_sec(i)(1)
+                                        Exit For
+                                    End If
+                                Next i
+                                If IsNumeric(ws.Cells(fila, col).Value) Then
+                                    consigna = IIf(ws.Cells(fila, col).Value > 3, 0, ws.Cells(fila, col).Value)
+                                    producto(col - 14) = consigna * pesoActual
+                                Else
+                                    producto(col - 14) = 0
+                                End If
+                            Next col
+                            
+                            PLEN = IIf(grado < 3, _
+                                        producto(5) + _
+                                        producto(11) + _
+                                        producto(12), _
+                                        producto(0) + _
+                                        producto(1) + _
+                                        producto(2) + _
+                                        producto(10) + _
+                                        producto(11) + _
+                                        producto(12))
+    
+    
+                            PSPC = IIf(grado < 3, _
+                                        producto(0) + _
+                                        producto(1) + _
+                                        producto(2) + _
+                                        producto(3) + _
+                                        producto(4) + _
+                                        producto(13) + _
+                                        producto(14) + _
+                                        producto(15) + _
+                                        producto(16), _
+                                        producto(3) + _
+                                        producto(4) + _
+                                        producto(5) + _
+                                        producto(13) + _
+                                        producto(14))
+                            
+                            PENS = IIf(grado < 3, _
+                                        producto(6) + _
+                                        producto(7) + _
+                                        producto(17) + _
+                                        producto(18) + _
+                                        producto(19), _
+                                        producto(6) + _
+                                        producto(7) + _
+                                        producto(15) + _
+                                        producto(16) + _
+                                        producto(17))
+    
+                            PHYC = IIf(grado < 3, _
+                                        producto(8) + _
+                                        producto(9) + _
+                                        producto(10) + _
+                                        producto(20), _
+                                        producto(8) + _
+                                        producto(9) + _
+                                        producto(18) + _
+                                        producto(19))
+                            
+                            colPLEN = BuscarColumnaPorEncabezado(ws, "PLEN")
+                            colPSPC = BuscarColumnaPorEncabezado(ws, "PSPC")
+                            colPENS = BuscarColumnaPorEncabezado(ws, "PENS")
+                            colPHYC = BuscarColumnaPorEncabezado(ws, "PHYC")
+                            
+                            If colPLEN > 0 Then ws.Cells(fila, colPLEN).Value = IIf(PLEN = 0, "SE", IIf(PLEN <= 8, "RA", IIf(PLEN <= 16, "EPD", "AD")))
+                            If colPSPC > 0 Then ws.Cells(fila, colPSPC).Value = IIf(PSPC = 0, "SE", IIf(PSPC <= 8, "RA", IIf(PSPC <= 16, "EPD", "AD")))
+                            If colPENS > 0 Then ws.Cells(fila, colPENS).Value = IIf(PENS = 0, "SE", IIf(PENS <= 8, "RA", IIf(PENS <= 16, "EPD", "AD")))
+                            If colPHYC > 0 Then ws.Cells(fila, colPHYC).Value = IIf(PHYC = 0, "SE", IIf(PHYC <= 8, "RA", IIf(PHYC <= 16, "EPD", "AD")))
+                        Next fila
+                Next grado
+    
+            Case Else
+                'MsgBox "Hoja no reconocida: " & prefijo
+        End Select
+        
+    Next hoja
+    
+    End Sub
+    
+Sub GenerarArchivoCorreos()
+
+
+    ' ?? Ruta del archivo que acabas de guardar
+    MsgBox "? Archivo de correos generado correctamente.", vbInformation
+
+End Sub
+
+Sub Reemplazar7PorVacioEnRango(wbBase As Workbook)
+    Dim ws As Worksheet
+    Dim fila As Long, col As Long
+    Dim ultimaFila As Long
+
+    For Each ws In wbBase.Worksheets
+        ' Determinar la última fila con datos en la hoja (puedes ajustar si quieres buscar en otra columna)
+        ultimaFila = ws.Cells(ws.Rows.Count, 14).End(xlUp).Row
+
+        ' Recorrer filas desde la 2 hasta la última
+        For fila = 2 To ultimaFila
+            ' Recorrer columnas desde la 14 (columna N) hasta la columna AR
+            For col = 14 To ws.Range("AR1").Column
+                With ws.Cells(fila, col)
+                    If .Value = 7 Then .Value = " "
+                End With
+            Next col
+        Next fila
+    Next ws
+
+    'MsgBox "Reemplazo de '7' completado en todas las hojas del libro.", vbInformation
+End Sub
+
+Sub Macro1()
+'
+    Sheets(Array("INT_REPORT", "PRE3", "PRI1", "PRI2", "PRI3", "PRI4", "PRI5", "PRI6", _
+        "SEC1", "SEC2", "SEC3", "ERROR_INT", "ERROR_VAL", "RESUMEN_NCT")).Select
+    Sheets("INT_REPORT").Activate
+    Cells.Select
+    Selection.NumberFormat = "@"
+End Sub
+
