@@ -33,93 +33,9 @@ timeline
                   : Desactivación legacy completa
 ```
 
-### 💰 ANÁLISIS FINANCIERO COMPARATIVO (3 AÑOS)
+### ⚠️ JUSTIFICACIÓN ESTRATÉGICA (CRÍTICA)
 
-**Inversión Confirmada Estrategia Bifásica (Desarrollo Interno SEP):**
-
-| Fase | Inversión Confirmada (MXN) | Recursos Humanos | Timeline |
-|------|----------------------------|------------------|----------|
-| **Fase 1** | $75,000 MXN | DGADAI + DGTIC (6 personas) | 4 meses |
-| **Fase 2** | $105,000 MXN | DGADAI + DGTIC (6 personas) | 6 meses |
-| **TOTAL** | **$180,000 MXN** | **Personal SEP interno** | **10 meses** |
-| Triara | **PENDIENTE validar** | Infraestructura SEP | Contrato actual |
-
-**🎯 Ventajas Desarrollo Interno SEP:**
-- **Ahorro vs contratación externa:** ~$1,030,000 MXN (recursos propios DGADAI + DGTIC)
-- **Ahorro capacitación remota:** $12,000 MXN vs modalidad presencial
-- **Ahorro licencias Crystal Reports:** $180,000 MXN en 3 años
-- **Arquitectura simplificada:** $54,000 MXN en 3 años (sin Redis/MinIO)
-- **Total ahorros proyectados:** **$1,276,000 MXN**
-
-**Comparativa Costos Operativos Reales 3 Años:**
-
-| Concepto | Sistema Actual (Legacy) | Sistema Modernizado | **Ahorro Real** |
-|----------|------------------------|---------------------|------------------|
-| **Crystal Reports (SAP comercial)** | **$180,000 MXN** | **$0 (Puppeteer open source)** | **$180,000 MXN** |
-| Base de Datos | $0 (MS Access en Office SEP) | $0 (PostgreSQL open source) | $0 |
-| Hosting | $0 (centro datos SEP existente) | $0 (mismo centro datos SEP) | $0 |
-| Runtime | $0 (.NET Framework) | $0 (Node.js) | $0 |
-| Storage | $0 (sistema archivos local) | $0 (filesystem nativo en servidor) | $0 |
-| **TOTAL 3 AÑOS** | **$180,000 MXN** | **$0** | **💰 $180,000 MXN** |
-
-**Aclaración:** Sistema actual NO utiliza SQL Server ni Azure. Opera con MS Access en centro de datos SEP. Único costo de licencia eliminable es Crystal Reports ($5,000 MXN/mes = $60,000 MXN/año).
-
-**Balance Financiero Real (Desarrollo Interno SEP + Centro Datos Triara):**
-- **Ahorro Total 3 años (Crystal Reports):** $180,000 MXN ($60,000/año × 3)
-- **Inversión Confirmada:** $180,000 MXN (capacitación remota + herramientas)
-- **Inversión Triara:** **PENDIENTE** (validar si hay costos adicionales en contrato actual)
-- **Break-even:** 36 meses ($180K inversión / $60K ahorro anual = 3 años)
-- **Ahorro Neto años 4-5:** $120,000 MXN (después de recuperar inversión)
-- **ROI a 5 años:** 67% ($120K ganancia / $180K inversión)
-- **Ventajas Adicionales:** Eliminación tecnologías EOL + Personal SEP + Conocimiento permanente
-
-**📋 PENDIENTE:** Solicitar a DGTIC costos de servidores en contrato SEP-Triara para completar análisis financiero
-
-### 📊 ROI Y PAYBACK (Desarrollo Interno SEP + Centro Datos Triara)
-
-**Cálculo Basado en Ahorros Reales (Solo Crystal Reports):**
-
-```mermaid
-gantt
-    title Retorno de Inversión Real - Solo Ahorro Crystal Reports
-    dateFormat YYYY-MM
-    axisFormat %b %Y
-    
-    section Inversión MXN
-    Fase 1 $75K           :done, inv1, 2025-12, 2026-04
-    Fase 2 $105K          :done, inv2, 2026-03, 2026-09
-    Total: $180K          :milestone, 2026-09, 0d
-    
-    section Ahorro Anual MXN (Crystal Reports)
-    Año 1: $60K ahorro    :save1, 2026-09, 2027-09
-    Año 2: $60K ahorro    :save2, 2027-09, 2028-09
-    Año 3: $60K ahorro    :save3, 2028-09, 2029-09
-    
-    section Break-Even
-    Recuperación inversión :crit, break, 2026-09, 2029-09
-    Break-even (36 meses) :milestone, 2029-09, 0d
-```
-
-**Cálculo ROI Real (Solo Eliminación Crystal Reports):**
-- **Ahorro anual REAL:** $60,000 MXN ($5,000 MXN/mes × 12 meses)
-- **Inversión total:** $180,000 MXN (desarrollo + capacitación + herramientas)
-- **Inversión Triara:** $0 (infraestructura ya existente en centro datos SEP)
-- **Payback period:** 36 meses ($180K inversión / $60K ahorro anual = 3 años)
-- **ROI a 3 años:** 0% (break-even exacto)
-- **ROI a 5 años:** 67% ($120K ganancia / $180K inversión)
-
-**✅ Justificación Estratégica (Más Allá del ROI Financiero):**
-1. **Eliminación de riesgos críticos:** Adobe Flash (CVE-2020-9746 EOL), .NET 4.5 (EOL 2022)
-2. **Modernización tecnológica:** Stack open source moderno y mantenible
-3. **Independencia tecnológica:** Sin dependencias de licencias comerciales
-4. **Conocimiento institucional:** Personal SEP domina 100% la plataforma
-5. **Escalabilidad futura:** PostgreSQL sin límite 2GB de Access
-
-**Nota:** Sistema actual NO usa SQL Server ni Azure, solo MS Access + Crystal Reports en centro de datos SEP existente.
-
-### ⚠️ JUSTIFICACIÓN NO FINANCIERA (CRÍTICA)
-
-**Esta inversión NO se justifica por ahorro a corto plazo, sino por:**
+**Esta modernización NO se persigue por ahorros inmediatos, sino por:**
 
 1. **🔴 Riesgos Tecnológicos Críticos Eliminados:**
    - Adobe Flash: CVE-2020-9746 (CVSS 9.8/10) - Explotación remota sin autenticación
@@ -127,7 +43,7 @@ gantt
    - MS Access: Límite 2GB alcanzable en 2027
 
 2. **⚖️ Compliance Legal LGPDP:**
-   - Sistema legacy: **57% compliance** → Riesgo multas **$50M - $300M MXN**
+   - Sistema legacy: **57% compliance** → Riesgo alto de sanciones
    - Sistema nuevo: **100% compliance Fase 2** → Protección jurídica completa
 
 3. **📈 Escalabilidad:**
@@ -212,36 +128,7 @@ graph LR
 4. **🟡 RIESGO MEDIO: Dependencia Comercial**
    - Crystal Reports (licencia SAP comercial)
    - Versión antigua (13.0)
-   - Costos de licenciamiento continuos
-
----
-
-## 💰 ANÁLISIS FINANCIERO
-
-### Inversión Requerida para Modernización (Desarrollo Interno SEP)
-
-| Fase | Descripción | Costo Confirmado (MXN) | Recursos Humanos | Tiempo |
-|------|-------------|------------------------|------------------|--------|
-| **Fase 1** | Portal Híbrido + Validador | $75,000 | DGADAI + DGTIC (6 personas) | 4 meses |
-| **Fase 2** | Migración Completa Open Source | $105,000 | DGADAI + DGTIC (6 personas) | 6 meses |
-| **SUBTOTAL** | Modernización completa | **$180,000 MXN** | **Personal SEP + Centro datos Triara** | **10 meses** |
-
-**📋 OPTIMIZACIÓN:** Capacitación remota/digital reduce costos $12K MXN y permite alcance nacional instantáneo
-
-**📋 PENDIENTE:** Validar costos de servidores QA/Producción en contrato actual SEP-Triara (10 meses)
-
-**🎯 Ventaja Estratégica:** Desarrollo con recursos propios SEP elimina dependencia de proveedores externos y genera capacidades internas permanentes.
-
-### Costo de No Hacer Nada
-
-| Riesgo | Probabilidad | Impacto Financiero |
-|--------|--------------|-------------------|
-| Pérdida de datos por corrupción BD | Media (30%) | $50,000 - $100,000 |
-| Fallo de seguridad (Flash vulnerabilities) | Alta (70%) | $25,000 - $75,000 |
-| Incompatibilidad con nuevos sistemas operativos | Alta (80%) | $150,000 (re-desarrollo completo) |
-| Multas LGPDP por incumplimiento | Media (40%) | $10,000 - $100,000 |
-
-**Exposición al riesgo anual:** $76,500 USD
+   - Dependencia de licenciamiento continuo
 
 ---
 
@@ -395,7 +282,7 @@ flowchart TD
 ### Opción A: No Hacer Nada 🔴 NO RECOMENDADO
 
 **Ventajas:**
-- Sin inversión inmediata
+- No requiere cambios inmediatos
 - Sin interrupciones
 
 **Desventajas:**
@@ -403,7 +290,6 @@ flowchart TD
 - Riesgo de pérdida de datos
 - Posible incompatibilidad futura
 - Incumplimiento LGPDP
-- Exposición al riesgo: $76,500/año
 
 **Recomendación:** ❌ NO PROCEDER
 
@@ -412,7 +298,7 @@ flowchart TD
 ### Opción B: Modernización Mínima (Solo Fase 1) 🟡 ACEPTABLE
 
 **Ventajas:**
-- Inversión mínima ($6,100)
+- Cambios acotados
 - Tiempo reducido (3 meses)
 - Elimina riesgos inmediatos
 
@@ -421,7 +307,7 @@ flowchart TD
 - Tecnologías aún obsoletas
 - Dependencias comerciales continúan
 
-**Recomendación:** ⚠️ TEMPORAL - Solo si presupuesto es limitado
+**Recomendación:** ⚠️ TEMPORAL - Solo si se requiere una respuesta puntual
 
 ---
 
@@ -435,11 +321,10 @@ flowchart TD
 - Reducción de dependencias comerciales
 
 **Desventajas:**
-- Inversión significativa ($35,300)
 - Tiempo moderado (6 meses)
 - Requiere coordinación con usuarios
 
-**Recomendación:** ✅ PROCEDER - Mejor relación costo-beneficio
+**Recomendación:** ✅ PROCEDER - Mejor relación riesgo-beneficio
 
 ---
 

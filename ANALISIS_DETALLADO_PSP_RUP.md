@@ -17,23 +17,13 @@ El repositorio **sep_evaluacion_diagnostica** contiene el Sistema **SiCRER** (Si
 
 ### ⚡ CAMBIO ESTRATÉGICO: MIGRACIÓN A ARQUITECTURA BIFÁSICA CON STACK OPEN SOURCE
 
-**Decisión de Negocio:** Se ha aprobado una estrategia de migración en dos fases para modernizar el sistema SiCRER, eliminando dependencias tecnológicas obsoletas y migrando a un stack 100% open source que elimina costos de licenciamiento y mejora la seguridad.
+**Decisión de Negocio:** Se ha aprobado una estrategia de migración en dos fases para modernizar el sistema SiCRER, eliminando dependencias tecnológicas obsoletas y migrando a un stack 100% open source que mejora la seguridad y la mantenibilidad.
 
-**Justificación Financiera (Desarrollo Interno SEP):**
-- **Ahorro en Licencias Crystal Reports:** $180,000 MXN en 3 años ($5,000 MXN/mes × 36 meses)
-  - Sistema actual: Crystal Reports Developer (licencia comercial SAP)
-  - Sistema nuevo: Puppeteer + Handlebars (open source, $0)
-- **Infraestructura:** Ya está en Centro de Datos SEP (sin cambio de hosting)
-  - Sistema actual: MS Access en servidores SEP
-  - Sistema nuevo: PostgreSQL en mismos servidores SEP-Triara
-- **Inversión en Modernización:** $180,000 MXN confirmados + **costos Triara PENDIENTES**
-  - **Fase 1 (Híbrido):** $75,000 MXN + costos Triara - Marzo 2026
-  - **Fase 2 (Completo):** $105,000 MXN + costos Triara - Septiembre 2026
-- **Ahorro Neto:** **Por calcular** (pendiente validación costos Triara)
-- **ROI:** Payback < 12 meses (solo con ahorro Crystal Reports)
-- **🎯 Ventajas Estratégicas:** Eliminación de tecnologías obsoletas (Flash EOL, .NET 4.5 EOL) + Personal SEP + Conocimiento permanente
-
-**📋 PENDIENTE:** Solicitar a DGTIC el desglose de costos en contrato actual SEP-Triara para completar análisis financiero
+**Justificación Estratégica:**
+- Eliminación de tecnologías obsoletas (Flash EOL, .NET 4.5 EOL) y de componentes propietarios
+- Consolidación en un stack open source soportado por la comunidad
+- Mayor control operativo dentro del centro de datos institucional
+- Fortalecimiento de capacidades internas del equipo SEP
 
 ### Métricas Sistema Legacy (Pre-Migración)
 - **Tamaño Total del Repositorio:** ~255 MB
@@ -644,7 +634,7 @@ graph TB
    - **Volumetría Real:** 550 GB/año (150K escuelas × 3.5 MB promedio)
    - **Simplicidad:** fs/promises nativo Node.js, sin servidor adicional
    - **Rendimiento:** SSDs data center > object storage para este volumen
-   - **Costo:** $0 vs MinIO server (2 vCPU, 4GB RAM, $18K/año)
+   - **Operación directa:** Sin necesidad de administrar un servicio de object storage adicional
 
 ### 2.2 Patrón de Despliegue
 
@@ -1272,132 +1262,21 @@ Esfuerzo Estimado: 160-200 horas
 | Concepto | Sistema Actual (Legacy) | Sistema Modernizado | Ahorro Real |
 |---------|------------------------|---------------------|-------------|
 | **Crystal Reports (SAP comercial)** | $9,000 USD ($3K/año × 3) | $0 (Puppeteer open source) | $9,000 USD |
-| **Base de Datos** | $0 (MS Access en Office SEP) | $0 (PostgreSQL open source) | $0 |
-| **Hosting** | $0 (centro datos SEP existente) | $0 (mismo centro datos SEP) | $0 |
-| **Runtime** | $0 (.NET Framework incluido en Windows) | $0 (Node.js open source) | $0 |
-| **Office Interop** | $0 (Office ya en SEP) | $0 (SheetJS open source) | $0 |
-| **Storage** | $0 (sistema archivos local) | $0 (filesystem nativo en servidor) | $0 |
-| **TOTAL 3 AÑOS** | **$9,000 USD** | **$0** | **💰 $9,000 USD** |
+### 8.3 Plan de Ejecución Estrategia Bifásica
 
-**Conversión a MXN (tipo de cambio: 1 USD = 20 MXN):**
-- **Ahorro REAL en 3 años:** $9,000 USD = **$180,000 MXN** (solo Crystal Reports)
+Las fases mantienen los mismos entregables técnicos definidos previamente, pero se gestionan mediante equipos multidisciplinarios internos (arquitectura, desarrollo full-stack, QA y DevOps) con planeaciones por hitos. Cada fase debe incluir:
 
-**⚠️ ACLARACIÓN IMPORTANTE:** Sistema actual NO usa SQL Server, Azure Blob, ni Azure SSL. Opera con MS Access + Crystal Reports en centro de datos SEP. El único costo de licencia comercial eliminable es Crystal Reports.
+- Definición de arquitectura detallada y diagramas UML
+- Desarrollo frontend (login, carga/validación de archivos, descargas y dashboard)
+- Desarrollo backend (API REST, motor de validación, gestión de tickets y autenticación JWT)
+- Integración con PostgreSQL y almacenamiento en filesystem estructurado
+- Automatización de pruebas (unitarias, integración y e2e)
+- Configuración DevOps (Docker, Nginx, CI/CD en GitHub Actions) y monitoreo
+- Capacitaciones cortas para operadores y mesa de ayuda
 
-### 8.2 Costo de Mantenimiento Sistema Legacy (Actual)
+### 8.4 Resumen de Implementación
 
-**Supuestos PSP:**
-- Tasa horaria desarrollador senior: $80 USD/hora (México)
-- Tasa horaria QA: $30 USD/hora
-- Tasa horaria DevOps: $50 USD/hora
-
-| Actividad | Horas/Año | Costo Anual (USD) | Costo Anual (MXN) |
-|-----------|-----------|-------------------|-------------------|
-| Corrección de bugs críticos | 120 | $9,600 | $192,000 |
-| Actualizaciones ciclo escolar | 80 | $6,400 | $128,000 |
-| Soporte técnico a escuelas | 160 | $4,800 | $96,000 |
-| Testing manual de reportes | 100 | $3,000 | $60,000 |
-| Infraestructura y hosting | - | $4,800 | $96,000 |
-| Licencias Microsoft | - | $16,000 | $320,000 |
-| **TOTAL ANUAL** | **460** | **$44,600** | **$892,000** |
-
-**Costo 3 años sistema legacy:** $133,800 USD ($2,676,000 MXN)
-
-### 8.3 Inversión Estrategia Bifásica
-
-#### 8.3.1 Fase 1: Portal Web Híbrido (4 meses)
-
-**Equipo:**
-- 1 Arquitecto Senior (160 hrs @ $100/hr)
-- 2 Desarrolladores Full-Stack (640 hrs @ $80/hr)
-- 1 Ingeniero QA (160 hrs @ $30/hr)
-- 1 Ingeniero DevOps (80 hrs @ $50/hr)
-
-| Concepto | Horas | Costo (USD) | Costo (MXN) | Detalle |
-|---------|-------|-------------|-------------|---------|
-| **Análisis y Diseño** | 160 | $16,000 | $320,000 | Arquitectura, diagramas UML, BD schema |
-| **Desarrollo Frontend React** | 320 | $25,600 | $512,000 | Login, upload, download, dashboard |
-| **Desarrollo Backend NestJS** | 320 | $25,600 | $512,000 | API REST, validación, tickets, JWT |
-| **Validador SheetJS** | 80 | $6,400 | $128,000 | Parser Excel, reglas negocio |
-| **Integración PostgreSQL** | 60 | $4,800 | $96,000 | Schema, migraciones Prisma |
-| **Módulo Storage Filesystem** | 24 | $3,200 | $76,800 | fs/promises con estructura organizada |
-| **Sistema de Tickets** | 80 | $6,400 | $128,000 | CRUD tickets, notificaciones email |
-| **Script Sincronización Legacy** | 80 | $6,400 | $128,000 | Node.js → MS Access ODBC bridge |
-| **Testing e2e** | 160 | $4,800 | $96,000 | Cypress, Jest, Supertest |
-| **DevOps Setup** | 80 | $4,000 | $80,000 | Docker, Nginx, CI/CD GitHub Actions |
-| **Infraestructura (4 meses)** | - | $1,600 | $32,000 | VPS 4 cores, 8GB RAM, 200GB SSD |
-| **Capacitación Operadores** | 16 | $1,000 | $20,000 | 2 días presenciales |
-| **Licencias Open Source** | - | **$0** | **$0** | 🎉 MIT, Apache 2.0, BSD |
-| **SUBTOTAL FASE 1** | **1,396** | **$105,800** | **$2,116,000** | **4 meses** |
-
-#### 8.3.2 Fase 2: Migración Completa (6 meses)
-
-**Equipo Ampliado:**
-- 1 Arquitecto Senior (240 hrs @ $100/hr)
-- 3 Desarrolladores Full-Stack (1,440 hrs @ $80/hr)
-- 1 Ingeniero QA (240 hrs @ $30/hr)
-- 1 Ingeniero DevOps (120 hrs @ $50/hr)
-
-| Concepto | Horas | Costo (USD) | Costo (MXN) | Detalle |
-|---------|-------|-------------|-------------|---------|
-| **Diseño Módulo Procesamiento** | 120 | $12,000 | $240,000 | Reemplazo SiCRER.exe con Node.js Workers |
-| **Migración BD Access → PostgreSQL** | 160 | $12,800 | $256,000 | ETL, schema refinement, índices |
-| **Procesador Estadísticas** | 320 | $25,600 | $512,000 | Worker threads, cálculos paralelos |
-| **Generador PDF Puppeteer** | 240 | $19,200 | $384,000 | Plantillas Handlebars, renderizado |
-| **Módulo ARCO (LGPDP)** | 160 | $12,800 | $256,000 | Acceso, Rectificación, Cancelación, Oposición |
-| **Gestor Consentimientos** | 80 | $6,400 | $128,000 | Registro consentimientos padres |
-| **Dashboard Analytics** | 120 | $9,600 | $192,000 | Recharts, KPIs, gráficos interactivos |
-| **API Pública REST** | 80 | $6,400 | $128,000 | Integración externa, webhooks |
-| **Testing Carga y Performance** | 160 | $4,800 | $96,000 | k6, Artillery, 10K users concurrentes |
-| **Migración Datos Históricos** | 80 | $6,400 | $128,000 | 5 años de datos legacy |
-| **DevOps Optimización** | 80 | $4,000 | $80,000 | Kubernetes, autoscaling |
-| **Infraestructura (6 meses)** | - | $2,400 | $48,000 | VPS 8 cores, 16GB RAM, 500GB SSD |
-| **Capacitación Completa** | 40 | $2,000 | $40,000 | 5 días: operadores, admins, soporte |
-| **Documentación Técnica** | 80 | $4,000 | $80,000 | API docs, Swagger, README |
-| **SUBTOTAL FASE 2** | **1,720** | **$128,400** | **$2,568,000** | **6 meses** |
-
-### 8.4 Resumen Financiero Real (Desarrollo Interno SEP)
-
-```mermaid
-pie title Inversión Confirmada ($180,000 MXN)
-    "Fase 1: Herramientas + Capacitación" : 75000
-    "Fase 2: Desarrollo + Testing" : 105000
-```
-
-**Nota:** Desarrollo 100% con personal interno SEP (DGADAI + DGTIC). Infraestructura Triara pendiente de validación.
-
-| Concepto | MXN | USD Referencia | Notas |
-|---------|-----|----------------|-------|
-| **Desarrollo Interno SEP** | $0 | $0 | DGADAI + DGTIC (6 personas) |
-| **Herramientas + Capacitación** | $180,000 | $9,000 | Confirmado |
-| **Infraestructura Triara** | PENDIENTE | PENDIENTE | Validar contrato |
-| **INVERSIÓN TOTAL** | **$180,000** | **$9,000** | **+ Triara por validar** |
-| **Ahorro Crystal Reports (3 años)** | $180,000 | $9,000 | $60K/año × 3 años |
-| **Ahorro Neto (años 4-5)** | **$120,000** | **$6,000** | **Después recuperar inversión** |
-
-### 8.5 ROI y Payback Real
-
-**Cálculo Retorno de Inversión (Basado en Ahorro Crystal Reports):**
-
-```
-Inversión Total Confirmada: $180,000 MXN ($9,000 USD)
-Ahorro Anual Crystal Reports: $60,000 MXN/año ($3,000 USD/año)
-Infraestructura Triara: PENDIENTE (validar contrato)
-
-AHORRO ANUAL REAL: $60,000 MXN/año
-
-Payback Period = $180,000 MXN / $60,000 MXN/año = 3 años (36 meses)
-
-ROI a 3 años = ($180,000 - $180,000) / $180,000 x 100 = 0% (break-even)
-ROI a 5 años = ($300,000 - $180,000) / $180,000 x 100 = 67%
-
-Ahorro Neto años 2-3: $120,000 MXN
-Ahorro Neto años 4-5: $120,000 MXN adicionales
-```
-
-**✅ Análisis Realista:**
-
-El ROI financiero es **break-even a 3 años** (payback completo con ahorro Crystal Reports). La decisión estratégica se justifica por beneficios más allá del ahorro inmediato:
+Las dos fases deben cerrarse con revisiones técnicas, documentación actualizada y sesiones de transferencia de conocimiento para los equipos operativos y de soporte.
 
 1. **Riesgos Tecnológicos Críticos (eliminados):**
    - Adobe Flash: CVE-2020-9746 (CVSS 9.8/10) - **Explotación remota sin autenticación**
@@ -1622,7 +1501,6 @@ gantt
 | **Uptime** | 95% | 99.5% | 99.9% |
 | **Tiempo Validación FRV** | 15 min (manual) | 30 seg (auto) | 15 seg (optimizado) |
 | **Compliance LGPDP** | 57% | 86% | 100% |
-| **Costos Licencias Anuales** | $16,000 | $8,000 (híbrido) | $0 |
 | **Tiempo Deploy Cambios** | 2 semanas | 3 días | 1 hora (CI/CD) |
 | **Incidentes Seguridad** | 3/año (Flash) | 0/año | 0/año |
 | **Satisfacción Usuarios** | 6.5/10 | 8.0/10 | 9.0/10 |
@@ -1632,8 +1510,8 @@ gantt
 Este análisis ha sido realizado bajo metodología **PSP (Personal Software Process)** con certificación y **RUP (Rational Unified Process)** siguiendo las 4 fases estándar. La recomendación técnica es **PROCEDER CON ESTRATEGIA BIFÁSICA** por:
 
 1. ✅ Eliminación de riesgos tecnológicos críticos (Flash CVE-2020-9746, .NET 4.5 EOL)
-2. ✅ Compliance legal LGPDP (evita multas hasta $300M MXN)
-3. ✅ Ahorro real Crystal Reports ($9K USD / $180K MXN en 3 años)
+2. ✅ Compliance legal LGPDP (evita sanciones y protege datos personales)
+3. ✅ Eliminación de dependencias comerciales (Crystal Reports) y consolidación open source
 4. ✅ Escalabilidad y sostenibilidad (PostgreSQL sin límite 2GB de Access)
 5. ✅ Desarrollo interno SEP (DGADAI + DGTIC) = conocimiento institucional permanente
 

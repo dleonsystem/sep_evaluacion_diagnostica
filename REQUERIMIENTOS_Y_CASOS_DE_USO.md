@@ -264,7 +264,7 @@
 - **RNF-08.6** El sistema debe soportar importación masiva vía CSV
 
 ### RNF-09: Stack Tecnológico Open Source ✨ FASE 1
-- **RNF-09.1** El sistema debe utilizar tecnologías 100% open source sin costos de licencia
+- **RNF-09.1** El sistema debe utilizar tecnologías 100% open source sin dependencias comerciales
 - **RNF-09.2** Frontend debe ser React 18+ con TypeScript 5+
 - **RNF-09.3** Backend debe ser Node.js 20 LTS con framework NestJS
 - **RNF-09.4** Base de datos debe ser PostgreSQL 16+

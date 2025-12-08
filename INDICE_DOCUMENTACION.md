@@ -39,7 +39,7 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 
 3. **[RESUMEN_EJECUTIVO_STAKEHOLDERS.md](RESUMEN_EJECUTIVO_STAKEHOLDERS.md)**
    - ⏱️ Tiempo de lectura: 15-20 minutos
-   - 📊 Contiene: Hallazgos principales, análisis financiero, opciones de decisión
+   - 📊 Contiene: Hallazgos principales, opciones de decisión y riesgos
    - 🎯 Objetivo: Tomar decisión informada sobre modernización del sistema
 
 4. **[README.md](README.md)** (Este archivo)
@@ -52,7 +52,7 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 3. **[ANALISIS_DETALLADO_PSP_RUP.md](ANALISIS_DETALLADO_PSP_RUP.md)** - Secciones específicas
    - Sección 6: Recomendaciones Estratégicas
    - Sección 7: Análisis de Riesgos
-   - Sección 8: Estimación de Costos
+   - Sección 8: Plan de ejecución por fases
 
 ---
 
@@ -74,7 +74,7 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 
 3. **[RESUMEN_EJECUTIVO_STAKEHOLDERS.md](RESUMEN_EJECUTIVO_STAKEHOLDERS.md)**
    - Para preparar presentaciones a directivos
-   - Para justificación de presupuesto
+   - Para socializar riesgos y prioridades
 
 ---
 
@@ -224,11 +224,6 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 - 🏗️ Arquitectura actual vs. propuesta (gráfico comparativo)
 - 📈 Roadmap de modernización (Gantt interactivo)
 
-#### ANÁLISIS FINANCIERO VISUAL
-- 💰 Cuadrante de análisis costo-beneficio
-- 📊 Comparativa de 4 opciones de inversión
-- 💵 ROI y retorno de inversión
-
 #### GESTIÓN DE RIESGOS
 - ⚠️ Matriz de riesgos (cuadrante probabilidad/impacto)
 - 🔴 Top 5 riesgos críticos con exposición
@@ -301,14 +296,14 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 - Plan de contingencia
 - Estrategias de mitigación
 
-#### ESTIMACIÓN DE COSTOS
-- Costo de mantenimiento actual
-- Costo de modernización
-- Análisis de ROI
+#### PLANIFICACIÓN OPERATIVA
+- Estimación de esfuerzo y recursos
+- Secuencia de liberaciones
+- Criterios de éxito por fase
 
 **Cuándo leerlo:**
 - Planificando modernización del sistema
-- Necesitas justificar inversión
+- Necesitas priorizar entregables y mitigaciones
 - Evaluando arquitectura técnica
 - Preparando roadmap de desarrollo
 
@@ -379,10 +374,10 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 - Fortalezas principales
 - Debilidades críticas
 
-#### ANÁLISIS FINANCIERO
-- Inversión requerida ($94,700)
-- Costo de no hacer nada ($76,500/año)
-- ROI detallado
+#### IMPACTO OPERATIVO
+- Necesidades inmediatas
+- Riesgos de continuidad si no se actúa
+- Beneficios esperados por fase
 
 #### OPCIONES DE DECISIÓN
 - Opción A: No hacer nada (NO RECOMENDADO)
@@ -391,9 +386,9 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 - Opción D: Transformación total (IDEAL)
 
 #### ROADMAP ESTRATÉGICO
-- Fase 1: Estabilización ($6,100 - 3 meses)
-- Fase 2: Modernización ($29,200 - 3 meses)
-- Fase 3: Transformación ($59,400 - 6 meses)
+- Fase 1: Estabilización (3 meses)
+- Fase 2: Modernización (3 meses)
+- Fase 3: Transformación (6 meses)
 
 #### RIESGOS DE NO ACTUAR
 - Escenarios concretos
@@ -412,7 +407,7 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 - Estudiantes y padres
 
 **Cuándo leerlo:**
-- Necesitas aprobar presupuesto
+- Necesitas validar prioridades y riesgos
 - Presentando a comité directivo
 - Evaluando viabilidad del proyecto
 - Tomando decisión de inversión
@@ -457,15 +452,6 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 | Cumplimiento LGPDP | ANALISIS_TECNICO_COMPLEMENTARIO.md | Sección 4.2 |
 | Advertencias | README.md | Advertencias Importantes |
 
-### 💰 Presupuesto y Costos
-
-| Tema | Documento | Sección |
-|------|-----------|---------|
-| Inversión requerida | RESUMEN_EJECUTIVO_STAKEHOLDERS.md | Análisis Financiero |
-| ROI detallado | ANALISIS_DETALLADO_PSP_RUP.md | Sección 8.3 |
-| Estimación por fase | ANALISIS_TECNICO_COMPLEMENTARIO.md | Sección 5.2 |
-| Ahorros proyectados | RESUMEN_EJECUTIVO_STAKEHOLDERS.md | Ahorros Proyectados |
-
 ### ⚠️ Riesgos
 
 | Tema | Documento | Sección |
@@ -509,7 +495,7 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 3. ANALISIS_DETALLADO_PSP_RUP.md - Secciones clave (60 min)
    ├─> Sección 6: Recomendaciones
    ├─> Sección 7: Riesgos
-   └─> Sección 8: Costos
+   └─> Sección 8: Plan por fases
    
 4. Preparar presentación (60 min)
    └─> Slides para comité
@@ -558,7 +544,7 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 | Arquitectura | ███████████ 100% | 3 docs |
 | Base de Datos | ███████████ 100% | 2 docs |
 | Seguridad | ████████░░░ 80% | 3 docs |
-| Costos | ███████████ 100% | 2 docs |
+| Planificación | ███████████ 100% | 2 docs |
 | Implementación | ████████░░░ 85% | 2 docs |
 | Testing | ███████░░░░ 70% | 2 docs |
 | Procesos | ████████░░░ 75% | 2 docs |
@@ -607,14 +593,11 @@ R: Lee primero el README.md, luego según tu perfil consulta la sección "Según
 **P: ¿Necesito leer todos los documentos?**  
 R: No, depende de tu rol y necesidades. Usa las guías por perfil.
 
-**P: ¿Qué documento tiene la información de costos?**  
-R: RESUMEN_EJECUTIVO_STAKEHOLDERS.md tiene el análisis financiero completo.
-
-**P: ¿Dónde están los scripts de migración?**  
+**P: ¿Dónde están los scripts de migración?**
 R: ANALISIS_TECNICO_COMPLEMENTARIO.md, Sección 4.
 
-**P: ¿Cómo justifico el presupuesto?**  
-R: Usa RESUMEN_EJECUTIVO_STAKEHOLDERS.md como base para tu presentación.
+**P: ¿Cómo priorizo entregables?**
+R: Usa RESUMEN_EJECUTIVO_STAKEHOLDERS.md para visualizar fases y riesgos clave.
 
 ### Contacto
 
