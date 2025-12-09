@@ -15,9 +15,18 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 
 ## 👥 SEGÚN TU PERFIL
 
+### 📌 Documento Final - Plataforma de Recepción, Validación y Descarga (Segunda Aplicación EIA)
+
+**[plataforma_recepcion_validacion_descarga_EIA.md](plataforma_recepcion_validacion_descarga_EIA.md)** consolida el diseño funcional, reglas de validación y requerimientos tecnológicos del módulo que recibe archivos EIA, genera credenciales en la primera carga válida, emite PDFs de confirmación/errores y expone las ligas de descarga depositadas por el sistema externo de procesamiento. Es la referencia más reciente para ajustar flujos de carga y descarga.
+
 ### 🎯 Directivos y Tomadores de Decisión
 
 **LEER PRIMERO:**
+
+0. **[plataforma_recepcion_validacion_descarga_EIA.md](plataforma_recepcion_validacion_descarga_EIA.md)** ⭐ NUEVO - **PLATAFORMA FINAL EIA**
+   - ⏱️ Tiempo de lectura: 15-20 minutos
+   - 📊 Contiene: Reglas de validación, generación de credenciales y descargas externas
+   - 🎯 Objetivo: Ajustar decisiones a la versión más reciente de la plataforma EIA
 
 1. **[REQUERIMIENTOS_Y_CASOS_DE_USO.md](REQUERIMIENTOS_Y_CASOS_DE_USO.md)** ⭐ NUEVO - **ESPECIFICACIÓN FORMAL**
    - ⏱️ Tiempo de lectura: 30-40 minutos

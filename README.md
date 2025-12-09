@@ -21,6 +21,8 @@
 
 Sistema de Captura y Reporteo de Evaluación Diagnóstica para la Secretaría de Educación Pública (SEP) de México.
 
+**NOVEDAD:** Se incorpora la **Plataforma de Recepción, Validación y Descarga** para la **segunda aplicación de los Ejercicios Integradores del Aprendizaje (EIA)**. Este módulo web permite recibir archivos .xlsx sin autenticación previa, validar automáticamente estructura y contenido, generar credenciales solo en la primera carga válida (usuario = CCT, contraseña = correo validado), emitir PDFs de confirmación/errores y exponer ligas de descarga de resultados procesados externamente.
+
 ---
 
 ## 🚀 ESTRATEGIA BIFÁSICA DE MODERNIZACIÓN
@@ -129,6 +131,15 @@ El sistema permite la captura, procesamiento y generación de reportes detallado
 - **HYC** - Historia y Civismo
 - **LEN** - Lenguaje y Comunicación
 - **SPC** - Saberes y Pensamiento Científico
+
+### Plataforma de Recepción, Validación y Descarga (Segunda Aplicación EIA)
+
+- 📥 **Recepción sin autenticación:** carga de archivo .xlsx con etiqueta "Validando tu archivo...".
+- ✅ **Validación automática:** CCT, correo, nivel, estructura general por hoja, columnas obligatorias, valores válidos (0-3), número y nombre de hojas, consistencia interna.
+- 🔐 **Credenciales autogeneradas:** solo en la primera carga válida (usuario = CCT validado, contraseña = correo validado). No se regeneran en cargas posteriores.
+- 🧾 **PDF de confirmación/errores:** descarga automática con mensaje, fecha de disponibilidad (hoy + 4 días), usuario, contraseña y marca de tiempo; PDF de errores cuando el archivo es inválido.
+- 🗂️ **Registro y consecutivos:** cada carga válida se almacena como solicitud independiente y mantiene repositorio de archivos recibidos.
+- 🔗 **Descarga de resultados:** portal protegido por credenciales para mostrar versiones consecutivas y ligas de descarga depositadas por el sistema externo que procesa los archivos.
 
 ---
 
