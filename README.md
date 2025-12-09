@@ -135,7 +135,16 @@ El sistema permite la captura, procesamiento y generación de reportes detallado
 ### Plataforma de Recepción, Validación y Descarga (Segunda Aplicación EIA)
 
 - 📥 **Recepción sin autenticación:** carga de archivo .xlsx con etiqueta "Validando tu archivo...".
-- ✅ **Validación automática:** CCT, correo, nivel, estructura general por hoja, columnas obligatorias, valores válidos (0-3), número y nombre de hojas, consistencia interna.
+- ✅ **Validación automática con 9 verificaciones:**
+  1. CCT
+  2. Correo
+  3. Nivel
+  4. Campo obligatorio por hoja
+  5. Columnas obligatorias
+  6. Valores válidos (0-3)
+  7. Estructura general de archivo
+  8. Número y nombre de hojas
+  9. Consistencia interna
 - 🔐 **Credenciales autogeneradas:** solo en la primera carga válida (usuario = CCT validado, contraseña = correo validado). No se regeneran en cargas posteriores.
 - 🧾 **PDF de confirmación/errores:** descarga automática con mensaje, fecha de disponibilidad (hoy + 4 días), usuario, contraseña y marca de tiempo; PDF de errores cuando el archivo es inválido.
 - 🗂️ **Registro y consecutivos:** cada carga válida se almacena como solicitud independiente y mantiene repositorio de archivos recibidos.

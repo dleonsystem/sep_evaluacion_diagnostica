@@ -196,6 +196,7 @@
 ### RF-16: Plataforma Recepción/Validación/Descarga EIA (2ª aplicación)
 - **RF-16.1** El portal debe permitir subir archivo .xlsx sin autenticación previa y mostrar la etiqueta "Validando tu archivo..." al seleccionar el archivo.
 - **RF-16.2** La validación automática debe revisar CCT, correo, nivel, campos y columnas obligatorias por hoja, valores válidos (0-3), número y nombre de hojas, estructura general y consistencia interna; si alguno falla, el archivo se rechaza.
+  - **Checklist mínimo de validación (9 puntos):** CCT, correo, nivel, campo obligatorio por hoja, columnas obligatorias, valores válidos (0-3), estructura general de archivo, número de hojas, consistencia interna.
 - **RF-16.3** Si el archivo es válido, el sistema debe mostrar el mensaje "Tu archivo ha sido validado correctamente. Podrás consultar tus resultados a partir del día: [hoy + 4 días]".
 - **RF-16.4** En la primera carga válida se deben generar credenciales de consulta (usuario = CCT validado, contraseña = correo validado) y no regenerarse en cargas posteriores.
 - **RF-16.5** El sistema debe generar y descargar automáticamente un PDF de confirmación con mensaje de éxito, fecha futura de consulta, usuario, contraseña y marca de tiempo; si es inválido, debe descargar PDF de errores.
@@ -528,7 +529,16 @@ graph TB
 **Flujo Principal:**
 1. Director ingresa al portal público y selecciona el archivo .xlsx.
 2. El portal muestra la etiqueta **"Validando tu archivo..."** mientras se procesa.
-3. El sistema ejecuta validaciones automáticas: CCT y correo con estructura válida, nivel educativo, número/nombre de hojas, columnas y campos obligatorios por hoja, valores permitidos (0-3) y consistencia interna.
+3. El sistema ejecuta validaciones automáticas (9 puntos mínimos):
+   1. CCT
+   2. Correo
+   3. Nivel educativo
+   4. Campo obligatorio por hoja
+   5. Columnas obligatorias
+   6. Valores permitidos (0-3)
+   7. Estructura general de archivo
+   8. Número y nombre de hojas
+   9. Consistencia interna
 4. **Si el archivo es válido:**
    - Se muestra el mensaje de éxito con fecha futura de consulta (hoy + 4 días).
    - Se generan credenciales solo en la primera carga válida (**usuario = CCT**, **contraseña = correo validado**) sin regeneración posterior.
