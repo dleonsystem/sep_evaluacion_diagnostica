@@ -120,7 +120,7 @@
   - Estructura de hojas esperada según nivel educativo
 - **RF-10.4** El sistema debe ejecutar validaciones automáticas en backend:
   - Formato de CURP (18 caracteres, patrón válido)
-  - Valores de valoración (1-4)
+  - Valores de valoración (0-3)
   - Campos obligatorios completos
   - Detección de duplicados (CURP + periodo)
   - Estructura de Excel por nivel educativo
@@ -451,55 +451,45 @@ graph TB
 ### CU-04v2: Cargar Valoraciones por Portal Web ✨ FASE 1 (MODIFICADO)
 **Actor Principal:** Director  
 **Actores Secundarios:** Portal Web, Sistema de Validación  
-**Precondiciones:** 
+**Precondiciones:**
 - Evaluaciones valoradas por docentes
 - FRV Excel completo localmente
-- Director tiene credenciales de acceso (CCT + contraseña)
+- El portal de carga es público y **no requiere autenticación previa** para subir el archivo.
 
 **Flujo Principal:**
-1. Director accede a portal web (URL: https://evaluaciones.sep.gob.mx)
-2. Director inicia sesión con CCT y contraseña
-3. Sistema valida credenciales y carga dashboard personal
-4. Director selecciona "Cargar Evaluación" del menú
-5. Sistema muestra formulario de carga:
-   - Selector de periodo (2025-1, 2025-2, 2025-3)
-   - Zona de drag & drop para archivo
-   - Instrucciones y validaciones esperadas
-6. Director arrastra o selecciona archivo FRV Excel
-7. Sistema ejecuta pre-validaciones inmediatas:
+1. Director accede al portal público (URL: https://evaluaciones.sep.gob.mx) y selecciona el archivo .xlsx.
+2. El portal muestra el indicador **"Validando tu archivo..."** mientras ejecuta las verificaciones automáticas.
+3. El sistema valida de forma inmediata:
    - Extensión .xlsx válida ✓
-   - Tamaño ≤10 MB ✓
    - Archivo no corrupto ✓
-8. Sistema sube archivo a servidor (progress bar)
-9. Sistema ejecuta validaciones backend (30-45 segundos):
+4. El sistema ejecuta validaciones backend (30-45 segundos) alineadas al checklist de 9 puntos del documento final:
    ```
    Validando estructura... ✓
-   Validando CURP (250 registros)... ✓
-   Validando valoraciones... ✓
+   Validando CCT... ✓
+   Validando correo... ✓
+   Validando nivel... ✓
+   Validando valores (0-3)... ✓
    Validando campos obligatorios... ✓
-   Buscando duplicados... ✓
+   Validando columnas obligatorias... ✓
+   Validando número/nombre de hojas... ✓
+   Verificando consistencia interna... ✓
    ```
-10. **SI todas las validaciones son exitosas:**
-    - Sistema muestra resumen:
-      * Total estudiantes: 250
-      * Grados/grupos: 6 grados × 5 grupos = 30
-      * Estado: ✅ Archivo válido
-    - Director confirma carga con botón "Confirmar y Enviar"
-    - Sistema registra en BD PostgreSQL
-    - Sistema almacena archivo en filesystem SSD
-    - Sistema exporta JSON a carpeta legacy para procesamiento
-    - Sistema muestra folio de confirmación: **FRV-2025-24PPR0356K-001**
-    - Sistema envía email de confirmación
+5. **SI todas las validaciones son exitosas:**
+    - Sistema muestra mensaje de éxito con fecha futura: **"Tu archivo ha sido validado correctamente. Podrás consultar tus resultados a partir del día: [hoy + 4 días]"**.
+    - Para la primera carga válida, el sistema genera credenciales de consulta (**usuario = CCT**, **contraseña = correo validado**) y no las regenera en cargas posteriores.
+    - El mensaje de éxito debe indicar que, para consultar o descargar resultados en visitas futuras, el director deberá autenticarse con el CCT y la contraseña generada en esa primera carga válida.
+    - Se descarga automáticamente un PDF de confirmación con mensaje, fecha futura, usuario, contraseña y marca de tiempo.
+    - Sistema registra la solicitud con consecutivo y almacena el archivo en el repositorio de recepción.
 
-11. **SI existen errores de validación:**
+6. **SI existen errores de validación:**
     - Sistema muestra tabla de errores:
     ```
     ❌ 15 errores encontrados
-    
+
     | Fila | Columna | Campo | Error | Valor Encontrado | Valor Esperado |
     |------|---------|-------|-------|------------------|----------------|
-    | 12   | A       | CURP  | Formato inválido | MALM950101HDFR0 | 18 caracteres |
-    | 45   | D       | Val_ENS | Fuera de rango | 5 | 1-4 |
+    | 12   | A       | CCT   | Formato inválido | 24PPR0356 | Clave válida |
+    | 45   | D       | Val_ENS | Fuera de rango | 5 | 0-3 |
     | 78   | B       | Nombre | Campo vacío | (vacío) | Requerido |
     ```
     - Director puede:
@@ -508,7 +498,7 @@ graph TB
       * Reintentar carga
     - Sistema incrementa contador de intentos
 
-12. **SI se alcanzan N intentos fallidos (default: 3):**
+7. **SI se alcanzan N intentos fallidos (default: 3):**
     - Sistema genera ticket automáticamente (ver CU-13)
     - Sistema muestra mensaje:
       ```
