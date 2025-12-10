@@ -48,9 +48,8 @@ Sistema de Captura y Reporteo de Evaluación Diagnóstica para la Secretaría de
 - 📥 Descarga reportes PDF desde portal
 - 🔄 Sincronización nocturna con SiCRER legacy
 
-**Desarrollo:** Recursos internos SEP (DGADAI + DGTIC)  
-**Inversión:** $75,000 MXN + **costos Triara PENDIENTES** (4 meses)  
-**Capacitación:** Remota/digital para alcance nacional
+**Desarrollo:** Recursos internos SEP (DGADAI + DGTIC)
+**Capacitación:** Remota/digital para alcance nacional con infraestructura existente
 
 ---
 
@@ -75,43 +74,17 @@ Sistema de Captura y Reporteo de Evaluación Diagnóstica para la Secretaría de
 - ✅ $0 costos licenciamiento anual
 - ✅ Escalabilidad 300K escuelas concurrentes
 
-**Desarrollo:** Recursos internos SEP (DGADAI + DGTIC)  
-**Inversión:** $105,000 MXN + **costos Triara PENDIENTES** (6 meses)
+**Desarrollo:** Recursos internos SEP (DGADAI + DGTIC)
 
 ---
 
-## 💰 ANÁLISIS FINANCIERO
+## 💠 EJECUCIÓN CON RECURSOS INTERNOS
 
-### Inversión Total Estrategia Bifásica (Desarrollo Interno SEP)
-| Fase | Costo Confirmado (MXN) | Infraestructura | Recursos | Timeline |
-|------|------------------------|-----------------|----------|----------|
-| Fase 1 (Híbrido) | $75,000 | Centro datos SEP-Triara | DGADAI + DGTIC | 4 meses |
-| Fase 2 (Completo) | $105,000 | Centro datos SEP-Triara | DGADAI + DGTIC | 6 meses |
-| **SUBTOTAL** | **$180,000 MXN** | **+ costos Triara PENDIENTES** | **6 personas SEP** | **10 meses** |
+- Desarrollo y operación se realizan con personal SEP (DGADAI + DGTIC) y la infraestructura institucional existente.
+- No se prevén adquisiciones de software propietario ni contratación de terceros para la operación del sistema.
+- El uso de stack open source evita costos de licenciamiento y mantiene la operación dentro del centro de datos de la SEP.
 
-**📋 PENDIENTE:** Validar costos de servidores QA/Producción en contrato actual SEP-Triara
-
-**🎯 Ventajas:** 
-- Desarrollo con recursos propios SEP + centro de datos institucional
-- Capacitación remota/digital para alcance nacional (150K directores)
-- Arquitectura simplificada: Eliminado Redis + MinIO (filesystem nativo)
-- **Ahorros totales proyectados:** $1,276,000 MXN
-  - Desarrollo interno vs externo: ~$1,030,000 MXN
-  - Capacitación remota vs presencial: $12,000 MXN
-  - Licencias Crystal Reports (3 años): $180,000 MXN
-  - Infraestructura simplificada (3 años): $54,000 MXN (sin Redis ni MinIO)
-
-### Ahorro Real en Licencias (3 años)
-| Componente | Sistema Actual | Sistema Modernizado | Ahorro Real |
-|-----------|----------------|---------------------|-------------|
-| **Crystal Reports** | **$180,000 MXN** | **$0** | **$180,000 MXN** |
-| MS Access | $0 (incluido en Office SEP) | $0 (PostgreSQL) | $0 |
-| Hosting | $0 (centro datos SEP) | $0 (mismo centro datos) | $0 |
-| **TOTAL 3 AÑOS** | **$180,000 MXN** | **$0** | **💰 $180,000 MXN** |
-
-**Nota:** Sistema actual NO usa SQL Server ni Azure. Solo ahorro real es Crystal Reports ($5,000 MXN/mes).
-
-**ROI:** Payback en 36 meses ($180K inversión / $60K ahorro anual = 3 años). Ahorro neto años 4-5: $120,000 MXN
+**Nota:** Sistema actual NO usa SQL Server ni Azure. Único beneficio económico relevante es eliminar la licencia de Crystal Reports.
 
 **Justificación:** Eliminación de riesgos críticos (Flash CVE-2020-9746, .NET 4.5 EOL) + Compliance LGPDP 100%
 
