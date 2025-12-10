@@ -1,10 +1,12 @@
 # REQUERIMIENTOS Y CASOS DE USO
 ## Sistema SiCRER - Evaluación Diagnóstica SEP
 
-**Fecha:** 24 de Noviembre de 2025  
-**Versión:** 2.0 - Estrategia Bifásica + Stack Open Source  
-**Sistema:** SiCRER Portal Web + Legacy Integration  
+**Fecha:** 24 de Noviembre de 2025
+**Versión:** 2.0 - Estrategia Bifásica + Stack Open Source
+**Sistema:** SiCRER Portal Web + Legacy Integration
 **Fase 1:** Marzo 2026 | **Fase 2:** Septiembre 2026
+
+**Actualización EIA 2ª aplicación:** La plataforma web de recepción/validación/descarga **solo recibe y valida archivos .xlsx**, genera credenciales una sola vez en la primera carga válida, registra cada envío como solicitud independiente con consecutivo y **no procesa resultados ni decide si el envío corresponde a primera o segunda aplicación**. Las ligas de descarga se publican a partir de archivos generados por un sistema externo y almacenados en repositorios separados para archivos recibidos y resultados.
 
 ---
 
