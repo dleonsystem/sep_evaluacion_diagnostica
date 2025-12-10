@@ -78,17 +78,6 @@ Sistema de Captura y Reporteo de Evaluación Diagnóstica para la Secretaría de
 
 ---
 
-## 💠 EJECUCIÓN CON RECURSOS INTERNOS
-
-- Desarrollo y operación se realizan con personal SEP (DGADAI + DGTIC) y la infraestructura institucional existente.
-- No se prevén adquisiciones de software propietario ni contratación de terceros para la operación del sistema.
-- El uso de stack open source evita costos de licenciamiento y mantiene la operación dentro del centro de datos de la SEP.
-
-**Nota:** Sistema actual NO usa SQL Server ni Azure. Único beneficio económico relevante es eliminar la licencia de Crystal Reports.
-
-**Justificación:** Eliminación de riesgos críticos (Flash CVE-2020-9746, .NET 4.5 EOL) + Compliance LGPDP 100%
-
----
 
 ## 📋 Descripción
 
