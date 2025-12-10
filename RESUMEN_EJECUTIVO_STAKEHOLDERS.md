@@ -2,9 +2,11 @@
 ## Sistema SiCRER - Evaluación Diagnóstica SEP
 ### Versión 2.0 - Estrategia Bifásica con Stack Open Source
 
-**Fecha Actualización:** 25 de Noviembre de 2025  
-**Destinado a:** Dirección Técnica SEP, Tomadores de Decisión, CFO  
+**Fecha Actualización:** 25 de Noviembre de 2025
+**Destinado a:** Dirección Técnica SEP, Tomadores de Decisión, CFO
 **Preparado por:** Ingeniero de Software Certificado PSP
+
+> **Stack acordado para diseño y construcción:** Backend en **Python 3.12 + FastAPI**, frontend en **Angular 17 + TypeScript** y persistencia en **PostgreSQL 16**. Las menciones a React/NestJS de versiones anteriores quedan como histórico y serán reemplazadas conforme se actualizan los artefactos.
 
 ---
 
@@ -18,14 +20,14 @@ timeline
     section Fase 1
         Nov 2025 : Kick-off proyecto
                : Arquitectura híbrida
-        Dic 2025-Feb 2026 : Desarrollo Portal React
-                          : Backend NestJS + PostgreSQL
-                          : Validador SheetJS
+        Dic 2025-Feb 2026 : Desarrollo Portal Angular
+                          : Backend FastAPI + PostgreSQL
+                          : Validador pandas + openpyxl
         Marzo 2026 : Deploy Producción Fase 1
                    : 50% escuelas adoptan portal
     section Fase 2
-        Mar-Jun 2026 : Procesamiento nativo Node.js
-                     : Generador PDF Puppeteer
+        Mar-Jun 2026 : Procesamiento nativo Python (FastAPI + workers)
+                     : Generador PDF WeasyPrint/ReportLab
                      : Módulo ARCO LGPDP
         Jul-Ago 2026 : Testing carga 10K users
                      : Migración datos históricos

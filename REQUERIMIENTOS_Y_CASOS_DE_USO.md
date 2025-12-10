@@ -6,6 +6,8 @@
 **Sistema:** SiCRER Portal Web + Legacy Integration
 **Fase 1:** Marzo 2026 | **Fase 2:** Septiembre 2026
 
+> **Alineación tecnológica 2025:** Todas las iteraciones de diseño y construcción se basarán en **Python 3.12 + FastAPI** para backend, **Angular 17 + TypeScript 5** para frontend y **PostgreSQL 16** como base de datos. Las referencias previas a React/Node.js quedan como histórico y deberán reinterpretarse con el nuevo stack durante el refinamiento de cada módulo.
+
 **Actualización EIA 2ª aplicación:** La plataforma web de recepción/validación/descarga **solo recibe y valida archivos .xlsx**, genera credenciales una sola vez en la primera carga válida, registra cada envío como solicitud independiente con consecutivo y **no procesa resultados ni decide si el envío corresponde a primera o segunda aplicación**. Las ligas de descarga se publican a partir de archivos generados por un sistema externo y almacenados en repositorios separados para archivos recibidos y resultados.
 
 ---
@@ -278,26 +280,26 @@
 - **RNF-07.4** Las actualizaciones no deben requerir reinstalación completa
 
 ### RNF-08: Interoperabilidad
-- **RNF-08.1** El sistema debe leer archivos Excel (.xlsx) mediante SheetJS library
-- **RNF-08.2** El sistema debe generar reportes PDF mediante PDFKit o Puppeteer
+- **RNF-08.1** El sistema debe leer archivos Excel (.xlsx) mediante **pandas + openpyxl**
+- **RNF-08.2** El sistema debe generar reportes PDF mediante **WeasyPrint** o **ReportLab**
 - **RNF-08.3** El sistema debe integrarse con SMTP para envío de emails
-- **RNF-08.4** El sistema debe exponer API REST para integraciones externas
+- **RNF-08.4** El sistema debe exponer API REST (OpenAPI 3) para integraciones externas
 - **RNF-08.5** El sistema debe usar filesystem nativo con estructura /data/sicrer/{frv,pdfs}/{periodo}/{cct}/
 - **RNF-08.6** El sistema debe soportar importación masiva vía CSV
 
 ### RNF-09: Stack Tecnológico Open Source ✨ FASE 1
 - **RNF-09.1** El sistema debe utilizar tecnologías 100% open source sin costos de licencia
-- **RNF-09.2** Frontend debe ser React 18+ con TypeScript 5+
-- **RNF-09.3** Backend debe ser Node.js 20 LTS con framework NestJS
+- **RNF-09.2** Frontend debe ser **Angular 17+** con TypeScript 5+
+- **RNF-09.3** Backend debe ser **Python 3.12** con framework **FastAPI**
 - **RNF-09.4** Base de datos debe ser PostgreSQL 16+
-- **RNF-09.5** Storage debe usar fs/promises nativo Node.js con estructura organizada
-- **RNF-09.6** Cache debe ser node-cache (in-memory nativo Node.js)
+- **RNF-09.5** Storage debe usar filesystem nativo con estructura organizada
+- **RNF-09.6** Cache/cola de trabajos debe ser **Redis 7.2** (ej. RQ o Celery)
 - **RNF-09.7** Todas las dependencias deben tener licencias permisivas:
   - MIT License
   - Apache 2.0 License
   - BSD License
-- **RNF-09.8** El sistema debe utilizar ORM Prisma para type-safety
-- **RNF-09.9** El sistema debe usar Vite como build tool para frontend
+- **RNF-09.8** El sistema debe utilizar **SQLAlchemy** (con Alembic) para ORM y migraciones
+- **RNF-09.9** El sistema debe usar **Angular CLI** como build tool para frontend
 
 ---
 
