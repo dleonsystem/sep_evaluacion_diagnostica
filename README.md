@@ -21,7 +21,7 @@
 
 Sistema de Captura y Reporteo de Evaluación Diagnóstica para la Secretaría de Educación Pública (SEP) de México.
 
-**NOVEDAD:** Se incorpora la **Plataforma de Recepción, Validación y Descarga** para la **segunda aplicación de los Ejercicios Integradores del Aprendizaje (EIA)**. Este módulo web permite recibir archivos .xlsx sin autenticación previa, validar automáticamente estructura y contenido, generar credenciales solo en la primera carga válida (usuario = CCT, contraseña = correo validado), emitir PDFs de confirmación/errores y exponer ligas de descarga de resultados procesados externamente.
+**NOVEDAD:** Se incorpora la **Plataforma de Recepción, Validación y Descarga** para la **segunda aplicación de los Ejercicios Integradores del Aprendizaje (EIA)**. Este módulo web permite recibir archivos .xlsx sin autenticación previa, validar automáticamente estructura y contenido, generar credenciales solo en la primera carga válida (usuario = CCT, contraseña = correo validado), emitir PDFs de confirmación/errores y exponer ligas de descarga de resultados procesados externamente. No procesa evaluaciones ni determina si un envío es de primera o segunda aplicación; cada carga válida se registra como solicitud independiente y el sistema únicamente publica las ligas de descarga generadas fuera de la plataforma.
 
 ---
 
@@ -147,8 +147,9 @@ El sistema permite la captura, procesamiento y generación de reportes detallado
   9. Consistencia interna
 - 🔐 **Credenciales autogeneradas:** solo en la primera carga válida (usuario = CCT validado, contraseña = correo validado). No se regeneran en cargas posteriores.
 - 🧾 **PDF de confirmación/errores:** descarga automática con mensaje, fecha de disponibilidad (hoy + 4 días), usuario, contraseña y marca de tiempo; PDF de errores cuando el archivo es inválido.
-- 🗂️ **Registro y consecutivos:** cada carga válida se almacena como solicitud independiente y mantiene repositorio de archivos recibidos.
-- 🔗 **Descarga de resultados:** portal protegido por credenciales para mostrar versiones consecutivas y ligas de descarga depositadas por el sistema externo que procesa los archivos.
+- 🗂️ **Registro y consecutivos:** cada carga válida se almacena como solicitud independiente y mantiene repositorio de archivos recibidos; el sistema no compara ni sustituye envíos previos.
+- 🔗 **Descarga de resultados:** portal protegido por credenciales para mostrar versiones consecutivas y ligas de descarga depositadas por el sistema externo que procesa los archivos; mantiene repositorios separados para archivos recibidos y resultados.
+- 📊 **Escalabilidad y disponibilidad:** capacidad mínima de 1 TB para recepción/resultados, soporte para 120,000 validaciones automáticas y operación bajo HTTPS con contraseñas almacenadas mediante hashing y logs de acceso.
 
 ---
 
