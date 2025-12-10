@@ -1,9 +1,9 @@
 # 📋 FLUJO OPERATIVO OFICIAL - SISTEMA SiCRER
 ## Versión 2.0 - Estrategia Bifásica
 
-> **Documentación basada en diagramas oficiales de la SEP**  
-> Estrategia para la Recuperación de la Información - Ciclo 2024-2025  
-> **ACTUALIZACIÓN:** Migración a Stack Open Source (React + Node.js + PostgreSQL)
+> **Documentación basada en diagramas oficiales de la SEP**
+> Estrategia para la Recuperación de la Información - Ciclo 2024-2025
+> **ACTUALIZACIÓN:** Migración a Stack Open Source (Python + Angular + PostgreSQL)
 
 ---
 
@@ -14,17 +14,17 @@ Este documento detalla el **flujo operativo completo** del Sistema de Captura de
 ### 🚀 ESTRATEGIA DE MODERNIZACIÓN BIFÁSICA
 
 **Fase 1 (Marzo 2026):** Portal Web Híbrido
-- 🌐 Portal web React para directores (upload FRV, descarga PDFs)
-- ✅ Validación automatizada con SheetJS (30 seg vs 15 min manual)
+- 🌐 Portal web **Angular 17** para directores (upload FRV, descarga PDFs)
+- ✅ Validación automatizada con **pandas + openpyxl** (30 seg vs 15 min manual)
 - 🎫 Sistema de tickets para errores de validación
 - 🔄 Sincronización nocturna con legacy para procesamiento
 - 📊 Adopción esperada: 115K-150K escuelas públicas (de ~230K según SEP 2024)
 
 **Fase 2 (Septiembre 2026):** Migración Completa
-- ⚡ Procesamiento nativo Node.js (elimina SiCRER.exe)
-- 📄 Generación PDF con Puppeteer (elimina Crystal Reports)
+- ⚡ Procesamiento nativo **Python** (FastAPI + workers Celery/RQ) que elimina SiCRER.exe
+- 📄 Generación PDF con **WeasyPrint/ReportLab** (elimina Crystal Reports)
 - 🔒 Compliance LGPDP 100% (módulo ARCO + consentimientos)
-- 📈 Dashboard analytics con Recharts
+- 📈 Dashboard analytics con **Angular** (ng-charts/ngx-echarts)
 
 ```mermaid
 graph TB

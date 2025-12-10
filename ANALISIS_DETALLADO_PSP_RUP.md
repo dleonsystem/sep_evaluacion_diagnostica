@@ -2,12 +2,14 @@
 ## Análisis bajo Metodología RUP y Certificación PSP
 ### Versión 2.0 - Estrategia Bifásica con Stack Open Source
 
-**Fecha de Análisis Inicial:** 21 de Noviembre de 2025  
-**Fecha de Actualización:** 24 de Noviembre de 2025  
-**Analista:** Ingeniero de Software Certificado PSP  
+**Fecha de Análisis Inicial:** 21 de Noviembre de 2025
+**Fecha de Actualización:** 24 de Noviembre de 2025
+**Analista:** Ingeniero de Software Certificado PSP
 **Metodología:** Rational Unified Process (RUP)  
 **Repositorio:** sep_evaluacion_diagnostica  
 **Propietario:** SEP
+
+> **Directriz tecnológica vigente:** Para las iteraciones de diseño y construcción se adopta **Python 3.12 + FastAPI** en backend, **Angular 17 + TypeScript** en frontend y **PostgreSQL 16** como base de datos. Las referencias a React/Node.js en secciones heredadas quedan como histórico y deberán ser re-interpretadas con este stack durante cada entrega incremental.
 
 ---
 
