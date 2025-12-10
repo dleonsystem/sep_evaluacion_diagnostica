@@ -74,6 +74,7 @@ El repositorio **sep_evaluacion_diagnostica** contiene el Sistema **SiCRER** (Si
 - Procesamiento de datos de evaluación diagnóstica
 - Generación de reportes por escuela y grupo
 - Distribución de resultados
+- Plataforma web de **recepción, validación y descarga de la 2ª aplicación EIA** que recibe archivos .xlsx sin autenticación, valida estructura/contenido, genera credenciales solo en la primera carga válida, registra cada envío como solicitud independiente y publica ligas de descarga de resultados generados externamente sin procesar los archivos internamente ni distinguir primera/segunda aplicación.
 
 ### 1.2 Análisis de Licenciamiento
 
