@@ -22,7 +22,7 @@
 ## Iteración E1 – Requerimientos y modelo de datos
 
 **Objetivos:**
-- Completar SRS v2.0 con reglas de validación, generación de credenciales y repositorios separados.
+- Completar SRS v2.0 con reglas de validación, generación de credenciales, control de reenvíos autenticados y repositorios separados.
 - Definir modelo de datos para solicitudes, credenciales, ligas de descarga y bitácora.
 - Ajustar casos de uso detallados para carga anónima y descargas autenticadas.
 
@@ -49,9 +49,9 @@
 ## Iteración C1 – Núcleo de recepción y validación
 
 **Objetivos:**
-- Implementar carga anónima de archivo .xlsx.
+- Implementar carga anónima de archivo .xlsx solo para primer envío; bloquear reenvío anónimo si ya existe credencial.
 - Ejecutar 9 validaciones con workers y generar PDF de confirmación/errores.
-- Generar credenciales en primera carga válida y registrar solicitud con consecutivo.
+- Generar credenciales en primera carga válida y registrar solicitud con consecutivo; pedir login para reenvíos posteriores.
 
 **Entregables:**
 - Pantalla de carga anónima y mensaje en línea.

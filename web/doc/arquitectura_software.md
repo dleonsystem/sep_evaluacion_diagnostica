@@ -5,7 +5,7 @@
 
 # 1. Introducción
 
-Describe la arquitectura de alto nivel para la plataforma que **recibe archivos .xlsx sin autenticación previa**, los valida automáticamente, genera credenciales en la primera carga válida y publica ligas de descarga generadas por un sistema externo.
+Describe la arquitectura de alto nivel para la plataforma que **recibe archivos .xlsx sin autenticación previa** (solo en el primer envío), los valida automáticamente, genera credenciales en la primera carga válida y publica ligas de descarga generadas por un sistema externo. Si ya existen credenciales para el CCT/correo, los **reenvíos requieren autenticación previa**.
 
 ---
 
@@ -24,9 +24,13 @@ Arquitectura web de tres capas y procesos desacoplados:
 
 ## 3.1 Componentes principales
 
-- **Módulo de Recepción Anónima**
-  - Carga de archivo .xlsx sin login.
+- **Módulo de Recepción Anónima (primer envío)**
+  - Carga de archivo .xlsx sin login cuando no existan credenciales previas para el CCT/correo.
   - Mensaje “Validando tu archivo…”.
+  - Verificación previa de duplicidad (si ya existen credenciales se bloquea el envío anónimo).
+- **Módulo de Reenvío Autenticado**
+  - Solicita login cuando el CCT/correo ya registró una primera carga válida.
+  - Permite subir nuevos archivos tras autenticarse.
 - **Motor de Validación**
   - 9 verificaciones (CCT, correo, nivel, campos/columnas obligatorias, valores 0–3, estructura general, número/nombre de hojas, consistencia interna).
   - Rechazo inmediato con PDF de errores cuando falle.
@@ -39,6 +43,7 @@ Arquitectura web de tres capas y procesos desacoplados:
 - **Módulo de Descargas Autenticadas**
   - Login con CCT + contraseña generada en primera carga válida.
   - Listado de versiones de resultados (consecutivo + liga) depositados por el sistema externo.
+  - Reutiliza la autenticación para permitir reenvío de archivos cuando ya existan credenciales.
 - **Servicios de integración frontend**
   - Interfaces Angular tipificadas hacia FastAPI para carga, login y descargas.
   - Mientras no exista backend disponible, devuelven datos simulados/localStorage con la misma forma de respuesta que los futuros endpoints.

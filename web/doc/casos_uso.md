@@ -17,8 +17,9 @@ flowchart LR
         CU3[CU-03 Generar credenciales (1ª carga válida)]
         CU4[CU-04 Emitir PDF de confirmación/errores]
         CU5[CU-05 Registrar solicitud y almacenar archivo]
-        CU6[CU-06 Autenticarse para descargas]
-        CU7[CU-07 Listar versiones y ligas de descarga]
+        CU6[CU-06 Detectar reenvío y requerir login]
+        CU7[CU-07 Autenticarse para reenvío/descargas]
+        CU8[CU-08 Listar versiones y ligas de descarga]
     end
 
     A --> CU1
@@ -26,11 +27,13 @@ flowchart LR
     A --> CU3
     A --> CU4
     A --> CU5
+    A --> CU6
 
     B --> CU6
     B --> CU7
+    B --> CU8
 
-    C --> CU7
+    C --> CU8
 
     D --> CU2
     D --> CU5
@@ -60,11 +63,15 @@ flowchart LR
    - Actor: Escuela (anónima), Operador técnico SEP
    - Descripción: Cada carga válida se registra como solicitud independiente con consecutivo y se guarda en el repositorio de recepción.
 
-6. **CU-06 Autenticarse para descargas**
-   - Actor: Escuela (autenticada)
-   - Descripción: Login con CCT + contraseña generada en la primera carga válida.
+6. **CU-06 Detectar reenvío y requerir login**
+   - Actor: Escuela (anónima), Escuela (autenticada)
+   - Descripción: Si existe una credencial previa para el CCT/correo, se bloquea el envío anónimo y se solicita autenticación antes de permitir otro archivo.
 
-7. **CU-07 Listar versiones y ligas de descarga**
+7. **CU-07 Autenticarse para reenvío/descargas**
+   - Actor: Escuela (autenticada)
+   - Descripción: Login con CCT + contraseña generada en la primera carga válida para habilitar el reenvío de archivos y el acceso a descargas.
+
+8. **CU-08 Listar versiones y ligas de descarga**
    - Actores: Escuela (autenticada), Sistema externo de resultados
    - Descripción: Muestra consecutivos y ligas depositadas por el sistema externo para la escuela autenticada.
 

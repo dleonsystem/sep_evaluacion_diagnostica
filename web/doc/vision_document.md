@@ -14,7 +14,7 @@ Definir objetivos, alcance, usuarios, funciones y restricciones de la plataforma
 ## 1.2 Alcance del sistema
 El sistema realiza:
 
-- **Recepción anónima** de archivos .xlsx con etiqueta “Validando tu archivo…”.
+- **Recepción anónima** de archivos .xlsx con etiqueta “Validando tu archivo…” **solo para el primer envío por CCT/correo**.
 - **Validación automática** con 9 verificaciones (CCT, correo, nivel, campos y columnas obligatorias, valores 0–3, estructura general, número/nombre de hojas y consistencia interna).
 - **Generación de credenciales** solo en la primera carga válida (usuario = CCT validado, contraseña = correo validado; no se regenera en cargas posteriores).
 - **Emisión de PDFs** de confirmación (mensaje, fecha hoy + 4 días, usuario/contraseña, marca de tiempo) o de errores cuando aplica.
@@ -63,12 +63,12 @@ Sustituir el envío de archivos por correo en la segunda aplicación EIA por un 
 ## 3.1 Perfiles de usuario
 
 ### Escuela (anónima)
-- Sube archivo .xlsx sin iniciar sesión.
+- Sube archivo .xlsx sin iniciar sesión **solo en su primer envío**.
 - Recibe PDF de confirmación/errores.
 
 ### Escuela autenticada
 - Accede con usuario = CCT y contraseña = correo validado en la primera carga.
-- Consulta todas las versiones de resultados disponibles y sus ligas de descarga.
+- Puede reenviar archivos cuando ya existan credenciales y consulta todas las versiones de resultados disponibles y sus ligas de descarga.
 
 ### Operador técnico SEP
 - Monitorea validaciones, repositorios y generación de PDFs.
@@ -84,12 +84,12 @@ Sustituir el envío de archivos por correo en la segunda aplicación EIA por un 
 Aplicación web de tres capas con **Angular 19 (signals)**, **FastAPI (Python 3.12)** y **PostgreSQL + Filesystem**, apoyada por workers para validación y PDFs. No calcula resultados; solo publica ligas entregadas por el sistema externo. La SPA usa la **guía gráfica gob.mx v3** cargada vía CDN (estilos y scripts en `index.html`). Mientras el backend Python es implementado por otro equipo, el frontend entregará pantallas funcionales con servicios Angular que devuelven datos de prueba/localStorage pero mantienen las mismas firmas HTTP previstas para FastAPI, para que el cambio a los endpoints reales sea transparente.
 
 ## 4.2 Funciones principales (vista de negocio)
-- Cargar archivo .xlsx sin autenticación.
+- Cargar archivo .xlsx sin autenticación **solo para el primer envío del CCT/correo**.
 - Ejecutar 9 validaciones y mostrar estado “Validando tu archivo…”.
 - Generar PDF de confirmación o errores y descargarlo automáticamente.
 - Crear credenciales en la primera carga válida y mantenerlas en cargas posteriores.
 - Registrar cada solicitud con consecutivo y almacenar el archivo en repositorio de recepción.
-- Permitir login (CCT + contraseña) para consultar versiones y ligas de descarga depositadas externamente.
+- Permitir login (CCT + contraseña) para reenviar archivos cuando ya existan credenciales y consultar versiones y ligas de descarga depositadas externamente.
 
 ## 4.3 Suposiciones y dependencias
 - Las plantillas .xlsx mantienen nombres de hojas y columnas esperadas.
@@ -102,7 +102,7 @@ Aplicación web de tres capas con **Angular 19 (signals)**, **FastAPI (Python 3.
 # 5. Requerimientos de alto nivel
 
 ## 5.1 Requerimientos funcionales (resumen)
-- RF-01: Recepción anónima de archivo .xlsx con etiqueta de validación en línea.
+- RF-01: Recepción anónima de archivo .xlsx con etiqueta de validación en línea **solo en el primer envío**; si ya existe credencial se exige login antes de reenviar.
 - RF-02: Validación automática con 9 reglas y rechazo con PDF de errores cuando falle.
 - RF-03: Generación de credenciales solo en primera carga válida (usuario = CCT, contraseña = correo validado).
 - RF-04: Emisión de PDF de confirmación con fecha de consulta (hoy + 4 días), usuario, contraseña y marca de tiempo.
