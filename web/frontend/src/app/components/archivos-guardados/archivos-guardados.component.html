@@ -1,0 +1,49 @@
+<section class="archivos">
+  <header class="archivos__encabezado">
+    <p class="archivos__eyebrow">Cargas realizadas · Preescolar</p>
+    <h1 class="archivos__titulo">Archivos almacenados en este navegador</h1>
+    <p class="archivos__descripcion">
+      Aquí podrás consultar los archivos que has validado y guardado desde el módulo de carga de Preescolar.
+      Los datos permanecen en el <strong>almacenamiento local del navegador</strong> y no se envían a un servidor.
+    </p>
+  </header>
+
+  <div class="archivos__mensajes">
+    <p class="archivos__mensaje archivos__mensaje--info" *ngIf="mensajeInfo">{{ mensajeInfo }}</p>
+    <p class="archivos__mensaje archivos__mensaje--error" *ngIf="mensajeError">{{ mensajeError }}</p>
+  </div>
+
+  <div class="archivos__tabla" *ngIf="registros.length; else sinRegistros">
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Peso (KB)</th>
+          <th>Fecha de guardado</th>
+          <th>Ruta de referencia</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let registro of registros">
+          <td data-label="Nombre">{{ registro.nombre }}</td>
+          <td data-label="Peso">{{ (registro.tamano / 1024) | number:'1.0-2' }}</td>
+          <td data-label="Fecha">{{ registro.fechaGuardado | date:'medium' }}</td>
+          <td data-label="Ruta">{{ registro.ruta }}</td>
+          <td data-label="Acciones">
+            <button type="button" class="archivos__accion" (click)="descargar(registro)">
+              Descargar copia
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <ng-template #sinRegistros>
+    <div class="archivos__vacio">
+      <p>No hay archivos guardados todavía.</p>
+      <a routerLink="/carga-masiva" class="archivos__link">Ir al módulo de carga</a>
+    </div>
+  </ng-template>
+</section>
