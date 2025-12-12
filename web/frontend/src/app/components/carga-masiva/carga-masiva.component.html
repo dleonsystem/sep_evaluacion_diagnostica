@@ -61,10 +61,11 @@
         <p><strong>Contraseña (correo validado):</strong> {{ resultadoExito.credenciales.contrasena }}</p>
       </div>
       <p class="carga__mensaje carga__mensaje--info" *ngIf="rutaGuardado">
-        Archivo guardado automáticamente en la ruta solicitada:
+        Archivo conservado en el almacenamiento local del navegador.
         <br>
-        <strong>{{ rutaGuardado }}</strong>
+        Ruta de referencia dentro del proyecto: <strong>{{ rutaGuardado }}</strong>
       </p>
+      <p class="carga__mensaje carga__mensaje--warning" *ngIf="notaGuardado">{{ notaGuardado }}</p>
       <p class="carga__mensaje carga__mensaje--error" *ngIf="errorGuardado">{{ errorGuardado }}</p>
     </div>
 

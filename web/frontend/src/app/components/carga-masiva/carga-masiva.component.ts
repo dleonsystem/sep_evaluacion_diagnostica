@@ -37,7 +37,8 @@ export class CargaMasivaComponent {
   guardando = false;
   rutaGuardado: string | null = null;
   errorGuardado: string | null = null;
-  modoGuardado: 'automatico' | null = null;
+  modoGuardado: 'localStorage' | null = null;
+  notaGuardado: string | null = null;
 
   constructor(
     private readonly excelValidationService: ExcelValidationService,
@@ -112,13 +113,15 @@ export class CargaMasivaComponent {
     this.errorGuardado = null;
     this.rutaGuardado = null;
     this.modoGuardado = null;
+    this.notaGuardado = null;
 
     try {
       const resultado = await this.archivoStorageService.guardarArchivoPreescolar(this.archivoOriginal);
-      this.rutaGuardado = resultado.ruta;
+      this.rutaGuardado = resultado.rutaVirtual;
       this.modoGuardado = resultado.modo;
+      this.notaGuardado = resultado.nota;
       this.mensajeInformativo =
-        'El archivo se guardó automáticamente con la ruta solicitada assets/archivos/preescolar/. No requiere selección manual.';
+        'El archivo se conservó en el almacenamiento local del navegador. Copia el archivo a assets/archivos/preescolar/ en tu proyecto si lo necesitas.';
     } catch (error) {
       this.errorGuardado =
         error instanceof Error

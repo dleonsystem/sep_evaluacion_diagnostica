@@ -9,10 +9,11 @@ interface RegistroArchivo {
 }
 
 interface ResultadoGuardado {
-  ruta: string;
+  rutaVirtual: string;
   fechaGuardado: Date;
   tamano: number;
-  modo: 'automatico';
+  modo: 'localStorage';
+  nota: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -34,27 +35,13 @@ export class ArchivoStorageService {
     registros.unshift(registro);
     localStorage.setItem(this.storageKey, JSON.stringify(registros.slice(0, 5)));
 
-    const guardado = this.descargarAutomaticamente(archivo, rutaDestino);
-
-    return guardado;
-  }
-
-  private descargarAutomaticamente(archivo: File, rutaDestino: string): ResultadoGuardado {
-    const enlace = document.createElement('a');
-    const url = URL.createObjectURL(archivo);
-    enlace.href = url;
-    enlace.download = rutaDestino;
-    enlace.style.display = 'none';
-    document.body.appendChild(enlace);
-    enlace.click();
-    document.body.removeChild(enlace);
-    URL.revokeObjectURL(url);
-
     return {
-      ruta: rutaDestino,
+      rutaVirtual: rutaDestino,
       fechaGuardado: new Date(),
       tamano: archivo.size,
-      modo: 'automatico'
+      modo: 'localStorage',
+      nota:
+        'El navegador no puede escribir en el sistema de archivos del proyecto. Se mantuvo una copia en localStorage para moverla manualmente.'
     };
   }
 

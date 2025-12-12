@@ -24,8 +24,12 @@ class ExcelValidationServiceStub {
 }
 
 class ArchivoStorageServiceStub {
-  guardarArchivoPreescolar(): Promise<{ ruta: string; modo: 'automatico' }> {
-    return Promise.resolve({ ruta: 'assets/archivos/preescolar/demo.xlsx', modo: 'automatico' });
+  guardarArchivoPreescolar(): Promise<{ rutaVirtual: string; modo: 'localStorage'; nota: string }> {
+    return Promise.resolve({
+      rutaVirtual: 'assets/archivos/preescolar/demo.xlsx',
+      modo: 'localStorage',
+      nota: 'Guardado en localStorage para referencia.'
+    });
   }
 }
 
