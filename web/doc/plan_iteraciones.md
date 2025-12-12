@@ -34,13 +34,13 @@
 ## Iteración E2 – Diseño arquitectónico y tecnológico
 
 **Objetivos:**
-- Definir arquitectura FastAPI + Angular 17 + workers Redis (validación/PDF).
+- Definir arquitectura FastAPI + Angular 19 (signals) + workers Redis (validación/PDF) con lineamientos de estilo gob.mx v3 incluidos desde CDN en `index.html`.
 - Diseñar separación de repositorios (recepción vs. resultados) y capacidad mínima de 1 TB.
 - Planear integración con sistema externo de resultados (ingesta de ligas/archivos).
 
 **Entregables:**
 - SAD actualizado.
-- Prototipo técnico mínimo: endpoint FastAPI de validación simulada + pantalla Angular de carga anónima con estado “Validando tu archivo…”.
+- Prototipo técnico mínimo: endpoint FastAPI de validación simulada + pantalla Angular de carga anónima con estado “Validando tu archivo…” usando la guía gráfica gob.mx.
 
 ---
 

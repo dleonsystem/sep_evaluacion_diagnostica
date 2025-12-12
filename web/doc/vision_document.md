@@ -81,7 +81,7 @@ Sustituir el envío de archivos por correo en la segunda aplicación EIA por un 
 # 4. Descripción general del sistema
 
 ## 4.1 Perspectiva del sistema
-Aplicación web de tres capas con **Angular 17**, **FastAPI (Python 3.12)** y **PostgreSQL + Filesystem**, apoyada por workers para validación y PDFs. No calcula resultados; solo publica ligas entregadas por el sistema externo.
+Aplicación web de tres capas con **Angular 19 (signals)**, **FastAPI (Python 3.12)** y **PostgreSQL + Filesystem**, apoyada por workers para validación y PDFs. No calcula resultados; solo publica ligas entregadas por el sistema externo. La SPA usa la **guía gráfica gob.mx v3** cargada vía CDN (estilos y scripts en `index.html`).
 
 ## 4.2 Funciones principales (vista de negocio)
 - Cargar archivo .xlsx sin autenticación.

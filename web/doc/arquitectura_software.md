@@ -13,7 +13,7 @@ Describe la arquitectura de alto nivel para la plataforma que **recibe archivos 
 
 Arquitectura web de tres capas y procesos desacoplados:
 
-1. **Capa de presentación:** SPA en **Angular 17** para carga anónima, descarga de PDFs y portal autenticado de descargas.
+1. **Capa de presentación:** SPA en **Angular 19 (signals)** para carga anónima, descarga de PDFs y portal autenticado de descargas, usando la guía gráfica gob.mx v3 cargada desde CDN.
 2. **Capa de lógica de negocio:** API **FastAPI (Python 3.12)** para orquestar validaciones, generación de credenciales y publicación de ligas.
 3. **Capa de datos y archivos:** **PostgreSQL** para solicitudes/credenciales y **filesystem SSD** para repositorios separados de recepción y resultados.
 4. **Procesamiento asíncrono:** Workers (Redis + RQ/Celery) para validaciones y armado de PDFs.
@@ -50,7 +50,7 @@ Arquitectura web de tres capas y procesos desacoplados:
 flowchart LR
     U[Escuela
     Carga anónima] --> B[Browser
-    Angular 17]
+    Angular 19]
     D[Escuela autenticada
     Descargas] --> B
 
@@ -69,7 +69,7 @@ flowchart LR
 
 # 5. Decisiones tecnológicas clave
 
-- **Frontend:** Angular 17 + TypeScript.
+- **Frontend:** Angular 19 + TypeScript (signals) con Angular CLI 19.2.x sobre Node 22.x y estilos base gob.mx v3 incluidos vía CDN en `index.html`.
 - **Backend:** Python 3.12 + FastAPI.
 - **Workers:** Redis + RQ/Celery para validación y generación de PDFs.
 - **Persistencia:** PostgreSQL (datos) + Filesystem SSD (archivos válidos y resultados).

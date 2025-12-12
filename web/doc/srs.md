@@ -32,7 +32,7 @@ La plataforma cubre únicamente el flujo de recepción–validación–descarga 
 # 2. Descripción general
 
 ## 2.1 Perspectiva del producto
-Aplicación web de tres capas con **frontend Angular 17**, **backend FastAPI en Python 3.12** y **almacenamiento PostgreSQL + Filesystem**. No realiza cálculos educativos; actúa como **pasarela de validación y distribución de archivos**.
+Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend FastAPI en Python 3.12** y **almacenamiento PostgreSQL + Filesystem**. No realiza cálculos educativos; actúa como **pasarela de validación y distribución de archivos**.
 
 ## 2.2 Interfaces del sistema
 
@@ -42,6 +42,7 @@ Aplicación web de tres capas con **frontend Angular 17**, **backend FastAPI en 
 - Descarga automática de PDF (confirmación o errores).
 - Pantalla protegida para consulta de ligas de descarga (login con CCT + correo validado).
 - Panel técnico básico para monitoreo de solicitudes.
+- Uso de la **guía gráfica gob.mx v3** incluida desde CDN en `index.html`, con scripts auxiliares (`jquery.min.js`, `gobmx.js`, `main.js`) ya cargados.
 
 ### 2.2.2 Interfaces de hardware
 - Servidor de aplicaciones para FastAPI.
@@ -52,6 +53,7 @@ Aplicación web de tres capas con **frontend Angular 17**, **backend FastAPI en 
 - Librerías de manipulación de Excel (pandas + openpyxl o equivalente en el stack Python).
 - Conectores de base de datos para PostgreSQL.
 - Integración de cola de trabajos (Redis/RQ o Celery) para validaciones y generación de PDFs.
+- CDN de la guía gráfica gob.mx v3 referenciada en `index.html` (hoja de estilos principal y scripts `gobmx.js`/`main.js`).
 
 ---
 
