@@ -1,61 +1,57 @@
-# Especificación de Requerimientos de Software (SRS)  
-## Proyecto: Plataforma de Gestión de Valoraciones EIA 2025–2026
+# Especificación de Requerimientos de Software (SRS)
+## Proyecto: Plataforma de Recepción, Validación y Descarga de Archivos EIA (2ª aplicación)
 
-> **Metodología:** RUP – Fase de Elaboración (visión establecida en Inception)  
-> **Versión:** 1.1 – Borrador (backend Node.js)
+> **Metodología:** RUP – Fase de Elaboración
+> **Versión:** 2.0 – Alineada al documento `plataforma_recepcion_validacion_descarga_EIA.md`
 
 ---
 
 # 1. Introducción
 
 ## 1.1 Propósito
-Este documento especifica de forma detallada los requerimientos funcionales y no funcionales del sistema, sirviendo como base para el diseño, implementación y pruebas.
+Detallar los requerimientos funcionales y no funcionales de la plataforma encargada de **recibir archivos .xlsx sin autenticación previa**, validarlos automáticamente, generar credenciales en la **primera carga válida** y publicar las **ligas de descarga** de resultados que son procesados en un sistema externo.
 
 ## 1.2 Alcance
-El sistema permitirá la gestión centralizada del ciclo de vida de los archivos de valoraciones y resultados EIA:
+La plataforma cubre únicamente el flujo de recepción–validación–descarga de la **segunda aplicación de los Ejercicios Integradores del Aprendizaje (EIA)**:
 
-- Carga de valoraciones por escuela.
-- Descarga de valoraciones por usuarios SEP.
-- Carga de resultados por usuarios SEP.
-- Descarga de resultados por escuelas.
-- Registro de auditoría de actividades.
+- Carga anónima de archivos .xlsx.
+- Validación automática de estructura y contenido.
+- Emisión de **PDF de confirmación** (válidos) o **PDF de errores** (inválidos).
+- Generación de credenciales solo en la primera carga válida (usuario = CCT, contraseña = correo validado).
+- Registro de cada carga válida como solicitud independiente con consecutivo.
+- Exposición de ligas de descarga depositadas por un **sistema externo** que procesa los archivos.
 
 ## 1.3 Público objetivo
 - Equipo de desarrollo (backend y frontend).
-- Analistas de negocio.
-- Personal de pruebas (QA).
-- Representantes funcionales de la SEP.
+- Analistas funcionales SEP.
+- Personal QA.
+- Equipo de operación y soporte técnico.
 
 ---
 
 # 2. Descripción general
 
 ## 2.1 Perspectiva del producto
-Sistema web centralizado, accesible mediante navegador, expuesto sobre HTTPS, compuesto por:
-
-- Frontend SPA en Angular 19.
-- API REST en Node.js (framework por definir, p. ej. Express o NestJS).
-- Base de datos PostgreSQL.
+Aplicación web de tres capas con **frontend Angular 17**, **backend FastAPI en Python 3.12** y **almacenamiento PostgreSQL + Filesystem**. No realiza cálculos educativos; actúa como **pasarela de validación y distribución de archivos**.
 
 ## 2.2 Interfaces del sistema
 
 ### 2.2.1 Interfaces de usuario
-- Pantalla de inicio de sesión.
-- Panel de director escolar.
-- Panel de usuario SEP.
-- Panel de administrador.
-- Pantallas de carga y descarga de archivos.
-- Pantalla de bitácora.
+- Pantalla de carga anónima de archivo.
+- Mensaje de validación en línea con etiqueta “Validando tu archivo…”.
+- Descarga automática de PDF (confirmación o errores).
+- Pantalla protegida para consulta de ligas de descarga (login con CCT + correo validado).
+- Panel técnico básico para monitoreo de solicitudes.
 
 ### 2.2.2 Interfaces de hardware
-- Servidor de aplicaciones (para Node.js).
-- Servidor de base de datos (PostgreSQL).
-- Almacenamiento de archivos (disco local o servicio de objetos).
+- Servidor de aplicaciones para FastAPI.
+- Servidor de base de datos PostgreSQL.
+- Almacenamiento de archivos en disco SSD (mínimo 1 TB para recepción/resultados).
 
 ### 2.2.3 Interfaces de software
-- Sistema operativo del servidor.
-- Librerías de manipulación de archivos Excel.
-- Drivers de conexión a PostgreSQL para Node.js (p. ej. `pg`).
+- Librerías de manipulación de Excel (pandas + openpyxl o equivalente en el stack Python).
+- Conectores de base de datos para PostgreSQL.
+- Integración de cola de trabajos (Redis/RQ o Celery) para validaciones y generación de PDFs.
 
 ---
 
@@ -63,75 +59,81 @@ Sistema web centralizado, accesible mediante navegador, expuesto sobre HTTPS, co
 
 ## 3.1 Actores
 
-- **DirectorEscolar**: representante de una escuela, sube valoraciones y descarga resultados.
-- **UsuarioSEP_Estatal**: descarga valoraciones de escuelas de su entidad.
-- **UsuarioSEP_Federal**: descarga valoraciones de todo el país y carga resultados.
-- **AdministradorSistema**: gestiona usuarios, catálogos y auditoría.
-- **SistemaAutenticación** (interno): módulo de login/password dentro de la misma plataforma.
+- **Escuela (anónima):** carga archivo .xlsx sin autenticarse, recibe PDF de confirmación/errores.
+- **Escuela autenticada:** usa CCT + contraseña (correo validado en primera carga) para descargar resultados publicados.
+- **Sistema externo de procesamiento:** genera resultados y deposita ligas/archivos para publicación.
+- **Operador técnico SEP:** supervisa logs y repositorios de archivos.
 
 ## 3.2 Lista de casos de uso (resumen)
 
-- CU-01 Iniciar sesión.
-- CU-02 Cargar archivo de valoraciones.
-- CU-03 Validar estructura de archivo.
-- CU-04 Mostrar advertencias de valoraciones incompletas.
-- CU-05 Descargar archivos de valoraciones.
-- CU-06 Cargar archivos de resultados.
-- CU-07 Descargar resultados por escuela.
-- CU-08 Consultar bitácora de actividades.
-- CU-09 Gestionar usuarios.
-- CU-10 Cerrar sesión.
+- CU-01 Cargar archivo .xlsx sin login.
+- CU-02 Validar estructura y contenido (9 verificaciones).
+- CU-03 Generar credenciales en primera carga válida.
+- CU-04 Emitir PDF de confirmación o errores.
+- CU-05 Registrar solicitud con consecutivo y repositorio de archivos válidos.
+- CU-06 Autenticarse para consultar descargas (CCT + correo validado).
+- CU-07 Listar versiones y ligas de descarga provenientes del sistema externo.
 
 ---
 
-# 4. Especificación de casos de uso
+# 4. Especificación de reglas de validación
 
-(Ver documento `casos_uso_detallados.md` para el detalle completo.)
+La validación se ejecuta automáticamente tras seleccionar el archivo y mostrar la etiqueta **“Validando tu archivo…”**. Debe incluir las 9 verificaciones siguientes:
 
----
+1. **CCT** – formato válido.
+2. **Correo** – estructura sintáctica válida.
+3. **Nivel** – coherencia con estructura.
+4. **Campos obligatorios por hoja** – no vacíos.
+5. **Columnas obligatorias** – presentes y en orden esperado.
+6. **Valores válidos (0–3)** en valoraciones.
+7. **Estructura general del archivo** – formato .xlsx y disposición esperada.
+8. **Número y nombre de hojas** – coinciden con el nivel.
+9. **Consistencia interna** – datos alineados entre hojas.
 
-# 5. Requerimientos de datos
-
-## 5.1 Entidades principales
-- Usuario
-- Escuela
-- Entidad federativa
-- Ciclo escolar
-- ArchivoValoraciones
-- ArchivoResultados
-- ResultadosPorEscuela
-- BitacoraActividad
+Si la estructura o los valores no cumplen, el archivo se **rechaza** y se entrega PDF de errores.
 
 ---
 
-# 6. Requerimientos no funcionales (detalle)
+# 5. Requerimientos funcionales
+
+- RF-01: Permitir carga de archivo .xlsx sin autenticación previa.
+- RF-02: Mostrar estado “Validando tu archivo…” mientras se procesa.
+- RF-03: Ejecutar las **9 reglas de validación** descritas en la sección 4.
+- RF-04: Si el archivo es válido, generar **PDF de confirmación** con mensaje, fecha futura de consulta (hoy + 4 días), usuario (CCT), contraseña (correo validado solo en primera carga) y marca de tiempo.
+- RF-05: Si el archivo es inválido, generar **PDF de errores** con detalle de fallas.
+- RF-06: Crear credenciales **solo en la primera carga válida** (usuario = CCT, contraseña = correo validado) y reutilizarlas en cargas posteriores.
+- RF-07: Registrar cada carga válida como **solicitud independiente** con consecutivo y guardar el archivo en repositorio de recepción.
+- RF-08: Habilitar autenticación (CCT + contraseña) para consultar las ligas de descarga.
+- RF-09: Mostrar **todas las versiones** de resultados que el sistema externo haya depositado, con consecutivo y liga.
+- RF-10: Mantener repositorios separados para archivos recibidos y resultados publicados.
+
+---
+
+# 6. Requerimientos no funcionales
 
 ## 6.1 Seguridad
-- Cifrado de contraseñas en la base de datos.
-- Sesiones o tokens con expiración configurable.
-- Políticas de bloqueo tras múltiples intentos fallidos de login.
-- Canales cifrados (HTTPS).
+- Tráfico externo obligado sobre **HTTPS**.
+- Contraseñas almacenadas con **hashing** seguro.
+- Bitácora de accesos y validaciones.
 
-## 6.2 Performance
-- Tiempo de respuesta menor a 3 segundos para operaciones estándar.
-- Manejo de carga concurrente mediante configuración adecuada de Node.js (por ejemplo, clustering, balanceo de carga).
+## 6.2 Rendimiento
+- Capacidad para procesar **120,000 solicitudes de validación** (equivalente a la primera aplicación por correo).
+- Validaciones automáticas sin bloqueo prolongado de la interfaz.
 
-## 6.3 Disponibilidad
-- El sistema debe estar disponible durante la ventana principal de recepción (ejemplo: 7:00 a 22:00, tiempo del centro) con un 99 % de disponibilidad.
+## 6.3 Disponibilidad y almacenamiento
+- Repositorios separados para recepción y resultados.
+- Capacidad mínima de **1 TB** para recepción/resultados y posibilidad de expansión sin afectar servicio.
 
-## 6.4 Mantenibilidad
-- Código modular y documentado.
-- Separación clara entre capas (presentación, lógica de negocio, acceso a datos) en la organización del proyecto Node.js.
-
-## 6.5 Escalabilidad
-- Arquitectura que permita distribuir instancias del backend (Node.js) tras un balanceador de carga si aumenta la carga.
-- Uso eficiente de la base de datos PostgreSQL mediante índices adecuados.
+## 6.4 Escalabilidad y mantenibilidad
+- Capacidad de agregar nuevos niveles o estructuras sin rediseñar el sistema.
+- Arquitectura desacoplada (frontend, API y workers de validación/PDF) para escalar horizontalmente.
 
 ---
 
 # 7. Criterios de aceptación
 
-- El sistema debe permitir a cualquier director escolar, con credenciales válidas, subir al menos un archivo de valoraciones para su escuela.
-- Los usuarios SEP deben poder descargar archivos de valoraciones filtrando por entidad y CCT.
-- El sistema debe registrar en bitácora todos los inicios de sesión, cargas y descargas.
-- El sistema debe permitir la carga de al menos un archivo de resultados y su posterior descarga por la escuela correspondiente.
+- Cualquier escuela puede subir un archivo .xlsx y recibir PDF de confirmación o errores sin iniciar sesión.
+- Las 9 reglas de validación se ejecutan y rechazan archivos que no cumplan estructura/valores.
+- La primera carga válida genera credenciales (usuario = CCT, contraseña = correo validado) y las mantiene para descargas futuras.
+- Cada carga válida queda registrada como solicitud independiente con consecutivo y archivo almacenado.
+- Las ligas de descarga provienen del sistema externo y se listan con su versión/consecutivo al autenticarse.
