@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { InicioComponent } from './components/inicio/inicio.component';
 import { CargaMasivaComponent } from './components/carga-masiva/carga-masiva.component';
+import { ArchivosGuardadosComponent } from './components/archivos-guardados/archivos-guardados.component';
 
 
 export const routes: Routes = [
@@ -28,6 +29,11 @@ export const routes: Routes = [
     path: 'carga-masiva',
     component: CargaMasivaComponent,
     pathMatch: 'full',
+  },
+  {
+    path: 'archivos-preescolar',
+    component: ArchivosGuardadosComponent,
+    pathMatch: 'full'
   },
   /* {
     path: 'carga-masiva/detalle',

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 
-interface RegistroArchivo {
+export interface RegistroArchivo {
   nombre: string;
   tamano: number;
   fechaGuardado: string;
@@ -8,7 +8,7 @@ interface RegistroArchivo {
   contenidoBase64: string;
 }
 
-interface ResultadoGuardado {
+export interface ResultadoGuardado {
   rutaVirtual: string;
   fechaGuardado: Date;
   tamano: number;
@@ -60,6 +60,21 @@ export class ArchivoStorageService {
     }
   }
 
+  descargarRegistro(registro: RegistroArchivo): void {
+    const blob = this.base64ABlob(registro.contenidoBase64);
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement('a');
+
+    enlace.href = url;
+    enlace.download = registro.nombre;
+    enlace.style.display = 'none';
+
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
+    URL.revokeObjectURL(url);
+  }
+
   private async convertirA64(archivo: File): Promise<string> {
     const buffer = await archivo.arrayBuffer();
     const bytes = new Uint8Array(buffer);
@@ -70,5 +85,16 @@ export class ArchivoStorageService {
     });
 
     return btoa(binary);
+  }
+
+  private base64ABlob(base64: string): Blob {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+
+    return new Blob([bytes]);
   }
 }

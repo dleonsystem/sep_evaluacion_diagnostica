@@ -212,6 +212,21 @@
   transition: transform 0.15s ease;
 }
 
+.carga__historial {
+  margin-top: 0.75rem;
+  color: #334155;
+  font-weight: 600;
+}
+
+.carga__historial a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.carga__historial a:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 720px) {
   .carga__zona {
     flex-direction: column;

@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
+import { RouterModule } from '@angular/router';
 import { ExcelValidationService, ResultadoValidacion } from '../../services/excel-validation.service';
 import { ArchivoStorageService } from '../../services/archivo-storage.service';
 
@@ -19,7 +20,7 @@ interface ResultadoExito {
 @Component({
   selector: 'app-carga-masiva',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './carga-masiva.component.html',
   styleUrl: './carga-masiva.component.scss'
 })
