@@ -1,0 +1,46 @@
+<section class="carga">
+  <div class="carga__encabezado">
+    <p class="carga__eyebrow">Carga masiva de estudiantes</p>
+    <h1 class="carga__titulo">Sube la plantilla de Excel o CSV</h1>
+    <p class="carga__descripcion">
+      Utiliza la plantilla institucional para que los catálogos se validen correctamente.
+      Por ahora solo realizamos validaciones locales; el envío al backend se habilitará más adelante.
+    </p>
+  </div>
+
+  <div class="carga__zona" [class.carga__zona--error]="!!error">
+    <div class="carga__instrucciones">
+      <p class="carga__etiqueta">Arrastra y suelta tu archivo o selecciónalo desde tu equipo</p>
+      <p class="carga__formatos">Formatos permitidos: XLSX, XLS, CSV. Máximo {{ pesoMaximoMb }} MB.</p>
+    </div>
+
+    <label class="carga__input">
+      <input
+        #archivoInput
+        type="file"
+        accept=".xlsx,.xls,.csv"
+        (change)="onArchivoSeleccionado($event)"
+      >
+      <span class="carga__boton">Elegir archivo</span>
+    </label>
+  </div>
+
+  <div class="carga__estado" *ngIf="archivoSeleccionado || error || mensajeInformativo">
+    <div class="carga__detalle" *ngIf="archivoSeleccionado">
+      <h2>Archivo seleccionado</h2>
+      <ul>
+        <li><strong>Nombre:</strong> {{ archivoSeleccionado.name }}</li>
+        <li><strong>Peso:</strong> {{ archivoSeleccionado.sizeKb }} KB</li>
+        <li><strong>Última modificación:</strong> {{ archivoSeleccionado.lastModified | date:'short' }}</li>
+      </ul>
+    </div>
+
+    <p class="carga__mensaje carga__mensaje--error" *ngIf="error">{{ error }}</p>
+    <p class="carga__mensaje carga__mensaje--info" *ngIf="mensajeInformativo">{{ mensajeInformativo }}</p>
+
+    <div class="carga__acciones">
+      <button class="carga__boton-secundario" (click)="limpiarSeleccion(archivoInput)">Limpiar</button>
+      <button class="carga__boton-primario" (click)="cargarArchivo()">Validar y cargar</button>
+    </div>
+  </div>
+</section>
