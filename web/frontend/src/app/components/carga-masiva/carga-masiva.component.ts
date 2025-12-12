@@ -37,7 +37,7 @@ export class CargaMasivaComponent {
   guardando = false;
   rutaGuardado: string | null = null;
   errorGuardado: string | null = null;
-  modoGuardado: 'sistema-archivos' | 'descarga' | null = null;
+  modoGuardado: 'automatico' | null = null;
 
   constructor(
     private readonly excelValidationService: ExcelValidationService,
@@ -118,9 +118,7 @@ export class CargaMasivaComponent {
       this.rutaGuardado = resultado.ruta;
       this.modoGuardado = resultado.modo;
       this.mensajeInformativo =
-        resultado.modo === 'sistema-archivos'
-          ? 'Elige la carpeta assets/archivos/preescolar/ en tu equipo para conservar el archivo en esa ruta.'
-          : 'Se descargó una copia del archivo. Guárdala manualmente en assets/archivos/preescolar/ para mantener la estructura solicitada.';
+        'El archivo se guardó automáticamente con la ruta solicitada assets/archivos/preescolar/. No requiere selección manual.';
     } catch (error) {
       this.errorGuardado =
         error instanceof Error
