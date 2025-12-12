@@ -59,20 +59,20 @@
 - Repositorio de recepción operativo (filesystem + registros en PostgreSQL).
 
 **Plan de trabajo detallado – SPA Angular 19 (signals) con guía gob.mx v3**
-- **Punto de partida:** Angular CLI 19.2.x ya instalado; `index.html` incluye los assets de la guía gráfica gob.mx v3 desde CDN.
+- **Punto de partida:** Angular CLI 19.2.x ya instalado; `index.html` incluye los assets de la guía gráfica gob.mx v3 desde CDN; el backend Python será construido por otro equipo.
 - **¿Qué es SPA?** Una Single Page Application: el shell se renderiza una vez y las vistas cambian en el navegador (sin recargar toda la página) usando enrutamiento de Angular.
 - **Pasos previstos:**
   1. Definir rutas iniciales (`/` carga anónima, `/login`, `/descargas`) y un layout base que use los estilos gob.mx ya cargados.
   2. Crear el componente de inicio/carga con signals para estado de archivo, progreso y mensajes ("Validando tu archivo...").
-  3. Implementar servicios HTTP y de estado con signals para enviar el `.xlsx` al backend y mostrar las 9 validaciones.
-  4. Preparar componentes de autenticación y listado de descargas reutilizando la guía gráfica (tablas, alerts, botones).
-  5. Validar accesibilidad y consistencia visual con la guía gráfica en navegación SPA (sin recargas completas).
+  3. Implementar servicios HTTP y de estado con signals que hoy regresen datos simulados/localStorage, respetando las firmas esperadas del futuro backend FastAPI para conmutar sin cambios cuando esté listo.
+  4. Preparar componentes de autenticación y listado de descargas reutilizando la guía gráfica (tablas, alerts, botones) con datos de prueba.
+  5. Validar accesibilidad y consistencia visual con la guía gráfica en navegación SPA (sin recargas completas) y documentar cómo activar la fuente de datos real cuando esté disponible.
 
 ## Iteración C2 – Portal de descargas y publicación de ligas
 
 **Objetivos:**
 - Implementar login (CCT + contraseña generada) y módulo de descargas.
-- Consumir ligas/archivos provistos por el sistema externo y listarlos por versión/consecutivo.
+- Consumir ligas/archivos provistos por el sistema externo y listarlos por versión/consecutivo (iniciando con datos simulados en frontend; conmutar a FastAPI en cuanto el equipo de backend entregue endpoints).
 - Ajustar monitoreo técnico (logs, espacio en disco, salud de workers).
 
 **Entregables:**

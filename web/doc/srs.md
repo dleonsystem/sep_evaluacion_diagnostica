@@ -32,7 +32,7 @@ La plataforma cubre únicamente el flujo de recepción–validación–descarga 
 # 2. Descripción general
 
 ## 2.1 Perspectiva del producto
-Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend FastAPI en Python 3.12** y **almacenamiento PostgreSQL + Filesystem**. No realiza cálculos educativos; actúa como **pasarela de validación y distribución de archivos**.
+Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend FastAPI en Python 3.12** y **almacenamiento PostgreSQL + Filesystem**. No realiza cálculos educativos; actúa como **pasarela de validación y distribución de archivos**. El backend Python será implementado por otro equipo; el frontend entregará pantallas funcionales con servicios Angular que hoy responden con datos de prueba/localStorage, pero conservan las mismas firmas HTTP para conmutar a FastAPI sin reescritura.
 
 ## 2.2 Interfaces del sistema
 
@@ -108,6 +108,7 @@ Si la estructura o los valores no cumplen, el archivo se **rechaza** y se entreg
 - RF-08: Habilitar autenticación (CCT + contraseña) para consultar las ligas de descarga.
 - RF-09: Mostrar **todas las versiones** de resultados que el sistema externo haya depositado, con consecutivo y liga.
 - RF-10: Mantener repositorios separados para archivos recibidos y resultados publicados.
+- RF-11: Implementar servicios frontend tipificados hacia FastAPI que, mientras no exista backend disponible, devuelvan datos simulados/localStorage usando el mismo contrato esperado de los endpoints.
 
 ---
 
@@ -129,6 +130,7 @@ Si la estructura o los valores no cumplen, el archivo se **rechaza** y se entreg
 ## 6.4 Escalabilidad y mantenibilidad
 - Capacidad de agregar nuevos niveles o estructuras sin rediseñar el sistema.
 - Arquitectura desacoplada (frontend, API y workers de validación/PDF) para escalar horizontalmente.
+- Capa de servicios frontend conmutables (modo simulado vs. API FastAPI) documentada para minimizar retrabajo cuando el backend quede disponible.
 
 ---
 

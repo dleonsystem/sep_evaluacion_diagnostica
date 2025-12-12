@@ -81,7 +81,7 @@ Sustituir el envío de archivos por correo en la segunda aplicación EIA por un 
 # 4. Descripción general del sistema
 
 ## 4.1 Perspectiva del sistema
-Aplicación web de tres capas con **Angular 19 (signals)**, **FastAPI (Python 3.12)** y **PostgreSQL + Filesystem**, apoyada por workers para validación y PDFs. No calcula resultados; solo publica ligas entregadas por el sistema externo. La SPA usa la **guía gráfica gob.mx v3** cargada vía CDN (estilos y scripts en `index.html`).
+Aplicación web de tres capas con **Angular 19 (signals)**, **FastAPI (Python 3.12)** y **PostgreSQL + Filesystem**, apoyada por workers para validación y PDFs. No calcula resultados; solo publica ligas entregadas por el sistema externo. La SPA usa la **guía gráfica gob.mx v3** cargada vía CDN (estilos y scripts en `index.html`). Mientras el backend Python es implementado por otro equipo, el frontend entregará pantallas funcionales con servicios Angular que devuelven datos de prueba/localStorage pero mantienen las mismas firmas HTTP previstas para FastAPI, para que el cambio a los endpoints reales sea transparente.
 
 ## 4.2 Funciones principales (vista de negocio)
 - Cargar archivo .xlsx sin autenticación.
@@ -95,6 +95,7 @@ Aplicación web de tres capas con **Angular 19 (signals)**, **FastAPI (Python 3.
 - Las plantillas .xlsx mantienen nombres de hojas y columnas esperadas.
 - El sistema externo entrega resultados/ligas en el repositorio de resultados.
 - Disponibilidad de infraestructura HTTPS y almacenamiento mínimo de 1 TB.
+- El backend FastAPI será provisto por un equipo diferente; durante C1/C2 el frontend operará con datos simulados en localStorage y servicios Angular que replican las respuestas esperadas.
 
 ---
 

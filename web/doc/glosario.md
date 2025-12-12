@@ -15,3 +15,5 @@
 - **FastAPI:** Framework de backend en Python 3.12 utilizado para la API.
 - **PostgreSQL:** Base de datos que guarda solicitudes, credenciales y bitácoras.
 - **Redis + RQ/Celery:** Infraestructura de workers para validaciones y generación de PDFs.
+- **Servicios simulados (frontend):** Implementaciones Angular que devuelven datos de prueba/localStorage con el mismo contrato HTTP que ofrecerá FastAPI, permitiendo cambiar a endpoints reales sin reescribir componentes.
+- **Equipo backend externo:** Grupo responsable de construir la API FastAPI; el frontend se prepara para integrarse cuando los endpoints estén disponibles.

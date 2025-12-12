@@ -13,8 +13,8 @@ Describe la arquitectura de alto nivel para la plataforma que **recibe archivos 
 
 Arquitectura web de tres capas y procesos desacoplados:
 
-1. **Capa de presentación:** SPA en **Angular 19 (signals)** para carga anónima, descarga de PDFs y portal autenticado de descargas, usando la guía gráfica gob.mx v3 cargada desde CDN.
-2. **Capa de lógica de negocio:** API **FastAPI (Python 3.12)** para orquestar validaciones, generación de credenciales y publicación de ligas.
+1. **Capa de presentación:** SPA en **Angular 19 (signals)** para carga anónima, descarga de PDFs y portal autenticado de descargas, usando la guía gráfica gob.mx v3 cargada desde CDN. Mientras el backend Python es desarrollado por otro equipo, el frontend operará con servicios simulados y datos de prueba almacenados en memoria/localStorage, manteniendo las mismas interfaces para conmutar a la API real sin cambios.
+2. **Capa de lógica de negocio:** API **FastAPI (Python 3.12)** para orquestar validaciones, generación de credenciales y publicación de ligas (implementada por un equipo distinto).
 3. **Capa de datos y archivos:** **PostgreSQL** para solicitudes/credenciales y **filesystem SSD** para repositorios separados de recepción y resultados.
 4. **Procesamiento asíncrono:** Workers (Redis + RQ/Celery) para validaciones y armado de PDFs.
 
@@ -39,6 +39,9 @@ Arquitectura web de tres capas y procesos desacoplados:
 - **Módulo de Descargas Autenticadas**
   - Login con CCT + contraseña generada en primera carga válida.
   - Listado de versiones de resultados (consecutivo + liga) depositados por el sistema externo.
+- **Servicios de integración frontend**
+  - Interfaces Angular tipificadas hacia FastAPI para carga, login y descargas.
+  - Mientras no exista backend disponible, devuelven datos simulados/localStorage con la misma forma de respuesta que los futuros endpoints.
 - **Panel técnico**
   - Monitoreo de logs, espacio en disco y estado de workers.
 
@@ -69,8 +72,8 @@ flowchart LR
 
 # 5. Decisiones tecnológicas clave
 
-- **Frontend:** Angular 19 + TypeScript (signals) con Angular CLI 19.2.x sobre Node 22.x y estilos base gob.mx v3 incluidos vía CDN en `index.html`.
-- **Backend:** Python 3.12 + FastAPI.
+- **Frontend:** Angular 19 + TypeScript (signals) con Angular CLI 19.2.x sobre Node 22.x y estilos base gob.mx v3 incluidos vía CDN en `index.html`. Los servicios Angular expondrán interfaces HTTP tipificadas; mientras no exista backend disponible, responderán con datos simulados/localStorage pero sin romper la forma de los endpoints.
+- **Backend:** Python 3.12 + FastAPI (desarrollado por un equipo distinto; la integración del frontend será transparente gracias a la capa de servicios simulados).
 - **Workers:** Redis + RQ/Celery para validación y generación de PDFs.
 - **Persistencia:** PostgreSQL (datos) + Filesystem SSD (archivos válidos y resultados).
 - **Generación de PDF:** WeasyPrint/ReportLab o librería equivalente en Python.
