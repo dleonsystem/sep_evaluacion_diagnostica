@@ -1,77 +1,60 @@
-# Documento de Visión  
-## Proyecto: Plataforma de Gestión de Valoraciones EIA 2025–2026  
+# Documento de Visión
+## Proyecto: Plataforma de Recepción, Validación y Descarga de Archivos (2ª aplicación EIA)
 ## Metodología: RUP – Fase de Inicio (Inception)
 
-> **Estado:** Versión 1.1 – Borrador actualizado (backend Node.js)
+> **Estado:** Versión 2.0 alineada a `plataforma_recepcion_validacion_descarga_EIA.md`
 
 ---
 
 # 1. Introducción
 
 ## 1.1 Propósito del documento
-Este Documento de Visión define los objetivos, alcance, usuarios, funciones principales y restricciones del sistema que sustituirá el envío de archivos Excel de valoraciones de los Ejercicios Integradores del Aprendizaje (EIA) por correo electrónico, mediante una plataforma web segura, trazable y escalable para la SEP, directivos escolares y personal autorizado.
+Definir objetivos, alcance, usuarios, funciones y restricciones de la plataforma web que **recibe, valida y publica descargas** para la segunda aplicación de los Ejercicios Integradores del Aprendizaje (EIA), sin procesar evaluaciones ni determinar si un envío es primera o segunda aplicación.
 
 ## 1.2 Alcance del sistema
-El sistema permitirá, en su primera etapa:
+El sistema realiza:
 
-- Reemplazar el envío de archivos de valoraciones por correo electrónico.
-- Cargar archivos de valoraciones EIA en formato Excel (.xlsx, .xls).
-- Validar estructura básica y campos obligatorios clave.
-- Registrar actividades realizadas por todos los usuarios.
-- Permitir la descarga de los archivos de valoraciones por parte del personal SEP.
-- Autenticar a todos los usuarios mediante usuario y contraseña.
-
-En la segunda etapa el sistema también permitirá:
-
-- Cargar resultados procesados por los equipos de la SEP.
-- Poner a disposición de cada director escolar los reportes/resultados correspondientes a su escuela para descarga.
+- **Recepción anónima** de archivos .xlsx con etiqueta “Validando tu archivo…”.
+- **Validación automática** con 9 verificaciones (CCT, correo, nivel, campos y columnas obligatorias, valores 0–3, estructura general, número/nombre de hojas y consistencia interna).
+- **Generación de credenciales** solo en la primera carga válida (usuario = CCT validado, contraseña = correo validado; no se regenera en cargas posteriores).
+- **Emisión de PDFs** de confirmación (mensaje, fecha hoy + 4 días, usuario/contraseña, marca de tiempo) o de errores cuando aplica.
+- **Registro de solicitudes**: cada carga válida es independiente con consecutivo; repositorio de archivos recibidos.
+- **Publicación de ligas de descarga** entregadas por un sistema externo que procesa los archivos.
 
 ## 1.3 Definiciones, acrónimos y abreviaturas
 - **EIA:** Ejercicios Integradores del Aprendizaje.
-- **Valoraciones:** Datos capturados por docentes y directivos en los formatos oficiales de Excel.
-- **CCT:** Clave del Centro de Trabajo.
-- **SEP:** Secretaría de Educación Pública.
-- **Usuario SEP:** Personal autorizado (federal o estatal) para descargar valoraciones y cargar resultados.
-- **Director escolar:** Usuario responsable de la escuela que sube valoraciones y descarga resultados.
-- **RUP:** Rational Unified Process.
+- **CCT:** Clave del Centro de Trabajo (usuario de acceso a descargas).
+- **PDF de confirmación/errores:** comprobantes automáticos generados tras la validación.
+- **Sistema externo:** proceso que genera resultados y deposita ligas de descarga.
 
 ## 1.4 Referencias
-- Lineamientos oficiales EIA 2025–2026.
-- Carta Informativa, Guías de Aplicación, Guía de Directivos y Guía para el Uso de los Reportes.
-- Requerimientos funcionales y no funcionales definidos con el área solicitante.
+- Documento `plataforma_recepcion_validacion_descarga_EIA.md`.
+- Lineamientos y plantillas oficiales de la segunda aplicación EIA.
 
 ---
 
 # 2. Posicionamiento
 
 ## 2.1 Oportunidad de negocio
-Actualmente el proceso de recepción de valoraciones se realiza a través de correo electrónico. Esta práctica:
-
-- Es altamente manual.
-- No escala para decenas de miles de escuelas.
-- Es vulnerable a pérdida, duplicación o corrupción de archivos.
-- No ofrece trazabilidad ni bitácora confiable de lo realizado.
-
-La plataforma propuesta ofrece un canal único, controlado y auditable para la recepción, descarga y distribución de valoraciones y resultados.
+Sustituir el envío de archivos por correo en la segunda aplicación EIA por un flujo automatizado de recepción, validación y publicación de descargas, manteniendo trazabilidad y seguridad.
 
 ## 2.2 Problema a resolver
-- Falta de control sobre la recepción de archivos.
-- Imposibilidad de conocer en tiempo real qué escuelas han enviado información.
-- Dificultad para localizar archivos específicos (por CCT, entidad, turno, etc.).
-- Ausencia de bitácora de actividades.
-- Alto riesgo operativo al depender de correo electrónico para un proceso masivo.
+- Recepción manual y dispersa de archivos por correo.
+- Falta de control sobre estructura y contenido de los archivos recibidos.
+- Ausencia de credenciales centralizadas y comprobantes automáticos.
+- Riesgo de mezclar envíos y no conocer el consecutivo de solicitudes.
 
 ## 2.3 Beneficios
-- Mayor control y trazabilidad de los archivos y actividades.
-- Reducción del riesgo de pérdida o mezcla de información.
-- Mejor tiempo de respuesta para la generación y entrega de resultados.
-- Soporte a la toma de decisiones a partir de datos más completos y confiables.
+- Automatización completa de la recepción y validación.
+- Generación consistente de credenciales y comprobantes PDF.
+- Separación de repositorios de recepción y resultados para evitar confusión.
+- Publicación rápida de ligas de descarga generadas por el sistema externo.
 
 ## 2.4 Interesados clave
 - Área responsable de la Evaluación Diagnóstica en la SEP.
-- Autoridades educativas estatales.
-- Directivos escolares de educación básica.
-- Equipos técnicos responsables del desarrollo y operación de la plataforma.
+- Directivos escolares (envían archivos, descargan resultados).
+- Equipos técnicos (operación, soporte y validación).
+- Equipo responsable del sistema externo de procesamiento.
 
 ---
 
@@ -79,105 +62,83 @@ La plataforma propuesta ofrece un canal único, controlado y auditable para la r
 
 ## 3.1 Perfiles de usuario
 
-### Director escolar
-- Sube el archivo Excel de valoraciones de su escuela.
-- Recibe advertencias de validación básica.
-- Descarga los resultados de su escuela una vez que la SEP los cargue.
-- Consulta el historial de envíos de su escuela.
+### Escuela (anónima)
+- Sube archivo .xlsx sin iniciar sesión.
+- Recibe PDF de confirmación/errores.
 
-### Usuario SEP Estatal
-- Consulta y descarga archivos de valoraciones correspondientes a escuelas de su entidad.
-- Consulta indicadores básicos de avance (porcentaje de escuelas que han enviado archivo).
-- Descarga resultados cargados por SEP cuando estén disponibles.
+### Escuela autenticada
+- Accede con usuario = CCT y contraseña = correo validado en la primera carga.
+- Consulta todas las versiones de resultados disponibles y sus ligas de descarga.
 
-### Usuario SEP Federal
-- Consulta y descarga archivos de valoraciones a nivel nacional.
-- Carga archivos de resultados procesados.
-- Supervisa avance y estados de recepción.
+### Operador técnico SEP
+- Monitorea validaciones, repositorios y generación de PDFs.
 
-### Administrador del sistema
-- Gestiona altas, bajas y cambios de usuarios.
-- Define parámetros generales del sistema.
-- Consulta la bitácora de auditoría completa.
-- Gestiona catálogos (entidades, niveles, etc.) en caso necesario.
+### Sistema externo de procesamiento
+- Deposita resultados/ligas que serán mostradas por la plataforma.
 
 ---
 
 # 4. Descripción general del sistema
 
 ## 4.1 Perspectiva del sistema
-El sistema se concibe como una aplicación web de tres capas:
-
-- **Capa de presentación:** Aplicación Angular 19.
-- **Capa de lógica de negocio:** API en Node.js (framework por definir, p. ej. Express o NestJS).
-- **Capa de datos:** Base de datos PostgreSQL y almacenamiento de archivos.
-
-Se integra con el ecosistema existente mediante exportación de archivos para procesamiento por parte de los equipos de resultados.
+Aplicación web de tres capas con **Angular 19 (signals)**, **FastAPI (Python 3.12)** y **PostgreSQL + Filesystem**, apoyada por workers para validación y PDFs. No calcula resultados; solo publica ligas entregadas por el sistema externo. La SPA usa la **guía gráfica gob.mx v3** cargada vía CDN (estilos y scripts en `index.html`).
 
 ## 4.2 Funciones principales (vista de negocio)
-- Registro e inicio de sesión de usuarios.
-- Carga de archivos Excel de valoraciones por escuela.
-- Validación de estructura básica del archivo y campos obligatorios.
-- Notificación de inconsistencias de captura (sin impedir la carga).
-- Gestión de intentos de carga de archivos con extensión incorrecta.
-- Descarga de archivos de valoraciones por parte de usuarios SEP.
-- Carga y descarga de archivos de resultados.
-- Bitácora de actividades.
+- Cargar archivo .xlsx sin autenticación.
+- Ejecutar 9 validaciones y mostrar estado “Validando tu archivo…”.
+- Generar PDF de confirmación o errores y descargarlo automáticamente.
+- Crear credenciales en la primera carga válida y mantenerlas en cargas posteriores.
+- Registrar cada solicitud con consecutivo y almacenar el archivo en repositorio de recepción.
+- Permitir login (CCT + contraseña) para consultar versiones y ligas de descarga depositadas externamente.
 
 ## 4.3 Suposiciones y dependencias
-- Cada escuela cuenta con al menos un usuario director con acceso a internet.
-- La SEP proporcionará plantillas de Excel con estructura estándar.
-- El proceso de cálculo de resultados se realiza fuera del sistema (procesos internos SEP).
-- La plataforma contará con infraestructura adecuada para soportar el volumen esperado.
+- Las plantillas .xlsx mantienen nombres de hojas y columnas esperadas.
+- El sistema externo entrega resultados/ligas en el repositorio de resultados.
+- Disponibilidad de infraestructura HTTPS y almacenamiento mínimo de 1 TB.
 
 ---
 
 # 5. Requerimientos de alto nivel
 
 ## 5.1 Requerimientos funcionales (resumen)
-- RF-01: Autenticación mediante usuario y contraseña.
-- RF-02: Carga de archivos Excel de valoraciones.
-- RF-03: Validación de formato de archivo (Excel) con hasta tres advertencias antes de aceptar otro tipo de archivo.
-- RF-04: Validación de columnas y campos obligatorios (CCT, TURNO, NOMBRE DE LA ESCUELA, CORREO).
-- RF-05: Advertencia sobre valoraciones incompletas (alumnos sin alguna valoración registrada).
-- RF-06: Descarga de archivos de valoraciones por usuarios SEP.
-- RF-07: Carga de archivos de resultados procesados por SEP.
-- RF-08: Descarga de resultados por directores escolares.
-- RF-09: Registro de actividades (inicio de sesión, cargas, descargas, cambios).
-- RF-10: Consulta de bitácora por parte de administradores.
+- RF-01: Recepción anónima de archivo .xlsx con etiqueta de validación en línea.
+- RF-02: Validación automática con 9 reglas y rechazo con PDF de errores cuando falle.
+- RF-03: Generación de credenciales solo en primera carga válida (usuario = CCT, contraseña = correo validado).
+- RF-04: Emisión de PDF de confirmación con fecha de consulta (hoy + 4 días), usuario, contraseña y marca de tiempo.
+- RF-05: Registro de solicitudes con consecutivo y almacenamiento de archivos válidos en repositorio de recepción.
+- RF-06: Portal autenticado para listar versiones y ligas de descarga provenientes del sistema externo.
+- RF-07: Repositorios separados para archivos recibidos y resultados.
 
 ## 5.2 Requerimientos no funcionales (resumen)
-- Seguridad: contraseñas cifradas, control de acceso por rol, auditoría.
-- Rendimiento: capacidad para miles de escuelas concurrentes en periodos pico.
-- Usabilidad: interfaz simple, mensajes claros, flujo guiado.
-- Disponibilidad: alta disponibilidad durante la ventana de recepción y entrega de resultados.
-- Escalabilidad: posibilidad de incorporar más ciclos escolares y otros instrumentos en el futuro.
+- Seguridad: HTTPS obligatorio, contraseñas con hashing, bitácoras de acceso y validación.
+- Rendimiento: soportar **120,000 validaciones automáticas** (referencia a la primera aplicación por correo).
+- Disponibilidad/almacenamiento: mínimo **1 TB** inicial, capacidad de expansión sin afectar servicio.
+- Escalabilidad: separación frontend/API/workers para crecimiento horizontal; posibilidad de agregar nuevos niveles/estructuras.
 
 ---
 
 # 6. Alcance
 
 ## 6.1 Lo que sí incluye
-- Sustitución del canal de correo electrónico para el envío y recepción de valoraciones.
-- Validaciones mínimas y advertencias sobre calidad de datos.
-- Gestión de resultados a nivel de archivo.
-- Trazabilidad de actividades.
+- Recepción y validación de archivos .xlsx de la segunda aplicación EIA.
+- Generación de credenciales y PDFs automáticos.
+- Registro de solicitudes y repositorios separados (recepción vs. resultados).
+- Publicación de ligas de descarga procesadas externamente.
 
 ## 6.2 Lo que NO incluye
-- Cálculo o interpretación de resultados pedagógicos.
-- Integración directa con otros sistemas académicos o administrativos.
-- Funcionalidades de análisis estadístico avanzado dentro de la propia plataforma.
+- Procesamiento o cálculo de resultados pedagógicos.
+- Determinar si un envío pertenece a primera o segunda aplicación.
+- Sustitución, comparación o fusión de archivos enviados previamente.
 
 ---
 
 # 7. Riesgos de alto nivel
-- Usuarios que siguen intentando usar el correo electrónico en lugar de la plataforma.
-- Carga simultánea muy alta en los últimos días de la ventana de recepción.
-- Archivos con estructuras inesperadas o modificadas.
-- Resistencia al cambio por parte de algunos usuarios finales.
+- Volumen alto de validaciones cercano al plazo límite (picos de carga).
+- Archivos con estructuras alteradas o nombres de hojas fuera de plantilla.
+- Dependencia del sistema externo para la disponibilidad de ligas de descarga.
 
 ---
 
 # 8. Cronograma y etapas
-- **Etapa 1:** Módulos de autenticación, carga de valoraciones, descarga por SEP y auditoría.
-- **Etapa 2:** Módulos de carga de resultados, descarga de resultados por escuelas y mejoras a la experiencia de usuario.
+- **Etapa 1:** Recepción anónima, validaciones, generación de credenciales y PDFs, registro de solicitudes y repositorio de recepción.
+- **Etapa 2:** Portal autenticado de descarga y publicación de ligas provenientes del sistema externo; refinamientos de monitoreo técnico y escalabilidad.
