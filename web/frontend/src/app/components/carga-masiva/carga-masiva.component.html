@@ -61,7 +61,11 @@
         <p><strong>Contraseña (correo validado):</strong> {{ resultadoExito.credenciales.contrasena }}</p>
       </div>
       <p class="carga__mensaje carga__mensaje--info" *ngIf="rutaGuardado">
-        Archivo almacenado localmente como: {{ rutaGuardado }}
+        {{ modoGuardado === 'sistema-archivos'
+          ? 'Se guardó mediante el selector de archivos. Verifica la carpeta elegida:'
+          : 'Se descargó una copia. Colócala en la ruta del proyecto para usarla después:' }}
+        <br>
+        <strong>{{ rutaGuardado }}</strong>
       </p>
       <p class="carga__mensaje carga__mensaje--error" *ngIf="errorGuardado">{{ errorGuardado }}</p>
     </div>
