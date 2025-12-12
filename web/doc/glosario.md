@@ -1,16 +1,19 @@
-# Glosario de Términos – Plataforma EIA 2025–2026
+# Glosario de Términos – Plataforma de Recepción, Validación y Descarga EIA
 
-- **Administrador del Sistema:** Usuario con permisos para gestionar usuarios, catálogos y consultar la bitácora completa.
-- **Archivo de Resultados:** Archivo generado por la SEP que contiene los resultados procesados de las valoraciones de una o varias escuelas.
-- **Archivo de Valoraciones:** Archivo Excel que contiene las valoraciones capturadas por los docentes y consolidadas por el director de cada escuela.
-- **Auditoría / Bitácora:** Registro cronológico de eventos relevantes realizados por los usuarios (inicios de sesión, cargas, descargas, errores, etc.).
-- **CCT (Clave del Centro de Trabajo):** Identificador oficial de cada escuela.
-- **Director Escolar:** Persona responsable de la escuela ante la plataforma; sube las valoraciones y descarga los resultados.
-- **EIA (Ejercicios Integradores del Aprendizaje):** Instrumentos diagnósticos aplicados a alumnos de educación básica.
-- **Etapa 1:** Primera fase del proyecto en la que se reemplaza el envío por correo por la carga y descarga de archivos a través del sistema.
-- **Etapa 2:** Fase en la que se incorporan funciones de carga y descarga de resultados procesados.
-- **PostgreSQL:** Sistema de gestión de bases de datos relacional utilizado por la plataforma.
-- **Node.js:** Entorno de ejecución de JavaScript del lado del servidor que se utilizará para implementar el backend de la plataforma.
-- **Angular 19:** Framework utilizado para el desarrollo del frontend.
-- **Usuario SEP Estatal:** Usuario perteneciente a una autoridad educativa estatal, con acceso a archivos de valoraciones de su entidad.
-- **Usuario SEP Federal:** Usuario de la SEP con alcance nacional; puede descargar archivos y cargar resultados.
+- **Archivo de recepción:** Archivo .xlsx enviado por la escuela y almacenado tras pasar las 9 validaciones.
+- **Archivo de resultados:** ZIP/PDF depositado por el sistema externo para descarga de la escuela.
+- **CCT (Clave del Centro de Trabajo):** Identificador oficial de la escuela; se usa como usuario de acceso a descargas.
+- **Credenciales generadas:** Usuario = CCT y contraseña = correo validado creados solo en la primera carga válida.
+- **PDF de confirmación:** Comprobante descargado automáticamente cuando el archivo es válido; incluye mensaje, fecha de consulta (hoy + 4 días), usuario y contraseña.
+- **PDF de errores:** Comprobante descargado automáticamente cuando las validaciones fallan.
+- **Plataforma de recepción:** Módulo web que recibe, valida y registra solicitudes sin procesar resultados.
+- **Repositorios separados:** Almacenamientos independientes para archivos recibidos y resultados publicados.
+- **Validaciones (9):** Reglas automáticas sobre CCT, correo, nivel, campos y columnas obligatorias, valores 0–3, estructura general, número/nombre de hojas y consistencia interna.
+- **SPA (Single Page Application):** Aplicación web de una sola página; el shell se carga una vez y las vistas cambian en el cliente sin recargar todo el documento. En este proyecto se implementa con Angular 19 y signals.
+- **Angular 19 (signals):** Framework para el frontend; habilita el modelo reactivo con signals.
+- **Guía gráfica gob.mx v3:** Estándar de diseño y estilos de la Administración Pública; se incluye desde CDN (`main.css`, `gobmx.js`, `main.js`) en `index.html`.
+- **FastAPI:** Framework de backend en Python 3.12 utilizado para la API.
+- **PostgreSQL:** Base de datos que guarda solicitudes, credenciales y bitácoras.
+- **Redis + RQ/Celery:** Infraestructura de workers para validaciones y generación de PDFs.
+- **Servicios simulados (frontend):** Implementaciones Angular que devuelven datos de prueba/localStorage con el mismo contrato HTTP que ofrecerá FastAPI, permitiendo cambiar a endpoints reales sin reescribir componentes.
+- **Equipo backend externo:** Grupo responsable de construir la API FastAPI; el frontend se prepara para integrarse cuando los endpoints estén disponibles.

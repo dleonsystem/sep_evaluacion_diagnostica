@@ -1,13 +1,13 @@
-# Lista de Riesgos – Plataforma EIA 2025–2026
+# Lista de Riesgos – Plataforma de Recepción, Validación y Descarga EIA
 
-| ID | Tipo      | Descripción                                                   | Prob. | Impacto | Estrategia de mitigación                                        |
-|----|-----------|---------------------------------------------------------------|-------|---------|------------------------------------------------------------------|
-| R1 | Operativo | Escuelas continúan enviando archivos por correo electrónico   | Media | Alta    | Comunicación clara, oficios oficiales, bloqueo del canal correo |
-| R2 | Técnico   | Sobrecarga del sistema en últimos días de recepción          | Alta  | Alta    | Escalamiento horizontal de instancias Node.js, pruebas de carga |
-| R3 | Datos     | Archivos con estructura alterada o columnas faltantes        | Alta  | Media   | Validaciones básicas, advertencias visibles, documentación      |
-| R4 | Seguridad | Robo de credenciales de usuario                              | Media | Alta    | Políticas de contraseña, expiración de sesión, auditoría        |
-| R5 | Humano    | Errores al cargar resultados por parte de SEP                | Media | Alta    | Flujos guiados, confirmaciones, posibilidad de reversión        |
-| R6 | Legal     | Manejo inadecuado de datos personales                        | Baja  | Alta    | Cumplimiento normativo, políticas de acceso mínimo necesario    |
-| R7 | Técnico   | Fallas de infraestructura (servidor, red, almacenamiento)    | Media | Alta    | Respaldos periódicos, monitoreo, plan de recuperación           |
-| R8 | Cambio    | Resistencia de usuarios a adoptar la nueva plataforma        | Media | Media   | Capacitación, manuales, soporte durante ventana de operación    |
+| ID | Tipo      | Descripción                                                                 | Prob. | Impacto | Estrategia de mitigación |
+|----|-----------|-----------------------------------------------------------------------------|-------|---------|---------------------------|
+| R1 | Operativo | Escuelas continúan usando correo en lugar de la carga anónima .xlsx         | Media | Alta    | Comunicación oficial, instrucciones claras en portal, monitoreo de buzones |
+| R2 | Técnico   | Sobrecarga de validaciones (pico cercano al cierre, objetivo 120,000)       | Alta  | Alta    | Escalar workers FastAPI/Redis, pruebas de carga, autoescalado en infraestructura |
+| R3 | Datos     | Archivos con estructura/nombres de hoja alterados rompen validación         | Alta  | Media   | Validación estricta de 9 reglas, mensajes claros en PDF de errores, plantillas oficiales |
+| R4 | Seguridad | Compromiso de credenciales (CCT + contraseña correo validado)               | Media | Alta    | Hashing de contraseñas, HTTPS obligatorio, bitácora de accesos, bloqueo por intentos fallidos |
+| R5 | Integración | Retraso o falla en depósito de resultados por el sistema externo           | Media | Alta    | Acuerdos de entrega, monitoreo de repositorio de resultados, alertas tempranas |
+| R6 | Infraestructura | Falta de espacio en repositorios (mínimo 1 TB para recepción/resultados) | Media | Alta    | Monitoreo de disco, planes de expansión en caliente, limpieza controlada de archivos obsoletos |
+| R7 | Cambio    | Resistencia de usuarios a la credencial generada automáticamente            | Media | Media   | Manuales y FAQs, recordatorio en PDF de confirmación, soporte de mesa de ayuda |
+| R8 | Integración | Diferencias entre datos simulados en frontend y contratos reales de FastAPI (backend de otro equipo) | Media | Media | Definir contratos HTTP desde el inicio, documentar mocks/localStorage, pruebas de integración al habilitar endpoints |
 
