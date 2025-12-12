@@ -60,9 +60,20 @@
         <p><strong>Usuario (CCT):</strong> {{ resultadoExito.credenciales.usuario }}</p>
         <p><strong>Contraseña (correo validado):</strong> {{ resultadoExito.credenciales.contrasena }}</p>
       </div>
+      <p class="carga__mensaje carga__mensaje--info" *ngIf="rutaGuardado">
+        Archivo almacenado localmente como: {{ rutaGuardado }}
+      </p>
+      <p class="carga__mensaje carga__mensaje--error" *ngIf="errorGuardado">{{ errorGuardado }}</p>
     </div>
 
     <div class="carga__acciones">
+      <button
+        class="carga__boton-primario"
+        (click)="guardarArchivo()"
+        [disabled]="estado !== 'exito' || guardando"
+      >
+        {{ guardando ? 'Guardando…' : 'Cargar Archivo' }}
+      </button>
       <button class="carga__boton-secundario" (click)="limpiarSeleccion(archivoInput)">Limpiar</button>
     </div>
   </div>

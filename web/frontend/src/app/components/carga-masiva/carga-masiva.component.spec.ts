@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CargaMasivaComponent } from './carga-masiva.component';
 import { ExcelValidationService, ResultadoValidacion } from '../../services/excel-validation.service';
+import { ArchivoStorageService } from '../../services/archivo-storage.service';
 
 const resultadoValido: ResultadoValidacion = {
   ok: true,
@@ -22,6 +23,12 @@ class ExcelValidationServiceStub {
   }
 }
 
+class ArchivoStorageServiceStub {
+  guardarArchivoPreescolar(): Promise<{ ruta: string }> {
+    return Promise.resolve({ ruta: 'assets/archivos/preescolar/demo.xlsx' });
+  }
+}
+
 describe('CargaMasivaComponent', () => {
   let component: CargaMasivaComponent;
   let fixture: ComponentFixture<CargaMasivaComponent>;
@@ -29,7 +36,10 @@ describe('CargaMasivaComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [CargaMasivaComponent],
-      providers: [{ provide: ExcelValidationService, useClass: ExcelValidationServiceStub }]
+      providers: [
+        { provide: ExcelValidationService, useClass: ExcelValidationServiceStub },
+        { provide: ArchivoStorageService, useClass: ArchivoStorageServiceStub }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(CargaMasivaComponent);

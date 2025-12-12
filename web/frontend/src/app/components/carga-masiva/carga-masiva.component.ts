@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { ExcelValidationService, ResultadoValidacion } from '../../services/excel-validation.service';
+import { ArchivoStorageService } from '../../services/archivo-storage.service';
 
 interface SelectedFile {
   name: string;
@@ -27,13 +28,20 @@ export class CargaMasivaComponent {
   readonly pesoMaximoMb = 10;
 
   archivoSeleccionado: SelectedFile | null = null;
+  archivoOriginal: File | null = null;
   estado: 'idle' | 'validando' | 'exito' | 'error' = 'idle';
   errores: string[] = [];
   advertencias: string[] = [];
   resultadoExito: ResultadoExito | null = null;
   mensajeInformativo: string | null = null;
+  guardando = false;
+  rutaGuardado: string | null = null;
+  errorGuardado: string | null = null;
 
-  constructor(private readonly excelValidationService: ExcelValidationService) {}
+  constructor(
+    private readonly excelValidationService: ExcelValidationService,
+    private readonly archivoStorageService: ArchivoStorageService
+  ) {}
 
   async onArchivoSeleccionado(evento: Event): Promise<void> {
     const input = evento.target as HTMLInputElement;
@@ -69,6 +77,7 @@ export class CargaMasivaComponent {
       sizeKb: parseFloat((file.size / 1024).toFixed(2)),
       lastModified: new Date(file.lastModified)
     };
+    this.archivoOriginal = file;
 
     this.estado = 'validando';
     this.mensajeInformativo = 'Validando tu archivo...';
@@ -90,6 +99,30 @@ export class CargaMasivaComponent {
   limpiarSeleccion(input: HTMLInputElement): void {
     input.value = '';
     this.resetMensajes();
+  }
+
+  async guardarArchivo(): Promise<void> {
+    if (!this.archivoOriginal || this.estado !== 'exito') {
+      this.errorGuardado = 'Primero valida correctamente tu archivo para poder guardarlo.';
+      return;
+    }
+
+    this.guardando = true;
+    this.errorGuardado = null;
+    this.rutaGuardado = null;
+
+    try {
+      const resultado = await this.archivoStorageService.guardarArchivoPreescolar(this.archivoOriginal);
+      this.rutaGuardado = resultado.ruta;
+      this.mensajeInformativo = `Archivo guardado de manera local en: ${resultado.ruta}`;
+    } catch (error) {
+      this.errorGuardado =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo guardar el archivo localmente. Inténtalo de nuevo.';
+    } finally {
+      this.guardando = false;
+    }
   }
 
   private procesarResultado(resultado: ResultadoValidacion): void {
@@ -129,5 +162,9 @@ export class CargaMasivaComponent {
     this.advertencias = [];
     this.resultadoExito = null;
     this.mensajeInformativo = null;
+    this.archivoOriginal = null;
+    this.guardando = false;
+    this.rutaGuardado = null;
+    this.errorGuardado = null;
   }
 }
