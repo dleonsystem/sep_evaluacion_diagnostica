@@ -1,0 +1,113 @@
+<section class="carga">
+  <div class="carga__encabezado">
+    <p class="carga__eyebrow">Módulo de carga de archivos · Preescolar</p>
+    <h1 class="carga__titulo">Sube la plantilla oficial (.xlsx) sin iniciar sesión</h1>
+    <p class="carga__descripcion">
+      De acuerdo con la especificación del módulo de carga, puedes enviar el archivo de Preescolar sin autenticación previa.
+      Toda la validación se realiza en el navegador: estructura de hojas, CCT, correo, turno y las 11 valoraciones por alumno de la hoja “TERCERO”.
+    </p>
+  </div>
+
+  <div class="carga__zona" [class.carga__zona--error]="estado === 'error'">
+    <div class="carga__instrucciones">
+      <p class="carga__etiqueta">Arrastra y suelta tu archivo o selecciónalo desde tu equipo</p>
+      <p class="carga__formatos">Solo se aceptan archivos XLSX. Máximo {{ pesoMaximoMb }} MB.</p>
+    </div>
+
+    <label class="carga__input">
+      <input
+        #archivoInput
+        type="file"
+        accept=".xlsx"
+        (change)="onArchivoSeleccionado($event)"
+      >
+      <span class="carga__boton">Elegir archivo</span>
+    </label>
+  </div>
+
+  <div class="carga__estado" *ngIf="archivoSeleccionado || estado !== 'idle'">
+    <div class="carga__detalle" *ngIf="archivoSeleccionado">
+      <h2>Archivo seleccionado</h2>
+      <ul>
+        <li><strong>Nombre:</strong> {{ archivoSeleccionado.name }}</li>
+        <li><strong>Peso:</strong> {{ archivoSeleccionado.sizeKb }} KB</li>
+        <li><strong>Última modificación:</strong> {{ archivoSeleccionado.lastModified | date:'short' }}</li>
+      </ul>
+    </div>
+
+    <p class="carga__mensaje carga__mensaje--info" *ngIf="estado === 'validando'">{{ mensajeInformativo }}</p>
+    <p class="carga__mensaje carga__mensaje--error" *ngIf="estado === 'error' && errores.length">Se encontraron problemas en tu archivo:</p>
+
+    <ul class="carga__lista" *ngIf="estado === 'error' && errores.length">
+      <li *ngFor="let error of errores">{{ error }}</li>
+    </ul>
+
+    <div class="carga__advertencias" *ngIf="advertencias.length">
+      <p class="carga__mensaje carga__mensaje--warning">Advertencias de estructura:</p>
+      <ul>
+        <li *ngFor="let advertencia of advertencias">{{ advertencia }}</li>
+      </ul>
+    </div>
+
+    <div class="carga__exito" *ngIf="estado === 'exito' && resultadoExito">
+      <h2>Archivo validado correctamente</h2>
+      <p>{{ resultadoExito.mensaje }}</p>
+      <p class="carga__resumen">
+        Se validaron {{ resultadoExito.totalAlumnos }} estudiantes en la hoja “TERCERO”.
+        El PDF de confirmación se generará con los mismos datos cuando el backend esté disponible.
+      </p>
+      <div class="carga__credenciales">
+        <p><strong>Usuario (CCT):</strong> {{ resultadoExito.credenciales.usuario }}</p>
+        <p><strong>Contraseña (correo validado):</strong> {{ resultadoExito.credenciales.contrasena }}</p>
+      </div>
+      <p class="carga__mensaje carga__mensaje--info" *ngIf="rutaGuardado">
+        Archivo guardado automáticamente en la ruta solicitada:
+        <br>
+        <strong>{{ rutaGuardado }}</strong>
+      </p>
+      <p class="carga__mensaje carga__mensaje--error" *ngIf="errorGuardado">{{ errorGuardado }}</p>
+    </div>
+
+    <div class="carga__acciones">
+      <button
+        class="carga__boton-primario"
+        (click)="guardarArchivo()"
+        [disabled]="estado !== 'exito' || guardando"
+      >
+        {{ guardando ? 'Guardando…' : 'Cargar Archivo' }}
+      </button>
+      <button class="carga__boton-secundario" (click)="limpiarSeleccion(archivoInput)">Limpiar</button>
+    </div>
+  </div>
+
+  <section class="carga__guia">
+    <h2>Guía rápida para el archivo de Preescolar</h2>
+    <div class="carga__grid">
+      <div class="carga__card">
+        <h3>Hoja ESC (datos de la escuela)</h3>
+        <ul>
+          <li>CCT de 10 caracteres (ej. 01DJN0000A) en la celda junto a la etiqueta “CCT”.</li>
+          <li>Turno seleccionado de la lista: Matutino, Vespertino, Nocturno, Discontinuo, Tiempo Completo o Jornada Ampliada.</li>
+          <li>Nombre de la escuela en mayúsculas.</li>
+          <li>Correo electrónico de contacto válido.</li>
+        </ul>
+      </div>
+      <div class="carga__card">
+        <h3>Hoja TERCERO (alumnos)</h3>
+        <ul>
+          <li>Número de lista, nombre completo y sexo (H/M) obligatorios.</li>
+          <li>Grupo con una sola letra (A-Z).</li>
+          <li>11 valoraciones por alumno (celdas F a P) con valores 0, 1, 2 o 3. No dejes consignas vacías.</li>
+        </ul>
+      </div>
+      <div class="carga__card">
+        <h3>Estatus de validación</h3>
+        <ul>
+          <li>Al seleccionar el archivo se muestra “Validando tu archivo…”.</li>
+          <li>Si las reglas se cumplen, se confirma la fecha disponible (hoy + 4 días) y las credenciales generadas.</li>
+          <li>Si hay errores, revisa la lista anterior, corrige en Excel y vuelve a cargar.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</section>
