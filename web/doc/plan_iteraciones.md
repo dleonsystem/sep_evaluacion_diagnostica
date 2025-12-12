@@ -1,102 +1,85 @@
-# Plan de Iteraciones – RUP  
-## Plataforma de Gestión de Valoraciones EIA 2025–2026
+# Plan de Iteraciones – RUP
+## Plataforma de Recepción, Validación y Descarga de Archivos EIA (2ª aplicación)
 
 ---
 
 # 1. Fase de Inicio (Inception)
 
 **Objetivos:**
-- Definir visión del sistema.
-- Identificar actores y casos de uso principales.
-- Establecer alcance de las etapas 1 y 2.
-- Identificar riesgos de alto nivel.
+- Definir visión y alcances conforme al documento `plataforma_recepcion_validacion_descarga_EIA.md`.
+- Identificar actores: escuela anónima/autenticada, sistema externo y operador técnico SEP.
+- Acordar reglas de validación (9 verificaciones) y lineamientos de credenciales/PDFs.
 
 **Entregables:**
-- Documento de Visión.
+- Documento de Visión v2.0.
 - Lista inicial de riesgos.
-- Modelo de casos de uso de alto nivel.
+- Modelo de casos de uso actualizado.
 
 ---
 
 # 2. Fase de Elaboración (Elaboration)
 
-## Iteración E1 – Modelado de requerimientos
+## Iteración E1 – Requerimientos y modelo de datos
 
 **Objetivos:**
-- Completar la SRS.
-- Detallar casos de uso prioritarios (CU-01, CU-02, CU-05, CU-07, CU-08).
-- Definir modelo de datos conceptual.
+- Completar SRS v2.0 con reglas de validación, generación de credenciales y repositorios separados.
+- Definir modelo de datos para solicitudes, credenciales, ligas de descarga y bitácora.
+- Ajustar casos de uso detallados para carga anónima y descargas autenticadas.
 
 **Entregables:**
-- SRS v1.x.
+- SRS v2.0.
+- Modelo de datos conceptual y físico inicial (PostgreSQL).
 - Casos de uso detallados.
-- Modelo de datos conceptual.
 
 ## Iteración E2 – Diseño arquitectónico y tecnológico
 
 **Objetivos:**
-- Definir arquitectura de software.
-- Seleccionar frameworks concretos en Node.js (por ejemplo, Express o NestJS) y afinar configuración de Angular.
-- Definir estrategia de despliegue inicial (ambientes: desarrollo, pruebas, producción).
+- Definir arquitectura FastAPI + Angular 19 (signals) + workers Redis (validación/PDF) con lineamientos de estilo gob.mx v3 incluidos desde CDN en `index.html`.
+- Diseñar separación de repositorios (recepción vs. resultados) y capacidad mínima de 1 TB.
+- Planear integración con sistema externo de resultados (ingesta de ligas/archivos).
 
 **Entregables:**
-- Documento de Arquitectura (SAD) actualizado.
-- Prototipo técnico mínimo:
-  - Endpoint de ejemplo en Node.js.
-  - Pantalla simple en Angular 19 consumiendo el endpoint.
+- SAD actualizado.
+- Prototipo técnico mínimo: endpoint FastAPI de validación simulada + pantalla Angular de carga anónima con estado “Validando tu archivo…” usando la guía gráfica gob.mx.
 
 ---
 
 # 3. Fase de Construcción (Construction)
 
-## Iteración C1 – Núcleo Etapa 1
+## Iteración C1 – Núcleo de recepción y validación
 
 **Objetivos:**
-- Implementar autenticación (login, logout).
-- Implementar carga de valoraciones con validaciones básicas.
-- Implementar bitácora de actividades.
+- Implementar carga anónima de archivo .xlsx.
+- Ejecutar 9 validaciones con workers y generar PDF de confirmación/errores.
+- Generar credenciales en primera carga válida y registrar solicitud con consecutivo.
 
 **Entregables:**
-- Módulo de login en Angular + API de autenticación en Node.js.
-- Pantalla de carga de valoraciones.
-- Registro de eventos (logins y cargas) en PostgreSQL.
-- Pruebas unitarias e integración básicas.
+- Pantalla de carga anónima y mensaje en línea.
+- Workers de validación + generación de PDFs.
+- Repositorio de recepción operativo (filesystem + registros en PostgreSQL).
 
-## Iteración C2 – Descarga SEP y mejoras
+## Iteración C2 – Portal de descargas y publicación de ligas
 
 **Objetivos:**
-- Implementar descarga de valoraciones para usuarios SEP.
-- Mejorar interfaz de usuario (filtros, tablas, mensajes).
-- Optimizar auditoría y filtros de bitácora.
+- Implementar login (CCT + contraseña generada) y módulo de descargas.
+- Consumir ligas/archivos provistos por el sistema externo y listarlos por versión/consecutivo.
+- Ajustar monitoreo técnico (logs, espacio en disco, salud de workers).
 
 **Entregables:**
-- Pantalla de descarga para SEP con filtros.
-- Mejora de bitácora y reportes básicos.
-- Versión lista para piloto de Etapa 1.
-
-## Iteración C3 – Etapa 2 (Resultados)
-
-**Objetivos:**
-- Implementar carga de resultados por SEP Federal.
-- Implementar descarga de resultados por director escolar.
-- Ajustes derivados del piloto y retroalimentación.
-
-**Entregables:**
-- Módulo de carga de resultados.
-- Módulo de descarga de resultados por escuela.
-- Versión candidata a producción.
+- Portal de descargas autenticado.
+- Integración con repositorio de resultados.
+- Panel técnico básico.
 
 ---
 
 # 4. Fase de Transición (Transition)
 
 **Objetivos:**
-- Despliegue en ambiente productivo.
-- Capacitación a usuarios clave (SEP, directores).
-- Soporte intensivo durante ventana de recepción de archivos.
+- Despliegue en ambientes de prueba y producción bajo HTTPS.
+- Capacitación breve a operadores y mesa de ayuda.
+- Soporte intensivo durante la ventana de recepción/descarga y validación de carga pico (120,000 solicitudes).
 
 **Entregables:**
-- Manual de usuario.
-- Manual de administración.
-- Informe de cierre de proyecto y lecciones aprendidas.
-
+- Manual de usuario (carga anónima y descargas autenticadas).
+- Manual técnico (operación de workers y repositorios).
+- Informe de cierre y lecciones aprendidas.
