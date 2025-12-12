@@ -27,13 +27,13 @@ Arquitectura web de tres capas y procesos desacoplados:
 - **Módulo de Recepción Anónima (primer envío)**
   - Carga de archivo .xlsx sin login cuando no existan credenciales previas para el CCT/correo.
   - Mensaje “Validando tu archivo…”.
-  - Verificación previa de duplicidad (si ya existen credenciales se bloquea el envío anónimo).
+  - Verificación previa de duplicidad (si ya existen credenciales se bloquea el envío anónimo y la detección de archivo repetido usa hash, no el nombre).
 - **Módulo de Reenvío Autenticado**
   - Solicita login cuando el CCT/correo ya registró una primera carga válida.
   - Permite subir nuevos archivos tras autenticarse.
 - **Motor de Validación**
-  - 9 verificaciones (CCT, correo, nivel, campos/columnas obligatorias, valores 0–3, estructura general, número/nombre de hojas, consistencia interna).
-  - Rechazo inmediato con PDF de errores cuando falle.
+  - 10 verificaciones (CCT, correo, nivel, campos/columnas obligatorias, valores 0–3, estructura general, número/nombre de hojas, consistencia interna y **hash de contenido** para diferenciar archivos con el mismo nombre).
+  - Rechazo inmediato con PDF de errores cuando falle; si el hash coincide con un envío previo del mismo CCT/correo se notifica que el archivo ya fue recibido.
 - **Generador de Credenciales y PDFs**
   - Credenciales solo en primera carga válida (usuario = CCT, contraseña = correo validado).
   - PDFs de confirmación con fecha de consulta (hoy + 4 días) o PDFs de errores.

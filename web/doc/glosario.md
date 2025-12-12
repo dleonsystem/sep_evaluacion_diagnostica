@@ -1,6 +1,6 @@
 # Glosario de Términos – Plataforma de Recepción, Validación y Descarga EIA
 
-- **Archivo de recepción:** Archivo .xlsx enviado por la escuela y almacenado tras pasar las 9 validaciones.
+- **Archivo de recepción:** Archivo .xlsx enviado por la escuela y almacenado tras pasar las 10 validaciones (incluye hash para diferenciar archivos con el mismo nombre).
 - **Archivo de resultados:** ZIP/PDF depositado por el sistema externo para descarga de la escuela.
 - **CCT (Clave del Centro de Trabajo):** Identificador oficial de la escuela; se usa como usuario de acceso a descargas.
 - **Credenciales generadas:** Usuario = CCT y contraseña = correo validado creados solo en la primera carga válida.
@@ -8,7 +8,8 @@
 - **PDF de errores:** Comprobante descargado automáticamente cuando las validaciones fallan.
 - **Plataforma de recepción:** Módulo web que recibe, valida y registra solicitudes sin procesar resultados.
 - **Repositorios separados:** Almacenamientos independientes para archivos recibidos y resultados publicados.
-- **Validaciones (9):** Reglas automáticas sobre CCT, correo, nivel, campos y columnas obligatorias, valores 0–3, estructura general, número/nombre de hojas y consistencia interna.
+- **Validaciones (10):** Reglas automáticas sobre CCT, correo, nivel, campos y columnas obligatorias, valores 0–3, estructura general, número/nombre de hojas, consistencia interna y **huella hash** para distinguir archivos iguales por nombre pero distintos por contenido.
+- **Huella de archivo (hash):** Identificador calculado sobre el binario completo del `.xlsx` que permite saber si un envío es idéntico a otro previo del mismo CCT/correo aunque el nombre del archivo sea igual.
 - **Reenvío autenticado:** Restricción que bloquea envíos anónimos cuando ya existen credenciales para el CCT/correo; requiere login con las credenciales generadas en la primera carga válida para subir nuevos archivos.
 - **SPA (Single Page Application):** Aplicación web de una sola página; el shell se carga una vez y las vistas cambian en el cliente sin recargar todo el documento. En este proyecto se implementa con Angular 19 y signals.
 - **Angular 19 (signals):** Framework para el frontend; habilita el modelo reactivo con signals.

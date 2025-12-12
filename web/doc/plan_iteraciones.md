@@ -8,7 +8,7 @@
 **Objetivos:**
 - Definir visión y alcances conforme al documento `plataforma_recepcion_validacion_descarga_EIA.md`.
 - Identificar actores: escuela anónima/autenticada, sistema externo y operador técnico SEP.
-- Acordar reglas de validación (9 verificaciones) y lineamientos de credenciales/PDFs.
+- Acordar reglas de validación (10 verificaciones, incluyendo huella hash para diferenciar archivos con el mismo nombre) y lineamientos de credenciales/PDFs.
 
 **Entregables:**
 - Documento de Visión v2.0.
@@ -22,7 +22,7 @@
 ## Iteración E1 – Requerimientos y modelo de datos
 
 **Objetivos:**
-- Completar SRS v2.0 con reglas de validación, generación de credenciales, control de reenvíos autenticados y repositorios separados.
+- Completar SRS v2.0 con reglas de validación (incluida huella hash), generación de credenciales, control de reenvíos autenticados y repositorios separados.
 - Definir modelo de datos para solicitudes, credenciales, ligas de descarga y bitácora.
 - Ajustar casos de uso detallados para carga anónima y descargas autenticadas.
 
@@ -50,8 +50,8 @@
 
 **Objetivos:**
 - Implementar carga anónima de archivo .xlsx solo para primer envío; bloquear reenvío anónimo si ya existe credencial.
-- Ejecutar 9 validaciones con workers y generar PDF de confirmación/errores.
-- Generar credenciales en primera carga válida y registrar solicitud con consecutivo; pedir login para reenvíos posteriores.
+- Ejecutar 10 validaciones con workers y generar PDF de confirmación/errores (incluye huella hash para distinguir archivos iguales por nombre).
+- Generar credenciales en primera carga válida y registrar solicitud con consecutivo (almacenando hash de archivo); pedir login para reenvíos posteriores y detectar si el archivo es idéntico al previo.
 
 **Entregables:**
 - Pantalla de carga anónima y mensaje en línea.

@@ -9,7 +9,7 @@
 # 1. Introducción
 
 ## 1.1 Propósito
-Detallar los requerimientos funcionales y no funcionales de la plataforma encargada de **recibir archivos .xlsx sin autenticación previa**, validarlos automáticamente, generar credenciales en la **primera carga válida** y publicar las **ligas de descarga** de resultados que son procesados en un sistema externo. Si una escuela ya generó credenciales en una primera carga válida, los reenvíos posteriores **requieren autenticación previa**.
+Detallar los requerimientos funcionales y no funcionales de la plataforma encargada de **recibir archivos .xlsx sin autenticación previa**, validarlos automáticamente, generar credenciales en la **primera carga válida** y publicar las **ligas de descarga** de resultados que son procesados en un sistema externo. Si una escuela ya generó credenciales en una primera carga válida, los reenvíos posteriores **requieren autenticación previa** y, sin importar el nombre del archivo, se distinguen versiones por su **huella de contenido (hash)** para evitar confusiones entre archivos iguales y diferentes.
 
 ## 1.2 Alcance
 La plataforma cubre únicamente el flujo de recepción–validación–descarga de la **segunda aplicación de los Ejercicios Integradores del Aprendizaje (EIA)**:
@@ -32,7 +32,7 @@ La plataforma cubre únicamente el flujo de recepción–validación–descarga 
 # 2. Descripción general
 
 ## 2.1 Perspectiva del producto
-Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend FastAPI en Python 3.12** y **almacenamiento PostgreSQL + Filesystem**. No realiza cálculos educativos; actúa como **pasarela de validación y distribución de archivos**. El backend Python será implementado por otro equipo; el frontend entregará pantallas funcionales con servicios Angular que hoy responden con datos de prueba/localStorage, pero conservan las mismas firmas HTTP para conmutar a FastAPI sin reescritura. La lógica de negocio debe **bloquear reenvíos anónimos** si ya existe una credencial previa para el mismo CCT/correo y solicitar autenticación antes de permitir la nueva carga.
+Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend FastAPI en Python 3.12** y **almacenamiento PostgreSQL + Filesystem**. No realiza cálculos educativos; actúa como **pasarela de validación y distribución de archivos**. El backend Python será implementado por otro equipo; el frontend entregará pantallas funcionales con servicios Angular que hoy responden con datos de prueba/localStorage, pero conservan las mismas firmas HTTP para conmutar a FastAPI sin reescritura. La lógica de negocio debe **bloquear reenvíos anónimos** si ya existe una credencial previa para el mismo CCT/correo, solicitar autenticación antes de permitir la nueva carga y **registrar la huella (hash) de cada archivo** para distinguir versiones aunque el nombre sea idéntico.
 
 ## 2.2 Interfaces del sistema
 
@@ -62,14 +62,14 @@ Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend F
 ## 3.1 Actores
 
 - **Escuela (anónima):** carga archivo .xlsx sin autenticarse cuando es su primer envío; recibe PDF de confirmación/errores.
-- **Escuela autenticada:** usa CCT + contraseña (correo validado en primera carga) para reenviar archivos y descargar resultados publicados.
+- **Escuela autenticada:** usa CCT + contraseña (correo validado en primera carga) para reenviar archivos, cargar nuevas versiones (identificadas por hash) y descargar resultados publicados.
 - **Sistema externo de procesamiento:** genera resultados y deposita ligas/archivos para publicación.
 - **Operador técnico SEP:** supervisa logs y repositorios de archivos.
 
 ## 3.2 Lista de casos de uso (resumen)
 
 - CU-01 Cargar archivo .xlsx sin login (primer envío).
-- CU-02 Validar estructura y contenido (9 verificaciones).
+- CU-02 Validar estructura y contenido (10 verificaciones, incluye hash de archivo).
 - CU-03 Generar credenciales en primera carga válida.
 - CU-04 Emitir PDF de confirmación o errores.
 - CU-05 Registrar solicitud con consecutivo y repositorio de archivos válidos.
@@ -81,7 +81,7 @@ Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend F
 
 # 4. Especificación de reglas de validación
 
-La validación se ejecuta automáticamente tras seleccionar el archivo y mostrar la etiqueta **“Validando tu archivo…”**. Debe incluir las 9 verificaciones siguientes y, antes de procesar, verificar si ya existen credenciales para el **CCT/correo**; en ese caso se exige autenticación y no se permite reenvío anónimo:
+La validación se ejecuta automáticamente tras seleccionar el archivo y mostrar la etiqueta **“Validando tu archivo…”**. Debe incluir las 10 verificaciones siguientes y, antes de procesar, verificar si ya existen credenciales para el **CCT/correo**; en ese caso se exige autenticación y no se permite reenvío anónimo:
 
 1. **CCT** – formato válido.
 2. **Correo** – estructura sintáctica válida.
@@ -92,6 +92,7 @@ La validación se ejecuta automáticamente tras seleccionar el archivo y mostrar
 7. **Estructura general del archivo** – formato .xlsx y disposición esperada.
 8. **Número y nombre de hojas** – coinciden con el nivel.
 9. **Consistencia interna** – datos alineados entre hojas.
+10. **Huella de archivo (hash)** – se calcula sobre el binario completo para distinguir archivos distintos aunque tengan el mismo nombre; si el hash coincide con un envío previo del mismo CCT/correo se considera el mismo archivo y se notifica que ya fue recibido.
 
 Si la estructura o los valores no cumplen, el archivo se **rechaza** y se entrega PDF de errores.
 
@@ -101,12 +102,12 @@ Si la estructura o los valores no cumplen, el archivo se **rechaza** y se entreg
 
 - RF-01: Permitir carga de archivo .xlsx sin autenticación previa **solo cuando no existan credenciales previas para el mismo CCT/correo**.
 - RF-02: Mostrar estado “Validando tu archivo…” mientras se procesa.
-- RF-03: Ejecutar las **9 reglas de validación** descritas en la sección 4.
+- RF-03: Ejecutar las **10 reglas de validación** descritas en la sección 4 (incluida la huella hash para evitar duplicados por nombre).
 - RF-04: Si el archivo es válido, generar **PDF de confirmación** con mensaje, fecha futura de consulta (hoy + 4 días), usuario (CCT), contraseña (correo validado solo en primera carga) y marca de tiempo.
 - RF-05: Si el archivo es inválido, generar **PDF de errores** con detalle de fallas.
 - RF-06: Crear credenciales **solo en la primera carga válida** (usuario = CCT, contraseña = correo validado) y reutilizarlas en cargas posteriores.
 - RF-07: Bloquear reenvíos anónimos cuando ya existan credenciales para el CCT/correo y exigir login previo para permitir la nueva carga.
-- RF-08: Registrar cada carga válida como **solicitud independiente** con consecutivo y guardar el archivo en repositorio de recepción.
+- RF-08: Registrar cada carga válida como **solicitud independiente** con consecutivo, guardar el archivo en repositorio de recepción y **asociar su hash** para diferenciar envíos con nombres repetidos.
 - RF-09: Habilitar autenticación (CCT + contraseña) para reenviar archivos y consultar las ligas de descarga.
 - RF-10: Mostrar **todas las versiones** de resultados que el sistema externo haya depositado, con consecutivo y liga.
 - RF-11: Mantener repositorios separados para archivos recibidos y resultados publicados.
@@ -139,7 +140,7 @@ Si la estructura o los valores no cumplen, el archivo se **rechaza** y se entreg
 # 7. Criterios de aceptación
 
 - Cualquier escuela puede subir un archivo .xlsx y recibir PDF de confirmación o errores sin iniciar sesión **solo si es su primer envío (no existen credenciales previas para su CCT/correo)**.
-- Las 9 reglas de validación se ejecutan y rechazan archivos que no cumplan estructura/valores.
+- Las 10 reglas de validación se ejecutan y rechazan archivos que no cumplan estructura/valores o que sean idénticos a un envío previo (mismo hash para el mismo CCT/correo).
 - La primera carga válida genera credenciales (usuario = CCT, contraseña = correo validado) y las mantiene para descargas futuras y reenvíos autenticados.
 - Cada carga válida queda registrada como solicitud independiente con consecutivo y archivo almacenado.
 - Los reenvíos requieren autenticación cuando ya existen credenciales, y las ligas de descarga provienen del sistema externo y se listan con su versión/consecutivo al autenticarse.

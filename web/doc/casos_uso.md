@@ -13,7 +13,7 @@ flowchart LR
 
     subgraph Sistema[Plataforma EIA]
         CU1[CU-01 Cargar archivo .xlsx sin login]
-        CU2[CU-02 Validar 9 reglas y mostrar estado]
+        CU2[CU-02 Validar 10 reglas y mostrar estado]
         CU3[CU-03 Generar credenciales (1ª carga válida)]
         CU4[CU-04 Emitir PDF de confirmación/errores]
         CU5[CU-05 Registrar solicitud y almacenar archivo]
@@ -47,9 +47,9 @@ flowchart LR
    - Actor: Escuela (anónima)
    - Descripción: Permite seleccionar y cargar el archivo. Dispara validación automática.
 
-2. **CU-02 Validar 9 reglas y mostrar estado**
+2. **CU-02 Validar 10 reglas y mostrar estado**
    - Actor: Escuela (anónima), Operador técnico SEP
-   - Descripción: Ejecuta las nueve verificaciones (CCT, correo, nivel, campos obligatorios por hoja, columnas obligatorias, valores 0–3, estructura general, número/nombre de hojas, consistencia interna) y muestra “Validando tu archivo…”.
+   - Descripción: Ejecuta las verificaciones (CCT, correo, nivel, campos obligatorios por hoja, columnas obligatorias, valores 0–3, estructura general, número/nombre de hojas, consistencia interna y **huella de archivo/hash** para distinguir archivos con el mismo nombre) y muestra “Validando tu archivo…”.
 
 3. **CU-03 Generar credenciales en primera carga válida**
    - Actor: Escuela (anónima)
@@ -65,7 +65,7 @@ flowchart LR
 
 6. **CU-06 Detectar reenvío y requerir login**
    - Actor: Escuela (anónima), Escuela (autenticada)
-   - Descripción: Si existe una credencial previa para el CCT/correo, se bloquea el envío anónimo y se solicita autenticación antes de permitir otro archivo.
+   - Descripción: Si existe una credencial previa para el CCT/correo, se bloquea el envío anónimo y se solicita autenticación antes de permitir otro archivo; el reenvío verifica la **huella hash** para identificar si es exactamente el mismo archivo o una nueva versión aun con el mismo nombre.
 
 7. **CU-07 Autenticarse para reenvío/descargas**
    - Actor: Escuela (autenticada)

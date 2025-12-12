@@ -15,7 +15,7 @@ Definir objetivos, alcance, usuarios, funciones y restricciones de la plataforma
 El sistema realiza:
 
 - **Recepción anónima** de archivos .xlsx con etiqueta “Validando tu archivo…” **solo para el primer envío por CCT/correo**.
-- **Validación automática** con 9 verificaciones (CCT, correo, nivel, campos y columnas obligatorias, valores 0–3, estructura general, número/nombre de hojas y consistencia interna).
+- **Validación automática** con 10 verificaciones (CCT, correo, nivel, campos y columnas obligatorias, valores 0–3, estructura general, número/nombre de hojas, consistencia interna y **huella hash** para distinguir archivos con el mismo nombre).
 - **Generación de credenciales** solo en la primera carga válida (usuario = CCT validado, contraseña = correo validado; no se regenera en cargas posteriores).
 - **Emisión de PDFs** de confirmación (mensaje, fecha hoy + 4 días, usuario/contraseña, marca de tiempo) o de errores cuando aplica.
 - **Registro de solicitudes**: cada carga válida es independiente con consecutivo; repositorio de archivos recibidos.
@@ -85,7 +85,7 @@ Aplicación web de tres capas con **Angular 19 (signals)**, **FastAPI (Python 3.
 
 ## 4.2 Funciones principales (vista de negocio)
 - Cargar archivo .xlsx sin autenticación **solo para el primer envío del CCT/correo**.
-- Ejecutar 9 validaciones y mostrar estado “Validando tu archivo…”.
+- Ejecutar 10 validaciones y mostrar estado “Validando tu archivo…” (incluye hash para detectar archivos idénticos).
 - Generar PDF de confirmación o errores y descargarlo automáticamente.
 - Crear credenciales en la primera carga válida y mantenerlas en cargas posteriores.
 - Registrar cada solicitud con consecutivo y almacenar el archivo en repositorio de recepción.
@@ -103,7 +103,7 @@ Aplicación web de tres capas con **Angular 19 (signals)**, **FastAPI (Python 3.
 
 ## 5.1 Requerimientos funcionales (resumen)
 - RF-01: Recepción anónima de archivo .xlsx con etiqueta de validación en línea **solo en el primer envío**; si ya existe credencial se exige login antes de reenviar.
-- RF-02: Validación automática con 9 reglas y rechazo con PDF de errores cuando falle.
+- RF-02: Validación automática con 10 reglas (incluye hash) y rechazo con PDF de errores cuando falle.
 - RF-03: Generación de credenciales solo en primera carga válida (usuario = CCT, contraseña = correo validado).
 - RF-04: Emisión de PDF de confirmación con fecha de consulta (hoy + 4 días), usuario, contraseña y marca de tiempo.
 - RF-05: Registro de solicitudes con consecutivo y almacenamiento de archivos válidos en repositorio de recepción.
