@@ -9,6 +9,7 @@
 - **Plataforma de recepción:** Módulo web que recibe, valida y registra solicitudes sin procesar resultados.
 - **Repositorios separados:** Almacenamientos independientes para archivos recibidos y resultados publicados.
 - **Validaciones (9):** Reglas automáticas sobre CCT, correo, nivel, campos y columnas obligatorias, valores 0–3, estructura general, número/nombre de hojas y consistencia interna.
+- **SPA (Single Page Application):** Aplicación web de una sola página; el shell se carga una vez y las vistas cambian en el cliente sin recargar todo el documento. En este proyecto se implementa con Angular 19 y signals.
 - **Angular 19 (signals):** Framework para el frontend; habilita el modelo reactivo con signals.
 - **Guía gráfica gob.mx v3:** Estándar de diseño y estilos de la Administración Pública; se incluye desde CDN (`main.css`, `gobmx.js`, `main.js`) en `index.html`.
 - **FastAPI:** Framework de backend en Python 3.12 utilizado para la API.

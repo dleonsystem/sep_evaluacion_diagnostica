@@ -58,6 +58,16 @@
 - Workers de validación + generación de PDFs.
 - Repositorio de recepción operativo (filesystem + registros en PostgreSQL).
 
+**Plan de trabajo detallado – SPA Angular 19 (signals) con guía gob.mx v3**
+- **Punto de partida:** Angular CLI 19.2.x ya instalado; `index.html` incluye los assets de la guía gráfica gob.mx v3 desde CDN.
+- **¿Qué es SPA?** Una Single Page Application: el shell se renderiza una vez y las vistas cambian en el navegador (sin recargar toda la página) usando enrutamiento de Angular.
+- **Pasos previstos:**
+  1. Definir rutas iniciales (`/` carga anónima, `/login`, `/descargas`) y un layout base que use los estilos gob.mx ya cargados.
+  2. Crear el componente de inicio/carga con signals para estado de archivo, progreso y mensajes ("Validando tu archivo...").
+  3. Implementar servicios HTTP y de estado con signals para enviar el `.xlsx` al backend y mostrar las 9 validaciones.
+  4. Preparar componentes de autenticación y listado de descargas reutilizando la guía gráfica (tablas, alerts, botones).
+  5. Validar accesibilidad y consistencia visual con la guía gráfica en navegación SPA (sin recargas completas).
+
 ## Iteración C2 – Portal de descargas y publicación de ligas
 
 **Objetivos:**
