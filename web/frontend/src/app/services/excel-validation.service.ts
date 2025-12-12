@@ -153,15 +153,15 @@ export class ExcelValidationService {
     const errores: string[] = [];
     const registros: AlumnoValidado[] = [];
 
-    const datos = xlsx.utils.sheet_to_json<Record<string, any>>(sheet, {
+    const datos = xlsx.utils.sheet_to_json(sheet, {
       range: 9,
       header: 'A',
       defval: ''
-    });
+    }) as Array<Record<string, string>>;
 
     const filasIniciales = 10; // la fila 10 en Excel es el primer registro
 
-    datos.forEach((fila, indice) => {
+    datos.forEach((fila: Record<string, string>, indice: number) => {
       const erroresFila: string[] = [];
       const numeroLista = this.limpiarTexto(fila['B']);
       const nombre = this.limpiarTexto(fila['C']);
