@@ -148,7 +148,7 @@ export class CargaMasivaComponent implements OnInit {
     try {
       const buffer = await file.arrayBuffer();
       const resultado = await this.excelValidationService.validarPreescolar(buffer);
-      this.procesarResultado(resultado);
+      await this.procesarResultado(resultado);
     } catch (error) {
       this.estado = 'error';
       this.errores = [
@@ -256,7 +256,7 @@ export class CargaMasivaComponent implements OnInit {
     }
   }
 
-  private procesarResultado(resultado: ResultadoValidacion): void {
+  private async procesarResultado(resultado: ResultadoValidacion): Promise<void> {
     this.errores = resultado.errores;
     this.advertencias = resultado.advertencias;
     this.ultimoCctValidado = null;
@@ -279,6 +279,13 @@ export class CargaMasivaComponent implements OnInit {
           ...this.errores,
           'El correo del formulario debe coincidir con el capturado en el archivo.'
         ];
+
+        await Swal.fire({
+          icon: 'error',
+          title: 'Correo no coincide',
+          text: 'Para tu primer envío usa el mismo correo en la plantilla y en el formulario.'
+        });
+
         return;
       }
 

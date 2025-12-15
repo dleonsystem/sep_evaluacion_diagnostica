@@ -64,7 +64,10 @@ export class ArchivoStorageService {
     const registros = registrosPorCorreo[emailNormalizado] ?? [];
     await this.agregarHashesFaltantes(registros);
 
-    const duplicado = registros.find((registroGuardado) => registroGuardado.hash === hash);
+    const duplicado = registros.find(
+      (registroGuardado) =>
+        registroGuardado.hash === hash && registroGuardado.cct === cctNormalizado
+    );
 
     if (duplicado) {
       if (!opciones?.forzarReemplazo) {
@@ -72,7 +75,10 @@ export class ArchivoStorageService {
       }
 
       const registrosSinDuplicado = registros
-        .filter((registroGuardado) => registroGuardado.hash !== hash)
+        .filter(
+          (registroGuardado) =>
+            !(registroGuardado.hash === hash && registroGuardado.cct === cctNormalizado)
+        )
         .slice(0, 4);
       registrosSinDuplicado.unshift(registro);
       registrosPorCorreo[emailNormalizado] = registrosSinDuplicado;

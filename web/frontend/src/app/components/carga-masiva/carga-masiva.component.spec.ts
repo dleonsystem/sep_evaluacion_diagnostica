@@ -3,6 +3,7 @@ import { CargaMasivaComponent } from './carga-masiva.component';
 import { ExcelValidationService, ResultadoValidacion } from '../../services/excel-validation.service';
 import { ArchivoStorageService } from '../../services/archivo-storage.service';
 import { AuthService } from '../../services/auth.service';
+import Swal from 'sweetalert2';
 
 const resultadoValido: ResultadoValidacion = {
   ok: true,
@@ -19,8 +20,10 @@ const resultadoValido: ResultadoValidacion = {
 };
 
 class ExcelValidationServiceStub {
+  resultado: ResultadoValidacion = resultadoValido;
+
   validarPreescolar(): Promise<ResultadoValidacion> {
-    return Promise.resolve(resultadoValido);
+    return Promise.resolve(this.resultado);
   }
 }
 
@@ -49,6 +52,10 @@ class AuthServiceStub {
 
   registrarCarga(): { password: string; esNuevo: boolean } {
     return { password: 'demoPass', esNuevo: true };
+  }
+
+  obtenerCuenta(): null {
+    return null;
   }
 }
 
@@ -86,5 +93,32 @@ describe('CargaMasivaComponent', () => {
     expect(component.estado).toBe('error');
     expect(component.errores[0]).toContain('Formato no permitido');
     expect(component.archivoSeleccionado).toBeNull();
+  });
+
+  it('should block when Excel email differs from the form', async () => {
+    const excelService = TestBed.inject(
+      ExcelValidationService
+    ) as unknown as ExcelValidationServiceStub;
+    excelService.resultado = {
+      ...resultadoValido,
+      esc: { ...resultadoValido.esc!, correo: 'otro@correo.mx' }
+    };
+
+    const swalSpy = spyOn(Swal, 'fire').and.resolveTo({} as any);
+
+    component.correoControl.setValue('demo@correo.mx');
+    const input = document.createElement('input');
+    const archivo = new File(['contenido'], 'archivo.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+    Object.defineProperty(input, 'files', { value: [archivo] });
+
+    await component.onArchivoSeleccionado({ target: input } as unknown as Event);
+
+    expect(component.estado).toBe('error');
+    expect(component.errores).toContain(
+      'El correo del formulario debe coincidir con el capturado en el archivo.'
+    );
+    expect(swalSpy).toHaveBeenCalled();
   });
 });
