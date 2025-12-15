@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { Router, RouterModule } from '@angular/router';
 import { ExcelValidationService, ResultadoValidacion } from '../../services/excel-validation.service';
 import { ArchivoStorageService } from '../../services/archivo-storage.service';
+import { AuthService } from '../../services/auth.service';
 import Swal from 'sweetalert2';
 
 interface SelectedFile {
@@ -25,7 +26,7 @@ interface ResultadoExito {
   templateUrl: './carga-masiva.component.html',
   styleUrl: './carga-masiva.component.scss'
 })
-export class CargaMasivaComponent {
+export class CargaMasivaComponent implements OnInit {
   readonly extensionesPermitidas = ['.xlsx'];
   readonly pesoMaximoMb = 10;
 
@@ -44,8 +45,17 @@ export class CargaMasivaComponent {
 
   constructor(
     private readonly excelValidationService: ExcelValidationService,
-    private readonly archivoStorageService: ArchivoStorageService
+    private readonly archivoStorageService: ArchivoStorageService,
+    private readonly authService: AuthService,
+    private readonly router: Router
   ) {}
+
+  ngOnInit(): void {
+    if (this.authService.requiereLoginParaNuevaCarga()) {
+      void this.router.navigate(['/login'], { queryParams: { redirect: '/carga-masiva' } });
+      return;
+    }
+  }
 
   async onArchivoSeleccionado(evento: Event): Promise<void> {
     const input = evento.target as HTMLInputElement;
@@ -157,6 +167,30 @@ export class CargaMasivaComponent {
     if (!resultado.ok || !resultado.esc) {
       this.estado = 'error';
       this.mensajeInformativo = null;
+      return;
+    }
+
+    if (!this.authService.coincidenCredenciales(resultado.esc.cct, resultado.esc.correo)) {
+      this.estado = 'error';
+      this.mensajeInformativo = null;
+      this.errores = [
+        ...this.errores,
+        'El CCT y el correo deben coincidir con los registrados en tu primer envío.'
+      ];
+      return;
+    }
+
+    try {
+      this.authService.registrarCredenciales(resultado.esc.cct, resultado.esc.correo);
+    } catch (error) {
+      this.estado = 'error';
+      this.mensajeInformativo = null;
+      this.errores = [
+        ...this.errores,
+        error instanceof Error
+          ? error.message
+          : 'No pudimos validar tus credenciales. Usa el CCT y correo originales.'
+      ];
       return;
     }
 
