@@ -2,7 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { ExcelValidationService, ResultadoValidacion } from '../../services/excel-validation.service';
-import { ArchivoStorageService } from '../../services/archivo-storage.service';
+import {
+  ArchivoDuplicadoError,
+  ArchivoStorageService,
+  ResultadoGuardado
+} from '../../services/archivo-storage.service';
 import { AuthService } from '../../services/auth.service';
 import Swal from 'sweetalert2';
 
@@ -62,6 +66,18 @@ export class CargaMasivaComponent implements OnInit {
     const file = input.files?.[0];
 
     this.resetMensajes();
+
+    if (this.authService.requiereLoginParaNuevaCarga()) {
+      await Swal.fire({
+        icon: 'info',
+        title: 'Inicia sesión',
+        text: 'Ya registraste un envío. Inicia sesión para cargar un nuevo archivo.',
+        confirmButtonText: 'Ir a login'
+      });
+      void this.router.navigate(['/login'], { queryParams: { redirect: '/carga-masiva' } });
+      this.limpiarSeleccion(input);
+      return;
+    }
 
     if (!file) {
       return;
@@ -134,18 +150,37 @@ export class CargaMasivaComponent implements OnInit {
 
     try {
       const resultado = await this.archivoStorageService.guardarArchivoPreescolar(this.archivoOriginal);
-      this.rutaGuardado = resultado.rutaVirtual;
-      this.modoGuardado = resultado.modo;
-      this.notaGuardado = resultado.nota;
-      this.mensajeInformativo =
-        'El archivo se conservó en el almacenamiento local del navegador. Copia el archivo a assets/archivos/preescolar/ en tu proyecto si lo necesitas.';
-      await Swal.fire({
-        icon: 'success',
-        title: 'Archivo guardado',
-        text: 'Se guardó una copia en el almacenamiento local del navegador.',
-        footer: this.rutaGuardado ? `Ruta sugerida: ${this.rutaGuardado}` : undefined
-      });
+      await this.mostrarConfirmacionGuardado(resultado, 'guardado');
     } catch (error) {
+      if (error instanceof ArchivoDuplicadoError) {
+        const confirmacion = await Swal.fire({
+          icon: 'question',
+          title: 'Archivo ya existe',
+          text: 'Ya tienes una copia con el mismo contenido. ¿Quieres sustituirla?',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, sustituir',
+          cancelButtonText: 'Cancelar'
+        });
+
+        if (confirmacion.isConfirmed) {
+          try {
+            const resultadoReemplazo = await this.archivoStorageService.guardarArchivoPreescolar(
+              this.archivoOriginal,
+              { forzarReemplazo: true }
+            );
+            await this.mostrarConfirmacionGuardado(resultadoReemplazo, 'reemplazo');
+            return;
+          } catch (reemplazoError) {
+            this.errorGuardado =
+              reemplazoError instanceof Error
+                ? reemplazoError.message
+                : 'No se pudo sustituir el archivo guardado.';
+          }
+        }
+
+        return;
+      }
+
       this.errorGuardado =
         error instanceof Error
           ? error.message
@@ -226,5 +261,26 @@ export class CargaMasivaComponent implements OnInit {
     this.rutaGuardado = null;
     this.errorGuardado = null;
     this.modoGuardado = null;
+  }
+
+  private async mostrarConfirmacionGuardado(
+    resultado: ResultadoGuardado,
+    tipo: 'guardado' | 'reemplazo'
+  ): Promise<void> {
+    this.rutaGuardado = resultado.rutaVirtual;
+    this.modoGuardado = resultado.modo;
+    this.notaGuardado = resultado.nota;
+    this.mensajeInformativo =
+      'El archivo se conservó en el almacenamiento local del navegador. Copia el archivo a assets/archivos/preescolar/ en tu proyecto si lo necesitas.';
+
+    await Swal.fire({
+      icon: 'success',
+      title: tipo === 'reemplazo' ? 'Archivo sustituido' : 'Archivo guardado',
+      text:
+        tipo === 'reemplazo'
+          ? 'Se reemplazó la copia previa con la nueva versión.'
+          : 'Se guardó una copia en el almacenamiento local del navegador.',
+      footer: this.rutaGuardado ? `Ruta sugerida: ${this.rutaGuardado}` : undefined
+    });
   }
 }

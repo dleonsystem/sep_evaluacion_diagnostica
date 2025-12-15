@@ -17,11 +17,21 @@ export interface ResultadoGuardado {
   nota: string;
 }
 
+export class ArchivoDuplicadoError extends Error {
+  constructor(public readonly registro: RegistroArchivo) {
+    super('Este archivo ya fue guardado anteriormente.');
+    this.name = 'ArchivoDuplicadoError';
+  }
+}
+
 @Injectable({ providedIn: 'root' })
 export class ArchivoStorageService {
   private readonly storageKey = 'archivos-preescolar';
 
-  async guardarArchivoPreescolar(archivo: File): Promise<ResultadoGuardado> {
+  async guardarArchivoPreescolar(
+    archivo: File,
+    opciones?: { forzarReemplazo?: boolean }
+  ): Promise<ResultadoGuardado> {
     const rutaDestino = `assets/archivos/preescolar/${archivo.name}`;
     const buffer = await archivo.arrayBuffer();
     const hash = await this.calcularHash(buffer);
@@ -38,8 +48,25 @@ export class ArchivoStorageService {
     const registros = this.obtenerRegistros();
     await this.agregarHashesFaltantes(registros);
 
-    if (registros.some((registroGuardado) => registroGuardado.hash === hash)) {
-      throw new Error('Este archivo ya fue guardado anteriormente. Selecciona un archivo diferente.');
+    const duplicado = registros.find((registroGuardado) => registroGuardado.hash === hash);
+
+    if (duplicado) {
+      if (!opciones?.forzarReemplazo) {
+        throw new ArchivoDuplicadoError(duplicado);
+      }
+
+      const registrosSinDuplicado = registros.filter((registroGuardado) => registroGuardado.hash !== hash);
+      registrosSinDuplicado.unshift(registro);
+      localStorage.setItem(this.storageKey, JSON.stringify(registrosSinDuplicado.slice(0, 5)));
+
+      return {
+        rutaVirtual: rutaDestino,
+        fechaGuardado: new Date(),
+        tamano: archivo.size,
+        modo: 'localStorage',
+        nota:
+          'Se reemplazó el archivo previo porque el contenido es idéntico. Se mantuvo la última versión en localStorage para moverla manualmente.'
+      };
     }
 
     registros.unshift(registro);

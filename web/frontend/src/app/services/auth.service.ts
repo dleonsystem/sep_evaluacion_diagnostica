@@ -46,7 +46,7 @@ export class AuthService {
       this.credencialesKey,
       JSON.stringify({ cct: cctNormalizado, correo: correoNormalizado })
     );
-    this.marcarSesionActiva();
+    this.cerrarSesion();
   }
 
   coincidenCredenciales(cct: string, correo: string): boolean {
