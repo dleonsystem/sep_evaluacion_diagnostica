@@ -56,6 +56,7 @@ describe('CargaMasivaComponent', () => {
   });
 
   it('should reject files with unsupported extensions', async () => {
+    component.correoControl.setValue('demo@correo.mx');
     const input = document.createElement('input');
     const archivo = new File(['contenido'], 'archivo.txt', { type: 'text/plain' });
     Object.defineProperty(input, 'files', { value: [archivo] });

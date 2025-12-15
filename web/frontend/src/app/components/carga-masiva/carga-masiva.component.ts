@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ExcelValidationService, ResultadoValidacion } from '../../services/excel-validation.service';
 import {
@@ -26,13 +27,20 @@ interface ResultadoExito {
 @Component({
   selector: 'app-carga-masiva',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule],
   templateUrl: './carga-masiva.component.html',
   styleUrl: './carga-masiva.component.scss'
 })
 export class CargaMasivaComponent implements OnInit {
   readonly extensionesPermitidas = ['.xlsx'];
   readonly pesoMaximoMb = 10;
+  private readonly correoKey = 'correo-carga-preescolar';
+  private readonly correoPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  readonly correoControl = new FormControl('', {
+    nonNullable: true,
+    validators: [Validators.required, Validators.email, Validators.pattern(this.correoPattern)]
+  });
 
   archivoSeleccionado: SelectedFile | null = null;
   archivoOriginal: File | null = null;
@@ -59,6 +67,20 @@ export class CargaMasivaComponent implements OnInit {
       void this.router.navigate(['/login'], { queryParams: { redirect: '/carga-masiva' } });
       return;
     }
+
+    const correoGuardado = localStorage.getItem(this.correoKey);
+    if (correoGuardado) {
+      this.correoControl.setValue(correoGuardado);
+    }
+
+    this.correoControl.valueChanges.subscribe((value) => {
+      const correo = value?.trim();
+      if (correo) {
+        localStorage.setItem(this.correoKey, correo);
+      } else {
+        localStorage.removeItem(this.correoKey);
+      }
+    });
   }
 
   async onArchivoSeleccionado(evento: Event): Promise<void> {
@@ -66,6 +88,17 @@ export class CargaMasivaComponent implements OnInit {
     const file = input.files?.[0];
 
     this.resetMensajes();
+
+    if (!this.correoControl.valid) {
+      this.correoControl.markAllAsTouched();
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Correo requerido',
+        text: 'Ingresa un correo válido antes de seleccionar el archivo.'
+      });
+      this.limpiarSeleccion(input);
+      return;
+    }
 
     if (this.authService.requiereLoginParaNuevaCarga()) {
       await Swal.fire({
@@ -132,6 +165,17 @@ export class CargaMasivaComponent implements OnInit {
   }
 
   async guardarArchivo(): Promise<void> {
+    if (!this.correoControl.valid) {
+      this.correoControl.markAllAsTouched();
+      this.errorGuardado = 'Agrega un correo electrónico válido para continuar con la carga.';
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Correo requerido',
+        text: this.errorGuardado
+      });
+      return;
+    }
+
     if (!this.archivoOriginal || this.estado !== 'exito') {
       this.errorGuardado = 'Primero valida correctamente tu archivo para poder guardarlo.';
       await Swal.fire({
