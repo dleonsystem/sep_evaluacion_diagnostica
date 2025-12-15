@@ -75,6 +75,18 @@ export class ArchivoStorageService {
     URL.revokeObjectURL(url);
   }
 
+  eliminarRegistro(registroAEliminar: RegistroArchivo): void {
+    const registrosActualizados = this.obtenerRegistros().filter(
+      (registro) =>
+        !(
+          registro.nombre === registroAEliminar.nombre &&
+          registro.fechaGuardado === registroAEliminar.fechaGuardado
+        )
+    );
+
+    localStorage.setItem(this.storageKey, JSON.stringify(registrosActualizados));
+  }
+
   private async convertirA64(archivo: File): Promise<string> {
     const buffer = await archivo.arrayBuffer();
     const bytes = new Uint8Array(buffer);

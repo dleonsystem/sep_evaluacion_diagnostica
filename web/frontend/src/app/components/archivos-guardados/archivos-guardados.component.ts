@@ -46,4 +46,13 @@ export class ArchivosGuardadosComponent implements OnInit {
         error instanceof Error ? error.message : 'No se pudo descargar el archivo seleccionado.';
     }
   }
+
+  eliminar(registro: RegistroArchivo): void {
+    try {
+      this.archivoStorageService.eliminarRegistro(registro);
+      this.cargarRegistros();
+    } catch (error) {
+      this.mensajeError = error instanceof Error ? error.message : 'No se pudo eliminar el archivo seleccionado.';
+    }
+  }
 }
