@@ -6,6 +6,7 @@ export interface RegistroArchivo {
   fechaGuardado: string;
   ruta: string;
   contenidoBase64: string;
+  hash: string;
 }
 
 export interface ResultadoGuardado {
@@ -22,16 +23,25 @@ export class ArchivoStorageService {
 
   async guardarArchivoPreescolar(archivo: File): Promise<ResultadoGuardado> {
     const rutaDestino = `assets/archivos/preescolar/${archivo.name}`;
-    const contenido = await this.convertirA64(archivo);
+    const buffer = await archivo.arrayBuffer();
+    const hash = await this.calcularHash(buffer);
+    const contenido = this.arrayBufferABase64(buffer);
     const registro: RegistroArchivo = {
       nombre: archivo.name,
       tamano: archivo.size,
       fechaGuardado: new Date().toISOString(),
       ruta: rutaDestino,
-      contenidoBase64: contenido
+      contenidoBase64: contenido,
+      hash
     };
 
     const registros = this.obtenerRegistros();
+    await this.agregarHashesFaltantes(registros);
+
+    if (registros.some((registroGuardado) => registroGuardado.hash === hash)) {
+      throw new Error('Este archivo ya fue guardado anteriormente. Selecciona un archivo diferente.');
+    }
+
     registros.unshift(registro);
     localStorage.setItem(this.storageKey, JSON.stringify(registros.slice(0, 5)));
 
@@ -87,8 +97,23 @@ export class ArchivoStorageService {
     localStorage.setItem(this.storageKey, JSON.stringify(registrosActualizados));
   }
 
-  private async convertirA64(archivo: File): Promise<string> {
-    const buffer = await archivo.arrayBuffer();
+  private async agregarHashesFaltantes(registros: RegistroArchivo[]): Promise<void> {
+    let actualizado = false;
+
+    for (const registro of registros) {
+      if (!registro.hash) {
+        const buffer = this.base64AArrayBuffer(registro.contenidoBase64);
+        registro.hash = await this.calcularHash(buffer);
+        actualizado = true;
+      }
+    }
+
+    if (actualizado) {
+      localStorage.setItem(this.storageKey, JSON.stringify(registros));
+    }
+  }
+
+  private arrayBufferABase64(buffer: ArrayBuffer): string {
     const bytes = new Uint8Array(buffer);
     let binary = '';
 
@@ -97,6 +122,23 @@ export class ArchivoStorageService {
     });
 
     return btoa(binary);
+  }
+
+  private base64AArrayBuffer(base64: string): ArrayBuffer {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+
+    return bytes.buffer;
+  }
+
+  private async calcularHash(buffer: ArrayBuffer): Promise<string> {
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((byte) => byte.toString(16).padStart(2, '0')).join('');
   }
 
   private base64ABlob(base64: string): Blob {
