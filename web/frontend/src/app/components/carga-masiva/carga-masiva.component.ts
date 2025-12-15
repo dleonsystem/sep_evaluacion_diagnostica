@@ -3,6 +3,7 @@ import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ExcelValidationService, ResultadoValidacion } from '../../services/excel-validation.service';
 import { ArchivoStorageService } from '../../services/archivo-storage.service';
+import Swal from 'sweetalert2';
 
 interface SelectedFile {
   name: string;
@@ -107,6 +108,11 @@ export class CargaMasivaComponent {
   async guardarArchivo(): Promise<void> {
     if (!this.archivoOriginal || this.estado !== 'exito') {
       this.errorGuardado = 'Primero valida correctamente tu archivo para poder guardarlo.';
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Validación pendiente',
+        text: this.errorGuardado
+      });
       return;
     }
 
@@ -123,11 +129,22 @@ export class CargaMasivaComponent {
       this.notaGuardado = resultado.nota;
       this.mensajeInformativo =
         'El archivo se conservó en el almacenamiento local del navegador. Copia el archivo a assets/archivos/preescolar/ en tu proyecto si lo necesitas.';
+      await Swal.fire({
+        icon: 'success',
+        title: 'Archivo guardado',
+        text: 'Se guardó una copia en el almacenamiento local del navegador.',
+        footer: this.rutaGuardado ? `Ruta sugerida: ${this.rutaGuardado}` : undefined
+      });
     } catch (error) {
       this.errorGuardado =
         error instanceof Error
           ? error.message
           : 'No se pudo guardar el archivo localmente. Inténtalo de nuevo.';
+      await Swal.fire({
+        icon: 'error',
+        title: 'No se pudo guardar',
+        text: this.errorGuardado
+      });
     } finally {
       this.guardando = false;
     }
