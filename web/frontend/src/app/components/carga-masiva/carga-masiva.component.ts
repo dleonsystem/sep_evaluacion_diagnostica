@@ -20,7 +20,7 @@ interface SelectedFile {
 interface ResultadoExito {
   mensaje: string;
   fechaDisponible: Date;
-  credenciales: { usuario: string; contrasena: string };
+  credenciales: { usuario: string; contrasena: string; esNueva: boolean };
   totalAlumnos: number;
 }
 
@@ -54,6 +54,7 @@ export class CargaMasivaComponent implements OnInit {
   errorGuardado: string | null = null;
   modoGuardado: 'localStorage' | null = null;
   notaGuardado: string | null = null;
+  ultimoCctValidado: string | null = null;
 
   constructor(
     private readonly excelValidationService: ExcelValidationService,
@@ -63,14 +64,13 @@ export class CargaMasivaComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    if (this.authService.requiereLoginParaNuevaCarga()) {
-      void this.router.navigate(['/login'], { queryParams: { redirect: '/carga-masiva' } });
-      return;
-    }
-
     const correoGuardado = localStorage.getItem(this.correoKey);
     if (correoGuardado) {
       this.correoControl.setValue(correoGuardado);
+      if (this.authService.requiereLoginParaCorreo(correoGuardado)) {
+        void this.router.navigate(['/login'], { queryParams: { redirect: '/carga-masiva' } });
+        return;
+      }
     }
 
     this.correoControl.valueChanges.subscribe((value) => {
@@ -100,11 +100,11 @@ export class CargaMasivaComponent implements OnInit {
       return;
     }
 
-    if (this.authService.requiereLoginParaNuevaCarga()) {
+    if (this.authService.requiereLoginParaCorreo(this.correoControl.value)) {
       await Swal.fire({
         icon: 'info',
         title: 'Inicia sesión',
-        text: 'Ya registraste un envío. Inicia sesión para cargar un nuevo archivo.',
+        text: 'Ya registraste un envío con este correo. Inicia sesión para cargar un nuevo archivo.',
         confirmButtonText: 'Ir a login'
       });
       void this.router.navigate(['/login'], { queryParams: { redirect: '/carga-masiva' } });
@@ -186,6 +186,16 @@ export class CargaMasivaComponent implements OnInit {
       return;
     }
 
+    if (!this.ultimoCctValidado) {
+      this.errorGuardado = 'Vuelve a validar el archivo para recuperar el CCT asociado.';
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Datos incompletos',
+        text: this.errorGuardado
+      });
+      return;
+    }
+
     this.guardando = true;
     this.errorGuardado = null;
     this.rutaGuardado = null;
@@ -193,7 +203,10 @@ export class CargaMasivaComponent implements OnInit {
     this.notaGuardado = null;
 
     try {
-      const resultado = await this.archivoStorageService.guardarArchivoPreescolar(this.archivoOriginal);
+      const resultado = await this.archivoStorageService.guardarArchivoPreescolar(this.archivoOriginal, {
+        email: this.authService.normalizarCorreo(this.correoControl.value),
+        cct: this.ultimoCctValidado
+      });
       await this.mostrarConfirmacionGuardado(resultado, 'guardado');
     } catch (error) {
       if (error instanceof ArchivoDuplicadoError) {
@@ -210,6 +223,10 @@ export class CargaMasivaComponent implements OnInit {
           try {
             const resultadoReemplazo = await this.archivoStorageService.guardarArchivoPreescolar(
               this.archivoOriginal,
+              {
+                email: this.authService.normalizarCorreo(this.correoControl.value),
+                cct: this.ultimoCctValidado
+              },
               { forzarReemplazo: true }
             );
             await this.mostrarConfirmacionGuardado(resultadoReemplazo, 'reemplazo');
@@ -242,6 +259,7 @@ export class CargaMasivaComponent implements OnInit {
   private procesarResultado(resultado: ResultadoValidacion): void {
     this.errores = resultado.errores;
     this.advertencias = resultado.advertencias;
+    this.ultimoCctValidado = null;
 
     if (!resultado.ok || !resultado.esc) {
       this.estado = 'error';
@@ -249,18 +267,37 @@ export class CargaMasivaComponent implements OnInit {
       return;
     }
 
-    if (!this.authService.coincidenCredenciales(resultado.esc.cct, resultado.esc.correo)) {
-      this.estado = 'error';
-      this.mensajeInformativo = null;
-      this.errores = [
-        ...this.errores,
-        'El CCT y el correo deben coincidir con los registrados en tu primer envío.'
-      ];
-      return;
-    }
-
     try {
-      this.authService.registrarCredenciales(resultado.esc.cct, resultado.esc.correo);
+      const correoFormulario = this.authService.normalizarCorreo(this.correoControl.value);
+      const correoArchivo = this.authService.normalizarCorreo(resultado.esc.correo);
+      const cctNormalizado = (resultado.esc.cct ?? '').trim().toUpperCase();
+
+      if (correoFormulario !== correoArchivo) {
+        this.estado = 'error';
+        this.mensajeInformativo = null;
+        this.errores = [
+          ...this.errores,
+          'El correo del formulario debe coincidir con el capturado en el archivo.'
+        ];
+        return;
+      }
+
+      const registroCuenta = this.authService.registrarCarga(correoFormulario, cctNormalizado);
+      this.ultimoCctValidado = cctNormalizado;
+      const fechaDisponible = this.calcularFechaDisponible();
+
+      this.estado = 'exito';
+      this.mensajeInformativo = 'Tu archivo ha sido validado correctamente.';
+      this.resultadoExito = {
+        mensaje: `Podrás consultar tus resultados a partir del día: ${fechaDisponible.toLocaleDateString()}`,
+        fechaDisponible,
+        credenciales: {
+          usuario: correoFormulario,
+          contrasena: registroCuenta.password,
+          esNueva: registroCuenta.esNuevo
+        },
+        totalAlumnos: resultado.alumnos?.length ?? 0
+      };
     } catch (error) {
       this.estado = 'error';
       this.mensajeInformativo = null;
@@ -268,23 +305,9 @@ export class CargaMasivaComponent implements OnInit {
         ...this.errores,
         error instanceof Error
           ? error.message
-          : 'No pudimos validar tus credenciales. Usa el CCT y correo originales.'
+          : 'No pudimos validar tus credenciales. Usa el correo de tu primer envío.'
       ];
-      return;
     }
-
-    const fechaDisponible = this.calcularFechaDisponible();
-    this.estado = 'exito';
-    this.mensajeInformativo = 'Tu archivo ha sido validado correctamente.';
-    this.resultadoExito = {
-      mensaje: `Podrás consultar tus resultados a partir del día: ${fechaDisponible.toLocaleDateString()}`,
-      fechaDisponible,
-      credenciales: {
-        usuario: resultado.esc.cct,
-        contrasena: resultado.esc.correo
-      },
-      totalAlumnos: resultado.alumnos?.length ?? 0
-    };
   }
 
   private calcularFechaDisponible(): Date {
@@ -305,6 +328,7 @@ export class CargaMasivaComponent implements OnInit {
     this.rutaGuardado = null;
     this.errorGuardado = null;
     this.modoGuardado = null;
+    this.ultimoCctValidado = null;
   }
 
   private async mostrarConfirmacionGuardado(

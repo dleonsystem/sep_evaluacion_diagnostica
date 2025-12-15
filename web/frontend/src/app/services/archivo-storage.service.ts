@@ -7,6 +7,8 @@ export interface RegistroArchivo {
   ruta: string;
   contenidoBase64: string;
   hash: string;
+  cct: string;
+  email: string;
 }
 
 export interface ResultadoGuardado {
@@ -28,24 +30,38 @@ export class ArchivoDuplicadoError extends Error {
 export class ArchivoStorageService {
   private readonly storageKey = 'archivos-preescolar';
 
+  private normalizarCorreo(correo: string): string {
+    return (correo ?? '').trim().toLowerCase();
+  }
+
+  private normalizarCct(cct: string): string {
+    return (cct ?? '').trim().toUpperCase();
+  }
+
   async guardarArchivoPreescolar(
     archivo: File,
+    contexto: { email: string; cct: string },
     opciones?: { forzarReemplazo?: boolean }
   ): Promise<ResultadoGuardado> {
     const rutaDestino = `assets/archivos/preescolar/${archivo.name}`;
     const buffer = await archivo.arrayBuffer();
     const hash = await this.calcularHash(buffer);
     const contenido = this.arrayBufferABase64(buffer);
+    const emailNormalizado = this.normalizarCorreo(contexto.email);
+    const cctNormalizado = this.normalizarCct(contexto.cct);
     const registro: RegistroArchivo = {
       nombre: archivo.name,
       tamano: archivo.size,
       fechaGuardado: new Date().toISOString(),
       ruta: rutaDestino,
       contenidoBase64: contenido,
-      hash
+      hash,
+      cct: cctNormalizado,
+      email: emailNormalizado
     };
 
-    const registros = this.obtenerRegistros();
+    const registrosPorCorreo = this.obtenerMapaRegistros();
+    const registros = registrosPorCorreo[emailNormalizado] ?? [];
     await this.agregarHashesFaltantes(registros);
 
     const duplicado = registros.find((registroGuardado) => registroGuardado.hash === hash);
@@ -55,9 +71,12 @@ export class ArchivoStorageService {
         throw new ArchivoDuplicadoError(duplicado);
       }
 
-      const registrosSinDuplicado = registros.filter((registroGuardado) => registroGuardado.hash !== hash);
+      const registrosSinDuplicado = registros
+        .filter((registroGuardado) => registroGuardado.hash !== hash)
+        .slice(0, 4);
       registrosSinDuplicado.unshift(registro);
-      localStorage.setItem(this.storageKey, JSON.stringify(registrosSinDuplicado.slice(0, 5)));
+      registrosPorCorreo[emailNormalizado] = registrosSinDuplicado;
+      localStorage.setItem(this.storageKey, JSON.stringify(registrosPorCorreo));
 
       return {
         rutaVirtual: rutaDestino,
@@ -70,7 +89,8 @@ export class ArchivoStorageService {
     }
 
     registros.unshift(registro);
-    localStorage.setItem(this.storageKey, JSON.stringify(registros.slice(0, 5)));
+    registrosPorCorreo[emailNormalizado] = registros.slice(0, 5);
+    localStorage.setItem(this.storageKey, JSON.stringify(registrosPorCorreo));
 
     return {
       rutaVirtual: rutaDestino,
@@ -82,19 +102,14 @@ export class ArchivoStorageService {
     };
   }
 
-  obtenerRegistros(): RegistroArchivo[] {
-    const guardados = localStorage.getItem(this.storageKey);
-    if (!guardados) {
+  obtenerRegistros(email: string | null): RegistroArchivo[] {
+    if (!email) {
       return [];
     }
 
-    try {
-      const registros = JSON.parse(guardados) as RegistroArchivo[];
-      return Array.isArray(registros) ? registros : [];
-    } catch (error) {
-      console.warn('No se pudieron leer los archivos guardados localmente', error);
-      return [];
-    }
+    const registros = this.obtenerMapaRegistros();
+    const correoNormalizado = this.normalizarCorreo(email);
+    return registros[correoNormalizado] ?? [];
   }
 
   descargarRegistro(registro: RegistroArchivo): void {
@@ -113,15 +128,19 @@ export class ArchivoStorageService {
   }
 
   eliminarRegistro(registroAEliminar: RegistroArchivo): void {
-    const registrosActualizados = this.obtenerRegistros().filter(
+    const registrosPorCorreo = this.obtenerMapaRegistros();
+    const correoNormalizado = this.normalizarCorreo(registroAEliminar.email);
+    const registrosActualizados = (registrosPorCorreo[correoNormalizado] ?? []).filter(
       (registro) =>
         !(
           registro.nombre === registroAEliminar.nombre &&
-          registro.fechaGuardado === registroAEliminar.fechaGuardado
+          registro.fechaGuardado === registroAEliminar.fechaGuardado &&
+          registro.hash === registroAEliminar.hash
         )
     );
 
-    localStorage.setItem(this.storageKey, JSON.stringify(registrosActualizados));
+    registrosPorCorreo[correoNormalizado] = registrosActualizados;
+    localStorage.setItem(this.storageKey, JSON.stringify(registrosPorCorreo));
   }
 
   private async agregarHashesFaltantes(registros: RegistroArchivo[]): Promise<void> {
@@ -136,7 +155,43 @@ export class ArchivoStorageService {
     }
 
     if (actualizado) {
-      localStorage.setItem(this.storageKey, JSON.stringify(registros));
+      const registrosPorCorreo = this.obtenerMapaRegistros();
+      const correo = registros[0]?.email;
+      if (correo) {
+        registrosPorCorreo[this.normalizarCorreo(correo)] = registros;
+        localStorage.setItem(this.storageKey, JSON.stringify(registrosPorCorreo));
+      }
+    }
+  }
+
+  private obtenerMapaRegistros(): Record<string, RegistroArchivo[]> {
+    const guardados = localStorage.getItem(this.storageKey);
+    if (!guardados) {
+      return {};
+    }
+
+    try {
+      const registros = JSON.parse(guardados) as Record<string, RegistroArchivo[]>;
+      if (!registros || typeof registros !== 'object') {
+        return {};
+      }
+
+      return Object.entries(registros).reduce<Record<string, RegistroArchivo[]>>(
+        (acumulado, [correo, lista]) => {
+          acumulado[this.normalizarCorreo(correo)] = Array.isArray(lista)
+            ? lista.map((registro) => ({
+                ...registro,
+                email: this.normalizarCorreo(registro.email ?? correo),
+                cct: this.normalizarCct(registro.cct ?? '')
+              }))
+            : [];
+          return acumulado;
+        },
+        {}
+      );
+    } catch (error) {
+      console.warn('No se pudieron leer los archivos guardados localmente', error);
+      return {};
     }
   }
 
