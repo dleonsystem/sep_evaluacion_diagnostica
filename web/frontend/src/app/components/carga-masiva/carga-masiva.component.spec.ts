@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CargaMasivaComponent } from './carga-masiva.component';
 import { ExcelValidationService, ResultadoValidacion } from '../../services/excel-validation.service';
 import { ArchivoStorageService } from '../../services/archivo-storage.service';
+import { AuthService } from '../../services/auth.service';
 
 const resultadoValido: ResultadoValidacion = {
   ok: true,
@@ -24,12 +25,30 @@ class ExcelValidationServiceStub {
 }
 
 class ArchivoStorageServiceStub {
-  guardarArchivoPreescolar(): Promise<{ rutaVirtual: string; modo: 'localStorage'; nota: string }> {
+  guardarArchivoPreescolar(
+    _archivo: File,
+    _contexto?: { email: string; cct: string },
+    _opciones?: { forzarReemplazo?: boolean }
+  ): Promise<{ rutaVirtual: string; modo: 'localStorage'; nota: string }> {
     return Promise.resolve({
       rutaVirtual: 'assets/archivos/preescolar/demo.xlsx',
       modo: 'localStorage',
       nota: 'Guardado en localStorage para referencia.'
     });
+  }
+}
+
+class AuthServiceStub {
+  normalizarCorreo(correo: string): string {
+    return (correo ?? '').trim().toLowerCase();
+  }
+
+  requiereLoginParaCorreo(): boolean {
+    return false;
+  }
+
+  registrarCarga(): { password: string; esNuevo: boolean } {
+    return { password: 'demoPass', esNuevo: true };
   }
 }
 
@@ -42,7 +61,8 @@ describe('CargaMasivaComponent', () => {
       imports: [CargaMasivaComponent],
       providers: [
         { provide: ExcelValidationService, useClass: ExcelValidationServiceStub },
-        { provide: ArchivoStorageService, useClass: ArchivoStorageServiceStub }
+        { provide: ArchivoStorageService, useClass: ArchivoStorageServiceStub },
+        { provide: AuthService, useClass: AuthServiceStub }
       ]
     }).compileComponents();
 

@@ -5,6 +5,7 @@ import {
   ArchivoStorageService,
   RegistroArchivo
 } from '../../services/archivo-storage.service';
+import { AuthService } from '../../services/auth.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -18,16 +19,29 @@ export class ArchivosGuardadosComponent implements OnInit {
   registros: RegistroArchivo[] = [];
   mensajeInfo: string | null = null;
   mensajeError: string | null = null;
+  correoActivo: string | null = null;
 
-  constructor(private readonly archivoStorageService: ArchivoStorageService) {}
+  constructor(
+    private readonly archivoStorageService: ArchivoStorageService,
+    private readonly authService: AuthService
+  ) {}
 
   ngOnInit(): void {
+    const sesion = this.authService.obtenerSesionActiva();
+    this.correoActivo = sesion?.email ?? null;
+
+    if (!this.correoActivo) {
+      this.mensajeInfo =
+        'Inicia sesión con el correo de tu primera carga para ver los archivos almacenados en este navegador.';
+      return;
+    }
+
     this.cargarRegistros();
   }
 
   cargarRegistros(): void {
     this.mensajeError = null;
-    this.registros = this.archivoStorageService.obtenerRegistros();
+    this.registros = this.archivoStorageService.obtenerRegistros(this.correoActivo);
 
     if (this.registros.length === 0) {
       this.mensajeInfo = 'Aún no has cargado archivos de Preescolar en este navegador.';
