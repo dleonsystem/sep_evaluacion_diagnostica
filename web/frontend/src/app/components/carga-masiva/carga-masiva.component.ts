@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ExcelValidationService, ResultadoValidacion } from '../../services/excel-validation.service';
 import {
@@ -9,6 +10,7 @@ import {
 } from '../../services/archivo-storage.service';
 import { AuthService } from '../../services/auth.service';
 import Swal from 'sweetalert2';
+import { EscDatos } from '../../services/excel-validation.service';
 
 interface SelectedFile {
   name: string;
@@ -33,8 +35,7 @@ interface ResultadoExito {
 export class CargaMasivaComponent implements OnInit {
   readonly extensionesPermitidas = ['.xlsx'];
   readonly pesoMaximoMb = 10;
-  private readonly correoKey = 'correo-carga-preescolar';
-  private readonly correoPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  readonly correoPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   readonly correoControl = new FormControl('', {
     nonNullable: true,
@@ -48,6 +49,7 @@ export class CargaMasivaComponent implements OnInit {
   advertencias: string[] = [];
   resultadoExito: ResultadoExito | null = null;
   mensajeInformativo: string | null = null;
+  escDatos: EscDatos | null = null;
   guardando = false;
   rutaGuardado: string | null = null;
   errorGuardado: string | null = null;
@@ -86,6 +88,16 @@ export class CargaMasivaComponent implements OnInit {
     }
 
     if (!archivos.length) {
+      return;
+    }
+
+    if (this.correoControl.invalid) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Correo requerido',
+        text: 'Ingresa un correo electrónico válido antes de seleccionar archivos.'
+      });
+      this.limpiarSeleccion(input);
       return;
     }
 
@@ -190,7 +202,10 @@ export class CargaMasivaComponent implements OnInit {
     this.notaGuardado = null;
 
     try {
-      const resultado = await this.archivoStorageService.guardarArchivoPreescolar(this.archivoOriginal);
+      const resultado = await this.archivoStorageService.guardarArchivoPreescolar(this.archivoOriginal, {
+        cct: this.escDatos?.cct,
+        correo: this.correoControl.value
+      });
       await this.mostrarConfirmacionGuardado(resultado, 'guardado');
     } catch (error) {
       if (error instanceof ArchivoDuplicadoError) {
@@ -239,7 +254,7 @@ export class CargaMasivaComponent implements OnInit {
   private async procesarResultado(resultado: ResultadoValidacion): Promise<void> {
     this.errores = resultado.errores;
     this.advertencias = resultado.advertencias;
-    this.ultimoCctValidado = null;
+    this.escDatos = resultado.esc ?? null;
 
     if (!resultado.ok || !resultado.esc) {
       this.estado = 'error';
@@ -257,7 +272,10 @@ export class CargaMasivaComponent implements OnInit {
       return;
     }
 
+    let habiaCredenciales = false;
+
     try {
+      habiaCredenciales = !!this.authService.obtenerCredenciales();
       this.authService.registrarCredenciales(resultado.esc.cct, resultado.esc.correo);
     } catch (error) {
       this.estado = 'error';
@@ -279,7 +297,8 @@ export class CargaMasivaComponent implements OnInit {
       fechaDisponible,
       credenciales: {
         usuario: resultado.esc.cct,
-        contrasena: resultado.esc.correo
+        contrasena: resultado.esc.correo,
+        esNueva: !habiaCredenciales
       },
       totalAlumnos: resultado.alumnos?.length ?? 0
     };
@@ -299,11 +318,33 @@ export class CargaMasivaComponent implements OnInit {
     this.resultadoExito = null;
     this.mensajeInformativo = null;
     this.archivoOriginal = null;
+    this.escDatos = null;
     this.guardando = false;
     this.rutaGuardado = null;
     this.errorGuardado = null;
     this.modoGuardado = null;
     this.ultimoCctValidado = null;
+  }
+
+  private async mostrarConfirmacionGuardado(
+    resultado: ResultadoGuardado,
+    tipo: 'guardado' | 'reemplazo'
+  ): Promise<void> {
+    this.rutaGuardado = resultado.rutaVirtual;
+    this.modoGuardado = resultado.modo;
+    this.notaGuardado = resultado.nota;
+    this.mensajeInformativo =
+      'El archivo se conservó en el almacenamiento local del navegador. Copia el archivo a assets/archivos/preescolar/ en tu proyecto si lo necesitas.';
+
+    await Swal.fire({
+      icon: 'success',
+      title: tipo === 'reemplazo' ? 'Archivo sustituido' : 'Archivo guardado',
+      text:
+        tipo === 'reemplazo'
+          ? 'Se reemplazó la copia previa con la nueva versión.'
+          : 'Se guardó una copia en el almacenamiento local del navegador.',
+      footer: this.rutaGuardado ? `Ruta sugerida: ${this.rutaGuardado}` : undefined
+    });
   }
 
   private async mostrarConfirmacionGuardado(

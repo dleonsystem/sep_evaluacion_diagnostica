@@ -7,6 +7,8 @@ export interface RegistroArchivo {
   ruta: string;
   contenidoBase64: string;
   hash: string;
+  cct?: string;
+  correo?: string;
 }
 
 export interface ResultadoGuardado {
@@ -30,7 +32,7 @@ export class ArchivoStorageService {
 
   async guardarArchivoPreescolar(
     archivo: File,
-    opciones?: { forzarReemplazo?: boolean }
+    opciones?: { forzarReemplazo?: boolean; cct?: string; correo?: string }
   ): Promise<ResultadoGuardado> {
     const rutaDestino = `assets/archivos/preescolar/${archivo.name}`;
     const buffer = await archivo.arrayBuffer();
@@ -42,7 +44,9 @@ export class ArchivoStorageService {
       fechaGuardado: new Date().toISOString(),
       ruta: rutaDestino,
       contenidoBase64: contenido,
-      hash
+      hash,
+      cct: opciones?.cct,
+      correo: this.normalizarCorreo(opciones?.correo ?? '') || undefined
     };
 
     const registros = this.obtenerRegistros();
@@ -173,5 +177,9 @@ export class ArchivoStorageService {
     }
 
     return new Blob([bytes]);
+  }
+
+  private normalizarCorreo(correo: string): string {
+    return (correo ?? '').trim().toLowerCase();
   }
 }
