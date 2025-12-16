@@ -368,4 +368,26 @@ export class CargaMasivaComponent implements OnInit {
       footer: this.rutaGuardado ? `Ruta sugerida: ${this.rutaGuardado}` : undefined
     });
   }
+
+  private async mostrarConfirmacionGuardado(
+    resultado: ResultadoGuardado,
+    tipo: 'guardado' | 'reemplazo'
+  ): Promise<void> {
+    this.rutaGuardado = resultado.rutaVirtual;
+    this.modoGuardado = resultado.modo;
+    this.notaGuardado = resultado.nota;
+    this.mensajeInformativo =
+      'El archivo se conservó en el almacenamiento local del navegador. Copia el archivo a assets/archivos/preescolar/ en tu proyecto si lo necesitas.';
+
+    const esReemplazo = tipo === 'reemplazo';
+
+    await Swal.fire({
+      icon: 'success',
+      title: esReemplazo ? 'Archivo sustituido' : 'Archivo guardado',
+      text: esReemplazo
+        ? 'Se reemplazó la copia previa con la nueva versión.'
+        : 'Se guardó una copia en el almacenamiento local del navegador.',
+      footer: this.rutaGuardado ? `Ruta sugerida: ${this.rutaGuardado}` : undefined
+    });
+  }
 }
