@@ -18,6 +18,7 @@
       <thead>
         <tr>
           <th>Nombre</th>
+          <th>CCT</th>
           <th>Peso (KB)</th>
           <th>Fecha de guardado</th>
           <th>Ruta de referencia</th>
@@ -27,6 +28,7 @@
       <tbody>
         <tr *ngFor="let registro of registros">
           <td data-label="Nombre">{{ registro.nombre }}</td>
+          <td data-label="CCT">{{ registro.cct }}</td>
           <td data-label="Peso">{{ (registro.tamano / 1024) | number:'1.0-2' }}</td>
           <td data-label="Fecha">{{ registro.fechaGuardado | date:'medium' }}</td>
           <td data-label="Ruta">{{ registro.ruta }}</td>

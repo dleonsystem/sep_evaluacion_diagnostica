@@ -5,8 +5,8 @@
 ```mermaid
 flowchart LR
     subgraph Actores
-        A[Escuela (anónima)]
-        B[Escuela (autenticada)]
+        A[Escuela anónima]
+        B[Escuela autenticada]
         C[Sistema externo de resultados]
         D[Operador técnico SEP]
     end
@@ -14,7 +14,7 @@ flowchart LR
     subgraph Sistema[Plataforma EIA]
         CU1[CU-01 Cargar archivo .xlsx sin login]
         CU2[CU-02 Validar 10 reglas y mostrar estado]
-        CU3[CU-03 Generar credenciales (1ª carga válida)]
+        CU3[CU-03 Generar credenciales, 1ª carga válida]
         CU4[CU-04 Emitir PDF de confirmación/errores]
         CU5[CU-05 Registrar solicitud y almacenar archivo]
         CU6[CU-06 Detectar reenvío y requerir login]
