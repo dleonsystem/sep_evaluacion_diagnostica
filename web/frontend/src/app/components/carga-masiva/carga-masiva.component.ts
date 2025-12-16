@@ -276,6 +276,19 @@ export class CargaMasivaComponent implements OnInit {
       return;
     }
 
+    const correoFormulario = this.correoControl.value.trim().toLowerCase();
+    const correoEnArchivo = (resultado.esc.correo ?? '').trim().toLowerCase();
+
+    if (correoFormulario !== correoEnArchivo) {
+      this.estado = 'error';
+      this.mensajeInformativo = null;
+      this.errores = [
+        ...this.errores,
+        'El correo capturado debe coincidir con el que aparece en la hoja ESC del archivo.'
+      ];
+      return;
+    }
+
     let habiaCredenciales = false;
     let nuevasCredenciales: { contrasena: string; esNueva: boolean } | null = null;
 
