@@ -5,6 +5,7 @@ import {
   ArchivoStorageService,
   RegistroArchivo
 } from '../../services/archivo-storage.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-archivos-guardados',
@@ -44,6 +45,40 @@ export class ArchivosGuardadosComponent implements OnInit {
     } catch (error) {
       this.mensajeError =
         error instanceof Error ? error.message : 'No se pudo descargar el archivo seleccionado.';
+    }
+  }
+
+  async eliminar(registro: RegistroArchivo): Promise<void> {
+    const confirmacion = await Swal.fire({
+      title: '¿Eliminar este archivo?',
+      text: 'Se quitará la copia guardada en este navegador.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (!confirmacion.isConfirmed) {
+      return;
+    }
+
+    try {
+      this.archivoStorageService.eliminarRegistro(registro);
+      this.cargarRegistros();
+      await Swal.fire({
+        title: 'Archivo eliminado',
+        text: 'El registro se eliminó del almacenamiento local.',
+        icon: 'success'
+      });
+    } catch (error) {
+      const mensajeError =
+        error instanceof Error ? error.message : 'No se pudo eliminar el archivo seleccionado.';
+      this.mensajeError = mensajeError;
+      await Swal.fire({
+        title: 'No se pudo eliminar',
+        text: mensajeError,
+        icon: 'error'
+      });
     }
   }
 }
