@@ -87,8 +87,9 @@ export class ArchivoStorageService {
     };
   }
 
-  obtenerRegistros(email: string | null): RegistroArchivo[] {
-    if (!email) {
+  obtenerRegistros(_email?: string | null): RegistroArchivo[] {
+    const guardados = localStorage.getItem(this.storageKey);
+    if (!guardados) {
       return [];
     }
 
