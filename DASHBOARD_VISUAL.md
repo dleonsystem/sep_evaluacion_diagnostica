@@ -1,10 +1,10 @@
 # 📊 DASHBOARD VISUAL - SiCRER 24/25 SEPT
 ## Versión 2.0 - Métricas Estrategia Bifásica
 
-> **Panel de Métricas y Visualizaciones del Análisis Técnico**  
-> Sistema de Captura de Resultados de Evaluación y Registro  
-> Secretaría de Educación Pública (SEP)  
-> **Stack Open Source:** React + Node.js + PostgreSQL + Filesystem SSD
+> **Panel de Métricas y Visualizaciones del Análisis Técnico**
+> Sistema de Captura de Resultados de Evaluación y Registro
+> Secretaría de Educación Pública (SEP)
+> **Stack Open Source:** Python (FastAPI) + Angular + PostgreSQL + Filesystem SSD
 
 ---
 
@@ -17,17 +17,17 @@ gantt
     
     section Fase 1: Portal Híbrido
     Arquitectura & Diseño           :done, f1_1, 2025-11-01, 15d
-    Desarrollo Frontend React       :active, f1_2, 2025-11-16, 60d
-    Desarrollo Backend NestJS       :active, f1_3, 2025-11-16, 60d
-    Validador SheetJS               :f1_4, 2025-12-16, 30d
+    Desarrollo Frontend Angular     :active, f1_2, 2025-11-16, 60d
+    Desarrollo Backend FastAPI      :active, f1_3, 2025-11-16, 60d
+    Validador pandas + openpyxl     :f1_4, 2025-12-16, 30d
     Sistema Tickets                 :f1_5, 2026-01-01, 30d
     Script Sincronización           :f1_6, 2026-01-15, 30d
     Testing Integral                :f1_7, 2026-02-15, 30d
     Deploy Producción Fase 1        :milestone, f1_m, 2026-03-15, 1d
     
     section Fase 2: Migración Completa
-    Procesamiento Nativo Node       :f2_1, 2026-03-15, 90d
-    Generador PDF Puppeteer         :f2_2, 2026-04-15, 75d
+    Procesamiento Nativo Python     :f2_1, 2026-03-15, 90d
+    Generador PDF WeasyPrint        :f2_2, 2026-04-15, 75d
     Módulo ARCO LGPDP               :f2_3, 2026-05-01, 60d
     Migración Datos Históricos      :f2_4, 2026-06-01, 45d
     Dashboard Analytics             :f2_5, 2026-06-15, 45d

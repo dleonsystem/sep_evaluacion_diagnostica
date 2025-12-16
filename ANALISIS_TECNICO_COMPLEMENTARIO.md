@@ -1,9 +1,10 @@
 # ANÁLISIS TÉCNICO COMPLEMENTARIO
 ## Sistema SiCRER - Evaluación Diagnóstica SEP
-### Versión 2.0 - Stack Open Source (React + Node.js + PostgreSQL)
+### Versión 2.0 - Stack Open Source (Python + Angular + PostgreSQL)
 
-**Fecha Actualización:** 25 de Noviembre de 2025  
-**Stack Tecnológico:** React 18 + NestJS 10 + PostgreSQL 16 + Filesystem SSD + node-cache + pg-boss  
+**Fecha Actualización:** 25 de Noviembre de 2025
+**Stack Tecnológico:** Python 3.12 + FastAPI + Angular 17 + PostgreSQL 16 + Filesystem SSD + Redis
+> **Nota de alineación:** Toda la arquitectura descrita debe migrarse al stack Python/Angular/PostgreSQL aprobado. Las secciones heredadas con referencias a React/Node.js se consideran histórico y deberán refinarse con equivalentes en FastAPI, SQLAlchemy, Celery/RQ y Angular.
 **Estrategia:** Bifásica (Fase 1 Híbrida + Fase 2 Completa)
 
 ---

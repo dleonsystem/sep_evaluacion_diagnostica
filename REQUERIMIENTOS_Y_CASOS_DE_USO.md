@@ -1,10 +1,14 @@
 # REQUERIMIENTOS Y CASOS DE USO
 ## Sistema SiCRER - Evaluación Diagnóstica SEP
 
-**Fecha:** 24 de Noviembre de 2025  
-**Versión:** 2.0 - Estrategia Bifásica + Stack Open Source  
-**Sistema:** SiCRER Portal Web + Legacy Integration  
+**Fecha:** 24 de Noviembre de 2025
+**Versión:** 2.0 - Estrategia Bifásica + Stack Open Source
+**Sistema:** SiCRER Portal Web + Legacy Integration
 **Fase 1:** Marzo 2026 | **Fase 2:** Septiembre 2026
+
+> **Alineación tecnológica 2025:** Todas las iteraciones de diseño y construcción se basarán en **Python 3.12 + FastAPI** para backend, **Angular 17 + TypeScript 5** para frontend y **PostgreSQL 16** como base de datos. Las referencias previas a React/Node.js quedan como histórico y deberán reinterpretarse con el nuevo stack durante el refinamiento de cada módulo.
+
+**Actualización EIA 2ª aplicación:** La plataforma web de recepción/validación/descarga **solo recibe y valida archivos .xlsx**, genera credenciales una sola vez en la primera carga válida, registra cada envío como solicitud independiente con consecutivo y **no procesa resultados ni decide si el envío corresponde a primera o segunda aplicación**. Las ligas de descarga se publican a partir de archivos generados por un sistema externo y almacenados en repositorios separados para archivos recibidos y resultados.
 
 ---
 
@@ -120,7 +124,7 @@
   - Estructura de hojas esperada según nivel educativo
 - **RF-10.4** El sistema debe ejecutar validaciones automáticas en backend:
   - Formato de CURP (18 caracteres, patrón válido)
-  - Valores de valoración (1-4)
+  - Valores de valoración (0-3)
   - Campos obligatorios completos
   - Detección de duplicados (CURP + periodo)
   - Estructura de Excel por nivel educativo
@@ -193,6 +197,19 @@
 - **RF-15.5** El sistema debe registrar trazabilidad completa de sincronización
 - **RF-15.6** El sistema debe manejar errores de sincronización con reintentos automáticos
 
+### RF-16: Plataforma Recepción/Validación/Descarga EIA (2ª aplicación)
+- **RF-16.1** El portal debe permitir subir archivo .xlsx sin autenticación previa y mostrar la etiqueta "Validando tu archivo..." al seleccionar el archivo.
+- **RF-16.2** La validación automática debe revisar CCT, correo, nivel, campos y columnas obligatorias por hoja, valores válidos (0-3), número y nombre de hojas, estructura general y consistencia interna; si alguno falla, el archivo se rechaza.
+  - **Checklist mínimo de validación (9 puntos):** CCT, correo, nivel, campo obligatorio por hoja, columnas obligatorias, valores válidos (0-3), estructura general de archivo, número de hojas, consistencia interna.
+- **RF-16.3** Si el archivo es válido, el sistema debe mostrar el mensaje "Tu archivo ha sido validado correctamente. Podrás consultar tus resultados a partir del día: [hoy + 4 días]".
+- **RF-16.4** En la primera carga válida se deben generar credenciales de consulta (usuario = CCT validado, contraseña = correo validado) y no regenerarse en cargas posteriores.
+- **RF-16.5** El sistema debe generar y descargar automáticamente un PDF de confirmación con mensaje de éxito, fecha futura de consulta, usuario, contraseña y marca de tiempo; si es inválido, debe descargar PDF de errores.
+- **RF-16.6** Cada carga válida debe registrarse como solicitud independiente con consecutivo y almacenarse en un repositorio de archivos recibidos.
+- **RF-16.7** El sistema no determinará si el envío corresponde a primera o segunda aplicación ni comparará/mezclará archivos; solo registrará solicitudes.
+- **RF-16.8** La generación de resultados, comparativos y paquetes ZIP corresponde a un sistema externo; el portal solo debe mostrar las ligas de descarga depositadas externamente.
+- **RF-16.9** El módulo de descarga debe permitir autenticación por CCT y contraseña para listar todas las versiones disponibles con número consecutivo y liga de descarga.
+- **RF-16.10** El sistema debe ofrecer un panel básico de monitoreo técnico para seguimiento de solicitudes y descargas.
+
 ---
 
 ## 2. REQUERIMIENTOS NO FUNCIONALES
@@ -203,12 +220,15 @@
 - **RNF-01.3** El sistema debe procesar ≥400 escuelas/día (10 equipos × 10 horas)
 - **RNF-01.4** El sistema debe generar reportes sin bloquear otras operaciones
 - **RNF-01.5** El tiempo de respuesta de consultas debe ser <2 segundos (95% de casos)
+- **RNF-01.6** La plataforma de recepción/validación debe soportar al menos **120,000 solicitudes de validación** (equivalente a la primera aplicación de correos recibidos) sin interrupción del servicio.
 
 ### RNF-02: Capacidad
 - **RNF-02.1** El sistema debe soportar 1,000+ escuelas por ciclo
 - **RNF-02.2** El sistema debe almacenar 64+ GB de reportes PDF
 - **RNF-02.3** La base de datos debe soportar datos de múltiples ciclos escolares
 - **RNF-02.4** El sistema debe escalar equipos de procesamiento según demanda
+- **RNF-02.5** El repositorio de recepción y resultados debe ofrecer **capacidad mínima de 1 TB** y permitir ampliación sin afectar el servicio.
+- **RNF-02.6** Deben mantenerse repositorios separados para archivos recibidos y resultados generados por el procesamiento externo.
 
 ### RNF-03: Disponibilidad
 - **RNF-03.1** El sistema debe estar disponible 99% del tiempo durante periodo de evaluación
@@ -228,6 +248,9 @@
 - **RNF-04.5** ❌ El sistema debe implementar derechos ARCO (Acceso, Rectificación, Cancelación, Oposición)
 - **RNF-04.6** El sistema debe cumplir con LGPDP para datos de menores
 - **RNF-04.7** ❓ El sistema debe requerir consentimiento de tutores para uso de datos
+- **RNF-04.8** Las interfaces de carga y descarga deben operar bajo **HTTPS obligatorio**.
+- **RNF-04.9** Las contraseñas generadas para consulta de resultados deben almacenarse con estándares de hashing seguros.
+- **RNF-04.10** Se deben registrar logs de acceso y actividad para trazabilidad de cargas y descargas.
 
 ### RNF-05: Usabilidad
 - **RNF-05.1** El sistema debe tener interfaz en español
@@ -248,6 +271,7 @@
   - Docker containers
   - Kubernetes clusters
 - **RNF-06.4** El sistema debe soportar actualización rolling sin downtime
+- **RNF-06.5** La plataforma debe permitir agregar nuevos niveles o estructuras de archivo sin rediseño mayor.
 
 ### RNF-07: Mantenibilidad
 - **RNF-07.1** ❌ El código debe estar documentado
@@ -256,26 +280,26 @@
 - **RNF-07.4** Las actualizaciones no deben requerir reinstalación completa
 
 ### RNF-08: Interoperabilidad
-- **RNF-08.1** El sistema debe leer archivos Excel (.xlsx) mediante SheetJS library
-- **RNF-08.2** El sistema debe generar reportes PDF mediante PDFKit o Puppeteer
+- **RNF-08.1** El sistema debe leer archivos Excel (.xlsx) mediante **pandas + openpyxl**
+- **RNF-08.2** El sistema debe generar reportes PDF mediante **WeasyPrint** o **ReportLab**
 - **RNF-08.3** El sistema debe integrarse con SMTP para envío de emails
-- **RNF-08.4** El sistema debe exponer API REST para integraciones externas
+- **RNF-08.4** El sistema debe exponer API REST (OpenAPI 3) para integraciones externas
 - **RNF-08.5** El sistema debe usar filesystem nativo con estructura /data/sicrer/{frv,pdfs}/{periodo}/{cct}/
 - **RNF-08.6** El sistema debe soportar importación masiva vía CSV
 
 ### RNF-09: Stack Tecnológico Open Source ✨ FASE 1
 - **RNF-09.1** El sistema debe utilizar tecnologías 100% open source sin costos de licencia
-- **RNF-09.2** Frontend debe ser React 18+ con TypeScript 5+
-- **RNF-09.3** Backend debe ser Node.js 20 LTS con framework NestJS
+- **RNF-09.2** Frontend debe ser **Angular 17+** con TypeScript 5+
+- **RNF-09.3** Backend debe ser **Python 3.12** con framework **FastAPI**
 - **RNF-09.4** Base de datos debe ser PostgreSQL 16+
-- **RNF-09.5** Storage debe usar fs/promises nativo Node.js con estructura organizada
-- **RNF-09.6** Cache debe ser node-cache (in-memory nativo Node.js)
+- **RNF-09.5** Storage debe usar filesystem nativo con estructura organizada
+- **RNF-09.6** Cache/cola de trabajos debe ser **Redis 7.2** (ej. RQ o Celery)
 - **RNF-09.7** Todas las dependencias deben tener licencias permisivas:
   - MIT License
   - Apache 2.0 License
   - BSD License
-- **RNF-09.8** El sistema debe utilizar ORM Prisma para type-safety
-- **RNF-09.9** El sistema debe usar Vite como build tool para frontend
+- **RNF-09.8** El sistema debe utilizar **SQLAlchemy** (con Alembic) para ORM y migraciones
+- **RNF-09.9** El sistema debe usar **Angular CLI** como build tool para frontend
 
 ---
 
@@ -367,12 +391,13 @@ graph TB
 | **Admin** | CU-01, CU-02 | DGADAE, Director | 3×/ciclo | 20% | ✅ Mantener |
 | **Evaluación** | CU-03 | Docente, Estudiante | 3×/ciclo | 0% | ✅ Mantener |
 | **Portal Web Fase 1** | CU-04v2, CU-13, CU-14, CU-15 | Director, Operador, Admin | Continuo | 80% | ✨ NUEVO |
+| **Plataforma EIA 2ª apl.** | CU-16 | Director (sin login para carga), Sistema externo | Picos 120K validaciones | 90% | ✨ NUEVO |
 | **Legacy Fase 1** | CU-07, CU-08 | Validación | Continuo | 50% | ⚠️ Temporal |
 | **Notificación Fase 1** | CU-09v2 | Sistema, Director | Continuo | 90% | ✨ NUEVO |
 | **Análisis** | CU-10, CU-11, CU-12 | Director, Docente | 3×/ciclo | 0% | ✅ Mantener |
 
-**Total Fase 1:** 15 casos de uso (7 nuevos/modificados, 8 mantenidos)  
-**Automatización Fase 1:** 48% (↑13% vs sistema actual)  
+**Total Fase 1:** 16 casos de uso (8 nuevos/modificados, 8 mantenidos)
+**Automatización Fase 1:** 52% (↑17% vs sistema actual)
 **Automatización Fase 2:** 85% (objetivo final)
 
 ---
@@ -430,55 +455,44 @@ graph TB
 ### CU-04v2: Cargar Valoraciones por Portal Web ✨ FASE 1 (MODIFICADO)
 **Actor Principal:** Director  
 **Actores Secundarios:** Portal Web, Sistema de Validación  
-**Precondiciones:** 
+**Precondiciones:**
 - Evaluaciones valoradas por docentes
 - FRV Excel completo localmente
-- Director tiene credenciales de acceso (CCT + contraseña)
+- El portal de carga es público y **no requiere autenticación previa** para subir el archivo.
 
 **Flujo Principal:**
-1. Director accede a portal web (URL: https://evaluaciones.sep.gob.mx)
-2. Director inicia sesión con CCT y contraseña
-3. Sistema valida credenciales y carga dashboard personal
-4. Director selecciona "Cargar Evaluación" del menú
-5. Sistema muestra formulario de carga:
-   - Selector de periodo (2025-1, 2025-2, 2025-3)
-   - Zona de drag & drop para archivo
-   - Instrucciones y validaciones esperadas
-6. Director arrastra o selecciona archivo FRV Excel
-7. Sistema ejecuta pre-validaciones inmediatas:
+1. Director accede al portal público (URL: https://evaluaciones.sep.gob.mx) y selecciona el archivo .xlsx.
+2. El portal muestra el indicador **"Validando tu archivo..."** mientras ejecuta las verificaciones automáticas.
+3. El sistema valida de forma inmediata:
    - Extensión .xlsx válida ✓
-   - Tamaño ≤10 MB ✓
    - Archivo no corrupto ✓
-8. Sistema sube archivo a servidor (progress bar)
-9. Sistema ejecuta validaciones backend (30-45 segundos):
+4. El sistema ejecuta validaciones backend (30-45 segundos) alineadas al checklist de 9 puntos del documento final:
    ```
    Validando estructura... ✓
-   Validando CURP (250 registros)... ✓
-   Validando valoraciones... ✓
+   Validando CCT... ✓
+   Validando correo... ✓
+   Validando nivel... ✓
+   Validando valores (0-3)... ✓
    Validando campos obligatorios... ✓
-   Buscando duplicados... ✓
+   Validando columnas obligatorias... ✓
+   Validando número/nombre de hojas... ✓
+   Verificando consistencia interna... ✓
    ```
-10. **SI todas las validaciones son exitosas:**
-    - Sistema muestra resumen:
-      * Total estudiantes: 250
-      * Grados/grupos: 6 grados × 5 grupos = 30
-      * Estado: ✅ Archivo válido
-    - Director confirma carga con botón "Confirmar y Enviar"
-    - Sistema registra en BD PostgreSQL
-    - Sistema almacena archivo en filesystem SSD
-    - Sistema exporta JSON a carpeta legacy para procesamiento
-    - Sistema muestra folio de confirmación: **FRV-2025-24PPR0356K-001**
-    - Sistema envía email de confirmación
+5. **SI todas las validaciones son exitosas:**
+    - Sistema muestra mensaje de éxito con fecha futura: **"Tu archivo ha sido validado correctamente. Podrás consultar tus resultados a partir del día: [hoy + 4 días]"**.
+    - Para la primera carga válida, el sistema genera credenciales de consulta (**usuario = CCT**, **contraseña = correo validado**) y no las regenera en cargas posteriores.
+    - Se descarga automáticamente un PDF de confirmación con mensaje, fecha futura, usuario, contraseña y marca de tiempo.
+    - Sistema registra la solicitud con consecutivo y almacena el archivo en el repositorio de recepción.
 
-11. **SI existen errores de validación:**
+6. **SI existen errores de validación:**
     - Sistema muestra tabla de errores:
     ```
     ❌ 15 errores encontrados
-    
+
     | Fila | Columna | Campo | Error | Valor Encontrado | Valor Esperado |
     |------|---------|-------|-------|------------------|----------------|
-    | 12   | A       | CURP  | Formato inválido | MALM950101HDFR0 | 18 caracteres |
-    | 45   | D       | Val_ENS | Fuera de rango | 5 | 1-4 |
+    | 12   | A       | CCT   | Formato inválido | 24PPR0356 | Clave válida |
+    | 45   | D       | Val_ENS | Fuera de rango | 5 | 0-3 |
     | 78   | B       | Nombre | Campo vacío | (vacío) | Requerido |
     ```
     - Director puede:
@@ -487,7 +501,7 @@ graph TB
       * Reintentar carga
     - Sistema incrementa contador de intentos
 
-12. **SI se alcanzan N intentos fallidos (default: 3):**
+7. **SI se alcanzan N intentos fallidos (default: 3):**
     - Sistema genera ticket automáticamente (ver CU-13)
     - Sistema muestra mensaje:
       ```
@@ -498,31 +512,53 @@ graph TB
     - Sistema notifica a operador por email
     - Director puede seguir ticket desde dashboard
 
+---
+
+### CU-16: Recepción y Validación de Archivos EIA (2ª aplicación)
+**Actor Principal:** Director (sin autenticación previa para carga)
+**Actores Secundarios:** Sistema de Validación Automática, Sistema Externo de Procesamiento
+**Precondiciones:** Archivo .xlsx de segunda aplicación de EIA disponible localmente.
+
+**Flujo Principal:**
+1. Director ingresa al portal público y selecciona el archivo .xlsx.
+2. El portal muestra la etiqueta **"Validando tu archivo..."** mientras se procesa.
+3. El sistema ejecuta validaciones automáticas (9 puntos mínimos):
+   1. CCT
+   2. Correo
+   3. Nivel educativo
+   4. Campo obligatorio por hoja
+   5. Columnas obligatorias
+   6. Valores permitidos (0-3)
+   7. Estructura general de archivo
+   8. Número y nombre de hojas
+   9. Consistencia interna
+4. **Si el archivo es válido:**
+   - Se muestra el mensaje de éxito con fecha futura de consulta (hoy + 4 días).
+   - Se generan credenciales solo en la primera carga válida (**usuario = CCT**, **contraseña = correo validado**) sin regeneración posterior.
+   - Se descarga automáticamente un PDF de confirmación con mensaje, fecha, usuario, contraseña y marca de tiempo.
+   - Se registra la solicitud con consecutivo y se almacena el archivo en repositorio de recepción.
+5. **Si el archivo es inválido:**
+   - Se muestra mensaje de rechazo.
+   - Se descarga PDF de errores con detalles de validación incumplida.
+6. El portal no determina si el envío corresponde a primera o segunda aplicación; cada carga válida queda como solicitud independiente.
+7. Cuando el sistema externo deposita resultados procesados, el director ingresa con CCT y contraseña para visualizar versiones consecutivas y ligas de descarga.
+
+**Postcondiciones:** Solicitud registrada, credenciales creadas solo en la primera validación exitosa y descarga de PDF de confirmación o errores.
+**Frecuencia:** Picos de 120,000 validaciones por ciclo (segunda aplicación EIA).
+**Prioridad:** 🔴 Alta
+
 **Flujos Alternativos:**
-- **6a.** Archivo no es .xlsx → Sistema rechaza con mensaje claro
-- **6b.** Archivo >10 MB → Sistema rechaza y sugiere revisar contenido
-- **8a.** Error de red → Sistema permite reintentar upload
-- **9a.** Timeout de validación → Sistema marca como "pendiente" y notifica después
+- **4a.** El archivo excede reglas estructurales → el sistema rechaza y genera PDF de errores.
+- **4b.** El CCT o correo no cumplen sintaxis → se detiene validación y se indica corrección.
+- **5a.** Fallo en descarga automática del PDF → se habilita botón manual de descarga.
 
-**Postcondiciones:** 
-- FRV almacenado en filesystem con metadatos (ruta, tamaño) en PostgreSQL
-- Archivo exportado a carpeta legacy (si validación exitosa)
-- Email de confirmación enviado
-- Auditoría registrada
+**Postcondiciones:**
+- Archivo válido almacenado en repositorio de recepción con consecutivo y metadatos de solicitud.
+- Credenciales creadas solo en la primera validación exitosa; cargas posteriores reutilizan mismas credenciales.
+- Registro de auditoría de validaciones y descargas (logs de acceso/actividad).
 
-**Frecuencia:** 1 vez por periodo por escuela  
-**Prioridad:** 🔴 Crítica (Fase 1)  
-**Tiempo Estimado:** 
-- Captura local: 2-4 horas
-- Carga web: 1-2 minutos
-- Validación: 30-45 segundos
-
-**Beneficios vs CU-04/CU-05 Antiguos:**
-- ✅ Validación inmediata (reduce errores 70%)
-- ✅ Sin envío por email (seguro, trazable)
-- ✅ Feedback en tiempo real
-- ✅ Sistema de tickets para casos complejos
-- ✅ Cumplimiento LGPDP (TLS 1.3, datos cifrados)
+**Frecuencia:** Picos concentrados durante segunda aplicación EIA.
+**Prioridad:** 🔴 Crítica (Plataforma EIA)
 
 ---
 
@@ -1150,6 +1186,7 @@ graph TB
 | CU-02 | RF-01 | RNF-03, RNF-06 | 🟡 Media | ✅ Mantener |
 | CU-03 | RF-03 | RNF-05 | 🔴 Alta | ✅ Mantener |
 | **CU-04v2** ✨ | **RF-09, RF-10, RF-15** | **RNF-04, RNF-06, RNF-09** | 🔴 **Crítica** | ✨ **NUEVO** |
+| **CU-16** ✨ | **RF-16** | **RNF-01, RNF-02, RNF-04, RNF-06** | 🔴 **Crítica** | ✨ **NUEVO** |
 | ~~CU-05~~ | - | - | - | ❌ Eliminado |
 | CU-06 | RF-04 | RNF-01, RNF-02 | 🟡 Media | ⚠️ Legacy Fase 1 |
 | CU-07 | RF-04 | RNF-01, RNF-02 | 🟡 Media | ⚠️ Legacy Fase 1 |
@@ -1173,30 +1210,31 @@ graph TB
 | **RF-13** | Catálogo de escuelas | CU-14 | Baja |
 | **RF-14** | Gestión de usuarios | CU-15 | Baja |
 | **RF-15** | Integración con legacy | CU-04v2, CU-09v2 | Alta |
+| **RF-16** | Recepción, validación y descargas EIA (2ª aplicación) | CU-16 | Alta |
 | **RNF-09** | Stack open source | Todos los nuevos | Media |
 
 ### 4.3 Estadísticas de Cobertura - Estrategia Bifásica
 
 ```mermaid
 pie title "Distribución de Prioridad Fase 1"
-    "Crítica (7)" : 47
+    "Crítica (8)" : 50
     "Alta (2)" : 13
-    "Media (5)" : 33
-    "Baja (1)" : 7
+    "Media (5)" : 31
+    "Baja (1)" : 6
 ```
 
 ```mermaid
 pie title "Estado de Casos de Uso"
-    "Nuevos Fase 1 (5)" : 33
+    "Nuevos Fase 1 (6)" : 38
     "Modificados (2)" : 13
-    "Legacy Temporal (3)" : 20
-    "Mantener (5)" : 34
+    "Legacy Temporal (3)" : 19
+    "Mantener (5)" : 30
 ```
 
 ```mermaid
 pie title "Automatización por Fase"
     "Manual" : 15
-    "Fase 1 (48%)" : 48
+    "Fase 1 (52%)" : 52
     "Fase 2 (85%)" : 85
 ```
 
