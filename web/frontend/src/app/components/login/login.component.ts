@@ -13,8 +13,8 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './login.component.scss'
 })
 export class LoginComponent implements OnInit {
-  cct = '';
   correo = '';
+  contrasena = '';
   error: string | null = null;
   autenticando = false;
   redirect = '/carga-masiva';
@@ -33,7 +33,6 @@ export class LoginComponent implements OnInit {
     }
 
     this.redirect = this.route.snapshot.queryParamMap.get('redirect') ?? this.redirect;
-    this.cct = credenciales.cct;
     this.correo = credenciales.correo;
   }
 
@@ -42,7 +41,7 @@ export class LoginComponent implements OnInit {
     this.autenticando = true;
 
     try {
-      this.authService.iniciarSesion(this.cct, this.correo);
+      this.authService.iniciarSesion(this.correo, this.contrasena);
       await Swal.fire({
         icon: 'success',
         title: 'Sesión iniciada',

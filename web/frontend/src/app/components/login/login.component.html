@@ -1,23 +1,10 @@
 <section class="login">
   <div class="login__card">
     <h1>Inicia sesión para continuar</h1>
-    <p>Usa el CCT y el correo capturados en tu primer envío.</p>
+    <p>Usa el correo y la contraseña generada en tu primer envío.</p>
 
     <form (ngSubmit)="iniciarSesion()" #loginForm="ngForm" novalidate>
-      <label for="cct">CCT</label>
-      <input
-        id="cct"
-        name="cct"
-        type="text"
-        required
-        minlength="10"
-        maxlength="10"
-        [(ngModel)]="cct"
-        autocomplete="username"
-        placeholder="01DJN0000A"
-      />
-
-      <label for="correo">Correo</label>
+      <label for="correo">Correo (usuario)</label>
       <input
         id="correo"
         name="correo"
@@ -26,6 +13,17 @@
         [(ngModel)]="correo"
         autocomplete="email"
         placeholder="correo@dominio.com"
+      />
+
+      <label for="contrasena">Contraseña</label>
+      <input
+        id="contrasena"
+        name="contrasena"
+        type="password"
+        required
+        [(ngModel)]="contrasena"
+        autocomplete="current-password"
+        placeholder="Clave enviada en tu primer carga"
       />
 
       <div class="login__error" *ngIf="error">{{ error }}</div>
