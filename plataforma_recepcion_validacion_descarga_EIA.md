@@ -10,7 +10,7 @@ El sistema no procesa ni genera resultados, únicamente recibe los archivos, val
 
 ## II. Objetivo General del Sistema
 
-Desarrollar una plataforma web que permita recibir archivos, validarlos automáticamente, generar credenciales de acceso (únicamente en la primera carga válida), registrar cada envío como una solicitud independiente y publicar las ligas de descarga correspondientes a los archivos procesados por un sistema externo.
+Desarrollar una plataforma web que permita recibir archivos, validarlos automáticamente, generar credenciales de acceso (únicamente en la primera carga válida con usuario = correo y contraseña aleatoria), registrar cada envío como una solicitud independiente y publicar las ligas de descarga correspondientes a los archivos procesados por un sistema externo. El mismo correo puede administrarse para varios CCT y siempre funge como identificador de inicio de sesión.
 
 ---
 
@@ -30,43 +30,51 @@ El sistema comprenderá:
 
 ## IV. Requerimientos Funcionales por módulo
 
-La plataforma permitirá subir un archivo .xlsx sin necesidad de autenticación previa.
+La plataforma permitirá subir un archivo .xlsx sin necesidad de autenticación previa **solo después de que el usuario capture su correo**, el cual se convierte en su identificador y debe coincidir con el correo declarado dentro del Excel en la primera carga.
 
-Al seleccionar el archivo aparecerá la etiqueta: **"Validando tu archivo..."**
+Al habilitar el selector de archivo aparecerá la etiqueta: **"Validando tu archivo con el correo ingresado..."**
 
 La validación se ejecutará automáticamente revisando:
 
-1. CCT  
-2. Correo  
-3. Nivel  
-4. Campo obligatorio por hoja  
-5. Columnas obligatorias  
-6. Valores válidos (0-3)  
-7. Estructura general de archivo  
-8. Número de hojas  
-9. Consistencia interna  
+1. Coincidencia entre el correo ingresado y el correo dentro del Excel (solo en la primera carga ligada a ese correo)
+2. CCT
+3. Nivel
+4. Campo obligatorio por hoja
+5. Columnas obligatorias
+6. Valores válidos (0-3)
+7. Estructura general de archivo
+8. Número de hojas
+9. Consistencia interna
 
 Si el archivo es válido, el sistema mostrará el mensaje:
 
-**"Tu archivo ha sido validado correctamente. Podrás consultar tus resultados a partir del día: [fecha = hoy + 4 días]"**
+**"Tu archivo ha sido validado correctamente. Generamos una contraseña aleatoria y podrás consultar tus resultados a partir del día: [fecha = hoy + 4 días]"**
 
 Si el archivo es válido, el sistema deberá generar credenciales para consulta futura de resultados, donde:
 
-- **Usuario = CCT validado**  
-- **Contraseña = Correo validado en la primera carga válida.**  
-  - En cargas posteriores NO se regenera contraseña.
+- **Usuario = correo ingresado y validado contra el Excel** (el mismo correo puede vincularse a varios CCT).
+- **Contraseña = cadena aleatoria generada en la primera carga válida** (no se regenera en cargas posteriores; permanece asociada al correo).
 
 El sistema generará automáticamente un **PDF de confirmación**, que incluirá:
 
-- Mensaje: "Archivo validado correctamente"  
-- Fecha futura en que podrá consultar resultados  
-- Usuario (CCT)  
-- Contraseña (correo validado)  
-- Marca de tiempo de la validación  
+- Mensaje de éxito actualizado
+- Fecha futura en que podrá consultar resultados
+- Usuario (correo validado)
+- Contraseña aleatoria generada
+- Marca de tiempo de la validación
 
 El PDF se descargará automáticamente.
 
-Si el archivo es inválido, se mostrará un mensaje de rechazo y se generará el **PDF de errores**.
+Si el archivo es inválido o el correo capturado no coincide con el del Excel en la primera carga, se mostrará un mensaje de rechazo y se generará el **PDF de errores**.
+
+**Mensajes de UX actualizados:**
+
+- **Entrada de correo:** "Escribe el correo institucional que usarás como usuario. Podrás reutilizarlo para diferentes CCT."
+- **Estado de validación:** "Validando tu archivo con el correo ingresado…"
+- **Éxito primera carga:** "Tu archivo ha sido validado correctamente. Generamos tu contraseña aleatoria: [*******]. Guarda este dato; tus descargas y reenvíos se harán con tu correo y esta contraseña. Podrás consultar tus resultados a partir del día: [hoy + 4 días]."
+- **Reenvío éxito (correo existente):** "Archivo validado. Conserva tu correo como usuario; tu contraseña sigue siendo la misma creada en tu primera carga válida."
+- **Error por correo que no coincide con Excel (primera vez):** "El correo capturado no coincide con el que está en tu Excel. Corrige el dato en la pantalla o en el archivo y vuelve a intentarlo."
+- **Error genérico de validación:** "No pudimos validar tu archivo. Descarga el PDF con los detalles y corrige antes de reenviar."
 
 ---
 
@@ -118,12 +126,12 @@ La plataforma únicamente mostrará las ligas de descarga generadas externamente
 
 ### 5. Módulo de Descarga de Resultados
 
-El usuario accede con su **CCT y contraseña (correo validado)** para consultar todas las versiones de resultados que se hayan generado externamente.
+El usuario accede con su **correo y contraseña aleatoria generada en la primera carga válida** para consultar todas las versiones de resultados que se hayan generado externamente, aun cuando el mismo correo se use para varios CCT.
 
 Cada versión aparecerá con:
 
-- Número consecutivo  
-- Liga de descarga  
+- Número consecutivo
+- Liga de descarga
 
 ---
 

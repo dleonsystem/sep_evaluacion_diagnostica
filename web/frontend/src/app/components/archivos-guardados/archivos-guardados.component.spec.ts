@@ -1,21 +1,31 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ArchivosGuardadosComponent } from './archivos-guardados.component';
 import { ArchivoStorageService, RegistroArchivo } from '../../services/archivo-storage.service';
+import { AuthService } from '../../services/auth.service';
 
 class ArchivoStorageServiceStub {
-  obtenerRegistros(): RegistroArchivo[] {
+  obtenerRegistros(_email?: string | null): RegistroArchivo[] {
     return [
       {
         nombre: 'demo.xlsx',
         tamano: 2048,
         fechaGuardado: new Date().toISOString(),
         ruta: 'assets/archivos/preescolar/demo.xlsx',
-        contenidoBase64: 'ZGF0YQ=='
+        contenidoBase64: 'ZGF0YQ==',
+        hash: 'hash-demo',
+        cct: '01DJN0000A',
+        email: 'demo@correo.mx'
       }
     ];
   }
 
   descargarRegistro(): void {}
+}
+
+class AuthServiceStub {
+  obtenerSesionActiva(): { email: string } {
+    return { email: 'demo@correo.mx' };
+  }
 }
 
 describe('ArchivosGuardadosComponent', () => {
@@ -25,7 +35,10 @@ describe('ArchivosGuardadosComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ArchivosGuardadosComponent],
-      providers: [{ provide: ArchivoStorageService, useClass: ArchivoStorageServiceStub }]
+      providers: [
+        { provide: ArchivoStorageService, useClass: ArchivoStorageServiceStub },
+        { provide: AuthService, useClass: AuthServiceStub }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ArchivosGuardadosComponent);
