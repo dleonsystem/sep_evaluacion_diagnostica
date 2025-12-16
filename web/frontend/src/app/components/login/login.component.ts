@@ -13,12 +13,11 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './login.component.scss'
 })
 export class LoginComponent implements OnInit {
+  cct = '';
   correo = '';
-  password = '';
   error: string | null = null;
   autenticando = false;
   redirect = '/carga-masiva';
-  correosRegistrados: string[] = [];
 
   constructor(
     private readonly authService: AuthService,
@@ -27,17 +26,15 @@ export class LoginComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.correosRegistrados = this.authService.obtenerCuentasRegistradas();
-    if (this.correosRegistrados.length === 0) {
+    const credenciales = this.authService.obtenerCredenciales();
+    if (!credenciales) {
       void this.router.navigate(['/carga-masiva']);
       return;
     }
 
     this.redirect = this.route.snapshot.queryParamMap.get('redirect') ?? this.redirect;
-    const correoGuardado = localStorage.getItem('correo-carga-preescolar');
-    this.correo = correoGuardado
-      ? this.authService.normalizarCorreo(correoGuardado)
-      : this.correosRegistrados[0];
+    this.cct = credenciales.cct;
+    this.correo = credenciales.correo;
   }
 
   async iniciarSesion(): Promise<void> {
@@ -45,7 +42,7 @@ export class LoginComponent implements OnInit {
     this.autenticando = true;
 
     try {
-      this.authService.iniciarSesion(this.correo, this.password);
+      this.authService.iniciarSesion(this.cct, this.correo);
       await Swal.fire({
         icon: 'success',
         title: 'Sesión iniciada',

@@ -5,7 +5,6 @@ import {
   ArchivoStorageService,
   RegistroArchivo
 } from '../../services/archivo-storage.service';
-import { AuthService } from '../../services/auth.service';
 import Swal from 'sweetalert2';
 
 @Component({

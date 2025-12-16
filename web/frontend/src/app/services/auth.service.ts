@@ -1,149 +1,99 @@
 import { Injectable } from '@angular/core';
 
-export interface CuentaGuardada {
-  email: string;
-  password: string;
-  ccts: string[];
-}
-
-interface SesionActiva {
-  email: string;
+export interface CredencialesGuardadas {
+  cct: string;
+  correo: string;
 }
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly cuentasKey = 'cuentas-preescolar';
+  private readonly credencialesKey = 'credenciales-preescolar';
   private readonly sesionKey = 'sesion-preescolar-activa';
 
-  registrarCarga(email: string, cct: string): { password: string; esNuevo: boolean } {
-    const correoNormalizado = this.normalizarCorreo(email);
-    const cctNormalizado = this.normalizarCct(cct);
-    const cuentas = this.obtenerCuentas();
-    const existente = cuentas.find((cuenta) => cuenta.email === correoNormalizado);
-
-    if (!existente) {
-      const password = this.generarContrasena();
-      cuentas.push({ email: correoNormalizado, password, ccts: [cctNormalizado] });
-      this.persistirCuentas(cuentas);
-      this.marcarSesionActiva(correoNormalizado);
-      return { password, esNuevo: true };
+  obtenerCredenciales(): CredencialesGuardadas | null {
+    const guardadas = localStorage.getItem(this.credencialesKey);
+    if (!guardadas) {
+      return null;
     }
 
-    if (!this.estaAutenticado(correoNormalizado)) {
-      throw new Error('Ya existe una cuenta con este correo. Inicia sesión para continuar con nuevas cargas.');
+    try {
+      const parsed = JSON.parse(guardadas) as CredencialesGuardadas;
+      if (parsed?.cct && parsed?.correo) {
+        return {
+          cct: this.normalizarCct(parsed.cct),
+          correo: this.normalizarCorreo(parsed.correo)
+        };
+      }
+      return null;
+    } catch {
+      return null;
     }
-
-    if (!existente.ccts.includes(cctNormalizado)) {
-      existente.ccts.push(cctNormalizado);
-      this.persistirCuentas(cuentas);
-    }
-
-    return { password: existente.password, esNuevo: false };
   }
 
-  iniciarSesion(email: string, password: string): void {
-    const correoNormalizado = this.normalizarCorreo(email);
-    const cuentas = this.obtenerCuentas();
-    const cuenta = cuentas.find((c) => c.email === correoNormalizado);
+  registrarCredenciales(cct: string, correo: string): void {
+    const credencialesActuales = this.obtenerCredenciales();
+    const cctNormalizado = this.normalizarCct(cct);
+    const correoNormalizado = this.normalizarCorreo(correo);
 
-    if (!cuenta) {
-      throw new Error('Aún no hay una cuenta asociada a este correo. Realiza tu primera carga.');
+    if (
+      credencialesActuales &&
+      (credencialesActuales.cct !== cctNormalizado || credencialesActuales.correo !== correoNormalizado)
+    ) {
+      throw new Error('Ya existe un acceso asociado a otro CCT o correo. Usa las credenciales originales.');
     }
 
-    if (cuenta.password !== password) {
-      throw new Error('La contraseña es incorrecta para este correo.');
+    localStorage.setItem(
+      this.credencialesKey,
+      JSON.stringify({ cct: cctNormalizado, correo: correoNormalizado })
+    );
+    this.cerrarSesion();
+  }
+
+  coincidenCredenciales(cct: string, correo: string): boolean {
+    const guardadas = this.obtenerCredenciales();
+    if (!guardadas) {
+      return true;
     }
 
-    this.marcarSesionActiva(correoNormalizado);
+    return (
+      guardadas.cct === this.normalizarCct(cct) && guardadas.correo === this.normalizarCorreo(correo)
+    );
+  }
+
+  iniciarSesion(cct: string, correo: string): void {
+    const guardadas = this.obtenerCredenciales();
+    if (!guardadas) {
+      throw new Error('Aún no hay credenciales registradas. Realiza tu primera carga para generarlas.');
+    }
+
+    if (!this.coincidenCredenciales(cct, correo)) {
+      throw new Error('El CCT o el correo no coinciden con tu primer envío.');
+    }
+
+    this.marcarSesionActiva();
   }
 
   cerrarSesion(): void {
     localStorage.removeItem(this.sesionKey);
   }
 
-  requiereLoginParaCorreo(email: string): boolean {
-    const correoNormalizado = this.normalizarCorreo(email);
-    return !!this.obtenerCuenta(correoNormalizado) && !this.estaAutenticado(correoNormalizado);
+  estaAutenticado(): boolean {
+    return localStorage.getItem(this.sesionKey) === 'true';
   }
 
-  estaAutenticado(email?: string): boolean {
-    const sesion = this.obtenerSesionActiva();
-    if (!sesion) {
-      return false;
-    }
-
-    if (!email) {
-      return true;
-    }
-
-    return sesion.email === this.normalizarCorreo(email);
+  requiereLoginParaNuevaCarga(): boolean {
+    return !!this.obtenerCredenciales() && !this.estaAutenticado();
   }
 
-  obtenerSesionActiva(): SesionActiva | null {
-    const guardada = localStorage.getItem(this.sesionKey);
-    if (!guardada) {
-      return null;
-    }
-
-    try {
-      const sesion = JSON.parse(guardada) as SesionActiva;
-      return sesion?.email ? { email: sesion.email } : null;
-    } catch {
-      return null;
-    }
-  }
-
-  obtenerCuenta(email: string): CuentaGuardada | null {
-    const correoNormalizado = this.normalizarCorreo(email);
-    return this.obtenerCuentas().find((cuenta) => cuenta.email === correoNormalizado) ?? null;
-  }
-
-  obtenerCuentasRegistradas(): string[] {
-    return this.obtenerCuentas().map((cuenta) => cuenta.email);
-  }
-
-  private obtenerCuentas(): CuentaGuardada[] {
-    const guardadas = localStorage.getItem(this.cuentasKey);
-    if (!guardadas) {
-      return [];
-    }
-
-    try {
-      const cuentas = JSON.parse(guardadas) as CuentaGuardada[];
-      return Array.isArray(cuentas)
-        ? cuentas.map((cuenta) => ({
-            email: this.normalizarCorreo(cuenta.email),
-            password: cuenta.password,
-            ccts: (cuenta.ccts ?? []).map((cct) => this.normalizarCct(cct))
-          }))
-        : [];
-    } catch {
-      return [];
-    }
-  }
-
-  private persistirCuentas(cuentas: CuentaGuardada[]): void {
-    localStorage.setItem(this.cuentasKey, JSON.stringify(cuentas));
-  }
-
-  private marcarSesionActiva(email: string): void {
-    const sesion: SesionActiva = { email: this.normalizarCorreo(email) };
-    localStorage.setItem(this.sesionKey, JSON.stringify(sesion));
+  private marcarSesionActiva(): void {
+    localStorage.setItem(this.sesionKey, 'true');
   }
 
   private normalizarCct(cct: string): string {
     return (cct ?? '').trim().toUpperCase();
   }
 
-  normalizarCorreo(correo: string): string {
+  private normalizarCorreo(correo: string): string {
     return (correo ?? '').trim().toLowerCase();
-  }
-
-  private generarContrasena(): string {
-    const randomBytes = crypto.getRandomValues(new Uint8Array(9));
-    const randomString = Array.from(randomBytes)
-      .map((byte) => String.fromCharCode(byte))
-      .join('');
-    return btoa(randomString).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
   }
 }
