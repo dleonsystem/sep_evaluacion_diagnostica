@@ -1,0 +1,72 @@
+Sub ConsolidarResultadosDelDia()
+    Dim carpeta As String, archivo As String, fechaHoy As String
+    Dim libroDestino As Workbook, libroOrigen As Workbook
+    Dim hojaOrigen As Worksheet, hojaDestino As Worksheet
+    Dim nombreHoja As Variant
+    Dim filaDestino As Long
+    Dim xlApp As Application
+    Dim fso As Object
+
+    ' Inicialización
+    carpeta = "\\10.3.10.146\Resultados\Compartido\"
+    fechaHoy = Format(Date, "yyyymmdd")
+    Set xlApp = Application
+    xlApp.ScreenUpdating = False
+    Set fso = CreateObject("Scripting.FileSystemObject")
+
+    ' Crear libro destino con las 10 hojas
+    Set libroDestino = Workbooks.Add
+    Application.DisplayAlerts = False
+    Do While libroDestino.Sheets.Count > 1
+        libroDestino.Sheets(1).Delete
+    Loop
+    Application.DisplayAlerts = True
+
+    nombreHoja = Array("PRE3", "PRI1", "PRI2", "PRI3", "PRI4", "PRI5", "PRI6", "SEC1", "SEC2", "SEC3")
+    Dim i As Integer
+    For i = 0 To UBound(nombreHoja)
+        libroDestino.Sheets.Add(After:=libroDestino.Sheets(libroDestino.Sheets.Count)).Name = nombreHoja(i)
+    Next i
+
+    ' Recorrer archivos
+    archivo = Dir(carpeta & "*.xls*")
+    Do While archivo <> ""
+        If InStr(archivo, fechaHoy) > 0 Then
+            Set libroOrigen = Workbooks.Open(carpeta & archivo)
+
+            For Each hojaOrigen In libroOrigen.Sheets
+                If IsInArray(hojaOrigen.Name, nombreHoja) Then
+                    Set hojaDestino = libroDestino.Sheets(hojaOrigen.Name)
+
+                    ' Determinar fila destino
+                    If hojaDestino.Cells(1, 1).Value = "" Then
+                        hojaOrigen.UsedRange.Copy hojaDestino.Cells(1, 1)
+                    Else
+                        filaDestino = hojaDestino.Cells(hojaDestino.Rows.Count, 1).End(xlUp).Row + 1
+                        hojaOrigen.UsedRange.Offset(1, 0).Copy hojaDestino.Cells(filaDestino, 1)
+                    End If
+                End If
+            Next hojaOrigen
+
+            libroOrigen.Close False
+        End If
+        archivo = Dir
+    Loop
+
+    ' Guardar archivo consolidado en C:\
+    libroDestino.SaveAs Filename:="C:\Procesados_" & fechaHoy & ".xlsx", FileFormat:=xlOpenXMLWorkbook
+    xlApp.ScreenUpdating = True
+    MsgBox "Consolidación completada en C:\Procesados_" & fechaHoy & ".xlsx"
+End Sub
+
+Function IsInArray(valor As String, arr As Variant) As Boolean
+    Dim i As Integer
+    IsInArray = False
+    For i = LBound(arr) To UBound(arr)
+        If arr(i) = valor Then
+            IsInArray = True
+            Exit Function
+        End If
+    Next i
+End Function
+

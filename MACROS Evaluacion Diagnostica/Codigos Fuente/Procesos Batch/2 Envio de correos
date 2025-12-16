@@ -1,0 +1,105 @@
+# Obtener fecha actual en formato yyyymmdd
+$fechaActual = Get-Date -Format "yyyyMMdd"
+
+# Ruta del log
+$logPath = "C:\RECIBE_SiCRER.25_26.SEPT1\log_envio.txt"
+"Inicio de envío: $(Get-Date)" | Out-File -FilePath $logPath -Encoding UTF8
+
+# Buscar archivo CSV que coincida con la fecha
+$carpetaCSV = "C:\RECIBE_SiCRER.25_26.SEPT1\ENVIAR"
+$archivoCSV = Get-ChildItem -Path $carpetaCSV -Filter "listado_correos_*_$fechaActual_*.csv" | Select-Object -First 1
+
+if (-not $archivoCSV) {
+    $msg = "No se encontró archivo CSV para la fecha $fechaActual"
+    Write-Host $msg
+    $msg | Out-File -FilePath $logPath -Append
+    pause
+    exit
+}
+
+# Configuración SMTP
+$smtpServer = "smtp.dopplerrelay.com"
+$smtpPort = 587
+$from = "resultados.ejercicios@nube.sep.gob.mx"
+$securePassword = ConvertTo-SecureString "097rlnwuoouyieouqdydf60unlb8qw" -AsPlainText -Force
+$credential = New-Object System.Net.NetworkCredential($from, $securePassword)
+
+# Plantilla HTML con referencias CID
+$plantillaHTML = @"
+<!-- HTML OMITIDO PARA BREVEDAD -->
+"@
+
+# Rutas de imágenes embebidas
+$logoPath = "C:\RECIBE_SiCRER.25_26.SEPT1\COMPLEMENTOS\image3.png"
+$piePath  = "C:\RECIBE_SiCRER.25_26.SEPT1\COMPLEMENTOS\image4.png"
+
+# Leer CSV y enviar correos
+Import-Csv $archivoCSV.FullName | ForEach-Object {
+    $id = $_.ID
+    $to = $_.Correo
+    $adjunto = Join-Path $carpetaCSV $_.adjunto
+
+    if (Test-Path $adjunto) {
+        $intentos = 0
+        $exito = $false
+
+        while ($intentos -lt 3 -and -not $exito) {
+            try {
+                $mail = New-Object System.Net.Mail.MailMessage
+                $mail.From = $from
+                $mail.To.Add($to)
+                $mail.Subject = "Resultados de los Ejercicios Integradores del Aprendizaje – Ciclo Escolar 2025–2026"
+                $mail.IsBodyHtml = $true
+
+                $htmlBody = $plantillaHTML -replace "<<ID>>", $id
+                $htmlView = [System.Net.Mail.AlternateView]::CreateAlternateViewFromString($htmlBody, $null, "text/html")
+
+                $logoLinked = New-Object System.Net.Mail.LinkedResource($logoPath, "image/png")
+                $logoLinked.ContentId = "logoCID"
+                $logoLinked.TransferEncoding = [System.Net.Mime.TransferEncoding]::Base64
+                $htmlView.LinkedResources.Add($logoLinked)
+
+                $pieLinked = New-Object System.Net.Mail.LinkedResource($piePath, "image/png")
+                $pieLinked.ContentId = "pieCID"
+                $pieLinked.TransferEncoding = [System.Net.Mime.TransferEncoding]::Base64
+                $htmlView.LinkedResources.Add($pieLinked)
+
+                $mail.AlternateViews.Add($htmlView)
+                $mail.Attachments.Add($adjunto)
+                $mail.ReplyTo = "dudas.ejercicios@nube.sep.gob.mx"
+
+                $smtp = New-Object System.Net.Mail.SmtpClient($smtpServer, $smtpPort)
+                $smtp.EnableSsl = $true
+                $smtp.Credentials = $credential
+                $smtp.Timeout = 120000
+
+                $smtp.Send($mail)
+                $msg = " Enviado a $to"
+                Write-Host $msg
+                $msg | Out-File -FilePath $logPath -Append
+                $exito = $true
+            } catch {
+                $intentos++
+                $msg = " Error al enviar a $to en intento $intentos : $_"
+                Write-Host $msg
+                $msg | Out-File -FilePath $logPath -Append
+                Start-Sleep -Seconds 5
+            }
+        }
+
+        if (-not $exito) {
+            $msg = " No se pudo enviar el correo a $to después de 3 intentos."
+            Write-Host $msg
+            $msg | Out-File -FilePath $logPath -Append
+        }
+    } else {
+        $msg = "📎 Adjunto no encontrado para ID $id : $adjunto"
+        Write-Host $msg
+        $msg | Out-File -FilePath $logPath -Append
+    }
+}
+
+# Finalizar log y pausar
+"Fin de envío: $(Get-Date)" | Out-File -FilePath $logPath -Append
+Write-Host "`nProceso finalizado. Revisa el log en: $logPath"
+pause

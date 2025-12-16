@@ -1,0 +1,162 @@
+Dim destinatarios As Variant
+Dim rutaContador As String
+Dim rutaLog As String
+
+Private Sub Application_Startup()
+    rutaContador = "C:\log_correo\contador.txt"
+    rutaLog = "C:\log_correo\registro_correos.csv"
+
+    If Not IsArray(destinatarios) Then
+        destinatarios = Array("valoraciones01@nube.sep.gob.mx", "valoraciones02@nube.sep.gob.mx", _
+                              "valoraciones03@nube.sep.gob.mx", "valoraciones04@nube.sep.gob.mx", _
+                              "valoraciones05@nube.sep.gob.mx", "valoraciones06@nube.sep.gob.mx", _
+                              "valoraciones07@nube.sep.gob.mx", "valoraciones08@nube.sep.gob.mx", _
+                              "valoraciones09@nube.sep.gob.mx", "valoraciones10@nube.sep.gob.mx")
+    End If
+
+    Dim inbox As Outlook.MAPIFolder
+    Dim correo As MailItem
+    Dim i As Long
+
+    ' Buscar la cuenta "valoraciones" en los Stores
+    Dim store As Outlook.store
+    For Each store In Application.Session.Stores
+        If LCase(store.DisplayName) Like "*valoraciones.ejercicios@nube.sep.gob.mx*" Then
+            Set inbox = store.GetDefaultFolder(olFolderInbox)
+            Exit For
+        End If
+    Next store
+
+    If inbox Is Nothing Then Exit Sub
+
+    For i = inbox.Items.Count To 1 Step -1
+        If TypeOf inbox.Items(i) Is MailItem Then
+            Set correo = inbox.Items(i)
+            If correo.UnRead Then
+                ProcesarCorreo correo
+            End If
+        End If
+    Next i
+End Sub
+
+Private Sub Application_NewMailEx(ByVal EntryIDCollection As String)
+    rutaContador = "C:\log_correo\contador.txt"
+    rutaLog = "C:\log_correo\registro_correos.csv"
+
+    If Not IsArray(destinatarios) Then
+        destinatarios = Array("valoraciones01@nube.sep.gob.mx", "valoraciones02@nube.sep.gob.mx", _
+                              "valoraciones03@nube.sep.gob.mx", "valoraciones04@nube.sep.gob.mx", _
+                              "valoraciones05@nube.sep.gob.mx", "valoraciones06@nube.sep.gob.mx", _
+                              "valoraciones07@nube.sep.gob.mx", "valoraciones08@nube.sep.gob.mx", _
+                              "valoraciones09@nube.sep.gob.mx", "valoraciones10@nube.sep.gob.mx")
+    End If
+
+    Dim entryIDs() As String
+    Dim i As Long
+    Dim correo As MailItem
+    entryIDs = Split(EntryIDCollection, ",")
+
+    For i = 0 To UBound(entryIDs)
+        Set correo = Application.Session.GetItemFromID(entryIDs(i))
+        If correo.Class = olMail Then
+            ' Usar Store.DisplayName en lugar de Parent.Parent
+            If LCase(correo.Parent.store.DisplayName) Like "*valoraciones.ejercicios@nube.sep.gob.mx*" Then
+                ProcesarCorreo correo
+            End If
+        End If
+    Next i
+End Sub
+
+
+Sub ProcesarCorreo(correo As MailItem)
+    Dim tieneAdjuntoValido As Boolean
+    Dim adjunto As Attachment
+    tieneAdjuntoValido = False
+
+    If correo.Attachments.Count > 0 Then
+        For Each adjunto In correo.Attachments
+            If LCase(Right(adjunto.FileName, 5)) = ".xlsx" Or LCase(Right(adjunto.FileName, 4)) = ".zip" Then
+                tieneAdjuntoValido = True
+                Exit For
+            End If
+        Next adjunto
+    End If
+
+    If Not tieneAdjuntoValido Then Exit Sub
+
+    Dim contador As Long
+    Dim destino As String
+    Dim correoReenviado As MailItem
+    Dim archivoLog As Integer
+    Dim nombreAdjunto As String
+    Dim cuerpoTexto As String
+    Dim asuntoTexto As String
+    Dim fechaHora As String
+    Dim remitenteReal As String
+    Dim idTexto As String
+
+    rutaContador = "C:\log_correo\contador.txt"
+    rutaLog = "C:\log_correo\registro_correos.csv"
+
+    If Dir(rutaContador) <> "" Then
+        Open rutaContador For Input As #1
+        Input #1, contador
+        Close #1
+    Else
+        contador = 0
+    End If
+
+    destino = CStr(destinatarios(contador Mod 10))
+    contador = contador + 1
+
+    Open rutaContador For Output As #1
+    Print #1, contador
+    Close #1
+
+    If correo.SenderEmailType = "EX" Then
+        remitenteReal = correo.Sender.GetExchangeUser.PrimarySmtpAddress
+    Else
+        remitenteReal = correo.SenderEmailAddress
+    End If
+
+    Set correoReenviado = correo.Forward
+    correoReenviado.Recipients.Add destino
+    correoReenviado.Subject = "Evaluacion Diagnostica tabla de datos"
+
+    idTexto = "ID:" & CStr(contador) & Mid(destino, 13, 2) & "|"
+    correoReenviado.Body = idTexto & vbCrLf & _
+                           "Remitente original: " & remitenteReal & vbCrLf & vbCrLf & correo.Body
+    correoReenviado.Send
+
+    cuerpoTexto = Replace(correo.Body, vbCrLf, " ")
+    asuntoTexto = Replace(correo.Subject, ",", " ")
+    fechaHora = Format(correo.ReceivedTime, "yyyy-mm-dd hh:nn:ss")
+
+    archivoLog = FreeFile
+    Open rutaLog For Append As #archivoLog
+
+    If correo.Attachments.Count > 0 Then
+        For Each adjunto In correo.Attachments
+            nombreAdjunto = adjunto.FileName
+            Print #archivoLog, _
+                """" & remitenteReal & """," & _
+                """" & asuntoTexto & """," & _
+                """" & cuerpoTexto & """," & _
+                """" & nombreAdjunto & """," & _
+                """" & fechaHora & """," & _
+                """" & destino & """"
+        Next adjunto
+    Else
+        Print #archivoLog, _
+            """" & remitenteReal & """," & _
+            """" & asuntoTexto & """," & _
+            """" & cuerpoTexto & """,""Sin adjunto""," & _
+            """" & fechaHora & """," & _
+            """" & destino & """"
+    End If
+
+    Close #archivoLog
+
+    correo.Delete
+End Sub
+

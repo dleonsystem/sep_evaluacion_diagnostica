@@ -1,0 +1,117 @@
+@echo off
+setlocal EnableDelayedExpansion
+
+:: Establecer el directorio de trabajo
+cd /d C:\RECIBE_SiCRER.25_26.SEPT\
+
+:: Ruta del ejecutable de 7-Zip
+set "7zip=C:\Program Files\7-Zip\7z.exe"
+
+:: Carpetas destino
+set "backup=COMPRIMIDOS"
+set "enviar=ENVIAR"
+set "redDestino=\\10.3.10.146\Resultados\Correos"
+
+:: Crear las carpetas si no existen
+if not exist "%backup%" mkdir "%backup%"
+if not exist "%enviar%" mkdir "%enviar%"
+if not exist "%redDestino%" (
+    echo No se puede acceder a la carpeta de red: %redDestino%
+) else (
+    echo Carpeta de red disponible: %redDestino%
+)
+
+:: Carpetas a excluir
+set "EXCLUDE=ADJUNTOS COMPLEMENTOS COMPRIMIDOS ENVIADOS ENVIAR INTEGRADOS NIVELES"
+
+:: Recorre todas las carpetas en el directorio actual
+for /D %%X in (*) do (
+    set "folder=%%~nxX"
+    set "skip=0"
+
+    :: Verificar si la carpeta está en la lista de exclusión
+    for %%E in (%EXCLUDE%) do (
+        if /I "!folder!"=="%%E" (
+            set "skip=1"
+        )
+    )
+
+    if "!skip!"=="0" (
+        echo Procesando carpeta: !folder!
+        call :ComprimirYMover "%%X" "!folder!"
+    )
+)
+echo Ejecutando script de PowerShell: correo3.ps1...
+powershell -ExecutionPolicy Bypass -File "%~dp0correo3.ps1"
+
+:: Obtener nombre de usuario y fecha/hora actual
+for /f %%U in ('whoami') do set "USERNAME=%%~nU"
+for /f %%D in ('powershell -command "Get-Date -Format yyyyMMdd_HHmm"') do set "STAMP=%%D"
+set "DESTINO=C:\RECIBE_SiCRER.25_26.SEPT\ENVIADOS\%USERNAME%_%STAMP%"
+
+:: Crear carpeta destino
+mkdir "%DESTINO%"
+
+:: Mover archivos .7z y .csv desde ENVIAR
+move /Y "%enviar%\*.7z" "%DESTINO%"
+move /Y "%enviar%\*.csv" "%DESTINO%"
+
+echo Proceso finalizado. Archivos enviados a los correos indicados.
+pause
+exit /b
+
+:: -------------------------------
+:: FUNCIONES
+:: -------------------------------
+
+:ComprimirYMover
+set "carpeta=%~1"
+set "nombre=%~2"
+
+:: Comprimir si no existe
+if not exist "%nombre%.7z" (
+    echo Comprimiendo carpeta %nombre%...
+    "C:\Program Files\7-Zip\7z.exe" a "%nombre%.7z" "%nombre%"
+)
+
+:: Generar nombre único para .7z
+set "zipBase=%nombre%"
+set "zipFinal=%zipBase%.7z"
+set /a count=1
+call :GenerarNombreUnicoZip
+
+:: Mover .7z a ENVIAR
+move /Y "%zipFinal%" "%enviar%\%zipFinal%"
+
+:: Copiar a red si existe
+if exist "%redDestino%" (
+    copy /Y "%enviar%\%zipFinal%" "%redDestino%\%zipFinal%"
+)
+
+:: Generar nombre único para carpeta
+set "folderBase=%nombre%"
+set "folderFinal=%folderBase%"
+set /a count=1
+call :GenerarNombreUnicoCarpeta
+
+:: Mover carpeta original a COMPRIMIDOS
+move /Y "%nombre%" "%backup%\%folderFinal%"
+echo %nombre% → Guardado como '%zipFinal%' y carpeta '%folderFinal%'
+exit /b
+
+:GenerarNombreUnicoZip
+if exist "%enviar%\%zipFinal%" (
+    set "zipFinal=%zipBase%_%count%.7z"
+    set /a count+=1
+    call :GenerarNombreUnicoZip
+)
+exit /b
+
+:GenerarNombreUnicoCarpeta
+if exist "%backup%\%folderFinal%" (
+    set "folderFinal=%folderBase%_%count%"
+    set /a count+=1
+    call :GenerarNombreUnicoCarpeta
+)
+exit /b
+

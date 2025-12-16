@@ -1,0 +1,224 @@
+Sub IntegrarEstadisticaUnicaPorDia()
+
+    Dim fso As Object, carpeta As Object, archivo As Object
+    Dim wbOrigen As Workbook, wbDestino As Workbook
+    Dim wsOrigen As Worksheet, wsDestino As Worksheet
+    Dim hojaNombre As Variant
+    Dim j As Long, lastRow As Long
+    Dim cct As Variant, turno As String, nivel As String, id As String
+    Dim filaDestino As Long, filaErrorVal As Long
+    Dim rutaCarpeta As String, rutaPlantilla As String, rutaFinal As String
+    Dim fechaHoyTexto As String, horaTexto As String, nombreFinal As String
+    Dim clave As Variant
+    Dim dictUnicos As Object, dictCCTError As Object
+    Dim totalErrorINT As Long
+
+    rutaCarpeta = "\\10.3.10.146\Resultados\Compartido\"
+    rutaPlantilla = "C:\Reportes\ESTADISTICA NACIONAL POR DIA.xlsx"
+    fechaHoyTexto = Format(Date, "yyyymmdd")
+    horaTexto = Format(Time, "hhmm")
+    nombreFinal = "ESTADISTICA NACIONAL POR DIA_" & fechaHoyTexto & "_" & horaTexto & ".xlsx"
+    rutaFinal = "C:\Reportes\" & nombreFinal
+
+    Set dictUnicos = CreateObject("Scripting.Dictionary")
+    Set dictCCTError = CreateObject("Scripting.Dictionary")
+    totalErrorINT = 0
+
+    ' Abrir plantilla limpia
+    Set wbDestino = Workbooks.Open(rutaPlantilla)
+
+    ' Crear o limpiar hoja Conteo
+    On Error Resume Next
+    Set wsDestino = wbDestino.Sheets("Conteo")
+    If wsDestino Is Nothing Then
+        Set wsDestino = wbDestino.Sheets.Add
+        wsDestino.Name = "Conteo"
+    Else
+        wsDestino.Cells.Clear
+    End If
+    On Error GoTo 0
+
+    ' Encabezados
+    wsDestino.Cells(1, 1).Value = "cct"
+    wsDestino.Cells(1, 2).Value = "turno"
+    wsDestino.Cells(1, 3).Value = "nivel"
+    wsDestino.Cells(1, 4).Value = "id"
+    wsDestino.Cells(1, 11).Value = "ERROR_INT"
+    wsDestino.Cells(1, 13).Value = "CCT CON ERROR"
+    filaDestino = 2
+    filaErrorVal = 2
+
+    ' Hojas a procesar
+    Dim hojas() As Variant
+    hojas = Array("PRE3", "PRI1", "PRI2", "PRI3", "PRI4", "PRI5", "PRI6", "SEC1", "SEC2", "SEC3", "SEC4", "SEC5", "SEC6")
+
+    ' Recorre todos los archivos en la carpeta
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Set carpeta = fso.GetFolder(rutaCarpeta)
+
+    For Each archivo In carpeta.Files
+        If LCase(fso.GetExtensionName(archivo.Name)) Like "xls*" Then
+            If InStr(archivo.Name, "Reporte_") > 0 And InStr(archivo.Name, fechaHoyTexto) > 0 Then
+                Set wbOrigen = Workbooks.Open(archivo.Path)
+
+                ' Procesar hojas de datos
+                For Each hojaNombre In hojas
+                    On Error Resume Next
+                    Set wsOrigen = wbOrigen.Sheets(hojaNombre)
+                    On Error GoTo 0
+
+                    If Not wsOrigen Is Nothing Then
+                        lastRow = wsOrigen.Cells(wsOrigen.Rows.Count, "A").End(xlUp).Row
+
+                        For j = 2 To lastRow
+                            cct = Trim(wsOrigen.Cells(j, 1).Value)
+                            turno = Trim(wsOrigen.Cells(j, 2).Value)
+                            nivel = Trim(wsOrigen.Cells(j, 4).Value)
+                            id = Trim(wsOrigen.Cells(j, 44).Value)
+
+                            If cct <> "" And turno <> "" And nivel <> "" And id <> "" Then
+                                clave = cct & "|" & turno & "|" & nivel & "|" & id
+                                If Not dictUnicos.Exists(clave) Then
+                                    dictUnicos.Add clave, Array(cct, turno, nivel, id)
+                                End If
+                            End If
+                        Next j
+                    End If
+                    Set wsOrigen = Nothing
+                Next hojaNombre
+
+                ' Contar filas en ERROR_INT
+                On Error Resume Next
+                Set wsOrigen = wbOrigen.Sheets("ERROR_INT")
+                On Error GoTo 0
+                If Not wsOrigen Is Nothing Then
+                    lastRow = wsOrigen.Cells(wsOrigen.Rows.Count, "A").End(xlUp).Row
+                    If lastRow > 1 Then totalErrorINT = totalErrorINT + (lastRow - 1)
+                End If
+
+                ' Extraer CCTs con error de ERROR_VAL
+                On Error Resume Next
+                Set wsOrigen = wbOrigen.Sheets("ERROR_VAL")
+                On Error GoTo 0
+                If Not wsOrigen Is Nothing Then
+                    lastRow = wsOrigen.Cells(wsOrigen.Rows.Count, "E").End(xlUp).Row
+                    For j = 2 To lastRow
+                        If IsNumeric(wsOrigen.Cells(j, 5).Value) Then
+                            If wsOrigen.Cells(j, 5).Value > 0 Then
+                                cct = Trim(wsOrigen.Cells(j, 1).Value)
+                                If cct <> "" Then
+                                    If Not dictCCTError.Exists(cct) Then
+                                        dictCCTError.Add cct, True
+                                    End If
+                                End If
+                            End If
+                        End If
+                    Next j
+                End If
+
+                wbOrigen.Close SaveChanges:=False
+            End If
+        End If
+    Next archivo
+
+    ' Escribir registros únicos
+    Dim item As Variant
+    For Each clave In dictUnicos.Keys
+        item = dictUnicos(clave)
+        wsDestino.Cells(filaDestino, 1).Value = item(0)
+        wsDestino.Cells(filaDestino, 2).Value = item(1)
+        wsDestino.Cells(filaDestino, 3).Value = item(2)
+        wsDestino.Cells(filaDestino, 4).Value = item(3)
+        filaDestino = filaDestino + 1
+    Next clave
+
+    ' Escribir total de ERROR_INT
+    wsDestino.Cells(2, 11).Value = totalErrorINT
+
+    ' Escribir lista de CCTs con error
+    For Each cct In dictCCTError.Keys
+        wsDestino.Cells(filaErrorVal, 13).Value = cct
+        filaErrorVal = filaErrorVal + 1
+    Next cct
+    
+'------------------------------------------------------------------------------------------------------------------
+
+    Sheets("Conteo").Select
+    Set wsDestino = wbDestino.Sheets("Conteo")
+    lastRow = wsDestino.Cells(wsDestino.Rows.Count, "A").End(xlUp).Row
+
+    Range("E1").Select
+    ActiveCell.FormulaR1C1 = "llave"
+    Range("F1").Select
+    ActiveCell.FormulaR1C1 = "muestra"
+    Range("G1").Select
+    ActiveCell.FormulaR1C1 = "ident"
+    
+    Range("E2").Select
+    ActiveCell.FormulaR1C1 = "=CONCAT(RC[-4],RC[-3])"
+    Selection.AutoFill Destination:=Range("E2:E" + CStr(lastRow))
+
+    Range("F2").Select
+    ActiveCell.FormulaR1C1 = "=XLOOKUP(RC[-1],Aux!C[-5],Aux!C[-2],0,0,1)"
+    Selection.AutoFill Destination:=Range("F2:F" + CStr(lastRow))
+    
+    Range("G2").Select
+    ActiveCell.FormulaR1C1 = "=TEXT(VALUE(MID(RC[-6],1,2)),""##"")"
+    Selection.AutoFill Destination:=Range("G2:G" + CStr(lastRow))
+
+
+    Set wsDestino = wbDestino.Sheets("Conteo")
+    lastRow = wsDestino.Cells(wsDestino.Rows.Count, "M").End(xlUp).Row
+
+    Range("O2").Select
+    ActiveCell.FormulaR1C1 = "=TEXT(VALUE(MID(RC[-2],1,2)),""##"")"
+    If lastRow > 2 Then
+    Selection.AutoFill Destination:=Range("O2:O" + CStr(lastRow))
+    End If
+
+
+    Sheets("Hoja1").Select
+    Cells.Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    Range("K1").Select
+
+    Sheets("Conteo").Select
+    Cells.Select
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    Range("K1").Select
+
+
+    Sheets("Hoja1").Select
+
+    hojasOcultas = Array("Conteo", "Aux")
+
+    ' Recorrer el arreglo y ocultar cada hoja
+    For Each nombreHoja In hojasOcultas
+        Sheets(nombreHoja).Visible = xlSheetVeryHidden
+    Next nombreHoja
+
+
+
+'---------------------------------------------------------------------------------------------------------------------
+    
+    
+    
+
+    ' Guardar como nuevo archivo con fecha y hora
+    Application.DisplayAlerts = False
+    wbDestino.SaveAs rutaFinal
+    wbDestino.Close SaveChanges:=False
+    Application.DisplayAlerts = True
+
+    MsgBox "? Archivo generado: " & nombreFinal
+
+End Sub
+
+
+

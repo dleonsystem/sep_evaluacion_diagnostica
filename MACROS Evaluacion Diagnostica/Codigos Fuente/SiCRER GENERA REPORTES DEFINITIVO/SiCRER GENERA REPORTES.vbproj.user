@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PublishUrlHistory>C:\2025\EVALUACIÓN DIAGNÓSTICA 2025\PROPUESTA EXCELES\PUBLICACIÓN\AGRUPADOS D\|C:\2025\EVALUACIÓN DIAGNÓSTICA 2025\PROPUESTA EXCELES\PUBLICACIÓN\AGRUPADOS C\|C:\2025\EVALUACIÓN DIAGNÓSTICA 2025\PROPUESTA EXCELES\PUBLICACIÓN\AGRUPADOS B\|C:\2025\EVALUACIÓN DIAGNÓSTICA 2025\PROPUESTA EXCELES\PUBLICACIÓN\AGRUPADOS\|C:\2025\EVALUACIÓN DIAGNÓSTICA 2025\PROPUESTA EXCELES\PUBLICACIÓN\ID\</PublishUrlHistory>
+    <InstallUrlHistory />
+    <SupportUrlHistory />
+    <UpdateUrlHistory />
+    <BootstrapperUrlHistory />
+    <ErrorReportUrlHistory />
+    <FallbackCulture>es-ES</FallbackCulture>
+    <VerifyUploadedFiles>false</VerifyUploadedFiles>
+  </PropertyGroup>
+  <PropertyGroup>
+    <EnableSecurityDebugging>false</EnableSecurityDebugging>
+  </PropertyGroup>
+</Project>

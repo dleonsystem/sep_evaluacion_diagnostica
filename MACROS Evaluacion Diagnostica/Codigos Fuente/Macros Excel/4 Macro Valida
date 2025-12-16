@@ -1,0 +1,653 @@
+Option Explicit
+
+'===============================
+'  UTIL: OBTENER LIBRO ABIERTO
+'===============================
+Function ObtenerLibroAbierto(nombreLibro As String) As Workbook
+    Dim wb As Workbook
+    For Each wb In Application.Workbooks
+        If wb.Name = nombreLibro Then
+            Set ObtenerLibroAbierto = wb
+            Exit Function
+        End If
+    Next wb
+    Set ObtenerLibroAbierto = Nothing
+End Function
+
+'==========================================================
+'  GENERAR RESUMEN NIVEL–CCT–TURNO EN RESUMEN_NCT
+'==========================================================
+Function GenerarResumenNCT(ByVal libro As Workbook, _
+                           Optional ByVal nombreHoja As String = "RESUMEN_NCT") As Long
+    Dim hojas As Variant
+    hojas = Array("PRE3", "PRI1", "PRI2", "PRI3", "PRI4", "PRI5", "PRI6", "SEC1", "SEC2", "SEC3")
+
+    Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")
+    Dim ws As Worksheet, ultima As Long, r As Long
+    Dim nivel As String, cct As String, turno As String, clave As String
+    Dim nomHoja As Variant
+
+    ' Leer datos y agrupar
+    For Each nomHoja In hojas
+        On Error Resume Next
+        Set ws = libro.Sheets(CStr(nomHoja))
+        On Error GoTo 0
+        If Not ws Is Nothing Then
+            ultima = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+            For r = 2 To ultima
+                cct = Trim(ws.Cells(r, "A").Text)
+                turno = Trim(ws.Cells(r, "B").Text)
+                nivel = Trim(ws.Cells(r, "D").Text)
+                If cct <> "" And turno <> "" And nivel <> "" Then
+                    clave = nivel & "|" & cct & "|" & turno
+                    If dict.Exists(clave) Then
+                        dict(clave) = dict(clave) + 1
+                    Else
+                        dict.Add clave, 1
+                    End If
+                End If
+            Next r
+            Set ws = Nothing
+        End If
+    Next nomHoja
+
+    ' Crear / limpiar hoja de salida
+    Dim hojaOut As Worksheet
+    On Error Resume Next
+    Set hojaOut = libro.Sheets(nombreHoja)
+    On Error GoTo 0
+    If hojaOut Is Nothing Then
+        Set hojaOut = libro.Sheets.Add(After:=libro.Sheets(libro.Sheets.Count))
+        hojaOut.Name = nombreHoja
+    Else
+        hojaOut.Cells.Clear
+    End If
+
+    ' Encabezados
+    hojaOut.Range("A1:D1").value = Array("NIVEL", "CCT", "TURNO", "TOTAL")
+
+    ' Volcado
+    Dim filaOut As Long: filaOut = 2
+    Dim item As Variant, partes As Variant
+    For Each item In dict.Keys
+        partes = Split(CStr(item), "|")
+        hojaOut.Cells(filaOut, 1).value = partes(0)
+        hojaOut.Cells(filaOut, 2).value = partes(1)
+        hojaOut.Cells(filaOut, 3).value = partes(2)
+        hojaOut.Cells(filaOut, 4).value = dict(item)
+        filaOut = filaOut + 1
+    Next item
+    hojaOut.Columns("A:D").AutoFit
+
+    GenerarResumenNCT = dict.Count
+End Function
+
+'==========================================================
+'  MARCAR ERRORES, RESUMEN POR CCT/TURNO/GRADO
+'==========================================================
+Sub MarcarErroresYGenerarResumen()
+    Dim hojasRango As Variant
+    Dim hoja As Worksheet, hojaResumen As Worksheet
+    Dim hojaNombre As String, colFin As String
+    Dim ultimaFila As Long, fila As Long, colNumFin As Long, col As Long
+    Dim cct As String, turno As String, grado As String, claveResumen As String
+    Dim dictResumen As Object
+    Dim tieneVacio As Boolean
+    Dim valoresResumen As Variant
+    Dim celda As Range, info
+    Dim libroDestino As Workbook
+
+    ' Abrir libro destino
+    Set libroDestino = ObtenerLibroAbierto("0000000000_TODOS.xlsx")
+    If libroDestino Is Nothing Then
+        Set libroDestino = Workbooks.Open("C:\RECIBE_SiCRER.25_26.SEPT\NIVELES\0000000000_TODOS.xlsx")
+    End If
+
+    '*****************************************************
+   ' VALIDAR CELDAS*************************************************************
+    '****************************************************
+    
+    Dim ws As Worksheet, rangoVal As Range, c As Range
+    Dim fila2Rev As Long, ultima2Fila As Long
+        
+    ' ====================================================
+    ' ELIMINAR FILAS DONDE TODAS LAS VALORACIONES (N:colFin) ESTÉN VACÍAS
+    ' ====================================================
+    For Each ws In libroDestino.Worksheets
+        Select Case UCase(ws.Name)
+            Case "PRE3": colFin = "X"
+            Case "PRI1", "PRI2": colFin = "W"
+            Case "PRI3", "PRI4": colFin = "AM"
+            Case "PRI5", "PRI6": colFin = "AL"
+            Case "SEC1", "SEC2": colFin = "AH"
+            Case "SEC3": colFin = "AG"
+            Case Else: colFin = ""
+        End Select
+    
+        If colFin <> "" Then
+            ultima2Fila = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    
+            ' Recorremos de abajo hacia arriba para poder eliminar sin problemas
+            For fila2Rev = ultima2Fila To 2 Step -1
+                Set rangoVal = ws.Range("N" & fila2Rev & ":" & colFin & fila2Rev)
+    
+                ' Si todas están vacías
+                If Application.WorksheetFunction.CountA(rangoVal) = 0 Then
+                    ws.Rows(fila2Rev).Delete
+                End If
+            Next fila2Rev
+        End If
+    Next ws
+        
+        
+   ' ====================================================
+    ' Rellenar con "7" cuando haya cada rango (rutina v7)
+   ' ====================================================
+        
+        For Each ws In libroDestino.Worksheets
+            Select Case UCase(ws.Name)
+                Case "PRE3": colFin = "X"
+                Case "PRI1", "PRI2": colFin = "W"
+                Case "PRI3", "PRI4": colFin = "AM"
+                Case "PRI5", "PRI6": colFin = "AL"
+                Case "SEC1", "SEC2": colFin = "AH"
+                Case "SEC3": colFin = "AG"
+                Case Else: colFin = ""
+            End Select
+        
+            If colFin <> "" Then
+                ultima2Fila = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+                For fila2Rev = 2 To ultima2Fila
+                    Set rangoVal = ws.Range("N" & fila2Rev & ":" & colFin & fila2Rev)
+                    For Each c In rangoVal
+                        If Trim(c.value) = "" Or _
+                           (c.value <> 0 And c.value <> 1 And c.value <> 2 And c.value <> 3) Then
+                            c.value = 7
+                        End If
+                    Next c
+                Next fila2Rev
+            End If
+        Next ws
+
+   ' ====================================================
+        'AJUSTAR EL CAMPO MATRICULA,
+   ' ====================================================
+        For Each ws In libroDestino.Worksheets
+            ultimaFila = ws.Cells(ws.Rows.Count, "I").End(xlUp).Row  ' Encontrar la última fila con datos en la columna I
+        
+            ' Recorremos todas las filas de la columna I
+            For fila = 2 To ultimaFila
+                Set celda = ws.Cells(fila, "I")
+                
+                ' Eliminar espacios al principio, al final y entre caracteres
+                celda.value = Replace(Trim(celda.value), " ", "")
+                
+                ' Limitar la longitud a 11 caracteres
+                If Len(celda.value) > 11 Then
+                    celda.value = Left(celda.value, 11)
+                End If
+            Next fila
+        Next ws
+    
+    
+    
+    ' ====================================================
+
+    Set dictResumen = CreateObject("Scripting.Dictionary")
+
+    ' Preparar hoja ERROR_VAL
+    On Error Resume Next
+    Set hojaResumen = libroDestino.Sheets("ERROR_VAL")
+    On Error GoTo 0
+    If hojaResumen Is Nothing Then
+        Set hojaResumen = libroDestino.Sheets.Add(After:=libroDestino.Sheets(libroDestino.Sheets.Count))
+        hojaResumen.Name = "ERROR_VAL"
+    Else
+        hojaResumen.Cells.Clear
+    End If
+    hojaResumen.Range("A1:E1").value = Array("CCT", "TURNO", "GRADO", "TOTAL", "CON ERROR")
+
+    ' Lista de hojas y columnas finales
+    hojasRango = Array( _
+        Array("PRE3", "X"), _
+        Array("PRI1", "W"), Array("PRI2", "W"), _
+        Array("PRI3", "AM"), Array("PRI4", "AM"), _
+        Array("PRI5", "AL"), Array("PRI6", "AL"), _
+        Array("SEC1", "AH"), Array("SEC2", "AH"), Array("SEC3", "AG") _
+    )
+
+    ' Procesar cada hoja: validación y marcado
+    For Each info In hojasRango
+        hojaNombre = CStr(info(0))
+        colFin = CStr(info(1))
+
+        On Error Resume Next
+        Set hoja = libroDestino.Sheets(hojaNombre)
+        On Error GoTo 0
+
+        If Not hoja Is Nothing Then
+            colNumFin = hoja.Range(colFin & "1").Column
+            ultimaFila = hoja.Cells(hoja.Rows.Count, "A").End(xlUp).Row
+
+            For fila = 2 To ultimaFila
+                cct = Trim(hoja.Cells(fila, "A").Text)
+                turno = Trim(hoja.Cells(fila, "B").Text)
+                grado = Trim(hoja.Cells(fila, "F").Text)
+
+                tieneVacio = False
+
+                ' Validar B:M vacías
+                For col = 2 To 13
+                    Set celda = hoja.Cells(fila, col)
+                    If Trim(celda.Text) = "" Then
+                        tieneVacio = True
+                        celda.Interior.ColorIndex = 6
+                    End If
+                Next col
+
+                ' Validar N..colFin (vacío o distinto de 0–3)
+                For col = 14 To colNumFin
+                    Set celda = hoja.Cells(fila, col)
+                    If Trim(celda.Text) = "" Or Not IsNumeric(celda.value) Or _
+                       (celda.value <> 0 And celda.value <> 1 And celda.value <> 2 And celda.value <> 3 And celda.value <> 7) Then
+                        tieneVacio = True
+                        celda.Interior.ColorIndex = 6
+                    End If
+                Next col
+
+                ' Validar que la columna A CCT tenga exactamente 10 caracteres
+                If Len(Trim(hoja.Cells(fila, 1).value)) <> 10 Then
+                    hoja.Cells(fila, 1).Interior.ColorIndex = 6 ' Amarillo
+                    tieneVacio = True ' opcional: marcar la fila con error
+                End If
+
+                ' Validar que la columna M GRUPO
+                If Len(Trim(hoja.Cells(fila, 13).value)) > 9 Then
+                    hoja.Cells(fila, 13).Interior.ColorIndex = 6 ' Amarillo
+                    tieneVacio = True ' opcional: marcar la fila con error
+                End If
+                
+                
+                ' Validar que la columna L GENERO
+                If Len(Trim(hoja.Cells(fila, 12).value)) > 9 Then
+                    hoja.Cells(fila, 12).Interior.ColorIndex = 6 ' Amarillo
+                    tieneVacio = True ' opcional: marcar la fila con error
+                End If
+
+
+                ' Contar para ERROR_VAL
+                If cct <> "" And turno <> "" And (grado <> "" Or grado = "9") Then
+                    claveResumen = cct & "|" & turno & "|" & grado
+                    If Not dictResumen.Exists(claveResumen) Then
+                        dictResumen.Add claveResumen, Array(0, 0)
+                    End If
+                    valoresResumen = dictResumen(claveResumen)
+                    valoresResumen(0) = valoresResumen(0) + 1 ' Total
+                    If tieneVacio Then
+                        hoja.Cells(fila, "AN").value = "X"
+                        valoresResumen(1) = valoresResumen(1) + 1
+                    End If
+                    dictResumen(claveResumen) = valoresResumen
+                ElseIf tieneVacio Then
+                    hoja.Cells(fila, "AN").value = "X"
+                End If
+            Next fila
+        End If
+
+        Set hoja = Nothing
+    Next info
+
+    ' Volcar ERROR_VAL
+    Dim filaRes As Long: filaRes = 2
+    Dim clave As Variant, partes
+    For Each clave In dictResumen.Keys
+        partes = Split(clave, "|")
+        hojaResumen.Cells(filaRes, 1).value = partes(0)
+        hojaResumen.Cells(filaRes, 2).value = partes(1)
+        hojaResumen.Cells(filaRes, 3).value = partes(2)
+        hojaResumen.Cells(filaRes, 4).value = dictResumen(clave)(0)
+        hojaResumen.Cells(filaRes, 5).value = dictResumen(clave)(1)
+        filaRes = filaRes + 1
+    Next clave
+    hojaResumen.Columns("A:E").AutoFit
+
+    ' === 1) Mover/Eliminar registros a nuevo archivo ===
+    Call CortarErroresPorHoja
+
+    ' === 2) Reabrir el libro ya depurado ===
+    Set libroDestino = Nothing
+    Set libroDestino = Workbooks.Open("C:\RECIBE_SiCRER.25_26.SEPT\NIVELES\0000000000_TODOS.xlsx")
+
+    ' === 3) Generar RESUMEN_NCT y obtener total de escuelas ===
+    Dim totalEscuelas As Long
+    totalEscuelas = GenerarResumenNCT(libroDestino, "RESUMEN_NCT")
+
+    libroDestino.Save
+    libroDestino.Close SaveChanges:=True
+
+    MsgBox "? Validación finalizada. El archivo con registros con errores ha sido generado. Hoja RESUMEN_NCT creada" _
+           & vbCrLf & "Total de escuelas para reportes: " & totalEscuelas, vbInformation
+           
+    ' === 4) Regresar a carpeta "adjuntos" los XLSX listados en columna AS de PRE3..SEC3 ===
+    Call RegresarAdjuntosDesdeRegistros_V4
+           
+End Sub
+
+'==========================================================
+'  GENERAR ARCHIVO CON REGISTROS A VALIDAR
+'==========================================================
+Sub CortarErroresPorHoja()
+    Dim wbOrigen As Workbook, wbNuevo As Workbook
+    Dim wsErrores As Worksheet, wsErroresCopia As Worksheet
+    Dim hojaNombre As Variant, hojaActual As Worksheet, hojaNueva As Worksheet
+    Dim cctBuscar As String, turnoBuscar As String
+    Dim filaError As Long, filaOrigen As Long, filaDestino As Long
+    Dim hojaDatos As Variant
+    Dim ultimaFilaErr As Long, ultimaFilaHoja As Long
+    Dim fechaHoraActual As String, nombreArchivo As String, rutaArchivo As String
+    Dim col As Long
+
+    Set wbOrigen = ObtenerLibroAbierto("0000000000_TODOS.xlsx")
+    If wbOrigen Is Nothing Then
+        Set wbOrigen = Workbooks.Open("C:\RECIBE_SiCRER.25_26.SEPT\NIVELES\0000000000_TODOS.xlsx")
+    End If
+
+    Set wsErrores = wbOrigen.Sheets("ERROR_VAL")
+    hojaDatos = Array("PRE3", "PRI1", "PRI2", "PRI3", "PRI4", "PRI5", "PRI6", "SEC1", "SEC2", "SEC3")
+
+    ' Crear nuevo archivo destino
+    Set wbNuevo = Workbooks.Add(xlWBATWorksheet)
+
+    ' Crear hojas vacías
+    For Each hojaNombre In hojaDatos
+        Set hojaActual = wbOrigen.Sheets(CStr(hojaNombre))
+        Set hojaNueva = wbNuevo.Sheets.Add(After:=wbNuevo.Sheets(wbNuevo.Sheets.Count))
+        hojaNueva.Name = CStr(hojaNombre)
+        hojaNueva.Rows(1).value = hojaActual.Rows(1).value
+    Next hojaNombre
+
+    ' Copiar ERROR_VAL al nuevo archivo
+    wbOrigen.Sheets("ERROR_VAL").Copy After:=wbNuevo.Sheets(wbNuevo.Sheets.Count)
+    Set wsErroresCopia = wbNuevo.Sheets(wbNuevo.Sheets.Count)
+    wsErroresCopia.Name = "ERROR_VAL"
+
+    ' Recorrer errores y copiar filas
+    ultimaFilaErr = wsErrores.Cells(wsErrores.Rows.Count, "A").End(xlUp).Row
+
+    For filaError = 2 To ultimaFilaErr
+        If Val(Trim(wsErrores.Cells(filaError, 5).value)) > 0 Then
+            cctBuscar = Trim(wsErrores.Cells(filaError, 1).value)
+            turnoBuscar = Trim(wsErrores.Cells(filaError, 2).value)
+
+            For Each hojaNombre In hojaDatos
+                Set hojaActual = wbOrigen.Sheets(CStr(hojaNombre))
+                Set hojaNueva = wbNuevo.Sheets(CStr(hojaNombre))
+
+                ultimaFilaHoja = hojaActual.Cells(hojaActual.Rows.Count, "A").End(xlUp).Row
+                filaOrigen = 2
+
+                Do While filaOrigen <= ultimaFilaHoja
+                    If Trim(hojaActual.Cells(filaOrigen, 1).value) = cctBuscar And _
+                       Trim(hojaActual.Cells(filaOrigen, 2).value) = turnoBuscar Then
+
+                        filaDestino = hojaNueva.Cells(hojaNueva.Rows.Count, "A").End(xlUp).Row + 1
+                        For col = 1 To hojaActual.Cells(filaOrigen, hojaActual.Columns.Count).End(xlToLeft).Column
+                            hojaNueva.Cells(filaDestino, col).value = hojaActual.Cells(filaOrigen, col).value
+                            hojaNueva.Cells(filaDestino, col).Interior.Color = hojaActual.Cells(filaOrigen, col).Interior.Color
+                        Next col
+                        hojaActual.Rows(filaOrigen).Delete
+                        ultimaFilaHoja = ultimaFilaHoja - 1
+                    Else
+                        filaOrigen = filaOrigen + 1
+                    End If
+                Loop
+            Next hojaNombre
+        End If
+    Next filaError
+
+    ' Guardar archivo nuevo
+    fechaHoraActual = Format(Now, "yyyy-mm-dd_HHmm")
+    nombreArchivo = "registros_a_validar_" & fechaHoraActual & ".xlsx"
+    rutaArchivo = "C:\RECIBE_SiCRER.25_26.SEPT\NIVELES\" & nombreArchivo
+
+    wbNuevo.SaveAs Filename:=rutaArchivo, FileFormat:=xlOpenXMLWorkbook
+    wbNuevo.Close SaveChanges:=False
+
+    wbOrigen.Save
+    wbOrigen.Close SaveChanges:=True
+End Sub
+
+'==========================================================
+'  UTIL: DEVOLVER ARCHIVOS XLSX A CARPETA "ADJUNTOS"
+'==========================================================
+
+'==========================================================
+'  DEVOLVER XLSX A "ADJUNTOS" (SIN CREAR CARPETAS)
+'  Lee nombres en columna AS de hojas PRE3..SEC3 del archivo
+'  "registros_a_validar_*.xlsx" ubicado en \NIVELES\
+'==========================================================
+
+
+' ============================================
+'  RegresarAdjuntosDesdeRegistros_V4 (exacto)
+'  - Respeta el nombre de AS tal cual (sin limpiar)
+'  - Escribe nombres únicos en AT (AS_dedup)
+'  - Busca SOLO en XLSPRE/XLSPRI/XLSSEC según la hoja
+'  - Mueve a \ADJUNTOS\
+' ============================================
+Public Sub RegresarAdjuntosDesdeRegistros_V4()
+    Dim rutaBase As String, rutaNiveles As String, rutaDestino As String
+    Dim rutaPRE As String, rutaPRI As String, rutaSEC As String
+    Dim wbReg As Workbook, rutaReg As String
+    Dim hojasValidas As Variant
+    Dim movidos As Long, noEncontrados As Long, duplicadosOmitidosTotal As Long
+    
+    ' === RUTAS BASE ===
+    rutaBase = "C:\RECIBE_SiCRER.25_26.SEPT\"
+    rutaNiveles = IncludeTrailingSlash(rutaBase & "NIVELES")
+    rutaDestino = IncludeTrailingSlash(rutaBase & "ADJUNTOS")
+    
+    rutaPRE = IncludeTrailingSlash(rutaBase & "ADJUNTOS\XLSPRE")
+    rutaPRI = IncludeTrailingSlash(rutaBase & "ADJUNTOS\XLSPRI")
+    rutaSEC = IncludeTrailingSlash(rutaBase & "ADJUNTOS\XLSSEC")
+    
+    ' === VALIDACIONES (sin crear) ===
+    If Not CarpetaExiste(rutaNiveles) Then
+        MsgBox "No existe la carpeta NIVELES: " & rutaNiveles, vbCritical: Exit Sub
+    End If
+    If Not CarpetaExiste(rutaDestino) Then
+        MsgBox "No existe la carpeta destino ADJUNTOS: " & rutaDestino, vbCritical: Exit Sub
+    End If
+    If Not CarpetaExiste(rutaPRE) Or Not CarpetaExiste(rutaPRI) Or Not CarpetaExiste(rutaSEC) Then
+        MsgBox "Faltan carpetas de origen (XLSPRE/XLSPRI/XLSSEC).", vbCritical: Exit Sub
+    End If
+    
+    ' === ABRIR "registros_a_validar_*.xlsx" más reciente ===
+    rutaReg = ObtenerRegistrosAValidarMasReciente(rutaNiveles)
+    If Len(rutaReg) = 0 Then
+        MsgBox "No se encontró 'registros_a_validar_*.xlsx' en: " & rutaNiveles, vbExclamation: Exit Sub
+    End If
+    Set wbReg = Workbooks.Open(Filename:=rutaReg, ReadOnly:=False) ' escribiremos AT
+    
+    ' === HOJAS A CONSIDERAR ===
+    hojasValidas = Array("PRE3", "PRI1", "PRI2", "PRI3", "PRI4", "PRI5", "PRI6", "SEC1", "SEC2", "SEC3")
+    
+    ' === POR HOJA: dedup (AS ? AT) y mover ===
+    Dim hoja As Worksheet, ultimaAS As Long, r As Long
+    Dim nombreCrudo As String, nombreAT As String
+    Dim carpetaOrigen As String
+    Dim dict As Object
+    Dim filaAT As Long
+    Dim duplicadosOmitidosHoja As Long
+    
+    For Each hoja In wbReg.Worksheets
+        If IsInArray(UCase$(hoja.Name), ToUpperArray(hojasValidas)) Then
+            
+            ' Carpeta de búsqueda según la hoja
+            carpetaOrigen = CarpetaPorHoja(hoja.Name, rutaPRE, rutaPRI, rutaSEC)
+            If Len(carpetaOrigen) = 0 Then GoTo SiguienteHoja
+            
+            ' --- DEDUP: copiar únicos de AS ? AT (sin modificar nombres) ---
+            Set dict = CreateObject("Scripting.Dictionary")
+            dict.CompareMode = vbBinaryCompare  ' duplicado = cadena idéntica 1:1
+            
+            ultimaAS = hoja.Cells(hoja.Rows.Count, "AS").End(xlUp).Row
+            If ultimaAS < 2 Then GoTo BuscarMover ' nada que procesar
+            
+            ' Limpiar AT y poner encabezado
+            hoja.Columns("AT").ClearContents
+            hoja.Range("AT1").value = "AS_dedup"
+            filaAT = 2
+            duplicadosOmitidosHoja = 0
+            
+            For r = 2 To ultimaAS
+                ' RESPETA AS TAL CUAL: sin Trim, sin Replace, sin tocar extensión
+                nombreCrudo = CStr(hoja.Cells(r, "AS").value)
+                If Len(nombreCrudo) > 0 Then
+                    If Not dict.Exists(nombreCrudo) Then
+                        dict.Add nombreCrudo, True
+                        hoja.Cells(filaAT, "AT").value = nombreCrudo
+                        filaAT = filaAT + 1
+                    Else
+                        duplicadosOmitidosHoja = duplicadosOmitidosHoja + 1
+                    End If
+                End If
+            Next r
+            
+            duplicadosOmitidosTotal = duplicadosOmitidosTotal + duplicadosOmitidosHoja
+            
+BuscarMover:
+            ' --- Buscar y mover usando SOLO AT tal cual ---
+            Dim ultimaAT As Long
+            Dim rutaOrigenCompleta As String, rutaDestinoFinal As String
+            
+            ultimaAT = hoja.Cells(hoja.Rows.Count, "AT").End(xlUp).Row
+            If ultimaAT >= 2 Then
+                For r = 2 To ultimaAT
+                    nombreAT = CStr(hoja.Cells(r, "AT").value)
+                    If Len(nombreAT) = 0 Then Exit For
+                    
+                    rutaOrigenCompleta = IncludeTrailingSlash(carpetaOrigen) & nombreAT
+                    If ArchivoExiste(rutaOrigenCompleta) Then
+                        rutaDestinoFinal = rutaDestino & GetFileNameFromPath(rutaOrigenCompleta)
+                        If MoverArchivoSinCrear(rutaOrigenCompleta, rutaDestinoFinal) Then
+                            movidos = movidos + 1
+                        Else
+                            noEncontrados = noEncontrados + 1
+                        End If
+                    Else
+                        noEncontrados = noEncontrados + 1
+                    End If
+                Next r
+            End If
+        End If
+SiguienteHoja:
+    Next hoja
+    
+    wbReg.Close SaveChanges:=True ' guardamos AT con dedup
+    
+    MsgBox "Regreso a 'ADJUNTOS' finalizado." & vbCrLf & _
+           "Duplicados omitidos (total): " & duplicadosOmitidosTotal & vbCrLf & _
+           "Movidos: " & movidos & vbCrLf & _
+           "No encontrados / errores: " & noEncontrados, vbInformation
+End Sub
+
+'===================== HELPERS =====================
+
+' Determina la carpeta (XLSPRE/XLSPRI/XLSSEC) según el nombre de hoja
+Private Function CarpetaPorHoja(ByVal hojaName As String, ByVal rutaPRE As String, ByVal rutaPRI As String, ByVal rutaSEC As String) As String
+    Dim u As String: u = UCase$(hojaName)
+    If Left$(u, 3) = "PRE" Then
+        CarpetaPorHoja = rutaPRE
+    ElseIf Left$(u, 3) = "PRI" Then
+        CarpetaPorHoja = rutaPRI
+    ElseIf Left$(u, 3) = "SEC" Then
+        CarpetaPorHoja = rutaSEC
+    Else
+        CarpetaPorHoja = ""
+    End If
+End Function
+
+' Mover archivo SIN crear carpetas
+Private Function MoverArchivoSinCrear(ByVal rutaOrigen As String, ByVal rutaDestino As String) As Boolean
+    On Error GoTo ErrH
+    Dim fso As Object: Set fso = CreateObject("Scripting.FileSystemObject")
+    Dim carpetaDestino As String
+    carpetaDestino = Left$(rutaDestino, InStrRev(rutaDestino, "\"))
+    If Not fso.FolderExists(carpetaDestino) Then
+        MoverArchivoSinCrear = False
+        Exit Function
+    End If
+    If fso.FileExists(rutaOrigen) Then
+        If fso.FileExists(rutaDestino) Then fso.DeleteFile rutaDestino, True
+        fso.MoveFile rutaOrigen, rutaDestino
+        MoverArchivoSinCrear = True
+    Else
+        MoverArchivoSinCrear = False
+    End If
+    Exit Function
+ErrH:
+    MoverArchivoSinCrear = False
+End Function
+
+' Encontrar el "registros_a_validar_*.xlsx" más reciente en \NIVELES\
+Private Function ObtenerRegistrosAValidarMasReciente(ByVal rutaNiveles As String) As String
+    Dim f As String, masReciente As String, fechaMax As Date
+    rutaNiveles = IncludeTrailingSlash(rutaNiveles)
+    f = Dir(rutaNiveles & "registros_a_validar_*.xlsx")
+    Do While Len(f) > 0
+        Dim fechaFile As Date
+        fechaFile = FileDateTime(rutaNiveles & f)
+        If fechaFile > fechaMax Then
+            fechaMax = fechaFile
+            masReciente = rutaNiveles & f
+        End If
+        f = Dir
+    Loop
+    ObtenerRegistrosAValidarMasReciente = masReciente
+End Function
+
+' === UTILIDADES GENERALES ===
+Private Function IncludeTrailingSlash(ByVal p As String) As String
+    If Right$(p, 1) = "\" Then IncludeTrailingSlash = p Else IncludeTrailingSlash = p & "\"
+End Function
+
+Private Function GetFileNameFromPath(ByVal p As String) As String
+    Dim pos As Long
+    pos = InStrRev(p, "\")
+    If pos > 0 Then
+        GetFileNameFromPath = Mid$(p, pos + 1)
+    Else
+        GetFileNameFromPath = p
+    End If
+End Function
+
+Private Function ToUpperArray(arr As Variant) As Variant
+    Dim i As Long, outArr() As String
+    ReDim outArr(LBound(arr) To UBound(arr))
+    For i = LBound(arr) To UBound(arr)
+        outArr(i) = UCase$(CStr(arr(i)))
+    Next i
+    ToUpperArray = outArr
+End Function
+
+Private Function IsInArray(ByVal value As String, ByVal arr As Variant) As Boolean
+    Dim i As Long
+    For i = LBound(arr) To UBound(arr)
+        If value = arr(i) Then IsInArray = True: Exit Function
+    Next i
+End Function
+
+Private Function CarpetaExiste(ByVal ruta As String) As Boolean
+    On Error Resume Next
+    Dim fso As Object: Set fso = CreateObject("Scripting.FileSystemObject")
+    CarpetaExiste = fso.FolderExists(IncludeTrailingSlash(ruta))
+End Function
+
+Private Function ArchivoExiste(ByVal ruta As String) As Boolean
+    On Error Resume Next
+    Dim fso As Object: Set fso = CreateObject("Scripting.FileSystemObject")
+    ArchivoExiste = fso.FileExists(ruta)
+End Function
+
+

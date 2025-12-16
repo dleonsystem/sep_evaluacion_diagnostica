@@ -1,0 +1,55 @@
+Private Declare PtrSafe Function ShellExecute Lib "shell32.dll" _
+    Alias "ShellExecuteA" (ByVal hwnd As LongPtr, ByVal lpOperation As String, _
+    ByVal lpFile As String, ByVal lpParameters As String, _
+    ByVal lpDirectory As String, ByVal nShowCmd As Long) As Long
+
+
+Function ObtenerLibroAbierto(nombreLibro As String) As Workbook
+    Dim wb As Workbook
+    For Each wb In Application.Workbooks
+        If wb.Name = nombreLibro Then
+            Set ObtenerLibroAbierto = wb
+            Exit Function
+        End If
+    Next wb
+    Set ObtenerLibroAbierto = Nothing
+End Function
+
+
+
+Sub Lanzareporteador()
+    Dim desktopPath As String
+    Dim shortcutPath As String
+    desktopPath = Environ("USERPROFILE") & "\Desktop\"
+    shortcutPath = desktopPath & "REPORTEADOR SiCRER.appref-ms"
+    
+    ShellExecute 0, "open", shortcutPath, vbNullString, vbNullString, vbNormalFocus
+
+    Dim objWMIService As Object
+    Dim colProcessList As Object
+    Dim processRunning As Boolean
+    Dim processName As String
+
+    processName = "REPORTEADOR SiCRER.exe" ' nombre del proceso externo que es ejectutado en primer plano
+
+    Set objWMIService = GetObject("winmgmts:\\.\root\cimv2")
+
+    Do
+        Application.Wait Now + TimeValue("0:00:05")
+        Set colProcessList = objWMIService.ExecQuery("Select * from Win32_Process Where Name = '" & processName & "'")
+        processRunning = (colProcessList.Count > 0)
+        DoEvents
+        If processRunning Then Application.Wait Now + TimeValue("0:00:01")
+    Loop While processRunning
+
+    
+    Dim batFilePath As String
+    batFilePath = "C:\RECIBE_SiCRER.25_26.SEPT\comprime.bat" ' Dirección del bat para comprimir archivos
+ 
+    Shell batFilePath, vbNormalFocus
+    
+    MsgBox "Los reportes han sido creados y comprimidos para su entrega."
+
+End Sub
+
+
