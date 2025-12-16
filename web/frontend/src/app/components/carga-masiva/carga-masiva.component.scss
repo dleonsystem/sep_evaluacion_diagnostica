@@ -71,11 +71,12 @@
   border: 2px dashed #0f766e;
   border-radius: 16px;
   padding: 1.75rem;
-  background: #f0fdfa;
+  background: linear-gradient(180deg, #f0fdfa 0%, #ffffff 100%);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.25rem;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.04);
 }
 
 .carga__campo {
@@ -112,7 +113,7 @@
 .carga__instrucciones {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .carga__etiqueta {
@@ -125,9 +126,22 @@
   color: #374151;
 }
 
+.carga__drop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.4rem;
+  border: 1px dashed #0f766e;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.05);
+}
+
 .carga__input {
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .carga__input--disabled .carga__boton {
@@ -299,6 +313,11 @@
 
 @media (max-width: 720px) {
   .carga__zona {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .carga__drop {
     flex-direction: column;
     align-items: flex-start;
   }
