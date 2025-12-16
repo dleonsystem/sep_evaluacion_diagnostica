@@ -49,7 +49,9 @@
     >
       Ir a login
     </a>
-    <span *ngIf="sesionActiva" class="carga__sesion-pill">Sesión activa</span>
+    <button *ngIf="sesionActiva" type="button" class="carga__sesion-boton carga__sesion-boton--secundario" (click)="cerrarSesion()">
+      Cerrar sesión
+    </button>
   </div>
 
   <div class="carga__zona" [class.carga__zona--error]="estado === 'error'">

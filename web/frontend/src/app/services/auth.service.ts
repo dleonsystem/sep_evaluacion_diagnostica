@@ -51,7 +51,6 @@ export class AuthService {
       this.credencialesKey,
       JSON.stringify({ cct: cctNormalizado, correo: correoNormalizado, contrasena })
     );
-    this.cerrarSesion();
 
     return { contrasena, esNueva };
   }

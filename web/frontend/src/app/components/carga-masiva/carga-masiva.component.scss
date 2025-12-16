@@ -145,12 +145,26 @@
   text-decoration: none;
   white-space: nowrap;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border: none;
+  cursor: pointer;
 }
 
 .carga__sesion-boton:hover,
 .carga__sesion-boton:focus-visible {
   transform: translateY(-1px);
   box-shadow: 0 10px 24px rgba(15, 118, 110, 0.2);
+}
+
+.carga__sesion-boton--secundario {
+  background: #e5e7eb;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  box-shadow: none;
+}
+
+.carga__sesion-boton--secundario:hover,
+.carga__sesion-boton--secundario:focus-visible {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
 }
 
 .carga__sesion-pill {

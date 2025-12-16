@@ -72,6 +72,16 @@ export class CargaMasivaComponent implements OnInit {
     this.actualizarEstadoSesion();
   }
 
+  async cerrarSesion(): Promise<void> {
+    this.authService.cerrarSesion();
+    this.actualizarEstadoSesion();
+    await Swal.fire({
+      icon: 'success',
+      title: 'Sesión cerrada',
+      text: 'Puedes iniciar sesión nuevamente cuando quieras cargar otro archivo.'
+    });
+  }
+
   ngOnInit(): void {
     this.actualizarEstadoSesion();
   }
