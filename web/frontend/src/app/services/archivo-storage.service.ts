@@ -74,7 +74,8 @@ export class ArchivoStorageService {
     }
 
     registros.unshift(registro);
-    localStorage.setItem(this.storageKey, JSON.stringify(registros.slice(0, 5)));
+    registrosPorCorreo[emailNormalizado] = registros.slice(0, 5);
+    localStorage.setItem(this.storageKey, JSON.stringify(registrosPorCorreo));
 
     return {
       rutaVirtual: rutaDestino,
@@ -92,13 +93,9 @@ export class ArchivoStorageService {
       return [];
     }
 
-    try {
-      const registros = JSON.parse(guardados) as RegistroArchivo[];
-      return Array.isArray(registros) ? registros : [];
-    } catch (error) {
-      console.warn('No se pudieron leer los archivos guardados localmente', error);
-      return [];
-    }
+    const registros = this.obtenerMapaRegistros();
+    const correoNormalizado = this.normalizarCorreo(email);
+    return registros[correoNormalizado] ?? [];
   }
 
   descargarRegistro(registro: RegistroArchivo): void {
