@@ -13,18 +13,33 @@
     [class.carga__sesion--activa]="sesionActiva"
     [class.carga__sesion--inactiva]="!sesionActiva"
   >
-    <div class="carga__sesion-icono" aria-hidden="true">{{ sesionActiva ? '🔒' : '🔓' }}</div>
-    <div class="carga__sesion-textos">
-      <p class="carga__sesion-titulo">Estado de acceso</p>
-      <p class="carga__sesion-detalle" *ngIf="sesionActiva">
-        Sesión activa para {{ correoSesion || 'tu correo registrado' }}. Puedes cargar un nuevo archivo sin interrupciones.
-      </p>
-      <p class="carga__sesion-detalle" *ngIf="!sesionActiva && tieneCredenciales">
-        Ya generaste credenciales con tu primer envío. Inicia sesión con tu correo y la contraseña generada para continuar con la siguiente carga.
-      </p>
-      <p class="carga__sesion-detalle" *ngIf="!sesionActiva && !tieneCredenciales">
-        Es tu primera carga: valida el archivo para generar automáticamente tu contraseña y credenciales de acceso.
-      </p>
+    <div class="carga__sesion-col">
+      <div class="carga__sesion-cabecera">
+        <div class="carga__sesion-icono" aria-hidden="true">{{ sesionActiva ? '🔒' : '🔓' }}</div>
+        <div class="carga__sesion-estado">
+          <span
+            class="carga__sesion-pill"
+            [class.carga__sesion-pill--activa]="sesionActiva"
+            [class.carga__sesion-pill--inactiva]="!sesionActiva"
+          >
+            {{ sesionActiva ? 'Sesión activa' : 'Sesión no iniciada' }}
+          </span>
+          <span class="carga__sesion-correo" *ngIf="sesionActiva && correoSesion">{{ correoSesion }}</span>
+        </div>
+      </div>
+
+      <div class="carga__sesion-textos">
+        <p class="carga__sesion-titulo">Estado de acceso</p>
+        <p class="carga__sesion-detalle" *ngIf="sesionActiva">
+          Estás autenticado. Continúa con tus cargas o consulta tus archivos guardados.
+        </p>
+        <p class="carga__sesion-detalle" *ngIf="!sesionActiva && tieneCredenciales">
+          Ya generaste credenciales con tu primer envío. Inicia sesión con tu correo y la contraseña generada para continuar con la siguiente carga.
+        </p>
+        <p class="carga__sesion-detalle" *ngIf="!sesionActiva && !tieneCredenciales">
+          Es tu primera carga: valida el archivo para generar automáticamente tu contraseña y credenciales de acceso.
+        </p>
+      </div>
     </div>
     <a
       *ngIf="!sesionActiva && tieneCredenciales"

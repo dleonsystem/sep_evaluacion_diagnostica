@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ExcelValidationService, ResultadoValidacion } from '../../services/excel-validation.service';
@@ -66,6 +66,11 @@ export class CargaMasivaComponent implements OnInit {
     private readonly authService: AuthService,
     private readonly router: Router
   ) {}
+
+  @HostListener('window:storage')
+  onStorageChange(): void {
+    this.actualizarEstadoSesion();
+  }
 
   ngOnInit(): void {
     this.actualizarEstadoSesion();
