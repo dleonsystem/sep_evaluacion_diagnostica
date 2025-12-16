@@ -280,7 +280,10 @@ export class CargaMasivaComponent implements OnInit {
 
     try {
       habiaCredenciales = !!this.authService.obtenerCredenciales();
-      this.authService.registrarCredenciales(resultado.esc.cct, resultado.esc.correo);
+      const nuevasCredenciales = this.authService.registrarCredenciales(
+        resultado.esc.cct,
+        resultado.esc.correo
+      );
     } catch (error) {
       this.estado = 'error';
       this.mensajeInformativo = null;
@@ -296,16 +299,16 @@ export class CargaMasivaComponent implements OnInit {
     const fechaDisponible = this.calcularFechaDisponible();
     this.estado = 'exito';
     this.mensajeInformativo = 'Tu archivo ha sido validado correctamente.';
-    this.resultadoExito = {
-      mensaje: `Podrás consultar tus resultados a partir del día: ${fechaDisponible.toLocaleDateString()}`,
-      fechaDisponible,
-      credenciales: {
-        usuario: resultado.esc.cct,
-        contrasena: resultado.esc.correo,
-        esNueva: !habiaCredenciales
-      },
-      totalAlumnos: resultado.alumnos?.length ?? 0
-    };
+      this.resultadoExito = {
+        mensaje: `Podrás consultar tus resultados a partir del día: ${fechaDisponible.toLocaleDateString()}`,
+        fechaDisponible,
+        credenciales: {
+        usuario: resultado.esc.correo,
+        contrasena: nuevasCredenciales.contrasena,
+        esNueva: nuevasCredenciales.esNueva && !habiaCredenciales
+        },
+        totalAlumnos: resultado.alumnos?.length ?? 0
+      };
   }
 
   private calcularFechaDisponible(): Date {
