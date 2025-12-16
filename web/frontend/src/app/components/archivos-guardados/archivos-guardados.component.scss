@@ -87,12 +87,18 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
-.archivos tbody tr:nth-child(every) {
+.archivos tbody tr:nth-child(even) {
   background: #fff;
 }
 
 .archivos tbody tr:hover {
   background: #f1f5f9;
+}
+
+.archivos__acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .archivos__accion {
@@ -114,6 +120,27 @@
 
 .archivos__accion:active {
   transform: translateY(0);
+}
+
+.archivos__accion--peligro {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem;
+}
+
+.archivos__accion--peligro:hover {
+  background: #fecdd3;
+  box-shadow: 0 8px 20px rgba(248, 113, 113, 0.25);
+  transform: translateY(-1px);
+}
+
+.archivos__icono {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .archivos__vacio {
