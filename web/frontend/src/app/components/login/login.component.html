@@ -1,0 +1,40 @@
+<section class="login">
+  <div class="login__card">
+    <h1>Inicia sesión para continuar</h1>
+    <p>Usa el CCT y el correo capturados en tu primer envío.</p>
+
+    <form (ngSubmit)="iniciarSesion()" #loginForm="ngForm" novalidate>
+      <label for="cct">CCT</label>
+      <input
+        id="cct"
+        name="cct"
+        type="text"
+        required
+        minlength="10"
+        maxlength="10"
+        [(ngModel)]="cct"
+        autocomplete="username"
+        placeholder="01DJN0000A"
+      />
+
+      <label for="correo">Correo</label>
+      <input
+        id="correo"
+        name="correo"
+        type="email"
+        required
+        [(ngModel)]="correo"
+        autocomplete="email"
+        placeholder="correo@dominio.com"
+      />
+
+      <div class="login__error" *ngIf="error">{{ error }}</div>
+
+      <button class="login__submit" type="submit" [disabled]="loginForm.invalid || autenticando">
+        {{ autenticando ? 'Validando...' : 'Iniciar sesión' }}
+      </button>
+    </form>
+
+    <a class="login__link" routerLink="/carga-masiva">Volver a la carga masiva</a>
+  </div>
+</section>

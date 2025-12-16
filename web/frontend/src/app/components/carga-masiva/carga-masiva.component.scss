@@ -8,6 +8,40 @@
   color: #1b1b1f;
 }
 
+.carga__formulario {
+  width: 100%;
+}
+
+.carga__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.carga__campo-label {
+  font-size: 0.95rem;
+}
+
+.carga__campo input {
+  padding: 0.75rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  width: 100%;
+}
+
+.carga__campo input:focus {
+  outline: 2px solid #2563eb;
+  border-color: #2563eb;
+}
+
+.carga__campo-error {
+  color: #b91c1c;
+  font-weight: 500;
+}
+
 .carga__encabezado {
   display: flex;
   flex-direction: column;
