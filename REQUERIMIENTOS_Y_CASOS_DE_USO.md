@@ -8,7 +8,7 @@
 
 > **Alineación tecnológica 2025:** Todas las iteraciones de diseño y construcción se basarán en **Python 3.12 + FastAPI** para backend, **Angular 17 + TypeScript 5** para frontend y **PostgreSQL 16** como base de datos. Las referencias previas a React/Node.js quedan como histórico y deberán reinterpretarse con el nuevo stack durante el refinamiento de cada módulo.
 
-**Actualización EIA 2ª aplicación:** La plataforma web de recepción/validación/descarga **solo recibe y valida archivos .xlsx**, genera credenciales una sola vez en la primera carga válida, registra cada envío como solicitud independiente con consecutivo y **no procesa resultados ni decide si el envío corresponde a primera o segunda aplicación**. Las ligas de descarga se publican a partir de archivos generados por un sistema externo y almacenados en repositorios separados para archivos recibidos y resultados.
+**Actualización EIA 2ª aplicación:** La plataforma web de recepción/validación/descarga **solo recibe y valida archivos .xlsx** después de que el usuario capture su correo (será su identificador). En la primera carga válida se valida que el correo coincida con el declarado en el Excel, se genera una **contraseña aleatoria** y el mismo correo puede usarse con múltiples CCT. Cada envío queda como solicitud independiente con consecutivo y el portal **no procesa resultados ni decide si el envío corresponde a primera o segunda aplicación**; únicamente publica ligas de descarga generadas por un sistema externo en repositorios separados para archivos recibidos y resultados.
 
 ---
 
@@ -198,16 +198,16 @@
 - **RF-15.6** El sistema debe manejar errores de sincronización con reintentos automáticos
 
 ### RF-16: Plataforma Recepción/Validación/Descarga EIA (2ª aplicación)
-- **RF-16.1** El portal debe permitir subir archivo .xlsx sin autenticación previa y mostrar la etiqueta "Validando tu archivo..." al seleccionar el archivo.
-- **RF-16.2** La validación automática debe revisar CCT, correo, nivel, campos y columnas obligatorias por hoja, valores válidos (0-3), número y nombre de hojas, estructura general y consistencia interna; si alguno falla, el archivo se rechaza.
-  - **Checklist mínimo de validación (9 puntos):** CCT, correo, nivel, campo obligatorio por hoja, columnas obligatorias, valores válidos (0-3), estructura general de archivo, número de hojas, consistencia interna.
-- **RF-16.3** Si el archivo es válido, el sistema debe mostrar el mensaje "Tu archivo ha sido validado correctamente. Podrás consultar tus resultados a partir del día: [hoy + 4 días]".
-- **RF-16.4** En la primera carga válida se deben generar credenciales de consulta (usuario = CCT validado, contraseña = correo validado) y no regenerarse en cargas posteriores.
-- **RF-16.5** El sistema debe generar y descargar automáticamente un PDF de confirmación con mensaje de éxito, fecha futura de consulta, usuario, contraseña y marca de tiempo; si es inválido, debe descargar PDF de errores.
+- **RF-16.1** El portal debe pedir primero el correo electrónico (será el usuario) y, solo después de capturarlo, habilitar la selección del archivo .xlsx mostrando la etiqueta "Validando tu archivo con el correo ingresado...".
+- **RF-16.2** La validación automática debe ejecutarse en orden para confirmar coincidencia entre el correo ingresado y el del Excel (solo en la primera carga ligada a ese correo), CCT, nivel, campos y columnas obligatorias por hoja, valores válidos (0-3), número y nombre de hojas, estructura general y consistencia interna; si alguno falla, el archivo se rechaza.
+  - **Checklist mínimo de validación (9 puntos):** correo ingresado vs. Excel (primera carga), CCT, nivel, campo obligatorio por hoja, columnas obligatorias, valores válidos (0-3), estructura general de archivo, número de hojas, consistencia interna.
+- **RF-16.3** Si el archivo es válido, el sistema debe mostrar el mensaje "Tu archivo ha sido validado correctamente. Generamos una contraseña aleatoria y podrás consultar tus resultados a partir del día: [hoy + 4 días]".
+- **RF-16.4** En la primera carga válida se deben generar credenciales de consulta con **usuario = correo validado** (reutilizable para múltiples CCT) y **contraseña = cadena aleatoria**; no se regeneran en cargas posteriores.
+- **RF-16.5** El sistema debe generar y descargar automáticamente un PDF de confirmación con mensaje de éxito, fecha futura de consulta, usuario (correo), contraseña aleatoria y marca de tiempo; si es inválido o falla la coincidencia de correo, debe descargar PDF de errores.
 - **RF-16.6** Cada carga válida debe registrarse como solicitud independiente con consecutivo y almacenarse en un repositorio de archivos recibidos.
 - **RF-16.7** El sistema no determinará si el envío corresponde a primera o segunda aplicación ni comparará/mezclará archivos; solo registrará solicitudes.
 - **RF-16.8** La generación de resultados, comparativos y paquetes ZIP corresponde a un sistema externo; el portal solo debe mostrar las ligas de descarga depositadas externamente.
-- **RF-16.9** El módulo de descarga debe permitir autenticación por CCT y contraseña para listar todas las versiones disponibles con número consecutivo y liga de descarga.
+- **RF-16.9** El módulo de descarga debe permitir autenticación por correo y contraseña para listar todas las versiones disponibles con número consecutivo y liga de descarga.
 - **RF-16.10** El sistema debe ofrecer un panel básico de monitoreo técnico para seguimiento de solicitudes y descargas.
 
 ---
@@ -461,16 +461,16 @@ graph TB
 - El portal de carga es público y **no requiere autenticación previa** para subir el archivo.
 
 **Flujo Principal:**
-1. Director accede al portal público (URL: https://evaluaciones.sep.gob.mx) y selecciona el archivo .xlsx.
-2. El portal muestra el indicador **"Validando tu archivo..."** mientras ejecuta las verificaciones automáticas.
+1. Director accede al portal público (URL: https://evaluaciones.sep.gob.mx), captura su correo (será su usuario y puede usarse para varios CCT) y con ello se habilita el selector del archivo .xlsx.
+2. Selecciona el archivo .xlsx y el portal muestra el indicador **"Validando tu archivo con el correo ingresado..."** mientras ejecuta las verificaciones automáticas.
 3. El sistema valida de forma inmediata:
    - Extensión .xlsx válida ✓
    - Archivo no corrupto ✓
-4. El sistema ejecuta validaciones backend (30-45 segundos) alineadas al checklist de 9 puntos del documento final:
+4. El sistema ejecuta validaciones backend (30-45 segundos) alineadas al checklist de 9 puntos del documento final y respetando el orden de coincidencia de correo en la primera carga:
    ```
+   Validando correo ingresado vs. correo del Excel... ✓
    Validando estructura... ✓
    Validando CCT... ✓
-   Validando correo... ✓
    Validando nivel... ✓
    Validando valores (0-3)... ✓
    Validando campos obligatorios... ✓
@@ -479,9 +479,9 @@ graph TB
    Verificando consistencia interna... ✓
    ```
 5. **SI todas las validaciones son exitosas:**
-    - Sistema muestra mensaje de éxito con fecha futura: **"Tu archivo ha sido validado correctamente. Podrás consultar tus resultados a partir del día: [hoy + 4 días]"**.
-    - Para la primera carga válida, el sistema genera credenciales de consulta (**usuario = CCT**, **contraseña = correo validado**) y no las regenera en cargas posteriores.
-    - Se descarga automáticamente un PDF de confirmación con mensaje, fecha futura, usuario, contraseña y marca de tiempo.
+    - Sistema muestra mensaje de éxito con fecha futura: **"Tu archivo ha sido validado correctamente. Generamos una contraseña aleatoria y podrás consultar tus resultados a partir del día: [hoy + 4 días]"**.
+    - Para la primera carga válida de ese correo, el sistema genera credenciales de consulta (**usuario = correo validado**, **contraseña = cadena aleatoria**) y no las regenera en cargas posteriores.
+    - Se descarga automáticamente un PDF de confirmación con mensaje, fecha futura, usuario (correo), contraseña aleatoria y marca de tiempo.
     - Sistema registra la solicitud con consecutivo y almacena el archivo en el repositorio de recepción.
 
 6. **SI existen errores de validación:**
@@ -495,6 +495,7 @@ graph TB
     | 45   | D       | Val_ENS | Fuera de rango | 5 | 0-3 |
     | 78   | B       | Nombre | Campo vacío | (vacío) | Requerido |
     ```
+    - Cuando el correo capturado no coincide con el que viene en el Excel en la primera carga, se muestra el mensaje: **"El correo capturado no coincide con el que está en tu Excel. Corrige el dato en la pantalla o en el archivo y vuelve a intentarlo."**
     - Director puede:
       * Descargar reporte de errores (Excel)
       * Corregir archivo localmente
@@ -520,11 +521,11 @@ graph TB
 **Precondiciones:** Archivo .xlsx de segunda aplicación de EIA disponible localmente.
 
 **Flujo Principal:**
-1. Director ingresa al portal público y selecciona el archivo .xlsx.
-2. El portal muestra la etiqueta **"Validando tu archivo..."** mientras se procesa.
+1. Director ingresa al portal público, captura su correo (será su usuario y queda validado contra el Excel en la primera carga) y habilita el selector del archivo .xlsx.
+2. El portal muestra la etiqueta **"Validando tu archivo con el correo ingresado..."** mientras se procesa.
 3. El sistema ejecuta validaciones automáticas (9 puntos mínimos):
-   1. CCT
-   2. Correo
+   1. Coincidencia correo ingresado ↔ correo dentro del Excel (solo en la primera carga asociada a ese correo)
+   2. CCT
    3. Nivel educativo
    4. Campo obligatorio por hoja
    5. Columnas obligatorias
@@ -533,15 +534,15 @@ graph TB
    8. Número y nombre de hojas
    9. Consistencia interna
 4. **Si el archivo es válido:**
-   - Se muestra el mensaje de éxito con fecha futura de consulta (hoy + 4 días).
-   - Se generan credenciales solo en la primera carga válida (**usuario = CCT**, **contraseña = correo validado**) sin regeneración posterior.
-   - Se descarga automáticamente un PDF de confirmación con mensaje, fecha, usuario, contraseña y marca de tiempo.
+   - Se muestra el mensaje de éxito con fecha futura de consulta (hoy + 4 días) y se informa que se generó una contraseña aleatoria.
+   - Se generan credenciales solo en la primera carga válida (**usuario = correo validado**, **contraseña = cadena aleatoria**) sin regeneración posterior; el mismo correo puede asociarse a varios CCT.
+   - Se descarga automáticamente un PDF de confirmación con mensaje, fecha, usuario (correo), contraseña aleatoria y marca de tiempo.
    - Se registra la solicitud con consecutivo y se almacena el archivo en repositorio de recepción.
-5. **Si el archivo es inválido:**
-   - Se muestra mensaje de rechazo.
-   - Se descarga PDF de errores con detalles de validación incumplida.
+5. **Si el archivo es inválido o no coincide el correo en la primera carga:**
+   - Se muestra mensaje de rechazo con la alerta correspondiente.
+   - Se descarga PDF de errores con detalles de validación incumplida o de coincidencia de correo.
 6. El portal no determina si el envío corresponde a primera o segunda aplicación; cada carga válida queda como solicitud independiente.
-7. Cuando el sistema externo deposita resultados procesados, el director ingresa con CCT y contraseña para visualizar versiones consecutivas y ligas de descarga.
+7. Cuando el sistema externo deposita resultados procesados, el director ingresa con correo y contraseña para visualizar versiones consecutivas y ligas de descarga.
 
 **Postcondiciones:** Solicitud registrada, credenciales creadas solo en la primera validación exitosa y descarga de PDF de confirmación o errores.
 **Frecuencia:** Picos de 120,000 validaciones por ciclo (segunda aplicación EIA).
@@ -554,7 +555,7 @@ graph TB
 
 **Postcondiciones:**
 - Archivo válido almacenado en repositorio de recepción con consecutivo y metadatos de solicitud.
-- Credenciales creadas solo en la primera validación exitosa; cargas posteriores reutilizan mismas credenciales.
+- Credenciales creadas solo en la primera validación exitosa con usuario = correo y contraseña aleatoria; cargas posteriores reutilizan mismas credenciales.
 - Registro de auditoría de validaciones y descargas (logs de acceso/actividad).
 
 **Frecuencia:** Picos concentrados durante segunda aplicación EIA.
