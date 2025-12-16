@@ -74,11 +74,6 @@ export class CargaMasivaComponent implements OnInit {
 
   ngOnInit(): void {
     this.actualizarEstadoSesion();
-
-    if (this.authService.requiereLoginParaNuevaCarga()) {
-      void this.router.navigate(['/login'], { queryParams: { redirect: '/carga-masiva' } });
-      return;
-    }
   }
 
   async onArchivoSeleccionado(evento: Event): Promise<void> {
