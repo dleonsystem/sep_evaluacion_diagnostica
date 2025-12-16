@@ -55,6 +55,7 @@ export class CargaMasivaComponent implements OnInit {
   errorGuardado: string | null = null;
   modoGuardado: 'localStorage' | null = null;
   notaGuardado: string | null = null;
+  ultimoCctValidado: string | null = null;
 
   constructor(
     private readonly excelValidationService: ExcelValidationService,
@@ -147,7 +148,7 @@ export class CargaMasivaComponent implements OnInit {
     try {
       const buffer = await file.arrayBuffer();
       const resultado = await this.excelValidationService.validarPreescolar(buffer);
-      this.procesarResultado(resultado);
+      await this.procesarResultado(resultado);
     } catch (error) {
       this.estado = 'error';
       this.errores = [
@@ -173,6 +174,17 @@ export class CargaMasivaComponent implements OnInit {
   }
 
   async guardarArchivo(): Promise<void> {
+    if (!this.correoControl.valid) {
+      this.correoControl.markAllAsTouched();
+      this.errorGuardado = 'Agrega un correo electrónico válido para continuar con la carga.';
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Correo requerido',
+        text: this.errorGuardado
+      });
+      return;
+    }
+
     if (!this.archivoOriginal || this.estado !== 'exito') {
       this.errorGuardado = 'Primero valida correctamente tu archivo para poder guardarlo.';
       await Swal.fire({
@@ -239,7 +251,7 @@ export class CargaMasivaComponent implements OnInit {
     }
   }
 
-  private procesarResultado(resultado: ResultadoValidacion): void {
+  private async procesarResultado(resultado: ResultadoValidacion): Promise<void> {
     this.errores = resultado.errores;
     this.advertencias = resultado.advertencias;
     this.escDatos = resultado.esc ?? null;
@@ -311,6 +323,94 @@ export class CargaMasivaComponent implements OnInit {
     this.rutaGuardado = null;
     this.errorGuardado = null;
     this.modoGuardado = null;
+    this.ultimoCctValidado = null;
+  }
+
+
+  private async mostrarConfirmacionGuardado(
+    resultado: ResultadoGuardado,
+    tipo: 'guardado' | 'reemplazo'
+  ): Promise<void> {
+    this.rutaGuardado = resultado.rutaVirtual;
+    this.modoGuardado = resultado.modo;
+    this.notaGuardado = resultado.nota;
+    this.mensajeInformativo =
+      'El archivo se conservó en el almacenamiento local del navegador. Copia el archivo a assets/archivos/preescolar/ en tu proyecto si lo necesitas.';
+
+    await Swal.fire({
+      icon: 'success',
+      title: tipo === 'reemplazo' ? 'Archivo sustituido' : 'Archivo guardado',
+      text:
+        tipo === 'reemplazo'
+          ? 'Se reemplazó la copia previa con la nueva versión.'
+          : 'Se guardó una copia en el almacenamiento local del navegador.',
+      footer: this.rutaGuardado ? `Ruta sugerida: ${this.rutaGuardado}` : undefined
+    });
+  }
+
+  private async mostrarConfirmacionGuardado(
+    resultado: ResultadoGuardado,
+    tipo: 'guardado' | 'reemplazo'
+  ): Promise<void> {
+    this.rutaGuardado = resultado.rutaVirtual;
+    this.modoGuardado = resultado.modo;
+    this.notaGuardado = resultado.nota;
+    this.mensajeInformativo =
+      'El archivo se conservó en el almacenamiento local del navegador. Copia el archivo a assets/archivos/preescolar/ en tu proyecto si lo necesitas.';
+
+    await Swal.fire({
+      icon: 'success',
+      title: tipo === 'reemplazo' ? 'Archivo sustituido' : 'Archivo guardado',
+      text:
+        tipo === 'reemplazo'
+          ? 'Se reemplazó la copia previa con la nueva versión.'
+          : 'Se guardó una copia en el almacenamiento local del navegador.',
+      footer: this.rutaGuardado ? `Ruta sugerida: ${this.rutaGuardado}` : undefined
+    });
+  }
+
+  private async mostrarConfirmacionGuardado(
+    resultado: ResultadoGuardado,
+    tipo: 'guardado' | 'reemplazo'
+  ): Promise<void> {
+    this.rutaGuardado = resultado.rutaVirtual;
+    this.modoGuardado = resultado.modo;
+    this.notaGuardado = resultado.nota;
+    this.mensajeInformativo =
+      'El archivo se conservó en el almacenamiento local del navegador. Copia el archivo a assets/archivos/preescolar/ en tu proyecto si lo necesitas.';
+
+    const esReemplazo = tipo === 'reemplazo';
+
+    await Swal.fire({
+      icon: 'success',
+      title: esReemplazo ? 'Archivo sustituido' : 'Archivo guardado',
+      text: esReemplazo
+        ? 'Se reemplazó la copia previa con la nueva versión.'
+        : 'Se guardó una copia en el almacenamiento local del navegador.',
+      footer: this.rutaGuardado ? `Ruta sugerida: ${this.rutaGuardado}` : undefined
+    });
+  }
+
+  private async mostrarResultadoGuardado(
+    resultado: ResultadoGuardado,
+    tipo: 'guardado' | 'reemplazo'
+  ): Promise<void> {
+    this.rutaGuardado = resultado.rutaVirtual;
+    this.modoGuardado = resultado.modo;
+    this.notaGuardado = resultado.nota;
+    this.mensajeInformativo =
+      'El archivo se conservó en el almacenamiento local del navegador. Copia el archivo a assets/archivos/preescolar/ en tu proyecto si lo necesitas.';
+
+    const esReemplazo = tipo === 'reemplazo';
+
+    await Swal.fire({
+      icon: 'success',
+      title: esReemplazo ? 'Archivo sustituido' : 'Archivo guardado',
+      text: esReemplazo
+        ? 'Se reemplazó la copia previa con la nueva versión.'
+        : 'Se guardó una copia en el almacenamiento local del navegador.',
+      footer: this.rutaGuardado ? `Ruta sugerida: ${this.rutaGuardado}` : undefined
+    });
   }
 
   private async mostrarConfirmacionGuardado(

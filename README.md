@@ -20,7 +20,7 @@
 
 Sistema de Captura y Reporteo de Evaluación Diagnóstica para la Secretaría de Educación Pública (SEP) de México.
 
-**NOVEDAD:** Se incorpora la **Plataforma de Recepción, Validación y Descarga** para la **segunda aplicación de los Ejercicios Integradores del Aprendizaje (EIA)**. Este módulo web permite recibir archivos .xlsx sin autenticación previa, validar automáticamente estructura y contenido, generar credenciales solo en la primera carga válida (usuario = CCT, contraseña = correo validado), emitir PDFs de confirmación/errores y exponer ligas de descarga de resultados procesados externamente. No procesa evaluaciones ni determina si un envío es de primera o segunda aplicación; cada carga válida se registra como solicitud independiente y el sistema únicamente publica las ligas de descarga generadas fuera de la plataforma.
+**NOVEDAD:** Se incorpora la **Plataforma de Recepción, Validación y Descarga** para la **segunda aplicación de los Ejercicios Integradores del Aprendizaje (EIA)**. Este módulo web obliga a capturar el **correo electrónico antes de elegir el Excel**, recibe archivos .xlsx sin autenticación previa, valida automáticamente estructura y contenido, genera una **contraseña aleatoria en la primera carga válida** (usuario = correo ingresado y validado contra el archivo) y permite reutilizar el **mismo correo para varios CCT**. Muestra nuevos mensajes de ayuda/confirmación, emite PDFs de confirmación/errores y expone ligas de descarga de resultados procesados externamente. No procesa evaluaciones ni determina si un envío es de primera o segunda aplicación; cada carga válida se registra como solicitud independiente y el sistema únicamente publica las ligas de descarga generadas fuera de la plataforma.
 
 ---
 
@@ -97,10 +97,10 @@ El sistema permite la captura, procesamiento y generación de reportes detallado
 
 ### Plataforma de Recepción, Validación y Descarga (Segunda Aplicación EIA)
 
-- 📥 **Recepción sin autenticación:** carga de archivo .xlsx con etiqueta "Validando tu archivo...".
-- ✅ **Validación automática con 9 verificaciones:**
-  1. CCT
-  2. Correo
+- 📥 **Recepción guiada:** la pantalla exige capturar el correo (será el usuario) antes de habilitar el selector de archivo y luego muestra la etiqueta «Validando tu archivo con el correo ingresado…».
+- ✅ **Validación automática con 9 verificaciones en orden:**
+  1. Coincidencia entre el correo ingresado y el correo dentro del Excel (solo en la primera carga de ese correo)
+  2. CCT
   3. Nivel
   4. Campo obligatorio por hoja
   5. Columnas obligatorias
@@ -108,10 +108,10 @@ El sistema permite la captura, procesamiento y generación de reportes detallado
   7. Estructura general de archivo
   8. Número y nombre de hojas
   9. Consistencia interna
-- 🔐 **Credenciales autogeneradas:** solo en la primera carga válida (usuario = CCT validado, contraseña = correo validado). No se regeneran en cargas posteriores.
-- 🧾 **PDF de confirmación/errores:** descarga automática con mensaje, fecha de disponibilidad (hoy + 4 días), usuario, contraseña y marca de tiempo; PDF de errores cuando el archivo es inválido.
+- 🔐 **Credenciales autogeneradas:** solo en la primera carga válida se crea una contraseña aleatoria; el usuario para login y descargas es siempre el correo validado (el mismo correo puede usarse con varios CCT). No se regeneran contraseñas en cargas posteriores.
+- 🧾 **PDF de confirmación/errores:** descarga automática con mensaje, fecha de disponibilidad (hoy + 4 días), usuario (correo), contraseña aleatoria generada y marca de tiempo; PDF de errores cuando el archivo es inválido o el correo no coincide con el Excel.
 - 🗂️ **Registro y consecutivos:** cada carga válida se almacena como solicitud independiente y mantiene repositorio de archivos recibidos; el sistema no compara ni sustituye envíos previos.
-- 🔗 **Descarga de resultados:** portal protegido por credenciales para mostrar versiones consecutivas y ligas de descarga depositadas por el sistema externo que procesa los archivos; mantiene repositorios separados para archivos recibidos y resultados.
+- 🔗 **Descarga de resultados:** portal protegido por credenciales (correo + contraseña aleatoria) para mostrar versiones consecutivas y ligas de descarga depositadas por el sistema externo que procesa los archivos; mantiene repositorios separados para archivos recibidos y resultados.
 - 📊 **Escalabilidad y disponibilidad:** capacidad mínima de 1 TB para recepción/resultados, soporte para 120,000 validaciones automáticas y operación bajo HTTPS con contraseñas almacenadas mediante hashing y logs de acceso.
 
 ---

@@ -19,6 +19,7 @@ export class ArchivosGuardadosComponent implements OnInit {
   registros: RegistroArchivo[] = [];
   mensajeInfo: string | null = null;
   mensajeError: string | null = null;
+  correoActivo: string | null = null;
 
   constructor(
     private readonly archivoStorageService: ArchivoStorageService,
@@ -37,7 +38,7 @@ export class ArchivosGuardadosComponent implements OnInit {
 
   cargarRegistros(): void {
     this.mensajeError = null;
-    this.registros = this.archivoStorageService.obtenerRegistros();
+    this.registros = this.archivoStorageService.obtenerRegistros(this.correoActivo);
 
     if (this.registros.length === 0) {
       this.mensajeInfo = 'Aún no has cargado archivos de Preescolar en este navegador.';
