@@ -222,7 +222,11 @@ export class CargaMasivaComponent implements OnInit {
           try {
             const resultadoReemplazo = await this.archivoStorageService.guardarArchivoPreescolar(
               this.archivoOriginal,
-              { forzarReemplazo: true }
+              {
+                forzarReemplazo: true,
+                cct: this.escDatos?.cct,
+                correo: this.correoControl.value
+              }
             );
             await this.mostrarConfirmacionGuardado(resultadoReemplazo, 'reemplazo');
             return;
@@ -272,11 +276,25 @@ export class CargaMasivaComponent implements OnInit {
       return;
     }
 
+    const correoFormulario = this.correoControl.value.trim().toLowerCase();
+    const correoEnArchivo = (resultado.esc.correo ?? '').trim().toLowerCase();
+
+    if (correoFormulario !== correoEnArchivo) {
+      this.estado = 'error';
+      this.mensajeInformativo = null;
+      this.errores = [
+        ...this.errores,
+        'El correo capturado debe coincidir con el que aparece en la hoja ESC del archivo.'
+      ];
+      return;
+    }
+
     let habiaCredenciales = false;
+    let nuevasCredenciales: { contrasena: string; esNueva: boolean } | null = null;
 
     try {
       habiaCredenciales = !!this.authService.obtenerCredenciales();
-      this.authService.registrarCredenciales(resultado.esc.cct, resultado.esc.correo);
+      nuevasCredenciales = this.authService.registrarCredenciales(resultado.esc.cct, resultado.esc.correo);
     } catch (error) {
       this.estado = 'error';
       this.mensajeInformativo = null;
@@ -292,16 +310,16 @@ export class CargaMasivaComponent implements OnInit {
     const fechaDisponible = this.calcularFechaDisponible();
     this.estado = 'exito';
     this.mensajeInformativo = 'Tu archivo ha sido validado correctamente.';
-    this.resultadoExito = {
-      mensaje: `Podrás consultar tus resultados a partir del día: ${fechaDisponible.toLocaleDateString()}`,
-      fechaDisponible,
-      credenciales: {
-        usuario: resultado.esc.cct,
-        contrasena: resultado.esc.correo,
-        esNueva: !habiaCredenciales
-      },
-      totalAlumnos: resultado.alumnos?.length ?? 0
-    };
+      this.resultadoExito = {
+        mensaje: `Podrás consultar tus resultados a partir del día: ${fechaDisponible.toLocaleDateString()}`,
+        fechaDisponible,
+        credenciales: {
+          usuario: resultado.esc.correo,
+          contrasena: nuevasCredenciales?.contrasena ?? '',
+          esNueva: (nuevasCredenciales?.esNueva ?? false) && !habiaCredenciales
+        },
+        totalAlumnos: resultado.alumnos?.length ?? 0
+      };
   }
 
   private calcularFechaDisponible(): Date {

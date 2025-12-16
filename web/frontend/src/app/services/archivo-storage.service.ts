@@ -32,12 +32,24 @@ export class ArchivoStorageService {
 
   async guardarArchivoPreescolar(
     archivo: File,
-    opciones?: { forzarReemplazo?: boolean; cct?: string; correo?: string }
+    parametros?: { forzarReemplazo?: boolean; cct?: string; correo?: string; email?: string },
+    opciones?: { forzarReemplazo?: boolean }
   ): Promise<ResultadoGuardado> {
     const rutaDestino = `assets/archivos/preescolar/${archivo.name}`;
     const buffer = await archivo.arrayBuffer();
     const hash = await this.calcularHash(buffer);
     const contenido = this.arrayBufferABase64(buffer);
+    const emailNormalizado = this.normalizarCorreo(parametros?.correo ?? parametros?.email ?? '');
+    const registrosPorCorreo = this.obtenerMapaRegistros();
+    const registros = [...(registrosPorCorreo[emailNormalizado] ?? [])];
+    const forzarReemplazo = opciones?.forzarReemplazo ?? parametros?.forzarReemplazo ?? false;
+
+    const hashesActualizados = await this.agregarHashesFaltantes(registros);
+    if (hashesActualizados) {
+      registrosPorCorreo[emailNormalizado] = registros;
+      localStorage.setItem(this.storageKey, JSON.stringify(registrosPorCorreo));
+    }
+
     const registro: RegistroArchivo = {
       nombre: archivo.name,
       tamano: archivo.size,
@@ -45,23 +57,25 @@ export class ArchivoStorageService {
       ruta: rutaDestino,
       contenidoBase64: contenido,
       hash,
-      cct: opciones?.cct,
-      correo: this.normalizarCorreo(opciones?.correo ?? '') || undefined
+      cct: parametros?.cct,
+      correo: emailNormalizado || undefined
     };
 
-    const registros = this.obtenerRegistros();
-    await this.agregarHashesFaltantes(registros);
-
-    const duplicado = registros.find((registroGuardado) => registroGuardado.hash === hash);
+    const duplicado = registros.find(
+      (registroGuardado) => registroGuardado.hash === hash && registroGuardado.cct === registro.cct
+    );
 
     if (duplicado) {
-      if (!opciones?.forzarReemplazo) {
+      if (!forzarReemplazo) {
         throw new ArchivoDuplicadoError(duplicado);
       }
 
-      const registrosSinDuplicado = registros.filter((registroGuardado) => registroGuardado.hash !== hash);
-      registrosSinDuplicado.unshift(registro);
-      localStorage.setItem(this.storageKey, JSON.stringify(registrosSinDuplicado.slice(0, 5)));
+      const registrosSinDuplicado = registros.filter(
+        (registroGuardado) => !(registroGuardado.hash === hash && registroGuardado.cct === registro.cct)
+      );
+
+      registrosPorCorreo[emailNormalizado] = [registro, ...registrosSinDuplicado].slice(0, 5);
+      localStorage.setItem(this.storageKey, JSON.stringify(registrosPorCorreo));
 
       return {
         rutaVirtual: rutaDestino,
@@ -73,8 +87,7 @@ export class ArchivoStorageService {
       };
     }
 
-    registros.unshift(registro);
-    registrosPorCorreo[emailNormalizado] = registros.slice(0, 5);
+    registrosPorCorreo[emailNormalizado] = [registro, ...registros].slice(0, 5);
     localStorage.setItem(this.storageKey, JSON.stringify(registrosPorCorreo));
 
     return {
@@ -87,9 +100,8 @@ export class ArchivoStorageService {
     };
   }
 
-  obtenerRegistros(_email?: string | null): RegistroArchivo[] {
-    const guardados = localStorage.getItem(this.storageKey);
-    if (!guardados) {
+  obtenerRegistros(email?: string | null): RegistroArchivo[] {
+    if (!email) {
       return [];
     }
 
@@ -114,7 +126,13 @@ export class ArchivoStorageService {
   }
 
   eliminarRegistro(registroAEliminar: RegistroArchivo): void {
-    const registrosActualizados = this.obtenerRegistros().filter(
+    const correo = this.normalizarCorreo(registroAEliminar.correo ?? '');
+    if (!correo) {
+      return;
+    }
+
+    const registrosPorCorreo = this.obtenerMapaRegistros();
+    const registrosActualizados = (registrosPorCorreo[correo] ?? []).filter(
       (registro) =>
         !(
           registro.nombre === registroAEliminar.nombre &&
@@ -122,10 +140,11 @@ export class ArchivoStorageService {
         )
     );
 
-    localStorage.setItem(this.storageKey, JSON.stringify(registrosActualizados));
+    registrosPorCorreo[correo] = registrosActualizados;
+    localStorage.setItem(this.storageKey, JSON.stringify(registrosPorCorreo));
   }
 
-  private async agregarHashesFaltantes(registros: RegistroArchivo[]): Promise<void> {
+  private async agregarHashesFaltantes(registros: RegistroArchivo[]): Promise<boolean> {
     let actualizado = false;
 
     for (const registro of registros) {
@@ -136,8 +155,22 @@ export class ArchivoStorageService {
       }
     }
 
-    if (actualizado) {
-      localStorage.setItem(this.storageKey, JSON.stringify(registros));
+    return actualizado;
+  }
+
+  private obtenerMapaRegistros(): Record<string, RegistroArchivo[]> {
+    const guardados = localStorage.getItem(this.storageKey);
+
+    if (!guardados) {
+      return {};
+    }
+
+    try {
+      const registros = JSON.parse(guardados) as Record<string, RegistroArchivo[]>;
+      return registros ?? {};
+    } catch (error) {
+      console.error('No se pudieron leer los registros almacenados', error);
+      return {};
     }
   }
 
