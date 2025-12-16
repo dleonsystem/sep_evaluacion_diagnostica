@@ -56,6 +56,9 @@ export class CargaMasivaComponent implements OnInit {
   modoGuardado: 'localStorage' | null = null;
   notaGuardado: string | null = null;
   ultimoCctValidado: string | null = null;
+  sesionActiva = false;
+  correoSesion: string | null = null;
+  tieneCredenciales = false;
 
   constructor(
     private readonly excelValidationService: ExcelValidationService,
@@ -65,6 +68,8 @@ export class CargaMasivaComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.actualizarEstadoSesion();
+
     if (this.authService.requiereLoginParaNuevaCarga()) {
       void this.router.navigate(['/login'], { queryParams: { redirect: '/carga-masiva' } });
       return;
@@ -310,16 +315,18 @@ export class CargaMasivaComponent implements OnInit {
     const fechaDisponible = this.calcularFechaDisponible();
     this.estado = 'exito';
     this.mensajeInformativo = 'Tu archivo ha sido validado correctamente.';
-      this.resultadoExito = {
-        mensaje: `Podrás consultar tus resultados a partir del día: ${fechaDisponible.toLocaleDateString()}`,
-        fechaDisponible,
-        credenciales: {
-          usuario: resultado.esc.correo,
-          contrasena: nuevasCredenciales?.contrasena ?? '',
-          esNueva: (nuevasCredenciales?.esNueva ?? false) && !habiaCredenciales
-        },
-        totalAlumnos: resultado.alumnos?.length ?? 0
-      };
+    this.resultadoExito = {
+      mensaje: `Podrás consultar tus resultados a partir del día: ${fechaDisponible.toLocaleDateString()}`,
+      fechaDisponible,
+      credenciales: {
+        usuario: resultado.esc.correo,
+        contrasena: nuevasCredenciales?.contrasena ?? '',
+        esNueva: (nuevasCredenciales?.esNueva ?? false) && !habiaCredenciales
+      },
+      totalAlumnos: resultado.alumnos?.length ?? 0
+    };
+
+    this.actualizarEstadoSesion();
   }
 
   private calcularFechaDisponible(): Date {
@@ -387,5 +394,12 @@ export class CargaMasivaComponent implements OnInit {
         : 'Se guardó una copia en el almacenamiento local del navegador.',
       footer: this.rutaGuardado ? `Ruta sugerida: ${this.rutaGuardado}` : undefined
     });
+  }
+
+  private actualizarEstadoSesion(): void {
+    const credenciales = this.authService.obtenerCredenciales();
+    this.sesionActiva = this.authService.estaAutenticado();
+    this.tieneCredenciales = !!credenciales;
+    this.correoSesion = credenciales?.correo ?? null;
   }
 }

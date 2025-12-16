@@ -8,6 +8,35 @@
     </p>
   </div>
 
+  <div
+    class="carga__sesion"
+    [class.carga__sesion--activa]="sesionActiva"
+    [class.carga__sesion--inactiva]="!sesionActiva"
+  >
+    <div class="carga__sesion-icono" aria-hidden="true">{{ sesionActiva ? '🔒' : '🔓' }}</div>
+    <div class="carga__sesion-textos">
+      <p class="carga__sesion-titulo">Estado de acceso</p>
+      <p class="carga__sesion-detalle" *ngIf="sesionActiva">
+        Sesión activa para {{ correoSesion || 'tu correo registrado' }}. Puedes cargar un nuevo archivo sin interrupciones.
+      </p>
+      <p class="carga__sesion-detalle" *ngIf="!sesionActiva && tieneCredenciales">
+        Ya generaste credenciales con tu primer envío. Inicia sesión con tu correo y la contraseña generada para continuar con la siguiente carga.
+      </p>
+      <p class="carga__sesion-detalle" *ngIf="!sesionActiva && !tieneCredenciales">
+        Es tu primera carga: valida el archivo para generar automáticamente tu contraseña y credenciales de acceso.
+      </p>
+    </div>
+    <a
+      *ngIf="!sesionActiva && tieneCredenciales"
+      class="carga__sesion-boton"
+      [routerLink]="['/login']"
+      [queryParams]="{ redirect: '/carga-masiva' }"
+    >
+      Ir a login
+    </a>
+    <span *ngIf="sesionActiva" class="carga__sesion-pill">Sesión activa</span>
+  </div>
+
   <div class="carga__zona" [class.carga__zona--error]="estado === 'error'">
     <form class="carga__formulario" (submit)="$event.preventDefault()">
       <label class="carga__campo">
