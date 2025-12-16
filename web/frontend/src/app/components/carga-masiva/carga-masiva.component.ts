@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ExcelValidationService, ResultadoValidacion } from '../../services/excel-validation.service';
@@ -56,6 +56,9 @@ export class CargaMasivaComponent implements OnInit {
   modoGuardado: 'localStorage' | null = null;
   notaGuardado: string | null = null;
   ultimoCctValidado: string | null = null;
+  sesionActiva = false;
+  correoSesion: string | null = null;
+  tieneCredenciales = false;
 
   constructor(
     private readonly excelValidationService: ExcelValidationService,
@@ -64,7 +67,14 @@ export class CargaMasivaComponent implements OnInit {
     private readonly router: Router
   ) {}
 
+  @HostListener('window:storage')
+  onStorageChange(): void {
+    this.actualizarEstadoSesion();
+  }
+
   ngOnInit(): void {
+    this.actualizarEstadoSesion();
+
     if (this.authService.requiereLoginParaNuevaCarga()) {
       void this.router.navigate(['/login'], { queryParams: { redirect: '/carga-masiva' } });
       return;
@@ -222,7 +232,11 @@ export class CargaMasivaComponent implements OnInit {
           try {
             const resultadoReemplazo = await this.archivoStorageService.guardarArchivoPreescolar(
               this.archivoOriginal,
-              { forzarReemplazo: true }
+              {
+                forzarReemplazo: true,
+                cct: this.escDatos?.cct,
+                correo: this.correoControl.value
+              }
             );
             await this.mostrarConfirmacionGuardado(resultadoReemplazo, 'reemplazo');
             return;
@@ -272,11 +286,25 @@ export class CargaMasivaComponent implements OnInit {
       return;
     }
 
+    const correoFormulario = this.correoControl.value.trim().toLowerCase();
+    const correoEnArchivo = (resultado.esc.correo ?? '').trim().toLowerCase();
+
+    if (correoFormulario !== correoEnArchivo) {
+      this.estado = 'error';
+      this.mensajeInformativo = null;
+      this.errores = [
+        ...this.errores,
+        'El correo capturado debe coincidir con el que aparece en la hoja ESC del archivo.'
+      ];
+      return;
+    }
+
     let habiaCredenciales = false;
+    let nuevasCredenciales: { contrasena: string; esNueva: boolean } | null = null;
 
     try {
       habiaCredenciales = !!this.authService.obtenerCredenciales();
-      this.authService.registrarCredenciales(resultado.esc.cct, resultado.esc.correo);
+      nuevasCredenciales = this.authService.registrarCredenciales(resultado.esc.cct, resultado.esc.correo);
     } catch (error) {
       this.estado = 'error';
       this.mensajeInformativo = null;
@@ -296,12 +324,14 @@ export class CargaMasivaComponent implements OnInit {
       mensaje: `Podrás consultar tus resultados a partir del día: ${fechaDisponible.toLocaleDateString()}`,
       fechaDisponible,
       credenciales: {
-        usuario: resultado.esc.cct,
-        contrasena: resultado.esc.correo,
-        esNueva: !habiaCredenciales
+        usuario: resultado.esc.correo,
+        contrasena: nuevasCredenciales?.contrasena ?? '',
+        esNueva: (nuevasCredenciales?.esNueva ?? false) && !habiaCredenciales
       },
       totalAlumnos: resultado.alumnos?.length ?? 0
     };
+
+    this.actualizarEstadoSesion();
   }
 
   private calcularFechaDisponible(): Date {
@@ -369,5 +399,12 @@ export class CargaMasivaComponent implements OnInit {
         : 'Se guardó una copia en el almacenamiento local del navegador.',
       footer: this.rutaGuardado ? `Ruta sugerida: ${this.rutaGuardado}` : undefined
     });
+  }
+
+  private actualizarEstadoSesion(): void {
+    const credenciales = this.authService.obtenerCredenciales();
+    this.sesionActiva = this.authService.estaAutenticado();
+    this.tieneCredenciales = !!credenciales;
+    this.correoSesion = credenciales?.correo ?? null;
   }
 }
