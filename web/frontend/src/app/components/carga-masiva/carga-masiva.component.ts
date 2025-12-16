@@ -147,9 +147,7 @@ export class CargaMasivaComponent implements OnInit {
       return;
     }
 
-    const archivoValidado = (this.estado as string) === 'exito' && this.archivoOriginal;
-
-    if (!archivoValidado) {
+    if (!this.archivoOriginal || !this.resultadoExito) {
       return;
     }
 
@@ -306,6 +304,27 @@ export class CargaMasivaComponent implements OnInit {
     this.errorGuardado = null;
     this.modoGuardado = null;
     this.ultimoCctValidado = null;
+  }
+
+  private async mostrarConfirmacionGuardado(
+    resultado: ResultadoGuardado,
+    tipo: 'guardado' | 'reemplazo'
+  ): Promise<void> {
+    this.rutaGuardado = resultado.rutaVirtual;
+    this.modoGuardado = resultado.modo;
+    this.notaGuardado = resultado.nota;
+    this.mensajeInformativo =
+      'El archivo se conservó en el almacenamiento local del navegador. Copia el archivo a assets/archivos/preescolar/ en tu proyecto si lo necesitas.';
+
+    await Swal.fire({
+      icon: 'success',
+      title: tipo === 'reemplazo' ? 'Archivo sustituido' : 'Archivo guardado',
+      text:
+        tipo === 'reemplazo'
+          ? 'Se reemplazó la copia previa con la nueva versión.'
+          : 'Se guardó una copia en el almacenamiento local del navegador.',
+      footer: this.rutaGuardado ? `Ruta sugerida: ${this.rutaGuardado}` : undefined
+    });
   }
 
   private async mostrarConfirmacionGuardado(
