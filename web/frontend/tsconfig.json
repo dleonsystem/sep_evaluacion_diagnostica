@@ -15,9 +15,6 @@
     "experimentalDecorators": true,
     "moduleResolution": "bundler",
     "baseUrl": "./",
-    "paths": {
-      "sweetalert2": ["src/sweetalert2-stub"]
-    },
     "importHelpers": true,
     "target": "ES2022",
     "module": "ES2022"
