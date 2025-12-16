@@ -222,7 +222,11 @@ export class CargaMasivaComponent implements OnInit {
           try {
             const resultadoReemplazo = await this.archivoStorageService.guardarArchivoPreescolar(
               this.archivoOriginal,
-              { forzarReemplazo: true }
+              {
+                forzarReemplazo: true,
+                cct: this.escDatos?.cct,
+                correo: this.correoControl.value
+              }
             );
             await this.mostrarConfirmacionGuardado(resultadoReemplazo, 'reemplazo');
             return;
