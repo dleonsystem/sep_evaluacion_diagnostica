@@ -9,6 +9,21 @@
   </div>
 
   <div class="carga__zona" [class.carga__zona--error]="estado === 'error'">
+    <form class="carga__formulario" (submit)="$event.preventDefault()">
+      <label class="carga__campo">
+        <span class="carga__campo-label">Correo electrónico</span>
+        <input
+          type="email"
+          [formControl]="correoControl"
+          placeholder="usuario@dominio.com"
+          required
+        >
+        <small class="carga__campo-error" *ngIf="correoControl.invalid && correoControl.touched">
+          Ingresa un correo electrónico válido.
+        </small>
+      </label>
+    </form>
+
     <div class="carga__instrucciones">
       <p class="carga__etiqueta">Arrastra y suelta tu archivo o selecciónalo desde tu equipo</p>
       <p class="carga__formatos">Solo se aceptan archivos XLSX. Máximo {{ pesoMaximoMb }} MB.</p>
@@ -19,9 +34,11 @@
         #archivoInput
         type="file"
         accept=".xlsx"
+        multiple
         (change)="onArchivoSeleccionado($event)"
+        [disabled]="correoControl.invalid"
       >
-      <span class="carga__boton">Elegir archivo</span>
+      <span class="carga__boton">{{ correoControl.invalid ? 'Ingresa un correo' : 'Elegir archivos' }}</span>
     </label>
   </div>
 
