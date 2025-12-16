@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import {
   ArchivoStorageService,
   RegistroArchivo
 } from '../../services/archivo-storage.service';
+import { AuthService } from '../../services/auth.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -22,16 +23,13 @@ export class ArchivosGuardadosComponent implements OnInit {
 
   constructor(
     private readonly archivoStorageService: ArchivoStorageService,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
-    const sesion = this.authService.obtenerSesionActiva();
-    this.correoActivo = sesion?.email ?? null;
-
-    if (!this.correoActivo) {
-      this.mensajeInfo =
-        'Inicia sesión con el correo de tu primera carga para ver los archivos almacenados en este navegador.';
+    if (this.authService.requiereLoginParaNuevaCarga()) {
+      void this.router.navigate(['/login'], { queryParams: { redirect: '/archivos-guardados' } });
       return;
     }
 
