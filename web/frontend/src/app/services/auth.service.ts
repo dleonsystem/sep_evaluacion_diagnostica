@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 export interface CredencialesGuardadas {
   cct: string;
   correo: string;
+  contrasena: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -18,10 +19,11 @@ export class AuthService {
 
     try {
       const parsed = JSON.parse(guardadas) as CredencialesGuardadas;
-      if (parsed?.cct && parsed?.correo) {
+      if (parsed?.cct && parsed?.correo && parsed?.contrasena) {
         return {
           cct: this.normalizarCct(parsed.cct),
-          correo: this.normalizarCorreo(parsed.correo)
+          correo: this.normalizarCorreo(parsed.correo),
+          contrasena: parsed.contrasena
         };
       }
       return null;
@@ -30,7 +32,7 @@ export class AuthService {
     }
   }
 
-  registrarCredenciales(cct: string, correo: string): void {
+  registrarCredenciales(cct: string, correo: string): { contrasena: string; esNueva: boolean } {
     const credencialesActuales = this.obtenerCredenciales();
     const cctNormalizado = this.normalizarCct(cct);
     const correoNormalizado = this.normalizarCorreo(correo);
@@ -42,11 +44,15 @@ export class AuthService {
       throw new Error('Ya existe un acceso asociado a otro CCT o correo. Usa las credenciales originales.');
     }
 
+    const esNueva = !credencialesActuales;
+    const contrasena = credencialesActuales?.contrasena ?? this.generarContrasena();
+
     localStorage.setItem(
       this.credencialesKey,
-      JSON.stringify({ cct: cctNormalizado, correo: correoNormalizado })
+      JSON.stringify({ cct: cctNormalizado, correo: correoNormalizado, contrasena })
     );
-    this.cerrarSesion();
+
+    return { contrasena, esNueva };
   }
 
   coincidenCredenciales(cct: string, correo: string): boolean {
@@ -60,14 +66,14 @@ export class AuthService {
     );
   }
 
-  iniciarSesion(cct: string, correo: string): void {
+  iniciarSesion(correo: string, contrasena: string): void {
     const guardadas = this.obtenerCredenciales();
     if (!guardadas) {
       throw new Error('Aún no hay credenciales registradas. Realiza tu primera carga para generarlas.');
     }
 
-    if (!this.coincidenCredenciales(cct, correo)) {
-      throw new Error('El CCT o el correo no coinciden con tu primer envío.');
+    if (guardadas.correo !== this.normalizarCorreo(correo) || guardadas.contrasena !== contrasena) {
+      throw new Error('El correo o la contraseña no coinciden con tu primer envío.');
     }
 
     this.marcarSesionActiva();
@@ -95,5 +101,16 @@ export class AuthService {
 
   private normalizarCorreo(correo: string): string {
     return (correo ?? '').trim().toLowerCase();
+  }
+
+  private generarContrasena(): string {
+    const caracteres = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    let contrasena = '';
+
+    for (let i = 0; i < 12; i++) {
+      contrasena += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+    }
+
+    return contrasena;
   }
 }
