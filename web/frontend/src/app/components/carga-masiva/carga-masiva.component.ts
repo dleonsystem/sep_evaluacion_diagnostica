@@ -382,4 +382,11 @@ export class CargaMasivaComponent implements OnInit {
     this.tieneCredenciales = !!credenciales;
     this.correoSesion = credenciales?.correo ?? null;
   }
+
+  private actualizarEstadoSesion(): void {
+    const credenciales = this.authService.obtenerCredenciales();
+    this.sesionActiva = this.authService.estaAutenticado();
+    this.tieneCredenciales = !!credenciales;
+    this.correoSesion = credenciales?.correo ?? null;
+  }
 }
