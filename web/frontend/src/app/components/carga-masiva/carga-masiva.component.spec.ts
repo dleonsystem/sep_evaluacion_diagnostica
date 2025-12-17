@@ -3,7 +3,6 @@ import { CargaMasivaComponent } from './carga-masiva.component';
 import { ExcelValidationService, ResultadoValidacion } from '../../services/excel-validation.service';
 import { ArchivoStorageService } from '../../services/archivo-storage.service';
 import { AuthService } from '../../services/auth.service';
-import Swal from 'sweetalert2';
 
 const resultadoValido: ResultadoValidacion = {
   ok: true,
@@ -90,9 +89,8 @@ describe('CargaMasivaComponent', () => {
 
     await component.onArchivoSeleccionado({ target: input } as unknown as Event);
 
-    expect(component.estado).toBe('error');
-    expect(component.errores[0]).toContain('Formato no permitido');
-    expect(component.archivoSeleccionado).toBeNull();
+    expect(component.resultados[0].estado).toBe('error');
+    expect(component.resultados[0].errores[0]).toContain('Formato no permitido');
   });
 
   it('should block when Excel email differs from the form', async () => {
@@ -104,8 +102,6 @@ describe('CargaMasivaComponent', () => {
       esc: { ...resultadoValido.esc!, correo: 'otro@correo.mx' }
     };
 
-    const swalSpy = spyOn(Swal, 'fire').and.resolveTo({} as any);
-
     component.correoControl.setValue('demo@correo.mx');
     const input = document.createElement('input');
     const archivo = new File(['contenido'], 'archivo.xlsx', {
@@ -115,10 +111,9 @@ describe('CargaMasivaComponent', () => {
 
     await component.onArchivoSeleccionado({ target: input } as unknown as Event);
 
-    expect(component.estado).toBe('error');
-    expect(component.errores).toContain(
-      'El correo del formulario debe coincidir con el capturado en el archivo.'
+    expect(component.resultados[0].estado).toBe('error');
+    expect(component.resultados[0].errores).toContain(
+      'El correo capturado debe coincidir con el que aparece en la hoja ESC del archivo.'
     );
-    expect(swalSpy).toHaveBeenCalled();
   });
 });

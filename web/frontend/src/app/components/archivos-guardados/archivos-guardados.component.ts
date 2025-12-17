@@ -29,10 +29,11 @@ export class ArchivosGuardadosComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.authService.requiereLoginParaNuevaCarga()) {
-      void this.router.navigate(['/login'], { queryParams: { redirect: '/archivos-guardados' } });
+      void this.router.navigate(['/login'], { queryParams: { redirect: '/archivos-preescolar' } });
       return;
     }
 
+    this.correoActivo = this.authService.obtenerCredenciales()?.correo ?? null;
     this.cargarRegistros();
   }
 

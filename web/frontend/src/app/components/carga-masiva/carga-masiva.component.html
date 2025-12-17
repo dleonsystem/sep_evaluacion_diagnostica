@@ -8,7 +8,53 @@
     </p>
   </div>
 
-  <div class="carga__zona" [class.carga__zona--error]="estado === 'error'">
+  <div
+    class="carga__sesion"
+    [class.carga__sesion--activa]="sesionActiva"
+    [class.carga__sesion--inactiva]="!sesionActiva"
+  >
+    <div class="carga__sesion-col">
+      <div class="carga__sesion-cabecera">
+        <div class="carga__sesion-icono" aria-hidden="true">{{ sesionActiva ? '🔒' : '🔓' }}</div>
+        <div class="carga__sesion-estado">
+          <span
+            class="carga__sesion-pill"
+            [class.carga__sesion-pill--activa]="sesionActiva"
+            [class.carga__sesion-pill--inactiva]="!sesionActiva"
+          >
+            {{ sesionActiva ? 'Sesión activa' : 'Sesión no iniciada' }}
+          </span>
+          <span class="carga__sesion-correo" *ngIf="sesionActiva && correoSesion">{{ correoSesion }}</span>
+        </div>
+      </div>
+
+      <div class="carga__sesion-textos">
+        <p class="carga__sesion-titulo">Estado de acceso</p>
+        <p class="carga__sesion-detalle" *ngIf="sesionActiva">
+          Estás autenticado. Continúa con tus cargas o consulta tus archivos guardados.
+        </p>
+        <p class="carga__sesion-detalle" *ngIf="!sesionActiva && tieneCredenciales">
+          Ya generaste credenciales con tu primer envío. Inicia sesión con tu correo y la contraseña generada para continuar con la siguiente carga.
+        </p>
+        <p class="carga__sesion-detalle" *ngIf="!sesionActiva && !tieneCredenciales">
+          Es tu primera carga: valida el archivo para generar automáticamente tu contraseña y credenciales de acceso.
+        </p>
+      </div>
+    </div>
+    <a
+      *ngIf="!sesionActiva && tieneCredenciales"
+      class="carga__sesion-boton"
+      [routerLink]="['/login']"
+      [queryParams]="{ redirect: '/carga-masiva' }"
+    >
+      Ir a login
+    </a>
+    <button *ngIf="sesionActiva" type="button" class="carga__sesion-boton carga__sesion-boton--secundario" (click)="cerrarSesion()">
+      Cerrar sesión
+    </button>
+  </div>
+
+  <div class="carga__zona" [class.carga__zona--error]="hayErrores">
     <form class="carga__formulario" (submit)="$event.preventDefault()">
       <label class="carga__campo">
         <span class="carga__campo-label">Correo electrónico</span>
@@ -24,84 +70,99 @@
       </label>
     </form>
 
-    <div class="carga__instrucciones">
-      <p class="carga__etiqueta">Arrastra y suelta tu archivo o selecciónalo desde tu equipo</p>
-      <p class="carga__formatos">Solo se aceptan archivos XLSX. Máximo {{ pesoMaximoMb }} MB.</p>
-    </div>
+    <div class="carga__drop">
+      <div class="carga__instrucciones">
+        <p class="carga__etiqueta">Arrastra y suelta tu archivo o selecciónalo desde tu equipo</p>
+        <p class="carga__formatos">Solo se aceptan archivos XLSX. Máximo {{ pesoMaximoMb }} MB.</p>
+      </div>
 
-    <label class="carga__input" [class.carga__input--disabled]="!correoControl.valid">
-      <input
-        #archivoInput
-        type="file"
-        accept=".xlsx"
-        multiple
-        (change)="onArchivoSeleccionado($event)"
-        [disabled]="correoControl.invalid"
-      >
-      <span class="carga__boton">{{ correoControl.invalid ? 'Ingresa un correo' : 'Elegir archivos' }}</span>
-    </label>
+      <label class="carga__input" [class.carga__input--disabled]="!correoControl.valid">
+        <input
+          #archivoInput
+          type="file"
+          accept=".xlsx"
+          multiple
+          (change)="onArchivoSeleccionado($event)"
+          [disabled]="correoControl.invalid"
+        >
+        <span class="carga__boton">{{ correoControl.invalid ? 'Ingresa un correo' : 'Elegir archivos' }}</span>
+      </label>
+    </div>
   </div>
 
-  <div class="carga__estado" *ngIf="archivoSeleccionado || estado !== 'idle'">
-    <div class="carga__detalle" *ngIf="archivoSeleccionado">
-      <h2>Archivo seleccionado</h2>
-      <ul>
-        <li><strong>Nombre:</strong> {{ archivoSeleccionado.name }}</li>
-        <li><strong>Peso:</strong> {{ archivoSeleccionado.sizeKb }} KB</li>
-        <li><strong>Última modificación:</strong> {{ archivoSeleccionado.lastModified | date:'short' }}</li>
-      </ul>
-    </div>
-
-    <p class="carga__mensaje carga__mensaje--info" *ngIf="estado === 'validando'">{{ mensajeInformativo }}</p>
-    <p class="carga__mensaje carga__mensaje--error" *ngIf="estado === 'error' && errores.length">Se encontraron problemas en tu archivo:</p>
-
-    <ul class="carga__lista" *ngIf="estado === 'error' && errores.length">
-      <li *ngFor="let error of errores">{{ error }}</li>
-    </ul>
-
-    <div class="carga__advertencias" *ngIf="advertencias.length">
-      <p class="carga__mensaje carga__mensaje--warning">Advertencias de estructura:</p>
-      <ul>
-        <li *ngFor="let advertencia of advertencias">{{ advertencia }}</li>
-      </ul>
-    </div>
-
-    <div class="carga__exito" *ngIf="estado === 'exito' && resultadoExito">
-      <h2>Archivo validado correctamente</h2>
-      <p>{{ resultadoExito.mensaje }}</p>
-      <p class="carga__resumen">
-        Se validaron {{ resultadoExito.totalAlumnos }} estudiantes en la hoja “TERCERO”.
-        El PDF de confirmación se generará con los mismos datos cuando el backend esté disponible.
-      </p>
-      <div class="carga__credenciales">
-        <p><strong>Correo de acceso:</strong> {{ resultadoExito.credenciales.usuario }}</p>
-        <p><strong>Contraseña de sesión:</strong> {{ resultadoExito.credenciales.contrasena }}</p>
-        <p
-          class="carga__mensaje carga__mensaje--warning"
-          *ngIf="resultadoExito.credenciales.esNueva"
+  <div class="carga__estado" *ngIf="resultados.length">
+    <article class="carga__detalle" *ngFor="let resultado of resultados; trackBy: trackByArchivo">
+      <header class="carga__detalle-header">
+        <div>
+          <p class="carga__detalle-etiqueta">Archivo seleccionado</p>
+          <h2>{{ resultado.archivo.name }}</h2>
+          <p class="carga__detalle-metadata">
+            Peso: {{ resultado.archivo.sizeKb }} KB · Última modificación: {{ resultado.archivo.lastModified | date:'short' }}
+          </p>
+        </div>
+        <span
+          class="carga__chip"
+          [class.carga__chip--progreso]="resultado.estado === 'validando'"
+          [class.carga__chip--error]="resultado.estado === 'error'"
+          [class.carga__chip--exito]="resultado.estado === 'exito'"
         >
-          Guarda esta contraseña: la necesitarás para futuras cargas con este correo.
-        </p>
-      </div>
-      <p class="carga__mensaje carga__mensaje--info" *ngIf="rutaGuardado">
-        Archivo conservado en el almacenamiento local del navegador.
-        <br>
-        Ruta de referencia dentro del proyecto: <strong>{{ rutaGuardado }}</strong>
-      </p>
-      <p class="carga__mensaje carga__mensaje--warning" *ngIf="notaGuardado">{{ notaGuardado }}</p>
-      <p class="carga__mensaje carga__mensaje--error" *ngIf="errorGuardado">{{ errorGuardado }}</p>
-    </div>
+          {{ resultado.estado === 'validando' ? 'Validando' : resultado.estado === 'exito' ? 'Validado' : 'Con errores' }}
+        </span>
+      </header>
 
-    <div class="carga__acciones">
-      <button
-        class="carga__boton-primario"
-        (click)="guardarArchivo()"
-        [disabled]="estado !== 'exito' || guardando || !correoControl.valid"
-      >
-        {{ guardando ? 'Guardando…' : 'Cargar Archivo' }}
-      </button>
-      <button class="carga__boton-secundario" (click)="limpiarSeleccion(archivoInput)">Limpiar</button>
-    </div>
+      <p class="carga__mensaje carga__mensaje--info" *ngIf="resultado.estado === 'validando'">{{ resultado.mensajeInformativo }}</p>
+
+      <ng-container *ngIf="resultado.estado === 'error' && resultado.errores.length">
+        <p class="carga__mensaje carga__mensaje--error">Se encontraron problemas en tu archivo:</p>
+        <ul class="carga__lista">
+          <li *ngFor="let error of resultado.errores">{{ error }}</li>
+        </ul>
+      </ng-container>
+
+      <div class="carga__advertencias" *ngIf="resultado.advertencias.length">
+        <p class="carga__mensaje carga__mensaje--warning">Advertencias de estructura:</p>
+        <ul>
+          <li *ngFor="let advertencia of resultado.advertencias">{{ advertencia }}</li>
+        </ul>
+      </div>
+
+      <div class="carga__exito" *ngIf="resultado.estado === 'exito' && resultado.resultadoExito">
+        <h3>Archivo validado correctamente</h3>
+        <p>{{ resultado.resultadoExito.mensaje }}</p>
+        <p class="carga__resumen">
+          Se validaron {{ resultado.resultadoExito.totalAlumnos }} estudiantes en la hoja “TERCERO”.
+          El PDF de confirmación se generará con los mismos datos cuando el backend esté disponible.
+        </p>
+        <div class="carga__credenciales">
+          <p><strong>Correo de acceso:</strong> {{ resultado.resultadoExito.credenciales.usuario }}</p>
+          <p><strong>Contraseña de sesión:</strong> {{ resultado.resultadoExito.credenciales.contrasena }}</p>
+          <p
+            class="carga__mensaje carga__mensaje--warning"
+            *ngIf="resultado.resultadoExito.credenciales.esNueva"
+          >
+            Guarda esta contraseña: la necesitarás para futuras cargas con este correo.
+          </p>
+        </div>
+        <p class="carga__mensaje carga__mensaje--info" *ngIf="resultado.rutaGuardado">
+          Archivo conservado en el almacenamiento local del navegador.
+          <br>
+          Ruta de referencia dentro del proyecto: <strong>{{ resultado.rutaGuardado }}</strong>
+        </p>
+        <p class="carga__mensaje carga__mensaje--warning" *ngIf="resultado.notaGuardado">{{ resultado.notaGuardado }}</p>
+        <p class="carga__mensaje carga__mensaje--error" *ngIf="resultado.errorGuardado">{{ resultado.errorGuardado }}</p>
+      </div>
+
+      <div class="carga__acciones">
+        <button
+          class="carga__boton-primario"
+          (click)="guardarArchivo(resultado)"
+          [disabled]="resultado.estado !== 'exito' || resultado.guardando || !correoControl.valid"
+        >
+          {{ resultado.guardando ? 'Guardando…' : 'Cargar Archivo' }}
+        </button>
+        <button class="carga__boton-secundario" (click)="onEliminarResultado(resultado)">Quitar</button>
+      </div>
+    </article>
 
     <p class="carga__historial">
       ¿Ya guardaste un archivo? <a routerLink="/archivos-preescolar">Consulta tus cargas anteriores</a>.
