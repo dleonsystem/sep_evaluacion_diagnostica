@@ -348,6 +348,10 @@ export class CargaMasivaComponent implements OnInit {
     return fecha;
   }
 
+  eliminarResultado(resultado: ResultadoArchivo): void {
+    this.resultados = this.resultados.filter((item) => item !== resultado);
+  }
+
   limpiarSeleccion(input: HTMLInputElement): void {
     input.value = '';
     this.resultados = [];
@@ -374,13 +378,6 @@ export class CargaMasivaComponent implements OnInit {
         : 'Se guardó una copia en el almacenamiento local del navegador.',
       footer: resultadoArchivo.rutaGuardado ? `Ruta sugerida: ${resultadoArchivo.rutaGuardado}` : undefined
     });
-  }
-
-  private actualizarEstadoSesion(): void {
-    const credenciales = this.authService.obtenerCredenciales();
-    this.sesionActiva = this.authService.estaAutenticado();
-    this.tieneCredenciales = !!credenciales;
-    this.correoSesion = credenciales?.correo ?? null;
   }
 
   private actualizarEstadoSesion(): void {

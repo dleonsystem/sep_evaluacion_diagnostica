@@ -160,7 +160,7 @@
         >
           {{ resultado.guardando ? 'Guardando…' : 'Cargar Archivo' }}
         </button>
-        <button class="carga__boton-secundario" (click)="resultados = resultados.filter((item) => item !== resultado)">Quitar</button>
+        <button class="carga__boton-secundario" (click)="eliminarResultado(resultado)">Quitar</button>
       </div>
     </article>
 
