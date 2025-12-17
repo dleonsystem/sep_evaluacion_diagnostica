@@ -155,10 +155,17 @@
       <div class="carga__acciones">
         <button
           class="carga__boton-primario"
+          [class.carga__boton-guardado]="resultado.guardado"
           (click)="guardarArchivo(resultado)"
-          [disabled]="resultado.estado !== 'exito' || resultado.guardando || !correoControl.valid"
+          [disabled]="resultado.estado !== 'exito' || resultado.guardando || !correoControl.valid || resultado.guardado"
         >
-          {{ resultado.guardando ? 'Guardando…' : 'Cargar Archivo' }}
+          {{
+            resultado.guardado
+              ? 'Archivo guardado'
+              : resultado.guardando
+                ? 'Guardando…'
+                : 'Cargar Archivo'
+          }}
         </button>
         <button class="carga__boton-secundario" (click)="onEliminarResultado(resultado)">Quitar</button>
       </div>

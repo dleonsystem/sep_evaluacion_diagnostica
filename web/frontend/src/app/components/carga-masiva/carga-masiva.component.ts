@@ -33,6 +33,7 @@ interface ResultadoArchivo {
   mensajeInformativo: string | null;
   escDatos: EscDatos | null;
   guardando: boolean;
+  guardado: boolean;
   rutaGuardado: string | null;
   errorGuardado: string | null;
   modoGuardado: 'localStorage' | null;
@@ -145,6 +146,7 @@ export class CargaMasivaComponent implements OnInit {
       mensajeInformativo: 'Validando tu archivo...',
       escDatos: null,
       guardando: false,
+      guardado: false,
       rutaGuardado: null,
       errorGuardado: null,
       modoGuardado: null,
@@ -365,6 +367,7 @@ export class CargaMasivaComponent implements OnInit {
     resultadoArchivo.rutaGuardado = resultado.rutaVirtual;
     resultadoArchivo.modoGuardado = resultado.modo;
     resultadoArchivo.notaGuardado = resultado.nota;
+    resultadoArchivo.guardado = true;
     resultadoArchivo.mensajeInformativo =
       'El archivo se conservó en el almacenamiento local del navegador. Copia el archivo a assets/archivos/preescolar/ en tu proyecto si lo necesitas.';
 
