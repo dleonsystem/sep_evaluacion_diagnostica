@@ -348,7 +348,7 @@ export class CargaMasivaComponent implements OnInit {
     return fecha;
   }
 
-  eliminarResultado(resultado: ResultadoArchivo): void {
+  onEliminarResultado(resultado: ResultadoArchivo): void {
     this.resultados = this.resultados.filter((item) => item !== resultado);
   }
 
