@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ExcelValidationService, ResultadoValidacion } from '../../services/excel-validation.service';
@@ -12,17 +12,31 @@ import { AuthService } from '../../services/auth.service';
 import Swal from 'sweetalert2';
 import { EscDatos } from '../../services/excel-validation.service';
 
-interface SelectedFile {
-  name: string;
-  sizeKb: number;
-  lastModified: Date;
-}
-
 interface ResultadoExito {
   mensaje: string;
   fechaDisponible: Date;
   credenciales: { usuario: string; contrasena: string; esNueva: boolean };
   totalAlumnos: number;
+}
+
+interface ResultadoArchivo {
+  archivo: {
+    name: string;
+    sizeKb: number;
+    lastModified: Date;
+  };
+  archivoOriginal: File;
+  estado: 'idle' | 'validando' | 'exito' | 'error';
+  errores: string[];
+  advertencias: string[];
+  resultadoExito: ResultadoExito | null;
+  mensajeInformativo: string | null;
+  escDatos: EscDatos | null;
+  guardando: boolean;
+  rutaGuardado: string | null;
+  errorGuardado: string | null;
+  modoGuardado: 'localStorage' | null;
+  notaGuardado: string | null;
 }
 
 @Component({
@@ -42,20 +56,16 @@ export class CargaMasivaComponent implements OnInit {
     validators: [Validators.required, Validators.email, Validators.pattern(this.correoPattern)]
   });
 
-  archivoSeleccionado: SelectedFile | null = null;
-  archivoOriginal: File | null = null;
-  estado: 'idle' | 'validando' | 'exito' | 'error' = 'idle';
-  errores: string[] = [];
-  advertencias: string[] = [];
-  resultadoExito: ResultadoExito | null = null;
-  mensajeInformativo: string | null = null;
-  escDatos: EscDatos | null = null;
-  guardando = false;
-  rutaGuardado: string | null = null;
-  errorGuardado: string | null = null;
-  modoGuardado: 'localStorage' | null = null;
-  notaGuardado: string | null = null;
-  ultimoCctValidado: string | null = null;
+  resultados: ResultadoArchivo[] = [];
+  sesionActiva = false;
+  correoSesion: string | null = null;
+  tieneCredenciales = false;
+  trackByArchivo = (_: number, item: ResultadoArchivo): string =>
+    `${item.archivo.name}-${item.archivo.lastModified.getTime()}`;
+
+  get hayErrores(): boolean {
+    return this.resultados.some((resultado) => resultado.estado === 'error');
+  }
 
   constructor(
     private readonly excelValidationService: ExcelValidationService,
@@ -64,11 +74,23 @@ export class CargaMasivaComponent implements OnInit {
     private readonly router: Router
   ) {}
 
+  @HostListener('window:storage')
+  onStorageChange(): void {
+    this.actualizarEstadoSesion();
+  }
+
+  async cerrarSesion(): Promise<void> {
+    this.authService.cerrarSesion();
+    this.actualizarEstadoSesion();
+    await Swal.fire({
+      icon: 'success',
+      title: 'Sesión cerrada',
+      text: 'Puedes iniciar sesión nuevamente cuando quieras cargar otro archivo.'
+    });
+  }
+
   ngOnInit(): void {
-    if (this.authService.requiereLoginParaNuevaCarga()) {
-      void this.router.navigate(['/login'], { queryParams: { redirect: '/carga-masiva' } });
-      return;
-    }
+    this.actualizarEstadoSesion();
   }
 
   async onArchivoSeleccionado(evento: Event): Promise<void> {
@@ -101,112 +123,105 @@ export class CargaMasivaComponent implements OnInit {
       return;
     }
 
-    const autoGuardar = archivos.length > 1;
-
     for (const archivo of archivos) {
-      await this.procesarArchivo(archivo, { autoGuardar });
+      await this.procesarArchivo(archivo);
     }
 
     input.value = '';
   }
 
-  private async procesarArchivo(
-    file: File,
-    opciones?: {
-      autoGuardar?: boolean;
-    }
-  ): Promise<void> {
-    this.resetMensajes();
+  private async procesarArchivo(file: File): Promise<void> {
+    const resultadoArchivo: ResultadoArchivo = {
+      archivo: {
+        name: file.name,
+        sizeKb: parseFloat((file.size / 1024).toFixed(2)),
+        lastModified: new Date(file.lastModified)
+      },
+      archivoOriginal: file,
+      estado: 'validando',
+      errores: [],
+      advertencias: [],
+      resultadoExito: null,
+      mensajeInformativo: 'Validando tu archivo...',
+      escDatos: null,
+      guardando: false,
+      rutaGuardado: null,
+      errorGuardado: null,
+      modoGuardado: null,
+      notaGuardado: null
+    };
+
+    this.resultados = [resultadoArchivo, ...this.resultados];
 
     const extensionValida = this.extensionesPermitidas.some((extension) =>
       file.name.toLowerCase().endsWith(extension)
     );
 
     if (!extensionValida) {
-      this.estado = 'error';
-      this.errores = ['Formato no permitido. Usa únicamente archivos .xlsx'];
+      resultadoArchivo.estado = 'error';
+      resultadoArchivo.mensajeInformativo = null;
+      resultadoArchivo.errores = ['Formato no permitido. Usa únicamente archivos .xlsx'];
       return;
     }
 
     const tamanioMb = file.size / (1024 * 1024);
     if (tamanioMb > this.pesoMaximoMb) {
-      this.estado = 'error';
-      this.errores = [`El archivo supera los ${this.pesoMaximoMb} MB permitidos.`];
+      resultadoArchivo.estado = 'error';
+      resultadoArchivo.mensajeInformativo = null;
+      resultadoArchivo.errores = [`El archivo supera los ${this.pesoMaximoMb} MB permitidos.`];
       return;
     }
-
-    this.archivoSeleccionado = {
-      name: file.name,
-      sizeKb: parseFloat((file.size / 1024).toFixed(2)),
-      lastModified: new Date(file.lastModified)
-    };
-    this.archivoOriginal = file;
-
-    this.estado = 'validando';
-    this.mensajeInformativo = 'Validando tu archivo...';
 
     try {
       const buffer = await file.arrayBuffer();
       const resultado = await this.excelValidationService.validarPreescolar(buffer);
-      await this.procesarResultado(resultado);
+      await this.procesarResultado(resultado, resultadoArchivo);
     } catch (error) {
-      this.estado = 'error';
-      this.errores = [
+      resultadoArchivo.estado = 'error';
+      resultadoArchivo.mensajeInformativo = null;
+      resultadoArchivo.errores = [
         error instanceof Error
           ? error.message
           : 'No se pudo validar el archivo. Inténtalo de nuevo.'
       ];
       return;
     }
-
-    if (!this.archivoOriginal || !this.resultadoExito) {
-      return;
-    }
-
-    if (opciones?.autoGuardar) {
-      await this.guardarArchivo();
-    }
   }
 
-  limpiarSeleccion(input: HTMLInputElement): void {
-    input.value = '';
-    this.resetMensajes();
-  }
-
-  async guardarArchivo(): Promise<void> {
+  async guardarArchivo(resultado: ResultadoArchivo): Promise<void> {
     if (!this.correoControl.valid) {
       this.correoControl.markAllAsTouched();
-      this.errorGuardado = 'Agrega un correo electrónico válido para continuar con la carga.';
+      resultado.errorGuardado = 'Agrega un correo electrónico válido para continuar con la carga.';
       await Swal.fire({
         icon: 'warning',
         title: 'Correo requerido',
-        text: this.errorGuardado
+        text: resultado.errorGuardado
       });
       return;
     }
 
-    if (!this.archivoOriginal || this.estado !== 'exito') {
-      this.errorGuardado = 'Primero valida correctamente tu archivo para poder guardarlo.';
+    if (resultado.estado !== 'exito') {
+      resultado.errorGuardado = 'Primero valida correctamente tu archivo para poder guardarlo.';
       await Swal.fire({
         icon: 'warning',
         title: 'Validación pendiente',
-        text: this.errorGuardado
+        text: resultado.errorGuardado
       });
       return;
     }
 
-    this.guardando = true;
-    this.errorGuardado = null;
-    this.rutaGuardado = null;
-    this.modoGuardado = null;
-    this.notaGuardado = null;
+    resultado.guardando = true;
+    resultado.errorGuardado = null;
+    resultado.rutaGuardado = null;
+    resultado.modoGuardado = null;
+    resultado.notaGuardado = null;
 
     try {
-      const resultado = await this.archivoStorageService.guardarArchivoPreescolar(this.archivoOriginal, {
-        cct: this.escDatos?.cct,
+      const guardado = await this.archivoStorageService.guardarArchivoPreescolar(resultado.archivoOriginal, {
+        cct: resultado.escDatos?.cct,
         correo: this.correoControl.value
       });
-      await this.mostrarConfirmacionGuardado(resultado, 'guardado');
+      await this.mostrarConfirmacionGuardado(guardado, 'guardado', resultado);
     } catch (error) {
       if (error instanceof ArchivoDuplicadoError) {
         const confirmacion = await Swal.fire({
@@ -221,13 +236,17 @@ export class CargaMasivaComponent implements OnInit {
         if (confirmacion.isConfirmed) {
           try {
             const resultadoReemplazo = await this.archivoStorageService.guardarArchivoPreescolar(
-              this.archivoOriginal,
-              { forzarReemplazo: true }
+              resultado.archivoOriginal,
+              {
+                forzarReemplazo: true,
+                cct: resultado.escDatos?.cct,
+                correo: this.correoControl.value
+              }
             );
-            await this.mostrarConfirmacionGuardado(resultadoReemplazo, 'reemplazo');
+            await this.mostrarConfirmacionGuardado(resultadoReemplazo, 'reemplazo', resultado);
             return;
           } catch (reemplazoError) {
-            this.errorGuardado =
+            resultado.errorGuardado =
               reemplazoError instanceof Error
                 ? reemplazoError.message
                 : 'No se pudo sustituir el archivo guardado.';
@@ -237,51 +256,68 @@ export class CargaMasivaComponent implements OnInit {
         return;
       }
 
-      this.errorGuardado =
+      resultado.errorGuardado =
         error instanceof Error
           ? error.message
           : 'No se pudo guardar el archivo localmente. Inténtalo de nuevo.';
       await Swal.fire({
         icon: 'error',
         title: 'No se pudo guardar',
-        text: this.errorGuardado
+        text: resultado.errorGuardado
       });
     } finally {
-      this.guardando = false;
+      resultado.guardando = false;
     }
   }
 
-  private async procesarResultado(resultado: ResultadoValidacion): Promise<void> {
-    this.errores = resultado.errores;
-    this.advertencias = resultado.advertencias;
-    this.escDatos = resultado.esc ?? null;
+  private async procesarResultado(
+    resultado: ResultadoValidacion,
+    resultadoArchivo: ResultadoArchivo
+  ): Promise<void> {
+    resultadoArchivo.errores = resultado.errores;
+    resultadoArchivo.advertencias = resultado.advertencias;
+    resultadoArchivo.escDatos = resultado.esc ?? null;
 
     if (!resultado.ok || !resultado.esc) {
-      this.estado = 'error';
-      this.mensajeInformativo = null;
+      resultadoArchivo.estado = 'error';
+      resultadoArchivo.mensajeInformativo = null;
       return;
     }
 
     if (!this.authService.coincidenCredenciales(resultado.esc.cct, resultado.esc.correo)) {
-      this.estado = 'error';
-      this.mensajeInformativo = null;
-      this.errores = [
-        ...this.errores,
+      resultadoArchivo.estado = 'error';
+      resultadoArchivo.mensajeInformativo = null;
+      resultadoArchivo.errores = [
+        ...resultadoArchivo.errores,
         'El CCT y el correo deben coincidir con los registrados en tu primer envío.'
       ];
       return;
     }
 
+    const correoFormulario = this.correoControl.value.trim().toLowerCase();
+    const correoEnArchivo = (resultado.esc.correo ?? '').trim().toLowerCase();
+
+    if (correoFormulario !== correoEnArchivo) {
+      resultadoArchivo.estado = 'error';
+      resultadoArchivo.mensajeInformativo = null;
+      resultadoArchivo.errores = [
+        ...resultadoArchivo.errores,
+        'El correo capturado debe coincidir con el que aparece en la hoja ESC del archivo.'
+      ];
+      return;
+    }
+
     let habiaCredenciales = false;
+    let nuevasCredenciales: { contrasena: string; esNueva: boolean } | null = null;
 
     try {
       habiaCredenciales = !!this.authService.obtenerCredenciales();
-      this.authService.registrarCredenciales(resultado.esc.cct, resultado.esc.correo);
+      nuevasCredenciales = this.authService.registrarCredenciales(resultado.esc.cct, resultado.esc.correo);
     } catch (error) {
-      this.estado = 'error';
-      this.mensajeInformativo = null;
-      this.errores = [
-        ...this.errores,
+      resultadoArchivo.estado = 'error';
+      resultadoArchivo.mensajeInformativo = null;
+      resultadoArchivo.errores = [
+        ...resultadoArchivo.errores,
         error instanceof Error
           ? error.message
           : 'No pudimos validar tus credenciales. Usa el CCT y correo originales.'
@@ -290,18 +326,20 @@ export class CargaMasivaComponent implements OnInit {
     }
 
     const fechaDisponible = this.calcularFechaDisponible();
-    this.estado = 'exito';
-    this.mensajeInformativo = 'Tu archivo ha sido validado correctamente.';
-    this.resultadoExito = {
+    resultadoArchivo.estado = 'exito';
+    resultadoArchivo.mensajeInformativo = 'Tu archivo ha sido validado correctamente.';
+    resultadoArchivo.resultadoExito = {
       mensaje: `Podrás consultar tus resultados a partir del día: ${fechaDisponible.toLocaleDateString()}`,
       fechaDisponible,
       credenciales: {
-        usuario: resultado.esc.cct,
-        contrasena: resultado.esc.correo,
-        esNueva: !habiaCredenciales
+        usuario: resultado.esc.correo,
+        contrasena: nuevasCredenciales?.contrasena ?? '',
+        esNueva: (nuevasCredenciales?.esNueva ?? false) && !habiaCredenciales
       },
       totalAlumnos: resultado.alumnos?.length ?? 0
     };
+
+    this.actualizarEstadoSesion();
   }
 
   private calcularFechaDisponible(): Date {
@@ -310,53 +348,24 @@ export class CargaMasivaComponent implements OnInit {
     return fecha;
   }
 
-  private resetMensajes(): void {
-    this.estado = 'idle';
-    this.archivoSeleccionado = null;
-    this.errores = [];
-    this.advertencias = [];
-    this.resultadoExito = null;
-    this.mensajeInformativo = null;
-    this.archivoOriginal = null;
-    this.escDatos = null;
-    this.guardando = false;
-    this.rutaGuardado = null;
-    this.errorGuardado = null;
-    this.modoGuardado = null;
-    this.ultimoCctValidado = null;
+  eliminarResultado(resultado: ResultadoArchivo): void {
+    this.resultados = this.resultados.filter((item) => item !== resultado);
   }
 
-
-  private async mostrarResultadoGuardado(
-    resultado: ResultadoGuardado,
-    tipo: 'guardado' | 'reemplazo'
-  ): Promise<void> {
-    this.rutaGuardado = resultado.rutaVirtual;
-    this.modoGuardado = resultado.modo;
-    this.notaGuardado = resultado.nota;
-    this.mensajeInformativo =
-      'El archivo se conservó en el almacenamiento local del navegador. Copia el archivo a assets/archivos/preescolar/ en tu proyecto si lo necesitas.';
-
-    const esReemplazo = tipo === 'reemplazo';
-
-    await Swal.fire({
-      icon: 'success',
-      title: esReemplazo ? 'Archivo sustituido' : 'Archivo guardado',
-      text: esReemplazo
-        ? 'Se reemplazó la copia previa con la nueva versión.'
-        : 'Se guardó una copia en el almacenamiento local del navegador.',
-      footer: this.rutaGuardado ? `Ruta sugerida: ${this.rutaGuardado}` : undefined
-    });
+  limpiarSeleccion(input: HTMLInputElement): void {
+    input.value = '';
+    this.resultados = [];
   }
 
   private async mostrarConfirmacionGuardado(
     resultado: ResultadoGuardado,
-    tipo: 'guardado' | 'reemplazo'
+    tipo: 'guardado' | 'reemplazo',
+    resultadoArchivo: ResultadoArchivo
   ): Promise<void> {
-    this.rutaGuardado = resultado.rutaVirtual;
-    this.modoGuardado = resultado.modo;
-    this.notaGuardado = resultado.nota;
-    this.mensajeInformativo =
+    resultadoArchivo.rutaGuardado = resultado.rutaVirtual;
+    resultadoArchivo.modoGuardado = resultado.modo;
+    resultadoArchivo.notaGuardado = resultado.nota;
+    resultadoArchivo.mensajeInformativo =
       'El archivo se conservó en el almacenamiento local del navegador. Copia el archivo a assets/archivos/preescolar/ en tu proyecto si lo necesitas.';
 
     const esReemplazo = tipo === 'reemplazo';
@@ -367,7 +376,14 @@ export class CargaMasivaComponent implements OnInit {
       text: esReemplazo
         ? 'Se reemplazó la copia previa con la nueva versión.'
         : 'Se guardó una copia en el almacenamiento local del navegador.',
-      footer: this.rutaGuardado ? `Ruta sugerida: ${this.rutaGuardado}` : undefined
+      footer: resultadoArchivo.rutaGuardado ? `Ruta sugerida: ${resultadoArchivo.rutaGuardado}` : undefined
     });
+  }
+
+  private actualizarEstadoSesion(): void {
+    const credenciales = this.authService.obtenerCredenciales();
+    this.sesionActiva = this.authService.estaAutenticado();
+    this.tieneCredenciales = !!credenciales;
+    this.correoSesion = credenciales?.correo ?? null;
   }
 }
