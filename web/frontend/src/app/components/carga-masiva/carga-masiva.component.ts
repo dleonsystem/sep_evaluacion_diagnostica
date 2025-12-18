@@ -40,6 +40,12 @@ interface ResultadoArchivo {
   notaGuardado: string | null;
 }
 
+interface CredencialesMostradas {
+  usuario: string;
+  contrasena: string;
+  esNueva: boolean;
+}
+
 @Component({
   selector: 'app-carga-masiva',
   standalone: true,
@@ -61,6 +67,7 @@ export class CargaMasivaComponent implements OnInit {
   sesionActiva = false;
   correoSesion: string | null = null;
   tieneCredenciales = false;
+  credencialesMostradas: CredencialesMostradas | null = null;
   trackByArchivo = (_: number, item: ResultadoArchivo): string =>
     `${item.archivo.name}-${item.archivo.lastModified.getTime()}`;
 
@@ -341,6 +348,12 @@ export class CargaMasivaComponent implements OnInit {
       totalAlumnos: resultado.alumnos?.length ?? 0
     };
 
+    this.credencialesMostradas = {
+      usuario: resultadoArchivo.resultadoExito.credenciales.usuario,
+      contrasena: resultadoArchivo.resultadoExito.credenciales.contrasena,
+      esNueva: resultadoArchivo.resultadoExito.credenciales.esNueva
+    };
+
     this.actualizarEstadoSesion();
   }
 
@@ -388,5 +401,17 @@ export class CargaMasivaComponent implements OnInit {
     this.sesionActiva = this.authService.estaAutenticado();
     this.tieneCredenciales = !!credenciales;
     this.correoSesion = credenciales?.correo ?? null;
+
+    if (!this.credencialesMostradas && credenciales) {
+      this.credencialesMostradas = {
+        usuario: credenciales.correo,
+        contrasena: credenciales.contrasena,
+        esNueva: false
+      };
+    }
+
+    if (this.sesionActiva && credenciales?.correo && !this.correoControl.value.trim()) {
+      this.correoControl.setValue(credenciales.correo);
+    }
   }
 }
