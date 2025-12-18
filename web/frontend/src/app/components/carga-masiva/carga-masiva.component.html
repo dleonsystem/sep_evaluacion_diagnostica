@@ -91,6 +91,15 @@
   </div>
 
   <div class="carga__estado" *ngIf="resultados.length">
+    <section class="carga__credenciales" *ngIf="credencialesMostradas">
+      <h3>Credenciales de acceso</h3>
+      <p><strong>Correo de acceso:</strong> {{ credencialesMostradas.usuario }}</p>
+      <p><strong>Contraseña de sesión:</strong> {{ credencialesMostradas.contrasena }}</p>
+      <p class="carga__mensaje carga__mensaje--warning" *ngIf="credencialesMostradas.esNueva">
+        Guarda esta contraseña: la necesitarás para futuras cargas con este correo.
+      </p>
+    </section>
+
     <article class="carga__detalle" *ngFor="let resultado of resultados; trackBy: trackByArchivo">
       <header class="carga__detalle-header">
         <div>
@@ -133,16 +142,6 @@
           Se validaron {{ resultado.resultadoExito.totalAlumnos }} estudiantes en la hoja “TERCERO”.
           El PDF de confirmación se generará con los mismos datos cuando el backend esté disponible.
         </p>
-        <div class="carga__credenciales">
-          <p><strong>Correo de acceso:</strong> {{ resultado.resultadoExito.credenciales.usuario }}</p>
-          <p><strong>Contraseña de sesión:</strong> {{ resultado.resultadoExito.credenciales.contrasena }}</p>
-          <p
-            class="carga__mensaje carga__mensaje--warning"
-            *ngIf="resultado.resultadoExito.credenciales.esNueva"
-          >
-            Guarda esta contraseña: la necesitarás para futuras cargas con este correo.
-          </p>
-        </div>
         <p class="carga__mensaje carga__mensaje--info" *ngIf="resultado.rutaGuardado">
           Archivo conservado en el almacenamiento local del navegador.
           <br>
