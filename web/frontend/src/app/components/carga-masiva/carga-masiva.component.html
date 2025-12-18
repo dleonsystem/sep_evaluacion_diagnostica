@@ -70,7 +70,11 @@
       </label>
     </form>
 
-    <div class="carga__drop">
+    <div
+      class="carga__drop"
+      [class.carga__drop--disabled]="correoControl.invalid"
+      [attr.aria-disabled]="correoControl.invalid"
+    >
       <div class="carga__instrucciones">
         <p class="carga__etiqueta">Arrastra y suelta tu archivo o selecciónalo desde tu equipo</p>
         <p class="carga__formatos">Solo se aceptan archivos XLSX. Máximo {{ pesoMaximoMb }} MB.</p>
@@ -137,7 +141,13 @@
         </span>
       </header>
 
-      <p class="carga__mensaje carga__mensaje--info" *ngIf="resultado.estado === 'validando'">{{ resultado.mensajeInformativo }}</p>
+      <p
+        class="carga__mensaje"
+        [ngClass]="{ 'carga__mensaje--info': resultado.estado !== 'error', 'carga__mensaje--error': resultado.estado === 'error' }"
+        *ngIf="resultado.mensajeInformativo"
+      >
+        {{ resultado.mensajeInformativo }}
+      </p>
 
       <ng-container *ngIf="resultado.estado === 'error' && resultado.errores.length">
         <p class="carga__mensaje carga__mensaje--error">Se encontraron problemas en tu archivo:</p>

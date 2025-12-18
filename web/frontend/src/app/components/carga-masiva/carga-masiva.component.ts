@@ -105,6 +105,17 @@ export class CargaMasivaComponent implements OnInit {
     const input = evento.target as HTMLInputElement;
     const archivos = input.files ? Array.from(input.files) : [];
 
+    if (!this.correoControl.valid) {
+      this.correoControl.markAllAsTouched();
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Correo requerido',
+        text: 'Ingresa un correo electrónico válido antes de cargar tu archivo.'
+      });
+      this.limpiarSeleccion(input);
+      return;
+    }
+
     if (this.authService.requiereLoginParaNuevaCarga()) {
       await Swal.fire({
         icon: 'info',
@@ -121,16 +132,6 @@ export class CargaMasivaComponent implements OnInit {
       return;
     }
 
-    if (this.correoControl.invalid) {
-      await Swal.fire({
-        icon: 'warning',
-        title: 'Correo requerido',
-        text: 'Ingresa un correo electrónico válido antes de seleccionar archivos.'
-      });
-      this.limpiarSeleccion(input);
-      return;
-    }
-
     for (const archivo of archivos) {
       await this.procesarArchivo(archivo);
     }
@@ -139,6 +140,8 @@ export class CargaMasivaComponent implements OnInit {
   }
 
   private async procesarArchivo(file: File): Promise<void> {
+    const fechaDisponible = this.calcularFechaDisponible();
+
     const resultadoArchivo: ResultadoArchivo = {
       archivo: {
         name: file.name,
@@ -150,7 +153,7 @@ export class CargaMasivaComponent implements OnInit {
       errores: [],
       advertencias: [],
       resultadoExito: null,
-      mensajeInformativo: 'Validando tu archivo...',
+      mensajeInformativo: 'Validando tu archivo con el correo ingresado...',
       escDatos: null,
       guardando: false,
       guardado: false,
@@ -334,9 +337,10 @@ export class CargaMasivaComponent implements OnInit {
       return;
     }
 
-    const fechaDisponible = this.calcularFechaDisponible();
     resultadoArchivo.estado = 'exito';
-    resultadoArchivo.mensajeInformativo = 'Tu archivo ha sido validado correctamente.';
+    resultadoArchivo.mensajeInformativo =
+      'Validación exitosa. Podrás consultar tus resultados a partir del día: ' +
+      fechaDisponible.toLocaleDateString();
     resultadoArchivo.resultadoExito = {
       mensaje: `Podrás consultar tus resultados a partir del día: ${fechaDisponible.toLocaleDateString()}`,
       fechaDisponible,
