@@ -388,5 +388,9 @@ export class CargaMasivaComponent implements OnInit {
     this.sesionActiva = this.authService.estaAutenticado();
     this.tieneCredenciales = !!credenciales;
     this.correoSesion = credenciales?.correo ?? null;
+
+    if (this.sesionActiva && credenciales?.correo && !this.correoControl.value.trim()) {
+      this.correoControl.setValue(credenciales.correo);
+    }
   }
 }
