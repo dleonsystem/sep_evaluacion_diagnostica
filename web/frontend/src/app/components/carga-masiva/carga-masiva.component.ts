@@ -321,6 +321,7 @@ export class CargaMasivaComponent implements OnInit {
 
     let habiaCredenciales = false;
     let nuevasCredenciales: { contrasena: string; esNueva: boolean } | null = null;
+    const fechaDisponible = this.calcularFechaDisponible();
 
     try {
       habiaCredenciales = !!this.authService.obtenerCredenciales();
