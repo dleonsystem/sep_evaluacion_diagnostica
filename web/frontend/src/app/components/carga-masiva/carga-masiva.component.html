@@ -67,6 +67,10 @@
         <small class="carga__campo-error" *ngIf="correoControl.invalid && correoControl.touched">
           Ingresa un correo electrónico válido.
         </small>
+        <small class="carga__campo-aviso" *ngIf="credencialesAsociadas">
+          Ya existe una contraseña ligada a este correo. Se reutilizará para tus siguientes cargas y no se generará una nueva
+          clave.
+        </small>
       </label>
     </form>
 
