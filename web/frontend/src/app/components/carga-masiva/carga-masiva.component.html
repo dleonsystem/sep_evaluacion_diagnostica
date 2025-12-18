@@ -92,9 +92,27 @@
 
   <div class="carga__estado" *ngIf="resultados.length">
     <section class="carga__credenciales" *ngIf="credencialesMostradas">
-      <h3>Credenciales de acceso</h3>
-      <p><strong>Correo de acceso:</strong> {{ credencialesMostradas.usuario }}</p>
-      <p><strong>Contraseña de sesión:</strong> {{ credencialesMostradas.contrasena }}</p>
+      <div class="carga__credenciales-header">
+        <div class="carga__credenciales-icono" aria-hidden="true">🔑</div>
+        <div class="carga__credenciales-titulos">
+          <p class="carga__credenciales-eyebrow">Datos de acceso</p>
+          <h3>Credenciales para tus cargas</h3>
+          <p class="carga__credenciales-sub">Úsalas para iniciar sesión en futuras cargas con este correo.</p>
+        </div>
+        <span class="carga__credenciales-chip" *ngIf="credencialesMostradas.esNueva">Nueva contraseña</span>
+      </div>
+
+      <div class="carga__credenciales-grid">
+        <div class="carga__credenciales-item">
+          <span>Correo de acceso</span>
+          <strong>{{ credencialesMostradas.usuario }}</strong>
+        </div>
+        <div class="carga__credenciales-item">
+          <span>Contraseña de sesión</span>
+          <strong class="carga__credenciales-contrasena">{{ credencialesMostradas.contrasena }}</strong>
+        </div>
+      </div>
+
       <p class="carga__mensaje carga__mensaje--warning" *ngIf="credencialesMostradas.esNueva">
         Guarda esta contraseña: la necesitarás para futuras cargas con este correo.
       </p>
