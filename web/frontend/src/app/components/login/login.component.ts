@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import Swal from 'sweetalert2';
 import { AuthService } from '../../services/auth.service';
+import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
 
 @Component({
   selector: 'app-login',
@@ -18,15 +19,18 @@ export class LoginComponent implements OnInit {
   error: string | null = null;
   autenticando = false;
   redirect = '/carga-masiva';
+  contrasenaGuardada: string | null = null;
 
   constructor(
     private readonly authService: AuthService,
+    private readonly estadoCredencialesService: EstadoCredencialesService,
     private readonly router: Router,
     private readonly route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
-    const credenciales = this.authService.obtenerCredenciales();
+    const credenciales = this.estadoCredencialesService.obtener() ?? this.authService.obtenerCredenciales();
+
     if (!credenciales) {
       void this.router.navigate(['/carga-masiva']);
       return;
@@ -34,6 +38,10 @@ export class LoginComponent implements OnInit {
 
     this.redirect = this.route.snapshot.queryParamMap.get('redirect') ?? this.redirect;
     this.correo = credenciales.correo;
+    this.contrasenaGuardada = credenciales.contrasena;
+    if (!this.contrasena) {
+      this.contrasena = credenciales.contrasena;
+    }
   }
 
   async iniciarSesion(): Promise<void> {

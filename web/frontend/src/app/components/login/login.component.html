@@ -26,6 +26,11 @@
         placeholder="Clave enviada en tu primer carga"
       />
 
+      <div class="login__alerta" *ngIf="contrasenaGuardada">
+        Ya existe una contraseña guardada para {{ correo }}. La llenamos por ti para que puedas continuar con tus cargas sin
+        generar una nueva clave.
+      </div>
+
       <div class="login__error" *ngIf="error">{{ error }}</div>
 
       <button class="login__submit" type="submit" [disabled]="loginForm.invalid || autenticando">

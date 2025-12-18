@@ -59,6 +59,16 @@ input:focus {
   border: 1px solid #feb2b2;
 }
 
+.login__alerta {
+  background: #f0fdf4;
+  color: #1d5130;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  border: 1px solid #c6f6d5;
+  font-size: 0.95rem;
+}
+
 .login__submit {
   width: 100%;
   background: #2e7d32;

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { ExcelValidationService, ResultadoValidacion } from '../../services/excel-validation.service';
@@ -11,6 +11,8 @@ import {
 import { AuthService } from '../../services/auth.service';
 import Swal from 'sweetalert2';
 import { EscDatos } from '../../services/excel-validation.service';
+import { Subject, takeUntil } from 'rxjs';
+import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
 
 interface ResultadoExito {
   mensaje: string;
@@ -53,7 +55,7 @@ interface CredencialesMostradas {
   templateUrl: './carga-masiva.component.html',
   styleUrl: './carga-masiva.component.scss'
 })
-export class CargaMasivaComponent implements OnInit {
+export class CargaMasivaComponent implements OnInit, OnDestroy {
   readonly extensionesPermitidas = ['.xlsx'];
   readonly pesoMaximoMb = 10;
   readonly correoPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -68,8 +70,12 @@ export class CargaMasivaComponent implements OnInit {
   correoSesion: string | null = null;
   tieneCredenciales = false;
   credencialesMostradas: CredencialesMostradas | null = null;
+  credencialesAsociadas = false;
+  contrasenaAsociada: string | null = null;
   trackByArchivo = (_: number, item: ResultadoArchivo): string =>
     `${item.archivo.name}-${item.archivo.lastModified.getTime()}`;
+
+  private readonly destroy$ = new Subject<void>();
 
   get hayErrores(): boolean {
     return this.resultados.some((resultado) => resultado.estado === 'error');
@@ -79,6 +85,7 @@ export class CargaMasivaComponent implements OnInit {
     private readonly excelValidationService: ExcelValidationService,
     private readonly archivoStorageService: ArchivoStorageService,
     private readonly authService: AuthService,
+    private readonly estadoCredencialesService: EstadoCredencialesService,
     private readonly router: Router
   ) {}
 
@@ -99,6 +106,12 @@ export class CargaMasivaComponent implements OnInit {
 
   ngOnInit(): void {
     this.actualizarEstadoSesion();
+    this.inicializarEstadoCredenciales();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   async onArchivoSeleccionado(evento: Event): Promise<void> {
@@ -326,6 +339,7 @@ export class CargaMasivaComponent implements OnInit {
     try {
       habiaCredenciales = !!this.authService.obtenerCredenciales();
       nuevasCredenciales = this.authService.registrarCredenciales(resultado.esc.cct, resultado.esc.correo);
+      this.estadoCredencialesService.actualizar(resultado.esc.correo, nuevasCredenciales.contrasena);
     } catch (error) {
       resultadoArchivo.estado = 'error';
       resultadoArchivo.mensajeInformativo = null;
@@ -407,16 +421,49 @@ export class CargaMasivaComponent implements OnInit {
     this.tieneCredenciales = !!credenciales;
     this.correoSesion = credenciales?.correo ?? null;
 
-    if (!this.credencialesMostradas && credenciales) {
+    this.establecerCredencialesMostradas();
+
+    if (credenciales?.correo && !this.correoControl.value.trim()) {
+      this.correoControl.setValue(credenciales.correo);
+    }
+  }
+
+  private inicializarEstadoCredenciales(): void {
+    const credencialesGuardadas = this.estadoCredencialesService.obtener();
+
+    if (credencialesGuardadas && !this.correoControl.value.trim()) {
+      this.correoControl.setValue(credencialesGuardadas.correo);
+    }
+
+    this.establecerCredencialesMostradas();
+    this.actualizarAvisoCredenciales(this.correoControl.value);
+
+    this.correoControl.valueChanges.pipe(takeUntil(this.destroy$)).subscribe((correo) => {
+      this.actualizarAvisoCredenciales(correo);
+    });
+  }
+
+  private establecerCredencialesMostradas(): void {
+    const credencialesExistentes = this.authService.obtenerCredenciales();
+    const credencialesGuardadas = this.estadoCredencialesService.obtener();
+
+    const credencialesFuente = credencialesGuardadas ?? credencialesExistentes;
+
+    if (!this.credencialesMostradas && credencialesFuente) {
       this.credencialesMostradas = {
-        usuario: credenciales.correo,
-        contrasena: credenciales.contrasena,
+        usuario: credencialesFuente.correo,
+        contrasena: credencialesFuente.contrasena,
         esNueva: false
       };
     }
+  }
 
-    if (this.sesionActiva && credenciales?.correo && !this.correoControl.value.trim()) {
-      this.correoControl.setValue(credenciales.correo);
-    }
+  private actualizarAvisoCredenciales(correo: string): void {
+    const credencialesGuardadas = this.estadoCredencialesService.obtener();
+    const correoNormalizado = (correo ?? '').trim().toLowerCase();
+    const coincideCorreo = credencialesGuardadas?.correo === correoNormalizado;
+
+    this.credencialesAsociadas = coincideCorreo;
+    this.contrasenaAsociada = coincideCorreo ? credencialesGuardadas?.contrasena ?? null : null;
   }
 }
