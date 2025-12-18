@@ -172,7 +172,7 @@
         <p>{{ resultado.resultadoExito.mensaje }}</p>
         <p class="carga__resumen">
           Se validaron {{ resultado.resultadoExito.totalAlumnos }} estudiantes en la hoja “TERCERO”.
-          El PDF de confirmación se generará con los mismos datos cuando el backend esté disponible.
+          El PDF de confirmación se descarga con el mock de FastAPI mientras llega el backend real.
         </p>
         <p class="carga__mensaje carga__mensaje--info" *ngIf="resultado.rutaGuardado">
           Archivo conservado en el almacenamiento local del navegador.
@@ -199,6 +199,40 @@
           }}
         </button>
         <button class="carga__boton-secundario" (click)="onEliminarResultado(resultado)">Quitar</button>
+      </div>
+
+      <div class="carga__pdf" *ngIf="resultado.pdfTipo">
+        <div
+          class="carga__pdf-estado"
+          [ngClass]="{
+            'carga__pdf-estado--cargando': resultado.pdfEstado === 'generando' || resultado.pdfEstado === 'descargando',
+            'carga__pdf-estado--ok': resultado.pdfEstado === 'listo',
+            'carga__pdf-estado--error': resultado.pdfEstado === 'error'
+          }"
+        >
+          {{
+            resultado.pdfEstado === 'generando'
+              ? 'Generando PDF mock (FastAPI)'
+              : resultado.pdfEstado === 'descargando'
+                ? 'Descargando PDF'
+                : resultado.pdfEstado === 'listo'
+                  ? 'PDF descargado'
+                  : 'No se pudo descargar'
+          }}
+        </div>
+        <p class="carga__pdf-detalle" *ngIf="resultado.pdfMensaje">{{ resultado.pdfMensaje }}</p>
+        <p class="carga__pdf-detalle carga__pdf-detalle--error" *ngIf="resultado.pdfError">{{ resultado.pdfError }}</p>
+        <p class="carga__pdf-detalle" *ngIf="resultado.pdfNombre && resultado.pdfEstado === 'listo'">
+          Archivo descargado: <strong>{{ resultado.pdfNombre }}</strong>
+        </p>
+        <button
+          type="button"
+          class="carga__boton-secundario carga__pdf-boton"
+          *ngIf="resultado.pdfEstado === 'error'"
+          (click)="reintentarDescargaPdf(resultado)"
+        >
+          Reintentar descarga de PDF
+        </button>
       </div>
     </article>
 

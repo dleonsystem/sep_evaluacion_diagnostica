@@ -13,6 +13,7 @@ import Swal from 'sweetalert2';
 import { EscDatos } from '../../services/excel-validation.service';
 import { Subject, takeUntil } from 'rxjs';
 import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
+import { MockPdfService } from '../../services/mock-pdf.service';
 
 interface ResultadoExito {
   mensaje: string;
@@ -40,6 +41,11 @@ interface ResultadoArchivo {
   errorGuardado: string | null;
   modoGuardado: 'localStorage' | null;
   notaGuardado: string | null;
+  pdfEstado: 'idle' | 'generando' | 'descargando' | 'listo' | 'error';
+  pdfMensaje: string | null;
+  pdfError: string | null;
+  pdfNombre: string | null;
+  pdfTipo: 'exito' | 'error' | null;
 }
 
 interface CredencialesMostradas {
@@ -86,6 +92,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     private readonly archivoStorageService: ArchivoStorageService,
     private readonly authService: AuthService,
     private readonly estadoCredencialesService: EstadoCredencialesService,
+    private readonly mockPdfService: MockPdfService,
     private readonly router: Router
   ) {}
 
@@ -173,7 +180,12 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       rutaGuardado: null,
       errorGuardado: null,
       modoGuardado: null,
-      notaGuardado: null
+      notaGuardado: null,
+      pdfEstado: 'idle',
+      pdfMensaje: null,
+      pdfError: null,
+      pdfNombre: null,
+      pdfTipo: null
     };
 
     this.resultados = [resultadoArchivo, ...this.resultados];
@@ -183,17 +195,15 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     );
 
     if (!extensionValida) {
-      resultadoArchivo.estado = 'error';
-      resultadoArchivo.mensajeInformativo = null;
       resultadoArchivo.errores = ['Formato no permitido. Usa únicamente archivos .xlsx'];
+      await this.finalizarConError(resultadoArchivo);
       return;
     }
 
     const tamanioMb = file.size / (1024 * 1024);
     if (tamanioMb > this.pesoMaximoMb) {
-      resultadoArchivo.estado = 'error';
-      resultadoArchivo.mensajeInformativo = null;
       resultadoArchivo.errores = [`El archivo supera los ${this.pesoMaximoMb} MB permitidos.`];
+      await this.finalizarConError(resultadoArchivo);
       return;
     }
 
@@ -202,13 +212,12 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       const resultado = await this.excelValidationService.validarPreescolar(buffer);
       await this.procesarResultado(resultado, resultadoArchivo);
     } catch (error) {
-      resultadoArchivo.estado = 'error';
-      resultadoArchivo.mensajeInformativo = null;
       resultadoArchivo.errores = [
         error instanceof Error
           ? error.message
           : 'No se pudo validar el archivo. Inténtalo de nuevo.'
       ];
+      await this.finalizarConError(resultadoArchivo);
       return;
     }
   }
@@ -304,18 +313,16 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     resultadoArchivo.escDatos = resultado.esc ?? null;
 
     if (!resultado.ok || !resultado.esc) {
-      resultadoArchivo.estado = 'error';
-      resultadoArchivo.mensajeInformativo = null;
+      await this.finalizarConError(resultadoArchivo);
       return;
     }
 
     if (!this.authService.coincidenCredenciales(resultado.esc.cct, resultado.esc.correo)) {
-      resultadoArchivo.estado = 'error';
-      resultadoArchivo.mensajeInformativo = null;
       resultadoArchivo.errores = [
         ...resultadoArchivo.errores,
         'El CCT y el correo deben coincidir con los registrados en tu primer envío.'
       ];
+      await this.finalizarConError(resultadoArchivo);
       return;
     }
 
@@ -323,12 +330,11 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     const correoEnArchivo = (resultado.esc.correo ?? '').trim().toLowerCase();
 
     if (correoFormulario !== correoEnArchivo) {
-      resultadoArchivo.estado = 'error';
-      resultadoArchivo.mensajeInformativo = null;
       resultadoArchivo.errores = [
         ...resultadoArchivo.errores,
         'El correo capturado debe coincidir con el que aparece en la hoja ESC del archivo.'
       ];
+      await this.finalizarConError(resultadoArchivo);
       return;
     }
 
@@ -341,14 +347,13 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       nuevasCredenciales = this.authService.registrarCredenciales(resultado.esc.cct, resultado.esc.correo);
       this.estadoCredencialesService.actualizar(resultado.esc.correo, nuevasCredenciales.contrasena);
     } catch (error) {
-      resultadoArchivo.estado = 'error';
-      resultadoArchivo.mensajeInformativo = null;
       resultadoArchivo.errores = [
         ...resultadoArchivo.errores,
         error instanceof Error
           ? error.message
           : 'No pudimos validar tus credenciales. Usa el CCT y correo originales.'
       ];
+      await this.finalizarConError(resultadoArchivo);
       return;
     }
 
@@ -374,6 +379,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     };
 
     this.actualizarEstadoSesion();
+
+    await this.generarPdfExito(resultadoArchivo, resultado.esc, fechaDisponible, resultado.alumnos?.length ?? 0);
   }
 
   private calcularFechaDisponible(): Date {
@@ -465,5 +472,84 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     this.credencialesAsociadas = coincideCorreo;
     this.contrasenaAsociada = coincideCorreo ? credencialesGuardadas?.contrasena ?? null : null;
+  }
+
+  private async generarPdfExito(
+    resultadoArchivo: ResultadoArchivo,
+    esc: EscDatos,
+    fechaDisponible: Date,
+    totalAlumnos: number
+  ): Promise<void> {
+    resultadoArchivo.pdfTipo = 'exito';
+    resultadoArchivo.pdfEstado = 'generando';
+    resultadoArchivo.pdfMensaje = 'Preparando el PDF de confirmación...';
+    resultadoArchivo.pdfError = null;
+    resultadoArchivo.pdfNombre = `comprobante-${esc.cct.toLowerCase()}-${Date.now()}.pdf`;
+
+    try {
+      const blob = await this.mockPdfService.generarPdfExito({
+        correo: esc.correo,
+        contrasena: resultadoArchivo.resultadoExito?.credenciales.contrasena ?? '',
+        fechaDisponible: fechaDisponible.toLocaleDateString(),
+        alumnosValidados: totalAlumnos,
+        cct: esc.cct
+      });
+      resultadoArchivo.pdfEstado = 'descargando';
+      this.mockPdfService.descargarPdf(blob, resultadoArchivo.pdfNombre);
+      resultadoArchivo.pdfEstado = 'listo';
+      resultadoArchivo.pdfMensaje = 'PDF de confirmación descargado correctamente.';
+    } catch (error) {
+      resultadoArchivo.pdfEstado = 'error';
+      resultadoArchivo.pdfError =
+        error instanceof Error ? error.message : 'No se pudo descargar el PDF de confirmación.';
+      resultadoArchivo.pdfMensaje = 'No pudimos entregar tu PDF. Reintenta la descarga.';
+    }
+  }
+
+  private async generarPdfErrores(resultadoArchivo: ResultadoArchivo): Promise<void> {
+    resultadoArchivo.pdfTipo = 'error';
+    resultadoArchivo.pdfEstado = 'generando';
+    resultadoArchivo.pdfMensaje = 'Creando PDF con el detalle de errores...';
+    resultadoArchivo.pdfError = null;
+    resultadoArchivo.pdfNombre = `errores-${resultadoArchivo.archivo.name.replace(/\s+/g, '-')}`;
+
+    try {
+      const blob = await this.mockPdfService.generarPdfErrores({
+        correo: this.correoControl.value,
+        errores: resultadoArchivo.errores,
+        advertencias: resultadoArchivo.advertencias,
+        archivo: resultadoArchivo.archivo.name
+      });
+      resultadoArchivo.pdfEstado = 'descargando';
+      this.mockPdfService.descargarPdf(blob, resultadoArchivo.pdfNombre);
+      resultadoArchivo.pdfEstado = 'listo';
+      resultadoArchivo.pdfMensaje = 'PDF de errores descargado para revisar detalles.';
+    } catch (error) {
+      resultadoArchivo.pdfEstado = 'error';
+      resultadoArchivo.pdfError =
+        error instanceof Error ? error.message : 'No se pudo descargar el PDF de errores.';
+      resultadoArchivo.pdfMensaje = 'No pudimos entregar el PDF de errores. Reintenta la descarga.';
+    }
+  }
+
+  async reintentarDescargaPdf(resultadoArchivo: ResultadoArchivo): Promise<void> {
+    if (resultadoArchivo.pdfTipo === 'exito' && resultadoArchivo.resultadoExito && resultadoArchivo.escDatos) {
+      await this.generarPdfExito(
+        resultadoArchivo,
+        resultadoArchivo.escDatos,
+        resultadoArchivo.resultadoExito.fechaDisponible,
+        resultadoArchivo.resultadoExito.totalAlumnos
+      );
+    }
+
+    if (resultadoArchivo.pdfTipo === 'error') {
+      await this.generarPdfErrores(resultadoArchivo);
+    }
+  }
+
+  private async finalizarConError(resultadoArchivo: ResultadoArchivo): Promise<void> {
+    resultadoArchivo.estado = 'error';
+    resultadoArchivo.mensajeInformativo = null;
+    await this.generarPdfErrores(resultadoArchivo);
   }
 }
