@@ -15,6 +15,20 @@ erDiagram
     VALORACIONES }o--|| PERIODOS_EVALUACION : en
     USUARIOS ||--o{ VALORACIONES : registra
     EVALUACIONES ||--|| VALORACIONES : referencia
+    ESCUELAS ||--|| CAT_TURNOS : turno
+    ESCUELAS ||--|| CAT_ENTIDADES_FEDERATIVAS : entidad
+    ESCUELAS ||--|| CAT_NIVELES_EDUCATIVOS : nivel
+    ESCUELAS ||--|| CAT_CICLOS_ESCOLARES : ciclo
+    GRUPOS ||--|| CAT_GRADOS : grado
+    GRUPOS ||--|| ESCUELAS : escuela
+    EVALUACIONES ||--|| ESTUDIANTES : estudiante
+    EVALUACIONES ||--|| MATERIAS : materia
+    EVALUACIONES ||--|| PERIODOS_EVALUACION : periodo
+    MATERIAS ||--o{ COMPETENCIAS : define
+    COMPETENCIAS ||--o{ RESULTADOS_COMPETENCIAS : mide
+    EVALUACIONES ||--o{ RESULTADOS_COMPETENCIAS : genera
+    USUARIOS ||--o{ LOG_ACTIVIDADES : registra
+    USUARIOS ||--|| CAT_ROLES_USUARIO : rol
 ```
 
 ---
@@ -44,9 +58,16 @@ erDiagram
 | fecha_registro  | DATETIME     | Fecha de registro                 |
 | estatus         | CHAR(1)      | Estado (A=Activo, I=Inactivo)     |
 
+| id_turno        | INT          | Relación con CAT_TURNOS           |
+| id_nivel        | INT          | Relación con CAT_NIVELES_EDUCATIVOS |
+| id_entidad      | INT          | Relación con CAT_ENTIDADES_FEDERATIVAS |
+| id_ciclo        | INT          | Relación con CAT_CICLOS_ESCOLARES |
+
 #### Restricciones y claves
-- **PK:** id
-- **UK:** cct
+- **FK:** id_turno → CAT_TURNOS(id_turno)
+- **FK:** id_nivel → CAT_NIVELES_EDUCATIVOS(id_nivel)
+- **FK:** id_entidad → CAT_ENTIDADES_FEDERATIVAS(id_entidad)
+- **FK:** id_ciclo → CAT_CICLOS_ESCOLARES(id_ciclo)
 
 ### USUARIOS
 | Campo           | Tipo         | Descripción                       |
@@ -103,11 +124,11 @@ erDiagram
 | descripcion     | VARCHAR(200) | Descripción                       |
 
 #### Restricciones y claves
+
+| id_rol          | INT          | Relación con CAT_ROLES_USUARIO    |
 - **PK:** id_grupo
 ### MATERIAS
-| Campo           | Tipo         | Descripción                       |
-|-----------------|--------------|-----------------------------------|
-| id_materia      | INT          | Identificador de materia          |
+- **FK:** id_rol → CAT_ROLES_USUARIO(id_rol)
 | codigo          | VARCHAR(10)  | Código de materia                 |
 | nombre          | VARCHAR(100) | Nombre de la materia              |
 | orden           | INT          | Orden                             |
@@ -190,8 +211,55 @@ erDiagram
 | ip              | VARCHAR(50)  | IP de origen                      |
 
 #### Restricciones y claves
-- **PK:** id_log
-- **FK:** id_usuario → USUARIOS(id)
+
+### CAT_TURNOS
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id_turno        | INT          | Identificador de turno            |
+| nombre          | VARCHAR(20)  | Nombre del turno (Matutino, Vespertino, Nocturno) |
+
+#### Restricciones y claves
+- **PK:** id_turno
+
+### CAT_NIVELES_EDUCATIVOS
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id_nivel        | INT          | Identificador de nivel educativo  |
+| nombre          | VARCHAR(50)  | Nombre del nivel (Preescolar, Primaria, Secundaria, Telesecundaria) |
+
+#### Restricciones y claves
+- **PK:** id_nivel
+
+### CAT_ENTIDADES_FEDERATIVAS
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id_entidad      | INT          | Identificador de entidad federativa |
+| nombre          | VARCHAR(100) | Nombre de la entidad              |
+| clave           | VARCHAR(2)   | Clave de la entidad (INEGI)       |
+
+#### Restricciones y claves
+- **PK:** id_entidad
+- **UK:** clave
+
+### CAT_CICLOS_ESCOLARES
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id_ciclo        | INT          | Identificador de ciclo escolar    |
+| nombre          | VARCHAR(10)  | Nombre del ciclo (2024-2025, etc) |
+| fecha_inicio    | DATE         | Fecha de inicio                   |
+| fecha_fin       | DATE         | Fecha de fin                      |
+
+#### Restricciones y claves
+- **PK:** id_ciclo
+
+### CAT_ROLES_USUARIO
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id_rol          | INT          | Identificador de rol              |
+| nombre          | VARCHAR(30)  | Nombre del rol (ADMIN, DIRECTOR, DOCENTE, CONSULTA, OPERADOR_SEP) |
+
+#### Restricciones y claves
+- **PK:** id_rol
 ---
 Este documento resume la estructura de datos principal del sistema, incluyendo el diagrama ER y el diccionario de datos para las entidades clave. Para detalles adicionales, consulta los archivos de análisis técnico y los scripts SQL del proyecto.
 
@@ -265,10 +333,89 @@ WHERE l.fecha_hora >= '2025-12-01';
 
 ## 4. Notas y recomendaciones
 
-- Para ampliar el modelo, revisar los scripts SQL y el análisis técnico complementario.
-- Se recomienda mantener integridad referencial y restricciones de unicidad en claves importantes (CURP, CCT, email).
-- El diagrama Mermaid puede visualizarse en VS Code o herramientas compatibles.
-- Considera los catálogos y vistas para facilitar reportes y análisis.
-- Mantén actualizada la bitácora de actividades para auditoría y seguridad.
-- Revisa los campos NULL permitidos en USUARIOS (por ejemplo, escuela_id para administradores).
-- Para migraciones, consulta el análisis técnico complementario y scripts de migración.
+
+---
+
+## 5. Glosario de términos
+
+| Término | Definición |
+|---------|------------|
+| CCT | Clave de Centro de Trabajo |
+| CURP | Clave Única de Registro de Población |
+| FRV | Formato de Recepción de Valoraciones |
+| PK | Primary Key (Clave primaria) |
+| FK | Foreign Key (Clave foránea) |
+| UK | Unique Key (Clave única) |
+| DGADAE | Dirección General de Acreditación, Incorporación y Revalidación |
+
+---
+
+## 6. Reglas de negocio relevantes
+
+- No puede haber dos escuelas con el mismo CCT.
+- El CURP de cada estudiante debe ser único.
+- Un usuario solo puede estar activo en una escuela a la vez.
+- Los valores de valoración deben estar en el rango 0-3.
+- Los periodos deben estar correctamente definidos y no solaparse.
+- Los roles de usuario determinan el acceso a módulos y datos.
+
+---
+
+## 7. Índices y optimización
+
+- Índices únicos en CCT (escuelas), CURP (estudiantes), email (usuarios).
+- Índices compuestos sugeridos:
+    - (escuela_id, nombre) en GRUPOS
+    - (id_estudiante, id_materia, id_periodo) en EVALUACIONES
+    - (id_evaluacion, id_competencia) en RESULTADOS_COMPETENCIAS
+
+---
+
+## 8. Triggers y procedimientos almacenados
+
+- Trigger para auditar cambios en tablas críticas (insert/update/delete en ESCUELAS, ESTUDIANTES, VALORACIONES).
+- Procedimiento para cierre de periodo escolar (actualiza estatus y bloquea nuevas valoraciones).
+- Trigger para validar unicidad de CURP antes de insertar estudiante.
+
+---
+
+## 9. Políticas de seguridad y acceso
+
+- Solo usuarios con rol ADMIN pueden eliminar registros.
+- Los DIRECTORES solo pueden ver y editar datos de su escuela.
+- Los DOCENTES solo pueden consultar valoraciones de sus grupos.
+- Acceso a reportes restringido por rol y entidad federativa.
+
+---
+
+## 10. Ejemplos de datos
+
+### ESCUELAS
+| id | cct | nombre | id_turno | id_nivel | id_entidad | id_ciclo |
+|----|-----|--------|----------|----------|------------|----------|
+| 1  | 09ABC1234X | Primaria Benito Juárez | 1 | 2 | 9 | 1 |
+
+### USUARIOS
+| id | nombre | email | id_rol | escuela_id |
+|----|--------|-------|--------|------------|
+| 1  | Juan Pérez | juan@escuela.edu.mx | 2 | 1 |
+
+### ESTUDIANTES
+| id | nombre | curp | grupo_id |
+|----|--------|------|----------|
+| 1  | Ana López | LOAA010101MDFRNN09 | 1 |
+
+---
+
+## 11. Diagrama físico (referencial)
+
+> Nota: El diagrama físico puede generarse con herramientas como pgAdmin, MySQL Workbench o dbdiagram.io. Aquí se recomienda incluir una imagen o enlace al archivo fuente del diagrama físico.
+
+---
+
+## 12. Consideraciones de migración y respaldo
+
+- Realizar respaldos automáticos diarios de la base de datos.
+- Probar restauraciones periódicas para validar integridad.
+- Documentar scripts de migración y versionado de esquema.
+- Considerar migración a la nube o escalabilidad horizontal si el volumen de datos crece.
