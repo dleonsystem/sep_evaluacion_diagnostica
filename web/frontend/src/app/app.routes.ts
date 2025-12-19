@@ -3,6 +3,7 @@ import { InicioComponent } from './components/inicio/inicio.component';
 import { CargaMasivaComponent } from './components/carga-masiva/carga-masiva.component';
 import { ArchivosGuardadosComponent } from './components/archivos-guardados/archivos-guardados.component';
 import { LoginComponent } from './components/login/login.component';
+import { DescargasComponent } from './components/descargas/descargas.component';
 
 
 export const routes: Routes = [
@@ -39,6 +40,11 @@ export const routes: Routes = [
   {
     path: 'login',
     component: LoginComponent,
+    pathMatch: 'full'
+  },
+  {
+    path: 'descargas',
+    component: DescargasComponent,
     pathMatch: 'full'
   },
   /* {
