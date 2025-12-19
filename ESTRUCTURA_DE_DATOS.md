@@ -1,3 +1,57 @@
+---
+## 12. Consideraciones de migración y respaldo
+    - Realizar respaldos automáticos diarios de la base de datos.
+    - Probar restauraciones periódicas para validar integridad.
+    - Documentar scripts de migración y versionado de esquema.
+     - Considerar migración a la nube o escalabilidad horizontal si el volumen de datos crece.
+
+---
+
+# Checklist de Validación Final
+
+1. **Diagrama Entidad-Relación**
+    - [x] Incluye todas las entidades principales y catálogos.
+    - [x] Refleja relaciones y claves foráneas correctamente.
+    - [x] Actualizado con catálogos adicionales.
+
+2. **Diccionario de Datos**
+    - [x] Todas las tablas principales y catálogos documentados.
+    - [x] Descripción clara de cada campo.
+    - [x] Claves primarias, foráneas y únicas especificadas.
+    - [x] Relaciones con catálogos reflejadas en las tablas principales.
+
+3. **Consultas y Vistas SQL**
+    - [x] Ejemplos de consultas clave y vistas para reportes.
+    - [x] Ejemplo de consulta de auditoría.
+
+4. **Notas y Recomendaciones**
+    - [x] Buenas prácticas de integridad y migración documentadas.
+
+5. **Glosario de Términos**
+    - [x] Definiciones de términos y abreviaturas relevantes.
+
+6. **Reglas de Negocio**
+    - [x] Restricciones y validaciones clave documentadas.
+
+7. **Índices y Optimización**
+    - [x] Índices principales y sugeridos listados.
+
+8. **Triggers y Procedimientos**
+    - [x] Triggers y procedimientos almacenados sugeridos.
+
+9. **Seguridad y Acceso**
+    - [x] Políticas de acceso y restricciones por rol.
+
+10. **Ejemplos de Datos**
+     - [x] Ejemplos de registros para tablas clave.
+
+11. **Diagrama Físico**
+     - [x] Sección referencial para incluir diagrama físico.
+
+12. **Migración y Respaldo**
+     - [x] Estrategias y recomendaciones de respaldo y migración.
+
+---
 # Documento de Estructura de Datos
 
 ## 1. Diagrama Entidad-Relación (ER)
