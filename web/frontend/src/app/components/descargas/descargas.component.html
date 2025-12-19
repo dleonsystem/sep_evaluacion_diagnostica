@@ -42,6 +42,8 @@
     </div>
 
     <div *ngIf="autenticado" class="contenido">
+      <app-seguimiento-descargas></app-seguimiento-descargas>
+
       <div class="estado" *ngIf="cargandoVersiones">Cargando versiones disponibles...</div>
       <div class="estado estado-error" *ngIf="error && !cargandoVersiones">{{ error }}</div>
 

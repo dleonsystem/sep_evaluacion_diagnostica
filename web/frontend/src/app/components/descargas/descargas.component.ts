@@ -7,11 +7,12 @@ import { finalize, firstValueFrom, Subject, takeUntil } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
 import { VersionDisponible, VersionesService } from '../../services/versiones.service';
+import { SeguimientoDescargasComponent } from './seguimiento-descargas/seguimiento-descargas.component';
 
 @Component({
   selector: 'app-descargas',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, SeguimientoDescargasComponent],
   templateUrl: './descargas.component.html',
   styleUrl: './descargas.component.scss'
 })
