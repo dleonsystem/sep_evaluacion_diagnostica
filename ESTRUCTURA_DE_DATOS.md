@@ -1,11 +1,9 @@
----
 ## 12. Consideraciones de migración y respaldo
     - Realizar respaldos automáticos diarios de la base de datos.
     - Probar restauraciones periódicas para validar integridad.
     - Documentar scripts de migración y versionado de esquema.
      - Considerar migración a la nube o escalabilidad horizontal si el volumen de datos crece.
 
----
 
 # Checklist de Validación Final
 
@@ -18,6 +16,7 @@
     - [x] Todas las tablas principales y catálogos documentados.
     - [x] Descripción clara de cada campo.
     - [x] Claves primarias, foráneas y únicas especificadas.
+
     - [x] Relaciones con catálogos reflejadas en las tablas principales.
 
 3. **Consultas y Vistas SQL**
@@ -53,6 +52,9 @@
 
 ---
 # Documento de Estructura de Datos
+
+## 1. Introducción
+Este documento describe la estructura de datos del sistema SEP Evaluación Diagnóstica, incluyendo el modelo entidad-relación, diccionario de datos, catálogos, reglas de negocio, índices, procedimientos, vistas, seguridad, datos semilla, ejemplos y consideraciones de migración. El objetivo es proporcionar una referencia técnica completa y alineada con las mejores prácticas para el desarrollo, mantenimiento y auditoría del sistema.
 
 ## 1. Diagrama Entidad-Relación (ER)
 
@@ -97,6 +99,101 @@ erDiagram
 ---
 
 ## 2. Diccionario de Datos
+
+### ARCHIVOS_FRV
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id              | UUID         | Identificador único               |
+| escuela_id      | UUID         | Relación con ESCUELAS             |
+| usuario_id      | UUID         | Relación con USUARIOS             |
+| ciclo_escolar   | VARCHAR(9)   | Ciclo escolar                     |
+| nivel           | ENUM         | Nivel educativo                   |
+| estado          | ENUM         | Estado del archivo                |
+| file_path       | VARCHAR(500) | Ruta en filesystem                |
+| filename_original| VARCHAR(255)| Nombre original del archivo       |
+| file_size       | BIGINT       | Tamaño en bytes                   |
+| mime_type       | VARCHAR(50)  | Tipo MIME                         |
+| validacion_resultado| JSONB    | Resultado de validación           |
+| validado_en     | TIMESTAMP    | Fecha de validación               |
+| procesado_en    | TIMESTAMP    | Fecha de procesamiento            |
+| total_estudiantes| INT         | Total de estudiantes              |
+| created_at      | TIMESTAMP    | Fecha de creación                 |
+| updated_at      | TIMESTAMP    | Fecha de actualización            |
+
+### SESIONES
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id              | UUID         | Identificador único               |
+| usuario_id      | UUID         | Relación con USUARIOS             |
+| token_hash      | VARCHAR(255) | Hash del token                    |
+| ip_address      | INET         | IP de la sesión                   |
+| user_agent      | TEXT         | User agent                        |
+| expira_en       | TIMESTAMP    | Expiración                        |
+| revocado        | BOOLEAN      | Revocado                          |
+| created_at      | TIMESTAMP    | Fecha de creación                 |
+
+### TICKETS_SOPORTE
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id              | UUID         | Identificador único               |
+| numero_ticket   | VARCHAR(20)  | Número de ticket                  |
+| escuela_id      | UUID         | Relación con ESCUELAS             |
+| usuario_id      | UUID         | Relación con USUARIOS             |
+| archivo_frv_id  | UUID         | Relación con ARCHIVOS_FRV         |
+| asunto          | VARCHAR(200) | Asunto                            |
+| descripcion     | TEXT         | Descripción                       |
+| estado          | ENUM         | Estado del ticket                 |
+| prioridad       | VARCHAR(10)  | Prioridad                         |
+| asignado_a      | UUID         | Usuario asignado                  |
+| asignado_en     | TIMESTAMP    | Fecha de asignación               |
+| resolucion      | TEXT         | Resolución                        |
+| resuelto_en     | TIMESTAMP    | Fecha de resolución               |
+| cerrado_en      | TIMESTAMP    | Fecha de cierre                   |
+| created_at      | TIMESTAMP    | Fecha de creación                 |
+| updated_at      | TIMESTAMP    | Fecha de actualización            |
+
+### REPORTES_GENERADOS
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id              | UUID         | Identificador único               |
+| escuela_id      | UUID         | Relación con ESCUELAS             |
+| ciclo_escolar   | VARCHAR(9)   | Ciclo escolar                     |
+| tipo_reporte    | VARCHAR(50)  | Tipo de reporte                   |
+| file_path       | VARCHAR(500) | Ruta en filesystem                |
+| filename        | VARCHAR(255) | Nombre del archivo                |
+| file_size       | BIGINT       | Tamaño en bytes                   |
+| parametros      | JSONB        | Parámetros del reporte            |
+| generado_por    | UUID         | Usuario que generó                |
+| generado_en     | TIMESTAMP    | Fecha de generación               |
+| descargado      | BOOLEAN      | Descargado                        |
+| descargado_en   | TIMESTAMP    | Fecha de descarga                 |
+
+### CONSENTIMIENTOS_LGPDP
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id              | UUID         | Identificador único               |
+| estudiante_id   | UUID         | Relación con ESTUDIANTES          |
+| escuela_id      | UUID         | Relación con ESCUELAS             |
+| tipo_consentimiento| VARCHAR(50)| Tipo de consentimiento            |
+| consentimiento_otorgado| BOOLEAN| Consentimiento otorgado           |
+| tutor_nombre    | VARCHAR(150) | Nombre del tutor                  |
+| tutor_firma_digital| TEXT      | Firma digital                     |
+| ip_address      | INET         | IP de origen                      |
+| created_at      | TIMESTAMP    | Fecha de creación                 |
+
+### AUDIT_LOG
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id              | BIGSERIAL    | Identificador único               |
+| tabla           | VARCHAR(50)  | Tabla auditada                    |
+| registro_id     | UUID         | ID del registro                   |
+| accion          | VARCHAR(20)  | Acción (INSERT, UPDATE, DELETE)   |
+| usuario_id      | UUID         | Relación con USUARIOS             |
+| datos_anteriores| JSONB        | Datos antes del cambio            |
+| datos_nuevos    | JSONB        | Datos después del cambio          |
+| ip_address      | INET         | IP de origen                      |
+| user_agent      | TEXT         | User agent                        |
+| created_at      | TIMESTAMP    | Fecha de auditoría                |
 
 ### ESCUELAS
 | Campo           | Tipo         | Descripción                       |
@@ -426,6 +523,79 @@ WHERE l.fecha_hora >= '2025-12-01';
 ---
 
 ## 8. Triggers y procedimientos almacenados
+
+### Enums (Enumeraciones)
+Se utilizan tipos ENUM en PostgreSQL para garantizar integridad y claridad en los siguientes campos:
+
+- **nivel**: ('PREESCOLAR', 'PRIMARIA', 'SECUNDARIA')
+- **estado_archivo**: ('CARGADO', 'VALIDADO', 'PROCESADO', 'ERROR')
+- **estado_ticket**: ('ABIERTO', 'EN_PROCESO', 'CERRADO')
+
+### Triggers avanzados
+Se implementan triggers para:
+- Auditoría de cambios en tablas críticas (AUDIT_LOG)
+- Actualización automática de timestamps (`updated_at`)
+- Validación de integridad antes de inserciones/actualizaciones
+
+Ejemplo:
+```sql
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON archivos_frv
+FOR EACH ROW EXECUTE FUNCTION set_timestamp();
+```
+
+### Funciones y Procedimientos
+Funciones almacenadas para:
+- Validación de archivos
+- Generación de reportes
+- Auditoría y logging
+
+Ejemplo:
+```sql
+CREATE OR REPLACE FUNCTION set_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+### Vistas Materializadas
+Se utilizan para acelerar reportes agregados y consultas frecuentes, por ejemplo:
+- Reporte de conteo de estudiantes por ciclo y nivel
+- Resumen de tickets de soporte por estado
+
+Ejemplo:
+```sql
+CREATE MATERIALIZED VIEW resumen_estudiantes AS
+SELECT ciclo_escolar, nivel, COUNT(*) AS total
+FROM estudiantes
+GROUP BY ciclo_escolar, nivel;
+```
+
+### Permisos y Seguridad
+Políticas de acceso:
+- Solo usuarios autenticados pueden acceder a datos sensibles
+- Uso de roles: `admin`, `soporte`, `escuela`, `consulta`
+- Restricción de UPDATE/DELETE en tablas críticas a roles autorizados
+
+Ejemplo:
+```sql
+GRANT SELECT, INSERT ON archivos_frv TO soporte;
+REVOKE DELETE ON archivos_frv FROM escuela;
+```
+
+### Datos Semilla (Seed Data)
+Se incluyen datos iniciales para catálogos y pruebas:
+- Niveles educativos
+- Estados de archivo y ticket
+- Usuarios de ejemplo
+
+Ejemplo:
+```sql
+INSERT INTO catalogo_niveles (clave, descripcion) VALUES ('PRIMARIA', 'Primaria');
+INSERT INTO usuarios (id, nombre, rol) VALUES ('uuid', 'Admin', 'admin');
+```
 
 - Trigger para auditar cambios en tablas críticas (insert/update/delete en ESCUELAS, ESTUDIANTES, VALORACIONES).
 - Procedimiento para cierre de periodo escolar (actualiza estatus y bloquea nuevas valoraciones).
