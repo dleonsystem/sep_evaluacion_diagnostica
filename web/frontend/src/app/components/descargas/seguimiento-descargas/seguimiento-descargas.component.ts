@@ -2,13 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { finalize, Subject, takeUntil } from 'rxjs';
-import {
-  DescargaReciente,
-  SeguimientoFiltro,
-  SeguimientoService,
-  SeguimientoSnapshot,
-  ValidacionDetalle
-} from '../../../services/seguimiento.service';
+import { SeguimientoFiltro, SeguimientoService, SeguimientoSnapshot } from '../../../services/seguimiento.service';
 
 @Component({
   selector: 'app-seguimiento-descargas',
@@ -39,18 +33,6 @@ export class SeguimientoDescargasComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  get descargas(): DescargaReciente[] {
-    return this.resumen?.descargasRecientes ?? [];
-  }
-
-  get validaciones(): ValidacionDetalle[] {
-    return this.resumen?.validaciones ?? [];
-  }
-
-  get resumenSolicitudes() {
-    return this.resumen?.resumenSolicitudes;
   }
 
   consultar(): void {

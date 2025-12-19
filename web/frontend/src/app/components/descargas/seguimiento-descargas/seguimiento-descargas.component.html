@@ -32,26 +32,26 @@
     <button type="button" class="btn" (click)="consultar()">Reintentar</button>
   </div>
 
-  <ng-container *ngIf="!cargando && !error && resumen">
+  <ng-container *ngIf="!cargando && !error && resumen as snapshot">
     <div class="resumen">
       <article class="tarjeta">
         <p class="label">Solicitudes recibidas</p>
-        <h3>{{ resumenSolicitudes?.total }}</h3>
-        <small>Actualizado {{ resumen?.actualizado | date: 'dd/MM, HH:mm' }}</small>
+        <h3>{{ snapshot.resumenSolicitudes.total }}</h3>
+        <small>Actualizado {{ snapshot.actualizado | date: 'dd/MM, HH:mm' }}</small>
       </article>
       <article class="tarjeta">
         <p class="label">Validadas</p>
-        <h3 class="exito">{{ resumenSolicitudes?.validadas }}</h3>
-        <small>{{ resumenSolicitudes?.validadas }} listas para descarga</small>
+        <h3 class="exito">{{ snapshot.resumenSolicitudes.validadas }}</h3>
+        <small>{{ snapshot.resumenSolicitudes.validadas }} listas para descarga</small>
       </article>
       <article class="tarjeta">
         <p class="label">En proceso</p>
-        <h3 class="proceso">{{ resumenSolicitudes?.enProceso }}</h3>
+        <h3 class="proceso">{{ snapshot.resumenSolicitudes.enProceso }}</h3>
         <small>Incluye reglas de negocio pendientes</small>
       </article>
       <article class="tarjeta">
         <p class="label">Con observaciones</p>
-        <h3 class="alerta">{{ resumenSolicitudes?.conObservaciones }}</h3>
+        <h3 class="alerta">{{ snapshot.resumenSolicitudes.conObservaciones }}</h3>
         <small>Requieren revisión adicional</small>
       </article>
     </div>
@@ -62,7 +62,7 @@
         <p>Monitoreo rápido de los módulos clave.</p>
       </div>
       <div class="lista">
-        <article *ngFor="let validacion of validaciones" class="item">
+        <article *ngFor="let validacion of snapshot.validaciones" class="item">
           <div>
             <p class="label">{{ validacion.nombre }}</p>
             <small>Actualizado {{ validacion.actualizado | date: 'dd/MM, HH:mm' }}</small>
@@ -78,7 +78,7 @@
         <h3>Descargas recientes</h3>
         <p>Incluye intentos con error para simular reintentos.</p>
       </div>
-      <table class="tabla" *ngIf="descargas.length; else sinDescargas">
+      <table class="tabla" *ngIf="snapshot.descargasRecientes.length; else sinDescargas">
         <thead>
           <tr>
             <th>CCT</th>
@@ -89,7 +89,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let descarga of descargas">
+          <tr *ngFor="let descarga of snapshot.descargasRecientes">
             <td>{{ descarga.cct }}</td>
             <td>{{ descarga.archivo }}</td>
             <td>{{ descarga.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
