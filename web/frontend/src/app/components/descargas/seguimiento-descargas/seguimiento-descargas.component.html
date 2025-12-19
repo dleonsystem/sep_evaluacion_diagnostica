@@ -1,0 +1,111 @@
+<section class="seguimiento">
+  <header class="encabezado">
+    <div>
+      <p class="eyebrow">Seguimiento y descargas recientes</p>
+      <h2>Estado de solicitudes y validaciones</h2>
+      <p class="descripcion">Filtra por CCT o fecha para revisar avances, errores simulados y últimos intentos de descarga.</p>
+    </div>
+    <form class="filtros" [formGroup]="filtroForm" (ngSubmit)="consultar()">
+      <div class="control">
+        <label for="cct">CCT</label>
+        <input id="cct" type="text" placeholder="Ej. 09A1234A" formControlName="cct" />
+      </div>
+      <div class="control">
+        <label for="fechaInicio">Desde</label>
+        <input id="fechaInicio" type="date" formControlName="fechaInicio" />
+      </div>
+      <div class="control">
+        <label for="fechaFin">Hasta</label>
+        <input id="fechaFin" type="date" formControlName="fechaFin" />
+      </div>
+      <label class="checkbox">
+        <input type="checkbox" formControlName="simularFallo" />
+        Simular fallo para reintento
+      </label>
+      <button type="submit" class="btn">Aplicar filtros</button>
+    </form>
+  </header>
+
+  <div *ngIf="cargando" class="estado">Consultando seguimiento...</div>
+  <div *ngIf="error && !cargando" class="estado estado-error">
+    {{ error }}
+    <button type="button" class="btn" (click)="consultar()">Reintentar</button>
+  </div>
+
+  <ng-container *ngIf="!cargando && !error && resumen">
+    <div class="resumen">
+      <article class="tarjeta">
+        <p class="label">Solicitudes recibidas</p>
+        <h3>{{ resumenSolicitudes?.total }}</h3>
+        <small>Actualizado {{ resumen?.actualizado | date: 'dd/MM, HH:mm' }}</small>
+      </article>
+      <article class="tarjeta">
+        <p class="label">Validadas</p>
+        <h3 class="exito">{{ resumenSolicitudes?.validadas }}</h3>
+        <small>{{ resumenSolicitudes?.validadas }} listas para descarga</small>
+      </article>
+      <article class="tarjeta">
+        <p class="label">En proceso</p>
+        <h3 class="proceso">{{ resumenSolicitudes?.enProceso }}</h3>
+        <small>Incluye reglas de negocio pendientes</small>
+      </article>
+      <article class="tarjeta">
+        <p class="label">Con observaciones</p>
+        <h3 class="alerta">{{ resumenSolicitudes?.conObservaciones }}</h3>
+        <small>Requieren revisión adicional</small>
+      </article>
+    </div>
+
+    <section class="validaciones">
+      <div class="titulo">
+        <h3>Estado de validaciones</h3>
+        <p>Monitoreo rápido de los módulos clave.</p>
+      </div>
+      <div class="lista">
+        <article *ngFor="let validacion of validaciones" class="item">
+          <div>
+            <p class="label">{{ validacion.nombre }}</p>
+            <small>Actualizado {{ validacion.actualizado | date: 'dd/MM, HH:mm' }}</small>
+            <p class="comentario">{{ validacion.comentario }}</p>
+          </div>
+          <span class="chip" [ngClass]="validacion.estado">{{ validacion.estado }}</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="descargas">
+      <div class="titulo">
+        <h3>Descargas recientes</h3>
+        <p>Incluye intentos con error para simular reintentos.</p>
+      </div>
+      <table class="tabla" *ngIf="descargas.length; else sinDescargas">
+        <thead>
+          <tr>
+            <th>CCT</th>
+            <th>Archivo</th>
+            <th>Fecha</th>
+            <th>Estado</th>
+            <th>Reintentos</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let descarga of descargas">
+            <td>{{ descarga.cct }}</td>
+            <td>{{ descarga.archivo }}</td>
+            <td>{{ descarga.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
+            <td>
+              <span class="chip" [ngClass]="descarga.estado">{{ descarga.estado }}</span>
+            </td>
+            <td>
+              <span class="reintentos" *ngIf="descarga.estado === 'error'">{{ descarga.reintentos }} reintentos sugeridos</span>
+              <span *ngIf="descarga.estado !== 'error'">{{ descarga.reintentos }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #sinDescargas>
+        <p class="estado">No hay descargas que coincidan con los filtros seleccionados.</p>
+      </ng-template>
+    </section>
+  </ng-container>
+</section>
