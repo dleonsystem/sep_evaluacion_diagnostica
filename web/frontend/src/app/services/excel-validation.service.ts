@@ -25,6 +25,8 @@ export interface ResultadoValidacion {
   hojasEncontradas?: string[];
 }
 
+type NivelEducativo = 'preescolar' | 'primaria' | 'secundaria';
+
 @Injectable({ providedIn: 'root' })
 export class ExcelValidationService {
   private xlsxPromise: Promise<any> | null = null;
@@ -49,16 +51,57 @@ export class ExcelValidationService {
     'O',
     'P'
   ];
+  private readonly hojasPorNivel: Record<NivelEducativo, ReadonlySet<string>> = {
+    preescolar: new Set(['ESC', 'TERCERO']),
+    primaria: new Set(['ESC', 'PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO']),
+    secundaria: new Set(['ESC', 'PRIMERO', 'SEGUNDO', 'TERCERO'])
+  };
+
+  async validarArchivo(buffer: ArrayBuffer): Promise<ResultadoValidacion> {
+    const xlsx = await this.cargarXlsx();
+    const workbook = xlsx.read(buffer, { type: 'array' });
+    const hojas = workbook.SheetNames as string[];
+    const hojasNormalizadas = this.normalizarHojas(hojas);
+    const nivel = this.detectarNivel(hojasNormalizadas);
+
+    if (!nivel) {
+      return {
+        ok: false,
+        errores: ['No se reconoció el formato del archivo. Usa una plantilla oficial vigente.'],
+        advertencias: [],
+        hojasEncontradas: hojas
+      };
+    }
+
+    switch (nivel) {
+      case 'primaria':
+        return this.validarPrimariaWorkbook(xlsx, workbook, hojas);
+      case 'secundaria':
+        return this.validarSecundariaWorkbook(xlsx, workbook, hojas);
+      case 'preescolar':
+      default:
+        return this.validarPreescolarWorkbook(xlsx, workbook, hojas);
+    }
+  }
 
   async validarPreescolar(buffer: ArrayBuffer): Promise<ResultadoValidacion> {
     const xlsx = await this.cargarXlsx();
     const workbook = xlsx.read(buffer, { type: 'array' });
+    return this.validarPreescolarWorkbook(xlsx, workbook, workbook.SheetNames as string[]);
+  }
+
+  private validarPreescolarWorkbook(xlsx: any, workbook: any, hojas: string[]): ResultadoValidacion {
     const errores: string[] = [];
     const advertencias: string[] = [];
-    const hojas = workbook.SheetNames;
-
     const escSheet = workbook.Sheets['ESC'];
     const terceroSheet = workbook.Sheets['TERCERO'];
+    const hojasNormalizadas = this.normalizarHojas(hojas);
+    const hojasRequeridas = this.hojasPorNivel.preescolar;
+
+    if (!this.contieneTodasLasHojas(hojasNormalizadas, hojasRequeridas)) {
+      const faltantes = this.obtenerHojasFaltantes(hojasNormalizadas, hojasRequeridas);
+      errores.push(`Faltan hojas requeridas: ${faltantes.join(', ')}.`);
+    }
 
     if (!escSheet) {
       errores.push('Falta la hoja ESC en el archivo.');
@@ -84,7 +127,99 @@ export class ExcelValidationService {
       resultado.advertencias.push(esc.advertencia);
     }
 
-    const alumnos = this.validarHojaTercero(xlsx, terceroSheet);
+    const alumnos = this.validarHojaAlumnos(xlsx, terceroSheet, 'TERCERO');
+    resultado.errores.push(...alumnos.errores);
+
+    if (!resultado.errores.length) {
+      resultado.ok = true;
+      resultado.esc = esc.datos!;
+      resultado.alumnos = alumnos.registros;
+    }
+
+    return resultado;
+  }
+
+  private validarPrimariaWorkbook(xlsx: any, workbook: any, hojas: string[]): ResultadoValidacion {
+    const errores: string[] = [];
+    const advertencias: string[] = [];
+    const escSheet = workbook.Sheets['ESC'];
+    const hojasNormalizadas = this.normalizarHojas(hojas);
+    const hojasRequeridas = this.hojasPorNivel.primaria;
+    const grados = ['PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO'];
+
+    if (!this.contieneTodasLasHojas(hojasNormalizadas, hojasRequeridas)) {
+      const faltantes = this.obtenerHojasFaltantes(hojasNormalizadas, hojasRequeridas);
+      errores.push(`Faltan hojas requeridas: ${faltantes.join(', ')}.`);
+    }
+
+    if (!escSheet) {
+      errores.push('Falta la hoja ESC en el archivo.');
+    }
+
+    const resultado: ResultadoValidacion = {
+      ok: false,
+      errores,
+      advertencias,
+      hojasEncontradas: hojas
+    };
+
+    if (errores.length) {
+      return resultado;
+    }
+
+    const esc = this.validarEsc(escSheet);
+    resultado.errores.push(...esc.errores);
+    if (esc.advertencia) {
+      resultado.advertencias.push(esc.advertencia);
+    }
+
+    const alumnos = this.validarHojasPorNombre(xlsx, workbook, grados);
+    resultado.errores.push(...alumnos.errores);
+
+    if (!resultado.errores.length) {
+      resultado.ok = true;
+      resultado.esc = esc.datos!;
+      resultado.alumnos = alumnos.registros;
+    }
+
+    return resultado;
+  }
+
+  private validarSecundariaWorkbook(xlsx: any, workbook: any, hojas: string[]): ResultadoValidacion {
+    const errores: string[] = [];
+    const advertencias: string[] = [];
+    const escSheet = workbook.Sheets['ESC'];
+    const hojasNormalizadas = this.normalizarHojas(hojas);
+    const hojasRequeridas = this.hojasPorNivel.secundaria;
+    const grados = ['PRIMERO', 'SEGUNDO', 'TERCERO'];
+
+    if (!this.contieneTodasLasHojas(hojasNormalizadas, hojasRequeridas)) {
+      const faltantes = this.obtenerHojasFaltantes(hojasNormalizadas, hojasRequeridas);
+      errores.push(`Faltan hojas requeridas: ${faltantes.join(', ')}.`);
+    }
+
+    if (!escSheet) {
+      errores.push('Falta la hoja ESC en el archivo.');
+    }
+
+    const resultado: ResultadoValidacion = {
+      ok: false,
+      errores,
+      advertencias,
+      hojasEncontradas: hojas
+    };
+
+    if (errores.length) {
+      return resultado;
+    }
+
+    const esc = this.validarEsc(escSheet);
+    resultado.errores.push(...esc.errores);
+    if (esc.advertencia) {
+      resultado.advertencias.push(esc.advertencia);
+    }
+
+    const alumnos = this.validarHojasPorNombre(xlsx, workbook, grados);
     resultado.errores.push(...alumnos.errores);
 
     if (!resultado.errores.length) {
@@ -146,7 +281,33 @@ export class ExcelValidationService {
     };
   }
 
-  private validarHojaTercero(xlsx: any, sheet: any): {
+  private validarHojasPorNombre(
+    xlsx: any,
+    workbook: any,
+    hojas: string[]
+  ): { registros: AlumnoValidado[]; errores: string[] } {
+    const errores: string[] = [];
+    const registros: AlumnoValidado[] = [];
+
+    hojas.forEach((hoja) => {
+      const sheet = workbook.Sheets[hoja];
+      if (!sheet) {
+        errores.push(`Falta la hoja ${hoja} en el archivo.`);
+        return;
+      }
+      const resultado = this.validarHojaAlumnos(xlsx, sheet, hoja);
+      errores.push(...resultado.errores);
+      registros.push(...resultado.registros);
+    });
+
+    return { registros, errores };
+  }
+
+  private validarHojaAlumnos(
+    xlsx: any,
+    sheet: any,
+    nombreHoja: string
+  ): {
     registros: AlumnoValidado[];
     errores: string[];
   } {
@@ -180,34 +341,36 @@ export class ExcelValidationService {
       }
 
       if (!numeroLista) {
-        erroresFila.push(`Fila ${filaExcel}: falta el número de lista.`);
+        erroresFila.push(`Fila ${filaExcel} (${nombreHoja}): falta el número de lista.`);
       } else if (isNaN(Number(numeroLista))) {
-        erroresFila.push(`Fila ${filaExcel}: el número de lista debe ser numérico.`);
+        erroresFila.push(`Fila ${filaExcel} (${nombreHoja}): el número de lista debe ser numérico.`);
       }
 
       if (!nombre) {
-        erroresFila.push(`Fila ${filaExcel}: captura el nombre completo del estudiante.`);
+        erroresFila.push(`Fila ${filaExcel} (${nombreHoja}): captura el nombre completo del estudiante.`);
       }
 
       if (!sexo) {
-        erroresFila.push(`Fila ${filaExcel}: indica el sexo (H/M).`);
+        erroresFila.push(`Fila ${filaExcel} (${nombreHoja}): indica el sexo (H/M).`);
       } else if (sexo !== 'H' && sexo !== 'M') {
-        erroresFila.push(`Fila ${filaExcel}: el sexo debe ser H o M.`);
+        erroresFila.push(`Fila ${filaExcel} (${nombreHoja}): el sexo debe ser H o M.`);
       }
 
       if (!grupo) {
-        erroresFila.push(`Fila ${filaExcel}: captura el grupo.`);
+        erroresFila.push(`Fila ${filaExcel} (${nombreHoja}): captura el grupo.`);
       } else if (!/^[A-Z]$/.test(grupo)) {
-        erroresFila.push(`Fila ${filaExcel}: el grupo debe ser una sola letra (A-Z).`);
+        erroresFila.push(`Fila ${filaExcel} (${nombreHoja}): el grupo debe ser una sola letra (A-Z).`);
       }
 
       valoraciones.forEach((valor, idx) => {
         if (valor === null) {
-          erroresFila.push(`Fila ${filaExcel}: falta la valoración ${idx + 1}.`);
+          erroresFila.push(`Fila ${filaExcel} (${nombreHoja}): falta la valoración ${idx + 1}.`);
           return;
         }
         if (isNaN(valor) || valor < 0 || valor > 3) {
-          erroresFila.push(`Fila ${filaExcel}: la valoración ${idx + 1} debe estar entre 0 y 3.`);
+          erroresFila.push(
+            `Fila ${filaExcel} (${nombreHoja}): la valoración ${idx + 1} debe estar entre 0 y 3.`
+          );
         }
       });
 
@@ -226,10 +389,47 @@ export class ExcelValidationService {
     });
 
     if (!registros.length) {
-      errores.push('No se encontraron estudiantes capturados en la hoja TERCERO.');
+      errores.push(`No se encontraron estudiantes capturados en la hoja ${nombreHoja}.`);
     }
 
     return { registros, errores };
+  }
+
+  private detectarNivel(hojasNormalizadas: Set<string>): NivelEducativo | null {
+    const orden: NivelEducativo[] = ['primaria', 'secundaria', 'preescolar'];
+    for (const nivel of orden) {
+      if (this.contieneTodasLasHojas(hojasNormalizadas, this.hojasPorNivel[nivel])) {
+        return nivel;
+      }
+    }
+    return null;
+  }
+
+  private normalizarHoja(hoja: string): string {
+    return hoja.trim().toUpperCase();
+  }
+
+  private normalizarHojas(hojas: string[]): Set<string> {
+    return new Set(hojas.map((hoja: string) => this.normalizarHoja(hoja)));
+  }
+
+  private contieneTodasLasHojas(hojasNormalizadas: Set<string>, hojasRequeridas: ReadonlySet<string>): boolean {
+    for (const hoja of hojasRequeridas) {
+      if (!hojasNormalizadas.has(hoja)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private obtenerHojasFaltantes(hojasNormalizadas: Set<string>, hojasRequeridas: ReadonlySet<string>): string[] {
+    const faltantes: string[] = [];
+    for (const hoja of hojasRequeridas) {
+      if (!hojasNormalizadas.has(hoja)) {
+        faltantes.push(hoja);
+      }
+    }
+    return faltantes;
   }
 
   private limpiarTexto(valor: any): string {
