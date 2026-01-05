@@ -82,12 +82,6 @@ export class ExcelValidationService {
     'O',
     'P'
   ];
-  private readonly hojasPorNivel: Record<TipoArchivoCarga, string[]> = {
-    preescolar: ['ESC', 'TERCERO'],
-    primaria: ['ESC', 'PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO'],
-    secundaria: ['ESC', 'PRIMERO', 'SEGUNDO', 'TERCERO']
-  };
-
   async detectarTipoArchivo(buffer: ArrayBuffer): Promise<TipoArchivoCarga | null> {
     const xlsx = await this.cargarXlsx();
     const workbook = xlsx.read(buffer, { type: 'array' });
@@ -184,98 +178,6 @@ export class ExcelValidationService {
     const hojasNormalizadas = this.normalizarHojas(hojas);
     const hojasRequeridas = this.hojasPorNivel.primaria;
     const grados = ['PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO'];
-
-    if (!this.contieneTodasLasHojas(hojasNormalizadas, hojasRequeridas)) {
-      const faltantes = this.obtenerHojasFaltantes(hojasNormalizadas, hojasRequeridas);
-      errores.push(`Faltan hojas requeridas: ${faltantes.join(', ')}.`);
-    }
-
-    if (!escSheet) {
-      errores.push('Falta la hoja ESC en el archivo.');
-    }
-
-    const resultado: ResultadoValidacion = {
-      ok: false,
-      errores,
-      advertencias,
-      hojasEncontradas: hojas
-    };
-
-    if (errores.length) {
-      return resultado;
-    }
-
-    const esc = this.validarEsc(escSheet);
-    resultado.errores.push(...esc.errores);
-    if (esc.advertencia) {
-      resultado.advertencias.push(esc.advertencia);
-    }
-
-    const alumnos = this.validarHojaAlumnos(xlsx, terceroSheet, 'TERCERO');
-    resultado.errores.push(...alumnos.errores);
-
-    if (!resultado.errores.length) {
-      resultado.ok = true;
-      resultado.esc = esc.datos!;
-      resultado.alumnos = alumnos.registros;
-    }
-
-    return resultado;
-  }
-
-  private validarPrimariaWorkbook(xlsx: any, workbook: any, hojas: string[]): ResultadoValidacion {
-    const errores: string[] = [];
-    const advertencias: string[] = [];
-    const escSheet = workbook.Sheets['ESC'];
-    const hojasNormalizadas = this.normalizarHojas(hojas);
-    const hojasRequeridas = this.hojasPorNivel.primaria;
-    const grados = ['PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO'];
-
-    if (!this.contieneTodasLasHojas(hojasNormalizadas, hojasRequeridas)) {
-      const faltantes = this.obtenerHojasFaltantes(hojasNormalizadas, hojasRequeridas);
-      errores.push(`Faltan hojas requeridas: ${faltantes.join(', ')}.`);
-    }
-
-    if (!escSheet) {
-      errores.push('Falta la hoja ESC en el archivo.');
-    }
-
-    const resultado: ResultadoValidacion = {
-      ok: false,
-      errores,
-      advertencias,
-      hojasEncontradas: hojas
-    };
-
-    if (errores.length) {
-      return resultado;
-    }
-
-    const esc = this.validarEsc(escSheet);
-    resultado.errores.push(...esc.errores);
-    if (esc.advertencia) {
-      resultado.advertencias.push(esc.advertencia);
-    }
-
-    const alumnos = this.validarHojasPorNombre(xlsx, workbook, grados);
-    resultado.errores.push(...alumnos.errores);
-
-    if (!resultado.errores.length) {
-      resultado.ok = true;
-      resultado.esc = esc.datos!;
-      resultado.alumnos = alumnos.registros;
-    }
-
-    return resultado;
-  }
-
-  private validarSecundariaWorkbook(xlsx: any, workbook: any, hojas: string[]): ResultadoValidacion {
-    const errores: string[] = [];
-    const advertencias: string[] = [];
-    const escSheet = workbook.Sheets['ESC'];
-    const hojasNormalizadas = this.normalizarHojas(hojas);
-    const hojasRequeridas = this.hojasPorNivel.secundaria;
-    const grados = ['PRIMERO', 'SEGUNDO', 'TERCERO'];
 
     if (!this.contieneTodasLasHojas(hojasNormalizadas, hojasRequeridas)) {
       const faltantes = this.obtenerHojasFaltantes(hojasNormalizadas, hojasRequeridas);
@@ -710,18 +612,6 @@ export class ExcelValidationService {
       .replace(/\s+/g, ' ')
       .trim()
       .toUpperCase();
-  }
-
-  private normalizarHoja(nombre: string): string {
-    return (nombre ?? '').toString().trim().toUpperCase();
-  }
-
-  private contieneTodasLasHojas(hojas: Set<string>, requeridas: string[]): boolean {
-    return requeridas.every((hoja) => hojas.has(hoja));
-  }
-
-  private obtenerHojasFaltantes(hojas: Set<string>, requeridas: string[]): string[] {
-    return requeridas.filter((hoja) => !hojas.has(hoja));
   }
 
   private primeraCeldaNoVacia(sheet: any, celdas: string[]): string {

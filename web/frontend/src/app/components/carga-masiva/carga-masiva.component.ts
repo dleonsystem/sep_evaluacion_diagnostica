@@ -228,7 +228,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       const tipoArchivo = await this.excelValidationService.detectarTipoArchivo(buffer);
       resultadoArchivo.tipoDetectado = tipoArchivo;
 
-      if (tipoArchivo === 'desconocido') {
+      if (!tipoArchivo) {
         resultadoArchivo.mensajeInformativo = 'No se reconoció el formato.';
         this.actualizarErrores(resultadoArchivo, [
           'No se reconoció el formato. Verifica que sea una plantilla válida de Preescolar, Primaria o Secundaria.'
@@ -695,7 +695,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   }
 
   private construirMensajeDeteccion(tipo: TipoArchivoCarga | null, error?: string): string {
-    if (!tipo || tipo === 'desconocido') {
+    if (!tipo) {
       return 'No se reconoció el formato.';
     }
 
