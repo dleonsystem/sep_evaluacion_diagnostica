@@ -57,3 +57,16 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+
+## Agregar nuevos formatos de Excel
+
+La validación de formatos de carga se centraliza en `web/frontend/src/app/services/excel-validation.service.ts`.
+Para incorporar un nuevo nivel o plantilla:
+
+1. Actualiza la configuración centralizada:
+   - `hojasBase` y `hojasPorNivel` para registrar los nombres de hojas y el conjunto requerido.
+   - `encabezadosEscBase`, `encabezadosPrimariaBase` o `encabezadosSecundariaBase` según corresponda.
+   - Agrega consignas/disciplinas y columnas de valoraciones en los mapas existentes.
+2. Ajusta `detectarTipoArchivo` si el nuevo formato requiere una detección distinta.
+3. Implementa un validador específico siguiendo el patrón de `validarPrimaria`/`validarSecundaria`.
+4. Agrega pruebas o casos de ejemplo en el frontend si corresponde.
