@@ -35,9 +35,11 @@ interface ResultadoArchivo {
   archivoOriginal: File;
   estado: 'idle' | 'validando' | 'exito' | 'error';
   errores: string[];
+  erroresAgrupados: GrupoErrores[];
   advertencias: string[];
   resultadoExito: ResultadoExito | null;
   mensajeInformativo: string | null;
+  tipoDetectado: TipoArchivoCarga | null;
   escDatos: EscDatos | null;
   guardando: boolean;
   guardado: boolean;
@@ -50,6 +52,14 @@ interface ResultadoArchivo {
   pdfError: string | null;
   pdfNombre: string | null;
   pdfTipo: 'exito' | 'error' | null;
+}
+
+interface GrupoErrores {
+  hoja: string;
+  ubicaciones: Array<{
+    titulo: string;
+    items: string[];
+  }>;
 }
 
 interface CredencialesMostradas {
@@ -175,9 +185,11 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       archivoOriginal: file,
       estado: 'validando',
       errores: [],
+      erroresAgrupados: [],
       advertencias: [],
       resultadoExito: null,
       mensajeInformativo: 'Validando tu archivo con el correo ingresado...',
+      tipoDetectado: null,
       escDatos: null,
       guardando: false,
       guardado: false,
@@ -199,14 +211,14 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     );
 
     if (!extensionValida) {
-      resultadoArchivo.errores = ['Formato no permitido. Usa únicamente archivos .xlsx'];
+      this.actualizarErrores(resultadoArchivo, ['Formato no permitido. Usa únicamente archivos .xlsx']);
       await this.finalizarConError(resultadoArchivo);
       return;
     }
 
     const tamanioMb = file.size / (1024 * 1024);
     if (tamanioMb > this.pesoMaximoMb) {
-      resultadoArchivo.errores = [`El archivo supera los ${this.pesoMaximoMb} MB permitidos.`];
+      this.actualizarErrores(resultadoArchivo, [`El archivo supera los ${this.pesoMaximoMb} MB permitidos.`]);
       await this.finalizarConError(resultadoArchivo);
       return;
     }
@@ -214,23 +226,26 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     try {
       const buffer = await file.arrayBuffer();
       const tipoArchivo = await this.excelValidationService.detectarTipoArchivo(buffer);
+      resultadoArchivo.tipoDetectado = tipoArchivo;
 
       if (tipoArchivo === 'desconocido') {
-        resultadoArchivo.errores = [
-          'No pudimos identificar el tipo de archivo. Verifica que sea un formato válido de Preescolar, Primaria o Secundaria.'
-        ];
+        resultadoArchivo.mensajeInformativo = 'No se reconoció el formato.';
+        this.actualizarErrores(resultadoArchivo, [
+          'No se reconoció el formato. Verifica que sea una plantilla válida de Preescolar, Primaria o Secundaria.'
+        ]);
         await this.finalizarConError(resultadoArchivo);
         return;
       }
 
+      resultadoArchivo.mensajeInformativo = `Archivo detectado: ${this.obtenerEtiquetaTipo(tipoArchivo)}. Validando reglas específicas...`;
       const resultado = await this.validarPorTipo(tipoArchivo, buffer);
       await this.procesarResultado(resultado, resultadoArchivo);
     } catch (error) {
-      resultadoArchivo.errores = [
+      this.actualizarErrores(resultadoArchivo, [
         error instanceof Error
           ? error.message
           : 'No se pudo validar el archivo. Inténtalo de nuevo.'
-      ];
+      ]);
       await this.finalizarConError(resultadoArchivo);
       return;
     }
@@ -322,20 +337,23 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     resultado: ResultadoValidacion,
     resultadoArchivo: ResultadoArchivo
   ): Promise<void> {
-    resultadoArchivo.errores = resultado.errores;
+    this.actualizarErrores(resultadoArchivo, resultado.errores);
     resultadoArchivo.advertencias = resultado.advertencias;
     resultadoArchivo.escDatos = resultado.esc ?? null;
 
     if (!resultado.ok || !resultado.esc) {
+      resultadoArchivo.mensajeInformativo = this.construirMensajeDeteccion(
+        resultadoArchivo.tipoDetectado,
+        resultadoArchivo.errores[0]
+      );
       await this.finalizarConError(resultadoArchivo);
       return;
     }
 
     if (!this.authService.coincidenCredenciales(resultado.esc.cct, resultado.esc.correo)) {
-      resultadoArchivo.errores = [
-        ...resultadoArchivo.errores,
+      this.agregarErrores(resultadoArchivo, [
         'El CCT y el correo deben coincidir con los registrados en tu primer envío.'
-      ];
+      ]);
       await this.finalizarConError(resultadoArchivo);
       return;
     }
@@ -344,10 +362,9 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     const correoEnArchivo = (resultado.esc.correo ?? '').trim().toLowerCase();
 
     if (correoFormulario !== correoEnArchivo) {
-      resultadoArchivo.errores = [
-        ...resultadoArchivo.errores,
+      this.agregarErrores(resultadoArchivo, [
         'El correo capturado debe coincidir con el que aparece en la hoja ESC del archivo.'
-      ];
+      ]);
       await this.finalizarConError(resultadoArchivo);
       return;
     }
@@ -361,12 +378,11 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       nuevasCredenciales = this.authService.registrarCredenciales(resultado.esc.cct, resultado.esc.correo);
       this.estadoCredencialesService.actualizar(resultado.esc.correo, nuevasCredenciales.contrasena);
     } catch (error) {
-      resultadoArchivo.errores = [
-        ...resultadoArchivo.errores,
+      this.agregarErrores(resultadoArchivo, [
         error instanceof Error
           ? error.message
           : 'No pudimos validar tus credenciales. Usa el CCT y correo originales.'
-      ];
+      ]);
       await this.finalizarConError(resultadoArchivo);
       return;
     }
@@ -580,7 +596,114 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
   private async finalizarConError(resultadoArchivo: ResultadoArchivo): Promise<void> {
     resultadoArchivo.estado = 'error';
-    resultadoArchivo.mensajeInformativo = null;
+    resultadoArchivo.mensajeInformativo =
+      resultadoArchivo.mensajeInformativo ??
+      this.construirMensajeDeteccion(resultadoArchivo.tipoDetectado, resultadoArchivo.errores[0]);
     await this.generarPdfErrores(resultadoArchivo);
+  }
+
+  private actualizarErrores(resultadoArchivo: ResultadoArchivo, errores: string[]): void {
+    resultadoArchivo.errores = [...errores];
+    resultadoArchivo.erroresAgrupados = this.agruparErrores(resultadoArchivo.errores);
+  }
+
+  private agregarErrores(resultadoArchivo: ResultadoArchivo, errores: string[]): void {
+    resultadoArchivo.errores = [...resultadoArchivo.errores, ...errores];
+    resultadoArchivo.erroresAgrupados = this.agruparErrores(resultadoArchivo.errores);
+  }
+
+  private agruparErrores(errores: string[]): GrupoErrores[] {
+    const mapa = new Map<string, Map<string, string[]>>();
+
+    errores.forEach((error) => {
+      const hoja = this.extraerHoja(error);
+      const ubicacion = this.extraerUbicacion(error);
+      const mensaje = this.normalizarMensajeError(error, hoja);
+
+      if (!mapa.has(hoja)) {
+        mapa.set(hoja, new Map<string, string[]>());
+      }
+
+      const ubicaciones = mapa.get(hoja)!;
+      if (!ubicaciones.has(ubicacion)) {
+        ubicaciones.set(ubicacion, []);
+      }
+
+      ubicaciones.get(ubicacion)!.push(mensaje);
+    });
+
+    return Array.from(mapa.entries()).map(([hoja, ubicaciones]) => ({
+      hoja,
+      ubicaciones: Array.from(ubicaciones.entries()).map(([titulo, items]) => ({
+        titulo,
+        items
+      }))
+    }));
+  }
+
+  private extraerHoja(error: string): string {
+    const matchNivelHoja = error.match(/(?:Primaria|Secundaria)\s+([A-ZÁÉÍÓÚÑ]+)/i);
+    if (matchNivelHoja?.[1]) {
+      return matchNivelHoja[1].toUpperCase();
+    }
+
+    const matchHoja = error.match(/hojas?\s+([A-ZÁÉÍÓÚÑ]+)/i);
+    if (matchHoja?.[1]) {
+      return matchHoja[1].toUpperCase();
+    }
+
+    return 'General';
+  }
+
+  private extraerUbicacion(error: string): string {
+    const matchFila = error.match(/Fila\s+(\d+)/i);
+    if (matchFila?.[1]) {
+      return `Fila ${matchFila[1]}`;
+    }
+
+    const matchEncabezado = error.match(/encabezado\s+([A-Z]+)\d+/i);
+    if (matchEncabezado?.[1]) {
+      return `Columna ${matchEncabezado[1].toUpperCase()}`;
+    }
+
+    return 'General';
+  }
+
+  private normalizarMensajeError(error: string, hoja: string): string {
+    if (hoja !== 'General') {
+      return error
+        .replace(/^(Primaria|Secundaria)\s+[A-ZÁÉÍÓÚÑ]+\s*-\s*/i, '')
+        .replace(/^(Primaria|Secundaria)\s+[A-ZÁÉÍÓÚÑ]+:\s*/i, '')
+        .replace(/^(Primaria|Secundaria):\s*/i, '')
+        .trim();
+    }
+
+    return error.trim();
+  }
+
+  obtenerEtiquetaTipo(tipo: TipoArchivoCarga | null): string {
+    switch (tipo) {
+      case 'preescolar':
+        return 'Preescolar';
+      case 'primaria':
+        return 'Primaria';
+      case 'secundaria':
+        return 'Secundaria';
+      default:
+        return 'Desconocido';
+    }
+  }
+
+  private construirMensajeDeteccion(tipo: TipoArchivoCarga | null, error?: string): string {
+    if (!tipo || tipo === 'desconocido') {
+      return 'No se reconoció el formato.';
+    }
+
+    const etiqueta = this.obtenerEtiquetaTipo(tipo);
+    if (error) {
+      return `Archivo detectado: ${etiqueta}. ${error}`;
+    }
+
+    return `Archivo detectado: ${etiqueta}.`;
   }
 }

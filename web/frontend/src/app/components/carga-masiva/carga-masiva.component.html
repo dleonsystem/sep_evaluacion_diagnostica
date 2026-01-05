@@ -134,6 +134,9 @@
           <p class="carga__detalle-metadata">
             Peso: {{ resultado.archivo.sizeKb }} KB · Última modificación: {{ resultado.archivo.lastModified | date:'short' }}
           </p>
+          <p class="carga__detalle-metadata" *ngIf="resultado.tipoDetectado && resultado.tipoDetectado !== 'desconocido'">
+            Archivo detectado: {{ obtenerEtiquetaTipo(resultado.tipoDetectado) }}
+          </p>
         </div>
         <span
           class="carga__chip"
@@ -155,9 +158,15 @@
 
       <ng-container *ngIf="resultado.estado === 'error' && resultado.errores.length">
         <p class="carga__mensaje carga__mensaje--error">Se encontraron problemas en tu archivo:</p>
-        <ul class="carga__lista">
-          <li *ngFor="let error of resultado.errores">{{ error }}</li>
-        </ul>
+        <div class="carga__lista" *ngFor="let grupo of resultado.erroresAgrupados">
+          <strong>{{ grupo.hoja === 'General' ? 'General' : 'Hoja ' + grupo.hoja }}</strong>
+          <div *ngFor="let ubicacion of grupo.ubicaciones">
+            <p class="carga__mensaje carga__mensaje--info">{{ ubicacion.titulo }}</p>
+            <ul>
+              <li *ngFor="let error of ubicacion.items">{{ error }}</li>
+            </ul>
+          </div>
+        </div>
       </ng-container>
 
       <div class="carga__advertencias" *ngIf="resultado.advertencias.length">
