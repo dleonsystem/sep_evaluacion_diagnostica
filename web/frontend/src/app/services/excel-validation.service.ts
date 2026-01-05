@@ -58,6 +58,13 @@ export class ExcelValidationService {
     E6: 'GRUPO',
     F6: 'VALORACIÓN ASIGNADA SEGÚN LA RÚBRICA'
   };
+  private readonly encabezadosSecundariaBase = {
+    B5: 'NÚM. DE LISTA',
+    C5: 'NOMBRE DEL ESTUDIANTE\n(Primer Apellido - Segundo Apellido - Nombre)',
+    D5: 'SEXO\nH: HOMBRE - M: MUJER',
+    E5: 'GRUPO',
+    F5: 'VALORACIÓN ASIGNADA SEGÚN LA RÚBRICA'
+  };
   private readonly encabezadosConsignasPrimaria: Record<string, string[]> = {
     PRIMERO: [
       'CONSIGNA: 1 INCISO: A1',
@@ -194,6 +201,146 @@ export class ExcelValidationService {
       'CONSIGNA: 4 INCISO: B1'
     ]
   };
+  private readonly encabezadosConsignasSecundaria: Record<string, string[]> = {
+    PRIMERO: [
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 1 INCISO: A2',
+      'CONSIGNA: 1 INCISO: A3',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 2 INCISO: A2',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 4 INCISO: A1',
+      'CONSIGNA: 4 INCISO: B1',
+      'CONSIGNA: 5 INCISO: A1',
+      'CONSIGNA: 5 INCISO: B1',
+      'CONSIGNA: 5 INCISO: C1',
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 1 INCISO: A2',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 2 INCISO: A2',
+      'CONSIGNA: 2 INCISO: B1',
+      'CONSIGNA: 2 INCISO: B2',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 3 INCISO: B1',
+      'CONSIGNA: 3 INCISO: C1',
+      'CONSIGNA: 4 INCISO: A1'
+    ],
+    SEGUNDO: [
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 1 INCISO: A2',
+      'CONSIGNA: 1 INCISO: A3',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 2 INCISO: A2',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 4 INCISO: A1',
+      'CONSIGNA: 4 INCISO: B1',
+      'CONSIGNA: 5 INCISO: A1',
+      'CONSIGNA: 5 INCISO: B1',
+      'CONSIGNA: 5 INCISO: C1',
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 1 INCISO: A2',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 2 INCISO: A2',
+      'CONSIGNA: 2 INCISO: B1',
+      'CONSIGNA: 2 INCISO: B2',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 3 INCISO: B1',
+      'CONSIGNA: 3 INCISO: C1',
+      'CONSIGNA: 4 INCISO: A1'
+    ],
+    TERCERO: [
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 1 INCISO: A2',
+      'CONSIGNA: 1 INCISO: A3',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 2 INCISO: A2',
+      'CONSIGNA: 2 INCISO: B1',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 3 INCISO: A2',
+      'CONSIGNA: 4 INCISO: A1',
+      'CONSIGNA: 4 INCISO: A2',
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 1 INCISO: A2',
+      'CONSIGNA: 1 INCISO: A3',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 2 INCISO: A2',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 3 INCISO: A2',
+      'CONSIGNA: 3 INCISO: A3',
+      'CONSIGNA: 4 INCISO: A1',
+      'CONSIGNA: 4 INCISO: A2'
+    ]
+  };
+  private readonly encabezadosDisciplinasSecundaria: Record<string, string[]> = {
+    PRIMERO: [
+      '*Matemáticas',
+      '*Matemáticas',
+      '*Matemáticas',
+      '*Matemáticas',
+      '*Matemáticas',
+      '*Español',
+      '*Formación cívicia y ética',
+      '*Formación cívicia y ética',
+      '*Educación socioemocional / Tutoría',
+      '*Educación socioemocional / Tutoría',
+      '*Educación socioemocional / Tutoría',
+      '*Español',
+      '*Español',
+      '*Matemáticas',
+      '*Matemáticas',
+      '*Matemáticas',
+      '*Matemáticas',
+      '*Formación cívicia y ética',
+      '*Formación cívicia y ética',
+      '*Formación cívicia y ética',
+      '*Educación socioemocional / Tutoría'
+    ],
+    SEGUNDO: [
+      '*Matemáticas',
+      '*Matemáticas',
+      '*Matemáticas',
+      '*Matemáticas',
+      '*Matemáticas',
+      '*Español',
+      '*Formación cívicia y ética',
+      '*Formación cívicia y ética',
+      '*Educación socioemocional / Tutoría',
+      '*Educación socioemocional / Tutoría',
+      '*Educación socioemocional / Tutoría',
+      '*Español',
+      '*Español',
+      '*Matemáticas',
+      '*Matemáticas',
+      '*Matemáticas',
+      '*Matemáticas',
+      '*Formación cívicia y ética',
+      '*Formación cívicia y ética',
+      '*Formación cívicia y ética',
+      '*Educación socioemocional / Tutoría'
+    ],
+    TERCERO: [
+      '*Artes',
+      '*Artes',
+      '*Artes',
+      '*Matemáticas',
+      '*Matemáticas',
+      '*Matemáticas',
+      '*Formación cívica y ética',
+      '*Formación cívica y ética',
+      '*Tecnología',
+      '*Tecnología',
+      '*Español',
+      '*Español',
+      '*Español',
+      '*Química',
+      '*Química',
+      '*Formación cívica y ética',
+      '*Formación cívica y ética',
+      '*Formación cívica y ética',
+      '*Educación socioemocional / Tutoría',
+      '*Educación socioemocional / Tutoría'
+    ]
+  };
   private readonly columnasValoracionesPrimaria: Record<string, string[]> = {
     PRIMERO: this.rangoColumnas('F', 'O'),
     SEGUNDO: this.rangoColumnas('F', 'O'),
@@ -201,6 +348,11 @@ export class ExcelValidationService {
     CUARTO: this.rangoColumnas('F', 'AE'),
     QUINTO: this.rangoColumnas('F', 'AD'),
     SEXTO: this.rangoColumnas('F', 'AD')
+  };
+  private readonly columnasValoracionesSecundaria: Record<string, string[]> = {
+    PRIMERO: this.rangoColumnas('F', 'Z'),
+    SEGUNDO: this.rangoColumnas('F', 'Z'),
+    TERCERO: this.rangoColumnas('F', 'Y')
   };
 
   async detectarTipoArchivo(buffer: ArrayBuffer): Promise<TipoArchivoCarga> {
@@ -350,6 +502,10 @@ export class ExcelValidationService {
   }
 
   async validarSecundaria(buffer: ArrayBuffer): Promise<ResultadoValidacion> {
+    return this.validarSecundariaTecnicasGenerales(buffer);
+  }
+
+  async validarSecundariaTecnicasGenerales(buffer: ArrayBuffer): Promise<ResultadoValidacion> {
     const xlsx = await this.cargarXlsx();
     const workbook = xlsx.read(buffer, { type: 'array' });
     const errores: string[] = [];
@@ -380,15 +536,37 @@ export class ExcelValidationService {
       return resultado;
     }
 
+    const escEncabezados = this.validarEncabezadosEscPrimaria(escSheet);
+    resultado.errores.push(...escEncabezados.map((error) => `Secundaria: ${error}`));
+
     const esc = this.validarEsc(escSheet);
-    resultado.errores.push(...esc.errores);
+    resultado.errores.push(...esc.errores.map((error) => `Secundaria: ${error}`));
     if (esc.advertencia) {
-      resultado.advertencias.push(esc.advertencia);
+      resultado.advertencias.push(`Secundaria: ${esc.advertencia}`);
     }
+
+    const alumnos: AlumnoValidado[] = [];
+
+    hojasRequeridas
+      .filter((hoja) => hoja !== 'ESC')
+      .forEach((hoja) => {
+        const hojaSheet = workbook.Sheets[hoja];
+        if (!hojaSheet) {
+          resultado.errores.push(`Secundaria: falta la hoja ${hoja} en el archivo.`);
+          return;
+        }
+
+        resultado.errores.push(...this.validarEncabezadosSecundaria(hojaSheet, hoja));
+
+        const resultadoHoja = this.validarHojaSecundaria(xlsx, hojaSheet, hoja);
+        resultado.errores.push(...resultadoHoja.errores);
+        alumnos.push(...resultadoHoja.registros);
+      });
 
     if (!resultado.errores.length) {
       resultado.ok = true;
       resultado.esc = esc.datos!;
+      resultado.alumnos = alumnos;
     }
 
     return resultado;
@@ -630,6 +808,51 @@ export class ExcelValidationService {
     return errores;
   }
 
+  private validarEncabezadosSecundaria(sheet: any, hoja: string): string[] {
+    const errores: string[] = [];
+
+    Object.entries(this.encabezadosSecundariaBase).forEach(([celda, esperado]) => {
+      const encontrado = this.normalizarEncabezado(this.obtenerValorCelda(sheet, celda));
+      const esperadoNormalizado = this.normalizarEncabezado(esperado);
+      if (encontrado !== esperadoNormalizado) {
+        errores.push(`Secundaria ${hoja}: el encabezado ${celda} debe ser "${esperado}".`);
+      }
+    });
+
+    const consignas = this.encabezadosConsignasSecundaria[hoja];
+    const columnas = this.columnasValoracionesSecundaria[hoja];
+    if (!consignas || !columnas) {
+      errores.push(`Secundaria ${hoja}: no se encontró la configuración de encabezados.`);
+      return errores;
+    }
+
+    consignas.forEach((consigna, idx) => {
+      const celda = `${columnas[idx]}8`;
+      const encontrado = this.normalizarEncabezado(this.obtenerValorCelda(sheet, celda));
+      const esperadoNormalizado = this.normalizarEncabezado(consigna);
+      if (encontrado !== esperadoNormalizado) {
+        errores.push(`Secundaria ${hoja}: el encabezado ${celda} debe ser "${consigna}".`);
+      }
+    });
+
+    const disciplinas = this.encabezadosDisciplinasSecundaria[hoja];
+    if (!disciplinas) {
+      errores.push(`Secundaria ${hoja}: no se encontró la configuración de disciplinas.`);
+      return errores;
+    }
+
+    disciplinas.forEach((disciplina, idx) => {
+      const celda = `${columnas[idx]}9`;
+      const encontrado = this.normalizarEncabezado(this.obtenerValorCelda(sheet, celda));
+      const esperadoNormalizado = this.normalizarEncabezado(disciplina);
+      if (encontrado !== esperadoNormalizado) {
+        errores.push(`Secundaria ${hoja}: el encabezado ${celda} debe ser "${disciplina}".`);
+      }
+    });
+
+    return errores;
+  }
+
   private validarHojaPrimaria(xlsx: any, sheet: any, hoja: string): {
     registros: AlumnoValidado[];
     errores: string[];
@@ -722,6 +945,103 @@ export class ExcelValidationService {
 
     if (!registros.length) {
       errores.push(`Primaria ${hoja}: no se encontraron estudiantes capturados en la hoja.`);
+    }
+
+    return { registros, errores };
+  }
+
+  private validarHojaSecundaria(xlsx: any, sheet: any, hoja: string): {
+    registros: AlumnoValidado[];
+    errores: string[];
+  } {
+    const errores: string[] = [];
+    const registros: AlumnoValidado[] = [];
+    const columnasValoraciones = this.columnasValoracionesSecundaria[hoja];
+
+    if (!columnasValoraciones) {
+      return {
+        registros,
+        errores: [`Secundaria ${hoja}: no se pudo determinar el rango de valoraciones.`]
+      };
+    }
+
+    const datos = xlsx.utils.sheet_to_json(sheet, {
+      range: 9,
+      header: 'A',
+      defval: ''
+    }) as Array<Record<string, string>>;
+
+    const filasIniciales = 10;
+
+    datos.forEach((fila: Record<string, string>, indice: number) => {
+      const erroresFila: string[] = [];
+      const numeroLista = this.limpiarTexto(fila['B']);
+      const nombre = this.limpiarTexto(fila['C']);
+      const sexo = this.limpiarTexto(fila['D']).toUpperCase();
+      const grupo = this.limpiarTexto(fila['E']).toUpperCase();
+
+      const valoraciones = columnasValoraciones.map((col) => {
+        const valor = this.limpiarTexto(fila[col]);
+        return valor === '' ? null : Number(valor);
+      });
+
+      const filaExcel = filasIniciales + indice;
+      const filaVacia =
+        !numeroLista && !nombre && !sexo && !grupo && valoraciones.every((valor) => valor === null);
+      if (filaVacia) {
+        return;
+      }
+
+      if (!numeroLista) {
+        erroresFila.push(`Secundaria ${hoja} - Fila ${filaExcel}: falta el número de lista.`);
+      } else if (isNaN(Number(numeroLista))) {
+        erroresFila.push(`Secundaria ${hoja} - Fila ${filaExcel}: el número de lista debe ser numérico.`);
+      }
+
+      if (!nombre) {
+        erroresFila.push(`Secundaria ${hoja} - Fila ${filaExcel}: captura el nombre completo del estudiante.`);
+      }
+
+      if (!sexo) {
+        erroresFila.push(`Secundaria ${hoja} - Fila ${filaExcel}: indica el sexo (H/M).`);
+      } else if (sexo !== 'H' && sexo !== 'M') {
+        erroresFila.push(`Secundaria ${hoja} - Fila ${filaExcel}: el sexo debe ser H o M.`);
+      }
+
+      if (!grupo) {
+        erroresFila.push(`Secundaria ${hoja} - Fila ${filaExcel}: captura el grupo.`);
+      } else if (!/^[A-Z]$/.test(grupo)) {
+        erroresFila.push(`Secundaria ${hoja} - Fila ${filaExcel}: el grupo debe ser una sola letra (A-Z).`);
+      }
+
+      valoraciones.forEach((valor, idx) => {
+        if (valor === null) {
+          erroresFila.push(`Secundaria ${hoja} - Fila ${filaExcel}: falta la valoración ${idx + 1}.`);
+          return;
+        }
+        if (isNaN(valor) || valor < 0 || valor > 3) {
+          erroresFila.push(
+            `Secundaria ${hoja} - Fila ${filaExcel}: la valoración ${idx + 1} debe estar entre 0 y 3.`
+          );
+        }
+      });
+
+      if (!erroresFila.length) {
+        registros.push({
+          filaExcel,
+          numeroLista: Number(numeroLista),
+          nombre,
+          sexo: sexo as 'H' | 'M',
+          grupo,
+          valoraciones: valoraciones as number[]
+        });
+      } else {
+        errores.push(...erroresFila);
+      }
+    });
+
+    if (!registros.length) {
+      errores.push(`Secundaria ${hoja}: no se encontraron estudiantes capturados en la hoja.`);
     }
 
     return { registros, errores };
