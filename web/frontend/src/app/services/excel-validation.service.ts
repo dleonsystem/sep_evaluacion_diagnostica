@@ -30,6 +30,37 @@ export type TipoArchivoCarga = 'preescolar' | 'primaria' | 'secundaria' | 'desco
 @Injectable({ providedIn: 'root' })
 export class ExcelValidationService {
   private xlsxPromise: Promise<any> | null = null;
+  // Hojas base (centralizadas para evitar duplicidad de nombres).
+  private readonly hojasBase = {
+    esc: 'ESC',
+    primero: 'PRIMERO',
+    segundo: 'SEGUNDO',
+    tercero: 'TERCERO',
+    cuarto: 'CUARTO',
+    quinto: 'QUINTO',
+    sexto: 'SEXTO'
+  };
+  // Configuración por nivel (hojas requeridas por tipo de archivo).
+  private readonly hojasPorNivel = {
+    preescolar: [this.hojasBase.esc, this.hojasBase.tercero],
+    primaria: [
+      this.hojasBase.esc,
+      this.hojasBase.primero,
+      this.hojasBase.segundo,
+      this.hojasBase.tercero,
+      this.hojasBase.cuarto,
+      this.hojasBase.quinto,
+      this.hojasBase.sexto
+    ],
+    secundaria: [this.hojasBase.esc, this.hojasBase.primero, this.hojasBase.segundo, this.hojasBase.tercero]
+  };
+  // Encabezados base (centralizados por nivel/sección).
+  private readonly encabezadosEscBase = {
+    C9: 'CCT : ',
+    C11: 'TURNO : ',
+    C13: 'NOMBRE DE LA ESCUELA :',
+    C18: 'CORREO: '
+  };
   private readonly turnosValidos = new Set([
     'MATUTINO',
     'VESPERTINO',
@@ -51,6 +82,7 @@ export class ExcelValidationService {
     'O',
     'P'
   ];
+  // Primaria: encabezados fijos + consignas por grado.
   private readonly encabezadosPrimariaBase = {
     B6: 'NÚM. DE LISTA',
     C6: 'NOMBRE DEL ESTUDIANTE\n(Primer Apellido - Segundo Apellido - Nombre)',
@@ -58,6 +90,7 @@ export class ExcelValidationService {
     E6: 'GRUPO',
     F6: 'VALORACIÓN ASIGNADA SEGÚN LA RÚBRICA'
   };
+  // Secundaria: encabezados fijos + consignas + disciplinas.
   private readonly encabezadosSecundariaBase = {
     B5: 'NÚM. DE LISTA',
     C5: 'NOMBRE DEL ESTUDIANTE\n(Primer Apellido - Segundo Apellido - Nombre)',
@@ -360,27 +393,23 @@ export class ExcelValidationService {
     const workbook = xlsx.read(buffer, { type: 'array' });
     const hojasNormalizadas = new Set(workbook.SheetNames.map((hoja: string) => this.normalizarHoja(hoja)));
 
-    const hojasPreescolar = ['ESC', 'TERCERO'];
-    const hojasPrimaria = ['ESC', 'PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO'];
-    const hojasSecundaria = ['ESC', 'PRIMERO', 'SEGUNDO', 'TERCERO'];
-
-    if (this.contieneTodasLasHojas(hojasNormalizadas, hojasPrimaria)) {
+    if (this.contieneTodasLasHojas(hojasNormalizadas, this.hojasPorNivel.primaria)) {
       return 'primaria';
     }
 
     if (
-      this.contieneTodasLasHojas(hojasNormalizadas, hojasSecundaria) &&
-      !hojasNormalizadas.has('CUARTO') &&
-      !hojasNormalizadas.has('QUINTO') &&
-      !hojasNormalizadas.has('SEXTO')
+      this.contieneTodasLasHojas(hojasNormalizadas, this.hojasPorNivel.secundaria) &&
+      !hojasNormalizadas.has(this.hojasBase.cuarto) &&
+      !hojasNormalizadas.has(this.hojasBase.quinto) &&
+      !hojasNormalizadas.has(this.hojasBase.sexto)
     ) {
       return 'secundaria';
     }
 
     if (
-      this.contieneTodasLasHojas(hojasNormalizadas, hojasPreescolar) &&
-      !hojasNormalizadas.has('PRIMERO') &&
-      !hojasNormalizadas.has('SEGUNDO')
+      this.contieneTodasLasHojas(hojasNormalizadas, this.hojasPorNivel.preescolar) &&
+      !hojasNormalizadas.has(this.hojasBase.primero) &&
+      !hojasNormalizadas.has(this.hojasBase.segundo)
     ) {
       return 'preescolar';
     }
@@ -395,14 +424,14 @@ export class ExcelValidationService {
     const advertencias: string[] = [];
     const hojas = workbook.SheetNames;
 
-    const escSheet = workbook.Sheets['ESC'];
-    const terceroSheet = workbook.Sheets['TERCERO'];
+    const escSheet = workbook.Sheets[this.hojasBase.esc];
+    const terceroSheet = workbook.Sheets[this.hojasBase.tercero];
 
     if (!escSheet) {
-      errores.push('Falta la hoja ESC en el archivo.');
+      errores.push(`Falta la hoja ${this.hojasBase.esc} en el archivo.`);
     }
     if (!terceroSheet) {
-      errores.push('Falta la hoja TERCERO en el archivo.');
+      errores.push(`Falta la hoja ${this.hojasBase.tercero} en el archivo.`);
     }
 
     const resultado: ResultadoValidacion = {
@@ -441,7 +470,7 @@ export class ExcelValidationService {
     const advertencias: string[] = [];
     const hojas = workbook.SheetNames;
     const hojasNormalizadas = new Set(hojas.map((hoja) => this.normalizarHoja(hoja)));
-    const hojasRequeridas = ['ESC', 'PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO'];
+    const hojasRequeridas = this.hojasPorNivel.primaria;
 
     const hojasFaltantes = this.obtenerHojasFaltantes(hojasNormalizadas, hojasRequeridas);
     if (hojasFaltantes.length) {
@@ -459,9 +488,9 @@ export class ExcelValidationService {
       return resultado;
     }
 
-    const escSheet = workbook.Sheets['ESC'];
+    const escSheet = workbook.Sheets[this.hojasBase.esc];
     if (!escSheet) {
-      resultado.errores.push('Primaria: falta la hoja ESC en el archivo.');
+      resultado.errores.push(`Primaria: falta la hoja ${this.hojasBase.esc} en el archivo.`);
       return resultado;
     }
 
@@ -512,7 +541,7 @@ export class ExcelValidationService {
     const advertencias: string[] = [];
     const hojas = workbook.SheetNames;
     const hojasNormalizadas = new Set(hojas.map((hoja) => this.normalizarHoja(hoja)));
-    const hojasRequeridas = ['ESC', 'PRIMERO', 'SEGUNDO', 'TERCERO'];
+    const hojasRequeridas = this.hojasPorNivel.secundaria;
 
     const hojasFaltantes = this.obtenerHojasFaltantes(hojasNormalizadas, hojasRequeridas);
     if (hojasFaltantes.length) {
@@ -530,9 +559,9 @@ export class ExcelValidationService {
       return resultado;
     }
 
-    const escSheet = workbook.Sheets['ESC'];
+    const escSheet = workbook.Sheets[this.hojasBase.esc];
     if (!escSheet) {
-      resultado.errores.push('Falta la hoja ESC en el archivo.');
+      resultado.errores.push(`Falta la hoja ${this.hojasBase.esc} en el archivo.`);
       return resultado;
     }
 
@@ -761,14 +790,7 @@ export class ExcelValidationService {
   }
 
   private validarEncabezadosEscPrimaria(sheet: any): string[] {
-    const encabezados = {
-      C9: 'CCT : ',
-      C11: 'TURNO : ',
-      C13: 'NOMBRE DE LA ESCUELA :',
-      C18: 'CORREO: '
-    };
-
-    return Object.entries(encabezados).flatMap(([celda, esperado]) => {
+    return Object.entries(this.encabezadosEscBase).flatMap(([celda, esperado]) => {
       const encontrado = this.normalizarEncabezado(this.obtenerValorCelda(sheet, celda));
       const esperadoNormalizado = this.normalizarEncabezado(esperado);
       if (encontrado !== esperadoNormalizado) {
