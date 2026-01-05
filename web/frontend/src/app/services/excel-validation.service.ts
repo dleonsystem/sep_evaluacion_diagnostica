@@ -55,7 +55,7 @@ export class ExcelValidationService {
     const workbook = xlsx.read(buffer, { type: 'array' });
     const errores: string[] = [];
     const advertencias: string[] = [];
-    const hojas = workbook.SheetNames;
+    const hojas = workbook.SheetNames as string[];
 
     const escSheet = workbook.Sheets['ESC'];
     const terceroSheet = workbook.Sheets['TERCERO'];
