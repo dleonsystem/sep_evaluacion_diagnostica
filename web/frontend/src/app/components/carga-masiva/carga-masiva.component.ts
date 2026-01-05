@@ -2,7 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { ExcelValidationService, ResultadoValidacion } from '../../services/excel-validation.service';
+import {
+  ExcelValidationService,
+  ResultadoValidacion,
+  TipoArchivoCarga
+} from '../../services/excel-validation.service';
 import {
   ArchivoDuplicadoError,
   ArchivoStorageService,
@@ -209,7 +213,17 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     try {
       const buffer = await file.arrayBuffer();
-      const resultado = await this.excelValidationService.validarPreescolar(buffer);
+      const tipoArchivo = await this.excelValidationService.detectarTipoArchivo(buffer);
+
+      if (tipoArchivo === 'desconocido') {
+        resultadoArchivo.errores = [
+          'No pudimos identificar el tipo de archivo. Verifica que sea un formato válido de Preescolar, Primaria o Secundaria.'
+        ];
+        await this.finalizarConError(resultadoArchivo);
+        return;
+      }
+
+      const resultado = await this.validarPorTipo(tipoArchivo, buffer);
       await this.procesarResultado(resultado, resultadoArchivo);
     } catch (error) {
       resultadoArchivo.errores = [
@@ -381,6 +395,23 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     this.actualizarEstadoSesion();
 
     await this.generarPdfExito(resultadoArchivo, resultado.esc, fechaDisponible, resultado.alumnos?.length ?? 0);
+  }
+
+  private validarPorTipo(tipo: TipoArchivoCarga, buffer: ArrayBuffer): Promise<ResultadoValidacion> {
+    switch (tipo) {
+      case 'preescolar':
+        return this.excelValidationService.validarPreescolar(buffer);
+      case 'primaria':
+        return this.excelValidationService.validarPrimaria(buffer);
+      case 'secundaria':
+        return this.excelValidationService.validarSecundaria(buffer);
+      default:
+        return Promise.resolve({
+          ok: false,
+          errores: ['No se pudo determinar el tipo de archivo para validarlo.'],
+          advertencias: []
+        });
+    }
   }
 
   private calcularFechaDisponible(): Date {

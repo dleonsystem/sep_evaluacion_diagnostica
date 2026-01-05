@@ -21,7 +21,19 @@ const resultadoValido: ResultadoValidacion = {
 class ExcelValidationServiceStub {
   resultado: ResultadoValidacion = resultadoValido;
 
+  detectarTipoArchivo(): Promise<'preescolar'> {
+    return Promise.resolve('preescolar');
+  }
+
   validarPreescolar(): Promise<ResultadoValidacion> {
+    return Promise.resolve(this.resultado);
+  }
+
+  validarPrimaria(): Promise<ResultadoValidacion> {
+    return Promise.resolve(this.resultado);
+  }
+
+  validarSecundaria(): Promise<ResultadoValidacion> {
     return Promise.resolve(this.resultado);
   }
 }
