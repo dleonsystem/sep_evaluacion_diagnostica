@@ -51,6 +51,157 @@ export class ExcelValidationService {
     'O',
     'P'
   ];
+  private readonly encabezadosPrimariaBase = {
+    B6: 'NÚM. DE LISTA',
+    C6: 'NOMBRE DEL ESTUDIANTE\n(Primer Apellido - Segundo Apellido - Nombre)',
+    D6: 'SEXO\nH: NIÑO - M: NIÑA',
+    E6: 'GRUPO',
+    F6: 'VALORACIÓN ASIGNADA SEGÚN LA RÚBRICA'
+  };
+  private readonly encabezadosConsignasPrimaria: Record<string, string[]> = {
+    PRIMERO: [
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 2 INCISO: A2',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 4 INCISO: A1',
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 3 INCISO: A2',
+      'CONSIGNA: 4 INCISO: A1'
+    ],
+    SEGUNDO: [
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 2 INCISO: A2',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 4 INCISO: A1',
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 3 INCISO: A2',
+      'CONSIGNA: 4 INCISO: A1'
+    ],
+    TERCERO: [
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 1 INCISO: A2',
+      'CONSIGNA: 1 INCISO: B1',
+      'CONSIGNA: 1 INCISO: B2',
+      'CONSIGNA: 1 INCISO: B3',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 2 INCISO: A2',
+      'CONSIGNA: 2 INCISO: A3',
+      'CONSIGNA: 2 INCISO: B1',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 3 INCISO: B1',
+      'CONSIGNA: 4 INCISO: A1',
+      'CONSIGNA: 4 INCISO: A2',
+      'CONSIGNA: 4 INCISO: A3',
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 1 INCISO: B1',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 3 INCISO: B1',
+      'CONSIGNA: 3 INCISO: C1',
+      'CONSIGNA: 3 INCISO: C2',
+      'CONSIGNA: 4 INCISO: A1',
+      'CONSIGNA: 4 INCISO: B1',
+      'CONSIGNA: 5 INCISO: A1',
+      'CONSIGNA: 5 INCISO: A2',
+      'CONSIGNA: 5 INCISO: A3'
+    ],
+    CUARTO: [
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 1 INCISO: A2',
+      'CONSIGNA: 1 INCISO: B1',
+      'CONSIGNA: 1 INCISO: B2',
+      'CONSIGNA: 1 INCISO: B3',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 2 INCISO: A2',
+      'CONSIGNA: 2 INCISO: A3',
+      'CONSIGNA: 2 INCISO: B1',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 3 INCISO: B1',
+      'CONSIGNA: 4 INCISO: A1',
+      'CONSIGNA: 4 INCISO: A2',
+      'CONSIGNA: 4 INCISO: A3',
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 1 INCISO: B1',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 3 INCISO: B1',
+      'CONSIGNA: 3 INCISO: C1',
+      'CONSIGNA: 3 INCISO: C2',
+      'CONSIGNA: 4 INCISO: A1',
+      'CONSIGNA: 4 INCISO: B1',
+      'CONSIGNA: 5 INCISO: A1',
+      'CONSIGNA: 5 INCISO: A2',
+      'CONSIGNA: 5 INCISO: A3'
+    ],
+    QUINTO: [
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 1 INCISO: B1',
+      'CONSIGNA: 1 INCISO: B2',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 2 INCISO: B1',
+      'CONSIGNA: 2 INCISO: C1',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 3 INCISO: B1',
+      'CONSIGNA: 4 INCISO: A1',
+      'CONSIGNA: 4 INCISO: B1',
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 1 INCISO: B1',
+      'CONSIGNA: 1 INCISO: C1',
+      'CONSIGNA: 1 INCISO: C2',
+      'CONSIGNA: 1 INCISO: C3',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 2 INCISO: B1',
+      'CONSIGNA: 2 INCISO: C1',
+      'CONSIGNA: 2 INCISO: D1',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 3 INCISO: A2',
+      'CONSIGNA: 3 INCISO: B1',
+      'CONSIGNA: 3 INCISO: C1',
+      'CONSIGNA: 4 INCISO: A1',
+      'CONSIGNA: 4 INCISO: B1'
+    ],
+    SEXTO: [
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 1 INCISO: B1',
+      'CONSIGNA: 1 INCISO: B2',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 2 INCISO: B1',
+      'CONSIGNA: 2 INCISO: C1',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 3 INCISO: B1',
+      'CONSIGNA: 4 INCISO: A1',
+      'CONSIGNA: 4 INCISO: B1',
+      'CONSIGNA: 1 INCISO: A1',
+      'CONSIGNA: 1 INCISO: B1',
+      'CONSIGNA: 1 INCISO: C1',
+      'CONSIGNA: 1 INCISO: C2',
+      'CONSIGNA: 1 INCISO: C3',
+      'CONSIGNA: 2 INCISO: A1',
+      'CONSIGNA: 2 INCISO: B1',
+      'CONSIGNA: 2 INCISO: C1',
+      'CONSIGNA: 2 INCISO: D1',
+      'CONSIGNA: 3 INCISO: A1',
+      'CONSIGNA: 3 INCISO: A2',
+      'CONSIGNA: 3 INCISO: B1',
+      'CONSIGNA: 3 INCISO: C1',
+      'CONSIGNA: 4 INCISO: A1',
+      'CONSIGNA: 4 INCISO: B1'
+    ]
+  };
+  private readonly columnasValoracionesPrimaria: Record<string, string[]> = {
+    PRIMERO: this.rangoColumnas('F', 'O'),
+    SEGUNDO: this.rangoColumnas('F', 'O'),
+    TERCERO: this.rangoColumnas('F', 'AE'),
+    CUARTO: this.rangoColumnas('F', 'AE'),
+    QUINTO: this.rangoColumnas('F', 'AD'),
+    SEXTO: this.rangoColumnas('F', 'AD')
+  };
 
   async detectarTipoArchivo(buffer: ArrayBuffer): Promise<TipoArchivoCarga> {
     const xlsx = await this.cargarXlsx();
@@ -142,7 +293,7 @@ export class ExcelValidationService {
 
     const hojasFaltantes = this.obtenerHojasFaltantes(hojasNormalizadas, hojasRequeridas);
     if (hojasFaltantes.length) {
-      errores.push(`Faltan las hojas ${hojasFaltantes.join(', ')} en el archivo.`);
+      errores.push(`Primaria: faltan las hojas ${hojasFaltantes.join(', ')} en el archivo.`);
     }
 
     const resultado: ResultadoValidacion = {
@@ -158,19 +309,41 @@ export class ExcelValidationService {
 
     const escSheet = workbook.Sheets['ESC'];
     if (!escSheet) {
-      resultado.errores.push('Falta la hoja ESC en el archivo.');
+      resultado.errores.push('Primaria: falta la hoja ESC en el archivo.');
       return resultado;
     }
 
+    const escEncabezados = this.validarEncabezadosEscPrimaria(escSheet);
+    resultado.errores.push(...escEncabezados.map((error) => `Primaria: ${error}`));
+
     const esc = this.validarEsc(escSheet);
-    resultado.errores.push(...esc.errores);
+    resultado.errores.push(...esc.errores.map((error) => `Primaria: ${error}`));
     if (esc.advertencia) {
-      resultado.advertencias.push(esc.advertencia);
+      resultado.advertencias.push(`Primaria: ${esc.advertencia}`);
     }
+
+    const alumnos: AlumnoValidado[] = [];
+
+    hojasRequeridas
+      .filter((hoja) => hoja !== 'ESC')
+      .forEach((hoja) => {
+        const hojaSheet = workbook.Sheets[hoja];
+        if (!hojaSheet) {
+          resultado.errores.push(`Primaria: falta la hoja ${hoja} en el archivo.`);
+          return;
+        }
+
+        resultado.errores.push(...this.validarEncabezadosPrimaria(hojaSheet, hoja));
+
+        const resultadoHoja = this.validarHojaPrimaria(xlsx, hojaSheet, hoja);
+        resultado.errores.push(...resultadoHoja.errores);
+        alumnos.push(...resultadoHoja.registros);
+      });
 
     if (!resultado.errores.length) {
       resultado.ok = true;
       resultado.esc = esc.datos!;
+      resultado.alumnos = alumnos;
     }
 
     return resultado;
@@ -361,6 +534,14 @@ export class ExcelValidationService {
     return (valor ?? '').toString().trim();
   }
 
+  private normalizarEncabezado(valor: string): string {
+    return (valor ?? '')
+      .toString()
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toUpperCase();
+  }
+
   private normalizarHoja(nombre: string): string {
     return (nombre ?? '').toString().trim().toUpperCase();
   }
@@ -394,5 +575,183 @@ export class ExcelValidationService {
     });
 
     return this.xlsxPromise;
+  }
+
+  private obtenerValorCelda(sheet: any, celda: string): string {
+    const contenido = sheet?.[celda]?.v ?? sheet?.[celda]?.w;
+    return this.limpiarTexto(contenido);
+  }
+
+  private validarEncabezadosEscPrimaria(sheet: any): string[] {
+    const encabezados = {
+      C9: 'CCT : ',
+      C11: 'TURNO : ',
+      C13: 'NOMBRE DE LA ESCUELA :',
+      C18: 'CORREO: '
+    };
+
+    return Object.entries(encabezados).flatMap(([celda, esperado]) => {
+      const encontrado = this.normalizarEncabezado(this.obtenerValorCelda(sheet, celda));
+      const esperadoNormalizado = this.normalizarEncabezado(esperado);
+      if (encontrado !== esperadoNormalizado) {
+        return [`El encabezado ${celda} debe ser "${esperado}".`];
+      }
+      return [];
+    });
+  }
+
+  private validarEncabezadosPrimaria(sheet: any, hoja: string): string[] {
+    const errores: string[] = [];
+
+    Object.entries(this.encabezadosPrimariaBase).forEach(([celda, esperado]) => {
+      const encontrado = this.normalizarEncabezado(this.obtenerValorCelda(sheet, celda));
+      const esperadoNormalizado = this.normalizarEncabezado(esperado);
+      if (encontrado !== esperadoNormalizado) {
+        errores.push(`Primaria ${hoja}: el encabezado ${celda} debe ser "${esperado}".`);
+      }
+    });
+
+    const consignas = this.encabezadosConsignasPrimaria[hoja];
+    const columnas = this.columnasValoracionesPrimaria[hoja];
+    if (!consignas || !columnas) {
+      errores.push(`Primaria ${hoja}: no se encontró la configuración de encabezados.`);
+      return errores;
+    }
+
+    consignas.forEach((consigna, idx) => {
+      const celda = `${columnas[idx]}9`;
+      const encontrado = this.normalizarEncabezado(this.obtenerValorCelda(sheet, celda));
+      const esperadoNormalizado = this.normalizarEncabezado(consigna);
+      if (encontrado !== esperadoNormalizado) {
+        errores.push(`Primaria ${hoja}: el encabezado ${celda} debe ser "${consigna}".`);
+      }
+    });
+
+    return errores;
+  }
+
+  private validarHojaPrimaria(xlsx: any, sheet: any, hoja: string): {
+    registros: AlumnoValidado[];
+    errores: string[];
+  } {
+    const errores: string[] = [];
+    const registros: AlumnoValidado[] = [];
+    const columnasValoraciones = this.columnasValoracionesPrimaria[hoja];
+
+    if (!columnasValoraciones) {
+      return {
+        registros,
+        errores: [`Primaria ${hoja}: no se pudo determinar el rango de valoraciones.`]
+      };
+    }
+
+    const datos = xlsx.utils.sheet_to_json(sheet, {
+      range: 9,
+      header: 'A',
+      defval: ''
+    }) as Array<Record<string, string>>;
+
+    const filasIniciales = 10;
+
+    datos.forEach((fila: Record<string, string>, indice: number) => {
+      const erroresFila: string[] = [];
+      const numeroLista = this.limpiarTexto(fila['B']);
+      const nombre = this.limpiarTexto(fila['C']);
+      const sexo = this.limpiarTexto(fila['D']).toUpperCase();
+      const grupo = this.limpiarTexto(fila['E']).toUpperCase();
+
+      const valoraciones = columnasValoraciones.map((col) => {
+        const valor = this.limpiarTexto(fila[col]);
+        return valor === '' ? null : Number(valor);
+      });
+
+      const filaExcel = filasIniciales + indice;
+      const filaVacia =
+        !numeroLista && !nombre && !sexo && !grupo && valoraciones.every((valor) => valor === null);
+      if (filaVacia) {
+        return;
+      }
+
+      if (!numeroLista) {
+        erroresFila.push(`Primaria ${hoja} - Fila ${filaExcel}: falta el número de lista.`);
+      } else if (isNaN(Number(numeroLista))) {
+        erroresFila.push(`Primaria ${hoja} - Fila ${filaExcel}: el número de lista debe ser numérico.`);
+      }
+
+      if (!nombre) {
+        erroresFila.push(`Primaria ${hoja} - Fila ${filaExcel}: captura el nombre completo del estudiante.`);
+      }
+
+      if (!sexo) {
+        erroresFila.push(`Primaria ${hoja} - Fila ${filaExcel}: indica el sexo (H/M).`);
+      } else if (sexo !== 'H' && sexo !== 'M') {
+        erroresFila.push(`Primaria ${hoja} - Fila ${filaExcel}: el sexo debe ser H o M.`);
+      }
+
+      if (!grupo) {
+        erroresFila.push(`Primaria ${hoja} - Fila ${filaExcel}: captura el grupo.`);
+      } else if (!/^[A-Z]$/.test(grupo)) {
+        erroresFila.push(`Primaria ${hoja} - Fila ${filaExcel}: el grupo debe ser una sola letra (A-Z).`);
+      }
+
+      valoraciones.forEach((valor, idx) => {
+        if (valor === null) {
+          erroresFila.push(`Primaria ${hoja} - Fila ${filaExcel}: falta la valoración ${idx + 1}.`);
+          return;
+        }
+        if (isNaN(valor) || valor < 0 || valor > 3) {
+          erroresFila.push(
+            `Primaria ${hoja} - Fila ${filaExcel}: la valoración ${idx + 1} debe estar entre 0 y 3.`
+          );
+        }
+      });
+
+      if (!erroresFila.length) {
+        registros.push({
+          filaExcel,
+          numeroLista: Number(numeroLista),
+          nombre,
+          sexo: sexo as 'H' | 'M',
+          grupo,
+          valoraciones: valoraciones as number[]
+        });
+      } else {
+        errores.push(...erroresFila);
+      }
+    });
+
+    if (!registros.length) {
+      errores.push(`Primaria ${hoja}: no se encontraron estudiantes capturados en la hoja.`);
+    }
+
+    return { registros, errores };
+  }
+
+  private rangoColumnas(inicio: string, fin: string): string[] {
+    const convertirNumero = (columna: string): number =>
+      columna
+        .toUpperCase()
+        .split('')
+        .reduce((acc, letra) => acc * 26 + (letra.charCodeAt(0) - 64), 0);
+    const convertirColumna = (numero: number): string => {
+      let resultado = '';
+      let actual = numero;
+      while (actual > 0) {
+        const indice = (actual - 1) % 26;
+        resultado = String.fromCharCode(65 + indice) + resultado;
+        actual = Math.floor((actual - 1) / 26);
+      }
+      return resultado;
+    };
+
+    const inicioNumero = convertirNumero(inicio);
+    const finNumero = convertirNumero(fin);
+    const columnas: string[] = [];
+
+    for (let i = inicioNumero; i <= finNumero; i += 1) {
+      columnas.push(convertirColumna(i));
+    }
+
+    return columnas;
   }
 }
