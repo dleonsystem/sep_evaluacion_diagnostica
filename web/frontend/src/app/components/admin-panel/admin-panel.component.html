@@ -14,6 +14,30 @@
       </div>
     </ng-template>
 
+    <div class="admin-panel__upload">
+      <label class="admin-panel__upload-label" for="pdf-upload">Selecciona un PDF</label>
+      <input
+        id="pdf-upload"
+        class="admin-panel__upload-input"
+        type="file"
+        accept="application/pdf"
+      />
+      <button class="admin-panel__upload-button" type="button">Subir PDF</button>
+
+      <div
+        class="admin-panel__status"
+        [class.admin-panel__status--idle]="uploadStatus === 'idle'"
+        [class.admin-panel__status--uploading]="uploadStatus === 'uploading'"
+        [class.admin-panel__status--success]="uploadStatus === 'success'"
+        [class.admin-panel__status--error]="uploadStatus === 'error'"
+      >
+        <span class="admin-panel__status-label">Estado de carga:</span>
+        <span class="admin-panel__status-message">
+          {{ feedbackMessage || 'Sin acciones por el momento.' }}
+        </span>
+      </div>
+    </div>
+
     <a class="admin-panel__link" routerLink="/admin/login">Ir al login</a>
     <button class="admin-panel__logout" type="button" (click)="cerrarSesion()">Cerrar sesión</button>
   </div>
