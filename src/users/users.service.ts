@@ -5,6 +5,7 @@ export interface User {
   email: string;
   password: string;
   name: string;
+  role: 'admin' | 'teacher';
 }
 
 @Injectable()
@@ -15,6 +16,14 @@ export class UsersService {
       email: 'admin@example.com',
       password: 'changeme',
       name: 'Administrador',
+      role: 'admin',
+    },
+    {
+      id: 2,
+      email: 'profesor@example.com',
+      password: 'changeme',
+      name: 'Profesor',
+      role: 'teacher',
     },
   ];
 
