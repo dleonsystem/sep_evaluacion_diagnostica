@@ -68,10 +68,10 @@ export class MockPdfService {
       return index < arr.length - 1 && arr[index + 1] !== '';
     });
 
-    const contenidoTexto = this.construirTextoPdf(textoLineas, 72, 720, 12, 16);
+    const contenidoTexto = this.construirTextoPdf(textoLineas, 72, 720, 12, 18);
     const encabezado = [
       'q',
-      '0.11 0.33 0.61 rg',
+      '0.38 0.07 0.20 rg',
       '0 756 612 36 re',
       'f',
       'Q',
@@ -96,7 +96,9 @@ export class MockPdfService {
     pushObject(
       `3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`
     );
-    pushObject(`4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n`);
+    pushObject(
+      `4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n`
+    );
 
     const contenidoHeader = encoder.encode(`5 0 obj\n<< /Length ${streamBytes.length} >>\nstream\n`);
     const contenidoFooter = encoder.encode(`\nendstream\nendobj\n`);
@@ -166,7 +168,61 @@ export class MockPdfService {
   }
 
   private sanitizarLinea(texto: string): string {
-    return texto.replace(/[\u0000-\u001F\u007F]/g, ' ').trim();
+    return texto.normalize('NFC').replace(/[\u0000-\u001F\u007F]/g, ' ').trim();
+  }
+
+  private escaparTextoPdf(texto: string): string {
+    return texto.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+  }
+
+  private construirTextoPdf(
+    lineas: string[],
+    margenX: number,
+    margenY: number,
+    fontSize: number,
+    lineHeight: number
+  ): string {
+    const segmentos = lineas.map((linea) => this.escaparTextoPdf(linea));
+    const piezas: string[] = [];
+    piezas.push('BT');
+    piezas.push(`/F1 ${fontSize} Tf`);
+    piezas.push('0 0 0 rg');
+    piezas.push(`${lineHeight} TL`);
+    piezas.push(`${margenX} ${margenY} Td`);
+    segmentos.forEach((segmento, index) => {
+      if (index === 0) {
+        if (segmento) {
+          piezas.push(`(${segmento}) Tj`);
+        }
+        return;
+      }
+      piezas.push('T*');
+      if (segmento) {
+        piezas.push(`(${segmento}) Tj`);
+      }
+    });
+    piezas.push('ET');
+    return piezas.join('\n');
+  }
+
+  private encodeLatin1(texto: string): Uint8Array {
+    const bytes = new Uint8Array(texto.length);
+    for (let i = 0; i < texto.length; i += 1) {
+      const code = texto.charCodeAt(i);
+      bytes[i] = code <= 255 ? code : 63;
+    }
+    return bytes;
+  }
+
+  private concatBytes(partes: Uint8Array[]): Uint8Array {
+    const total = partes.reduce((sum, parte) => sum + parte.length, 0);
+    const resultado = new Uint8Array(total);
+    let offset = 0;
+    partes.forEach((parte) => {
+      resultado.set(parte, offset);
+      offset += parte.length;
+    });
+    return resultado;
   }
 
   private escaparTextoPdf(texto: string): string {
