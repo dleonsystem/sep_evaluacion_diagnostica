@@ -111,6 +111,49 @@
   font-size: 0.95rem;
 }
 
+.admin-panel__history {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px dashed #cbd5f5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-panel__history-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #1e293b;
+}
+
+.admin-panel__history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-panel__history-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  color: #334155;
+}
+
+.admin-panel__history-name {
+  font-weight: 600;
+}
+
+.admin-panel__history-meta {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
 .admin-panel__logout {
   align-self: flex-start;
   padding: 0.75rem 1.5rem;
