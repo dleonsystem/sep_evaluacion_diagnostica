@@ -10,13 +10,14 @@ interface AdminLoginResponse {
 @Injectable({ providedIn: 'root' })
 export class AdminAuthService {
   private readonly tokenKey = 'admin-session-token';
+  private readonly apiBaseUrl = 'http://localhost:3000';
 
   constructor(private readonly http: HttpClient) {}
 
   async iniciarSesion(correo: string, contrasena: string): Promise<void> {
     const respuesta = await firstValueFrom(
-      this.http.post<AdminLoginResponse>('/auth/admin/login', {
-        email: correo,
+      this.http.post<AdminLoginResponse>(`${this.apiBaseUrl}/auth/admin/login`, {
+        email: correo.trim().toLowerCase(),
         password: contrasena,
       }),
     );
