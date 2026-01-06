@@ -554,7 +554,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         contrasena: resultadoArchivo.resultadoExito?.credenciales.contrasena ?? '',
         fechaDisponible: fechaDisponible.toLocaleDateString(),
         alumnosValidados: totalAlumnos,
-        cct: esc.cct
+        cct: esc.cct,
+        fechaValidacion: new Date().toLocaleString()
       });
       resultadoArchivo.pdfEstado = 'descargando';
       this.mockPdfService.descargarPdf(blob, resultadoArchivo.pdfNombre);
