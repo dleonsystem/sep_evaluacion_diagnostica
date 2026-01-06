@@ -4,6 +4,8 @@ import { CargaMasivaComponent } from './components/carga-masiva/carga-masiva.com
 import { ArchivosGuardadosComponent } from './components/archivos-guardados/archivos-guardados.component';
 import { LoginComponent } from './components/login/login.component';
 import { DescargasComponent } from './components/descargas/descargas.component';
+import { AdminLoginComponent } from './components/admin-login/admin-login.component';
+import { AdminPanelComponent } from './components/admin-panel/admin-panel.component';
 
 
 export const routes: Routes = [
@@ -40,6 +42,16 @@ export const routes: Routes = [
   {
     path: 'login',
     component: LoginComponent,
+    pathMatch: 'full'
+  },
+  {
+    path: 'admin/login',
+    component: AdminLoginComponent,
+    pathMatch: 'full'
+  },
+  {
+    path: 'admin/panel',
+    component: AdminPanelComponent,
     pathMatch: 'full'
   },
   {

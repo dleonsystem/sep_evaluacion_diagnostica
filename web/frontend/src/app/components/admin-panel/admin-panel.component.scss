@@ -1,0 +1,48 @@
+.admin-panel {
+  display: flex;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+}
+
+.admin-panel__card {
+  width: min(720px, 100%);
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 2.5rem;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.admin-panel__token {
+  padding: 1rem;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  word-break: break-all;
+}
+
+.admin-panel__token--warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.admin-panel__link {
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.admin-panel__logout {
+  align-self: flex-start;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  border: none;
+  background: #ef4444;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
