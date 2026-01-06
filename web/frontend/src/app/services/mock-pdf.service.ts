@@ -175,59 +175,8 @@ export class MockPdfService {
     return texto.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
   }
 
-  private construirTextoPdf(
-    lineas: string[],
-    margenX: number,
-    margenY: number,
-    fontSize: number,
-    lineHeight: number
-  ): string {
-    const segmentos = lineas.map((linea) => this.escaparTextoPdf(linea));
-    const piezas: string[] = [];
-    piezas.push('BT');
-    piezas.push(`/F1 ${fontSize} Tf`);
-    piezas.push('0 0 0 rg');
-    piezas.push(`${lineHeight} TL`);
-    piezas.push(`${margenX} ${margenY} Td`);
-    segmentos.forEach((segmento, index) => {
-      if (index === 0) {
-        if (segmento) {
-          piezas.push(`(${segmento}) Tj`);
-        }
-        return;
-      }
-      piezas.push('T*');
-      if (segmento) {
-        piezas.push(`(${segmento}) Tj`);
-      }
-    });
-    piezas.push('ET');
-    return piezas.join('\n');
-  }
 
-  private encodeLatin1(texto: string): Uint8Array {
-    const bytes = new Uint8Array(texto.length);
-    for (let i = 0; i < texto.length; i += 1) {
-      const code = texto.charCodeAt(i);
-      bytes[i] = code <= 255 ? code : 63;
-    }
-    return bytes;
-  }
 
-  private concatBytes(partes: Uint8Array[]): Uint8Array {
-    const total = partes.reduce((sum, parte) => sum + parte.length, 0);
-    const resultado = new Uint8Array(total);
-    let offset = 0;
-    partes.forEach((parte) => {
-      resultado.set(parte, offset);
-      offset += parte.length;
-    });
-    return resultado;
-  }
-
-  private escaparTextoPdf(texto: string): string {
-    return texto.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
-  }
 
   private construirTextoPdf(
     lineas: string[],
@@ -259,6 +208,13 @@ export class MockPdfService {
     return piezas.join('\n');
   }
 
+
+
+
+
+
+
+
   private encodeLatin1(texto: string): Uint8Array {
     const bytes = new Uint8Array(texto.length);
     for (let i = 0; i < texto.length; i += 1) {
@@ -267,6 +223,8 @@ export class MockPdfService {
     }
     return bytes;
   }
+
+
 
   private concatBytes(partes: Uint8Array[]): Uint8Array {
     const total = partes.reduce((sum, parte) => sum + parte.length, 0);
