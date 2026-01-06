@@ -1,32 +1,23 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
-
-interface AdminLoginResponse {
-  access_token: string;
-  role?: string;
-}
-
 @Injectable({ providedIn: 'root' })
 export class AdminAuthService {
   private readonly tokenKey = 'admin-session-token';
-  private readonly apiBaseUrl = 'http://localhost:3000';
-
-  constructor(private readonly http: HttpClient) {}
+  private readonly adminCredentials = {
+    email: 'admin@plataforma.local',
+    password: 'admin123',
+  };
 
   async iniciarSesion(correo: string, contrasena: string): Promise<void> {
-    const respuesta = await firstValueFrom(
-      this.http.post<AdminLoginResponse>(`${this.apiBaseUrl}/auth/admin/login`, {
-        email: correo.trim().toLowerCase(),
-        password: contrasena,
-      }),
-    );
-
-    if (!respuesta?.access_token) {
-      throw new Error('No se recibió un token válido.');
+    const correoNormalizado = correo.trim().toLowerCase();
+    if (
+      correoNormalizado !== this.adminCredentials.email ||
+      contrasena !== this.adminCredentials.password
+    ) {
+      throw new Error('Credenciales inválidas.');
     }
 
-    localStorage.setItem(this.tokenKey, respuesta.access_token);
+    const tokenSimulado = btoa(`${correoNormalizado}:${Date.now()}`);
+    localStorage.setItem(this.tokenKey, tokenSimulado);
   }
 
   obtenerToken(): string | null {
