@@ -23,4 +23,18 @@ export class AuthController {
 
     return this.authService.login(user);
   }
+
+  @Post('admin/login')
+  async adminLogin(@Body() loginDto: LoginDto) {
+    const adminUser = await this.authService.validateAdminCredentials(
+      loginDto.email,
+      loginDto.password,
+    );
+
+    if (!adminUser) {
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    return this.authService.login(adminUser);
+  }
 }
