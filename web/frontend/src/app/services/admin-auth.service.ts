@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 export class AdminAuthService {
   private readonly tokenKey = 'admin-session-token';
   private readonly adminCredentials = {
-    email: 'admin@plataforma.local',
+    email: 'admin@sep.mx',
     password: 'admin123',
   };
 
