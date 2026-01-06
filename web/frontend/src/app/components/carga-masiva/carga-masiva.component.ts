@@ -228,7 +228,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       const tipoArchivo = await this.excelValidationService.detectarTipoArchivo(buffer);
       resultadoArchivo.tipoDetectado = tipoArchivo;
 
-      if (tipoArchivo === 'desconocido') {
+      if (!tipoArchivo) {
         resultadoArchivo.mensajeInformativo = 'No se reconoció el formato.';
         this.actualizarErrores(resultadoArchivo, [
           'No se reconoció el formato. Verifica que sea una plantilla válida de Preescolar, Primaria o Secundaria.'
@@ -285,6 +285,14 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         correo: this.correoControl.value
       });
       await this.mostrarConfirmacionGuardado(guardado, 'guardado', resultado);
+      if (resultado.escDatos && resultado.resultadoExito && resultado.pdfTipo !== 'exito') {
+        await this.generarPdfExito(
+          resultado,
+          resultado.escDatos,
+          resultado.resultadoExito.fechaDisponible,
+          resultado.resultadoExito.totalAlumnos
+        );
+      }
     } catch (error) {
       if (error instanceof ArchivoDuplicadoError) {
         const confirmacion = await Swal.fire({
@@ -307,6 +315,14 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
               }
             );
             await this.mostrarConfirmacionGuardado(resultadoReemplazo, 'reemplazo', resultado);
+            if (resultado.escDatos && resultado.resultadoExito && resultado.pdfTipo !== 'exito') {
+              await this.generarPdfExito(
+                resultado,
+                resultado.escDatos,
+                resultado.resultadoExito.fechaDisponible,
+                resultado.resultadoExito.totalAlumnos
+              );
+            }
             return;
           } catch (reemplazoError) {
             resultado.errorGuardado =
@@ -410,7 +426,6 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     this.actualizarEstadoSesion();
 
-    await this.generarPdfExito(resultadoArchivo, resultado.esc, fechaDisponible, resultado.alumnos?.length ?? 0);
   }
 
   private validarPorTipo(tipo: TipoArchivoCarga, buffer: ArrayBuffer): Promise<ResultadoValidacion> {
@@ -539,7 +554,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         contrasena: resultadoArchivo.resultadoExito?.credenciales.contrasena ?? '',
         fechaDisponible: fechaDisponible.toLocaleDateString(),
         alumnosValidados: totalAlumnos,
-        cct: esc.cct
+        cct: esc.cct,
+        fechaValidacion: new Date().toLocaleString()
       });
       resultadoArchivo.pdfEstado = 'descargando';
       this.mockPdfService.descargarPdf(blob, resultadoArchivo.pdfNombre);
@@ -695,7 +711,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   }
 
   private construirMensajeDeteccion(tipo: TipoArchivoCarga | null, error?: string): string {
-    if (!tipo || tipo === 'desconocido') {
+    if (!tipo) {
       return 'No se reconoció el formato.';
     }
 
