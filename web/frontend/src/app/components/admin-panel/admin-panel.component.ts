@@ -11,6 +11,10 @@ import { AdminAuthService } from '../../services/admin-auth.service';
   styleUrl: './admin-panel.component.scss',
 })
 export class AdminPanelComponent {
+  selectedFile: File | null = null;
+  uploadStatus: 'idle' | 'uploading' | 'success' | 'error' = 'idle';
+  feedbackMessage = '';
+
   constructor(private readonly adminAuthService: AdminAuthService) {}
 
   obtenerToken(): string | null {
