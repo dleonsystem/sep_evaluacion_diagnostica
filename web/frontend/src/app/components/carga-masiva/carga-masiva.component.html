@@ -134,7 +134,7 @@
           <p class="carga__detalle-metadata">
             Peso: {{ resultado.archivo.sizeKb }} KB · Última modificación: {{ resultado.archivo.lastModified | date:'short' }}
           </p>
-          <p class="carga__detalle-metadata" *ngIf="resultado.tipoDetectado && resultado.tipoDetectado !== 'desconocido'">
+          <p class="carga__detalle-metadata" *ngIf="resultado.tipoDetectado">
             Archivo detectado: {{ obtenerEtiquetaTipo(resultado.tipoDetectado) }}
           </p>
         </div>
