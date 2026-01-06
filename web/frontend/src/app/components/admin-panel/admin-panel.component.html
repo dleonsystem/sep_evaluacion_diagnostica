@@ -1,0 +1,20 @@
+<section class="admin-panel">
+  <div class="admin-panel__card">
+    <h1>Panel de administrador</h1>
+    <p>Token activo para la carga de PDFs.</p>
+
+    <div class="admin-panel__token" *ngIf="obtenerToken(); else sinSesion">
+      <span>Token almacenado:</span>
+      <code>{{ obtenerToken() }}</code>
+    </div>
+
+    <ng-template #sinSesion>
+      <div class="admin-panel__token admin-panel__token--warning">
+        No hay sesión activa. Vuelve al login para obtener un token.
+      </div>
+    </ng-template>
+
+    <a class="admin-panel__link" routerLink="/admin/login">Ir al login</a>
+    <button class="admin-panel__logout" type="button" (click)="cerrarSesion()">Cerrar sesión</button>
+  </div>
+</section>

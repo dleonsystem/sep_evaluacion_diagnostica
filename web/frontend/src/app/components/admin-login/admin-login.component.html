@@ -1,0 +1,38 @@
+<section class="admin-login">
+  <div class="admin-login__card">
+    <h1>Acceso administrador</h1>
+    <p>Ingresa el correo y contraseña asignados para la carga de PDFs.</p>
+
+    <form (ngSubmit)="iniciarSesion()" #loginForm="ngForm" novalidate>
+      <label for="correo-admin">Correo</label>
+      <input
+        id="correo-admin"
+        name="correo"
+        type="email"
+        required
+        [(ngModel)]="correo"
+        autocomplete="email"
+        placeholder="admin@plataforma.local"
+      />
+
+      <label for="contrasena-admin">Contraseña</label>
+      <input
+        id="contrasena-admin"
+        name="contrasena"
+        type="password"
+        required
+        [(ngModel)]="contrasena"
+        autocomplete="current-password"
+        placeholder="********"
+      />
+
+      <div class="admin-login__error" *ngIf="error">{{ error }}</div>
+
+      <button class="admin-login__submit" type="submit" [disabled]="loginForm.invalid || autenticando">
+        {{ autenticando ? 'Validando...' : 'Iniciar sesión' }}
+      </button>
+    </form>
+
+    <a class="admin-login__link" routerLink="/inicio">Volver al inicio</a>
+  </div>
+</section>
