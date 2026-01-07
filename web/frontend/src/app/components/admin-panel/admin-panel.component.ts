@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { AdminAuthService } from '../../services/admin-auth.service';
 import { ArchivoStorageService, RegistroArchivo } from '../../services/archivo-storage.service';
 import Swal from 'sweetalert2';
@@ -31,7 +31,8 @@ export class AdminPanelComponent implements OnInit {
 
   constructor(
     private readonly adminAuthService: AdminAuthService,
-    private readonly archivoStorageService: ArchivoStorageService
+    private readonly archivoStorageService: ArchivoStorageService,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
@@ -137,6 +138,12 @@ export class AdminPanelComponent implements OnInit {
 
   cerrarSesion(): void {
     this.adminAuthService.cerrarSesion();
+    this.selectedFile = null;
+    this.excelSeleccionado = null;
+    this.selectedNivel = '';
+    this.uploadStatus = 'idle';
+    this.feedbackMessage = '';
+    void this.router.navigate(['/admin/login']);
   }
 
   get excelDisponiblesFiltrados(): ExcelDisponible[] {
