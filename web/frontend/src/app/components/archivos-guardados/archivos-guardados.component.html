@@ -61,13 +61,18 @@
           </td>
           <td data-label="Resultados">
             <ng-container *ngIf="obtenerPdfPorRegistro(registro) as resultadoPdf; else pendienteResultado">
-              <button
-                type="button"
-                class="archivos__accion"
-                (click)="descargarResultados(resultadoPdf.storageKey)"
-              >
-                Descargar resultados
-              </button>
+              <div class="archivos__resultado">
+                <span class="archivos__resultado-nombre">
+                  {{ obtenerEtiquetaPdf(resultadoPdf) }}
+                </span>
+                <button
+                  type="button"
+                  class="archivos__accion"
+                  (click)="descargarResultados(resultadoPdf.storageKey)"
+                >
+                  Descargar resultados
+                </button>
+              </div>
             </ng-container>
             <ng-template #pendienteResultado>Pendiente</ng-template>
           </td>
