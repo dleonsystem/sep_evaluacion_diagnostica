@@ -20,6 +20,8 @@ export class ArchivosGuardadosComponent implements OnInit {
   mensajeInfo: string | null = null;
   mensajeError: string | null = null;
   correoActivo: string | null = null;
+  private readonly pdfKeys = ['preescolar', 'primaria', 'secundaria'];
+  private resultadosPdf: Record<string, PdfMetadata> = {};
 
   constructor(
     private readonly archivoStorageService: ArchivoStorageService,
@@ -34,6 +36,7 @@ export class ArchivosGuardadosComponent implements OnInit {
     }
 
     this.correoActivo = this.authService.obtenerCredenciales()?.correo ?? null;
+    this.cargarResultadosPdf();
     this.cargarRegistros();
   }
 
@@ -93,4 +96,68 @@ export class ArchivosGuardadosComponent implements OnInit {
       });
     }
   }
+
+  descargarResultados(registro: RegistroArchivo): void {
+    const pdf = this.obtenerPdfPorRegistro(registro);
+    if (!pdf) {
+      return;
+    }
+
+    const enlace = document.createElement('a');
+    enlace.href = pdf.pdfBase64;
+    enlace.download = pdf.pdfName ?? 'resultados.pdf';
+    enlace.style.display = 'none';
+
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
+  }
+
+  obtenerPdfPorRegistro(registro: RegistroArchivo): PdfMetadata | null {
+    const claveExcel = this.obtenerClaveExcel(registro);
+    if (!claveExcel) {
+      return null;
+    }
+    return this.resultadosPdf[claveExcel] ?? null;
+  }
+
+  private cargarResultadosPdf(): void {
+    this.resultadosPdf = {};
+    this.pdfKeys.forEach((clave) => {
+      const data = localStorage.getItem(clave);
+      if (!data) {
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(data) as PdfMetadata;
+        if (parsed?.pdfBase64) {
+          this.resultadosPdf[clave] = parsed;
+        }
+      } catch (error) {
+        return;
+      }
+    });
+  }
+
+  private obtenerClaveExcel(registro: RegistroArchivo): string | null {
+    const ruta = (registro.ruta ?? '').toLowerCase();
+    if (ruta.includes('/preescolar/')) {
+      return 'preescolar';
+    }
+    if (ruta.includes('/primaria/')) {
+      return 'primaria';
+    }
+    if (ruta.includes('/secundaria/')) {
+      return 'secundaria';
+    }
+    return null;
+  }
+}
+
+interface PdfMetadata {
+  excelKey: string;
+  pdfName: string;
+  pdfBase64: string;
+  fecha: string;
 }
