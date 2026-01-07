@@ -7,6 +7,7 @@ export interface RegistroArchivo {
   ruta: string;
   contenidoBase64: string;
   hash: string;
+  claveEstable: string;
   cct?: string;
   correo?: string;
 }
@@ -50,13 +51,21 @@ export class ArchivoStorageService {
       localStorage.setItem(this.storageKey, JSON.stringify(registrosPorCorreo));
     }
 
+    const fechaGuardado = new Date().toISOString();
+    const claveEstable = this.construirClaveEstable({
+      cct: parametros?.cct,
+      correo: emailNormalizado,
+      nombre: archivo.name,
+      fechaGuardado
+    });
     const registro: RegistroArchivo = {
       nombre: archivo.name,
       tamano: archivo.size,
-      fechaGuardado: new Date().toISOString(),
+      fechaGuardado,
       ruta: rutaDestino,
       contenidoBase64: contenido,
       hash,
+      claveEstable,
       cct: parametros?.cct,
       correo: emailNormalizado || undefined
     };
@@ -153,6 +162,16 @@ export class ArchivoStorageService {
         registro.hash = await this.calcularHash(buffer);
         actualizado = true;
       }
+
+      if (!registro.claveEstable) {
+        registro.claveEstable = this.construirClaveEstable({
+          cct: registro.cct,
+          correo: registro.correo,
+          nombre: registro.nombre,
+          fechaGuardado: registro.fechaGuardado
+        });
+        actualizado = true;
+      }
     }
 
     return actualizado;
@@ -215,5 +234,16 @@ export class ArchivoStorageService {
 
   private normalizarCorreo(correo: string): string {
     return (correo ?? '').trim().toLowerCase();
+  }
+
+  private construirClaveEstable(params: {
+    cct?: string;
+    correo?: string;
+    nombre: string;
+    fechaGuardado: string;
+  }): string {
+    const cct = (params.cct ?? '').trim();
+    const correo = this.normalizarCorreo(params.correo ?? '');
+    return `${cct}|${correo}|${params.nombre}|${params.fechaGuardado}`;
   }
 }
