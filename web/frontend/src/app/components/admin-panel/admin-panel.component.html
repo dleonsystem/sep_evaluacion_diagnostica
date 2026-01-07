@@ -35,26 +35,57 @@
 
       <div class="admin-panel__excel-list" *ngIf="excelDisponibles.length">
         <span class="admin-panel__history-title">Excels disponibles</span>
-        <div class="admin-panel__table">
-          <div class="admin-panel__table-row admin-panel__table-row--header">
-            <span>Nombre</span>
-            <span>CCT</span>
-            <span>Correo</span>
-            <span>Estatus</span>
-          </div>
-          <div class="admin-panel__table-row" *ngFor="let excel of excelDisponibles">
-            <span>{{ excel.nombre }}</span>
-            <span>{{ excel.cct }}</span>
-            <span>{{ excel.correo }}</span>
-            <span>
-              <span
-                class="admin-panel__badge"
-                [class.admin-panel__badge--assigned]="excel.estatus === 'asignado'"
-              >
-                {{ excel.estatus === 'asignado' ? 'Asignado' : 'Pendiente' }}
-              </span>
-            </span>
-          </div>
+        <table class="admin-panel__table">
+          <thead>
+            <tr>
+              <th scope="col">Nombre</th>
+              <th scope="col">CCT</th>
+              <th scope="col">Correo</th>
+              <th scope="col">Estatus</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let excel of excelDisponiblesPaginados">
+              <td>{{ excel.nombre }}</td>
+              <td>{{ excel.cct }}</td>
+              <td>{{ excel.correo }}</td>
+              <td>
+                <span
+                  class="admin-panel__badge"
+                  [class.admin-panel__badge--assigned]="excel.estatus === 'asignado'"
+                >
+                  {{ excel.estatus === 'asignado' ? 'Asignado' : 'Pendiente' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="admin-panel__pagination" *ngIf="totalPaginas > 1">
+          <button
+            class="admin-panel__pagination-button"
+            type="button"
+            [disabled]="paginaActualDerivada === 1"
+            (click)="irAPagina(paginaActualDerivada - 1)"
+          >
+            Anterior
+          </button>
+          <button
+            class="admin-panel__pagination-button"
+            type="button"
+            *ngFor="let pagina of paginasDisponibles"
+            [class.admin-panel__pagination-button--active]="pagina === paginaActualDerivada"
+            (click)="irAPagina(pagina)"
+          >
+            {{ pagina }}
+          </button>
+          <button
+            class="admin-panel__pagination-button"
+            type="button"
+            [disabled]="paginaActualDerivada === totalPaginas"
+            (click)="irAPagina(paginaActualDerivada + 1)"
+          >
+            Siguiente
+          </button>
         </div>
       </div>
 

@@ -20,6 +20,8 @@ export class AdminPanelComponent implements OnInit {
   feedbackMessage = '';
   uploadHistory: Array<{ name: string; size: number; uploadedAt: string }> = [];
   excelDisponibles: ExcelDisponible[] = [];
+  paginaActual = 1;
+  tamanioPagina = 10;
   private readonly uploadHistoryKey = 'adminPanelPdfHistory';
   private readonly pdfStoragePrefix = 'pdf-resultados';
 
@@ -133,6 +135,32 @@ export class AdminPanelComponent implements OnInit {
     this.adminAuthService.cerrarSesion();
   }
 
+  get excelDisponiblesFiltrados(): ExcelDisponible[] {
+    return this.excelDisponibles;
+  }
+
+  get totalPaginas(): number {
+    return this.obtenerTotalPaginas(this.excelDisponiblesFiltrados);
+  }
+
+  get paginaActualDerivada(): number {
+    return this.obtenerPaginaActualDesdeListado(this.excelDisponiblesFiltrados);
+  }
+
+  get excelDisponiblesPaginados(): ExcelDisponible[] {
+    const paginaActual = this.paginaActualDerivada;
+    const inicio = (paginaActual - 1) * this.tamanioPagina;
+    return this.excelDisponiblesFiltrados.slice(inicio, inicio + this.tamanioPagina);
+  }
+
+  get paginasDisponibles(): number[] {
+    return Array.from({ length: this.totalPaginas }, (_, index) => index + 1);
+  }
+
+  irAPagina(pagina: number): void {
+    this.paginaActual = Math.min(Math.max(pagina, 1), this.totalPaginas);
+  }
+
   private loadUploadHistory(): Array<{ name: string; size: number; uploadedAt: string }> {
     const storedHistory = localStorage.getItem(this.uploadHistoryKey);
     if (!storedHistory) {
@@ -167,6 +195,8 @@ export class AdminPanelComponent implements OnInit {
         estatus: this.existePdfParaExcel(key) ? 'asignado' : 'pendiente'
       };
     });
+
+    this.paginaActual = this.obtenerPaginaActualDesdeListado(this.excelDisponiblesFiltrados);
   }
 
   private actualizarEstadoExcel(excelKey: string): void {
@@ -176,6 +206,21 @@ export class AdminPanelComponent implements OnInit {
       }
       return { ...excel, estatus: 'asignado' };
     });
+  }
+
+  private obtenerTotalPaginas(listado: ExcelDisponible[]): number {
+    return Math.max(1, Math.ceil(listado.length / this.tamanioPagina));
+  }
+
+  private obtenerPaginaActualDesdeListado(listado: ExcelDisponible[]): number {
+    const totalPaginas = this.obtenerTotalPaginas(listado);
+    if (this.paginaActual > totalPaginas) {
+      return totalPaginas;
+    }
+    if (this.paginaActual < 1) {
+      return 1;
+    }
+    return this.paginaActual;
   }
 
   private existePdfParaExcel(excelKey: string): boolean {
