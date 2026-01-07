@@ -44,19 +44,19 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  font-size: 1rem;
+  font-size: 1.05rem;
 }
 
 .admin-panel__helper {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: #64748b;
 }
 
 .admin-panel__upload-label {
   font-weight: 600;
   color: #0f172a;
-  font-size: 1rem;
+  font-size: 1.05rem;
 }
 
 .admin-panel__upload-input {
@@ -65,7 +65,7 @@
   border: 1px solid #cbd5f5;
   background: #ffffff;
   color: #0f172a;
-  font-size: 1rem;
+  font-size: 1.05rem;
 }
 
 .admin-panel__upload-button {
@@ -141,7 +141,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: #475569;
 }
 
@@ -155,13 +155,13 @@
   border: 1px solid #cbd5f5;
   background: #ffffff;
   color: #0f172a;
-  font-size: 1rem;
+  font-size: 1.05rem;
 }
 
 .admin-panel__table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 1rem;
+  font-size: 1.05rem;
 }
 
 .admin-panel__table th,
@@ -175,7 +175,7 @@
 .admin-panel__table th {
   font-weight: 700;
   text-transform: uppercase;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   letter-spacing: 0.05em;
   color: #475569;
   border-bottom: 1px solid #cbd5f5;
@@ -194,7 +194,7 @@
   background: #e2e8f0;
   color: #475569;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 
 .admin-panel__badge--assigned {
