@@ -286,3 +286,61 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+@media (max-width: 540px) {
+  .admin-panel {
+    padding: 1.5rem 1rem;
+  }
+
+  .admin-panel__card {
+    padding: 1.5rem;
+    gap: 1rem;
+  }
+
+  .admin-panel__upload {
+    padding: 1.1rem;
+    font-size: 1rem;
+  }
+
+  .admin-panel__helper,
+  .admin-panel__upload-label,
+  .admin-panel__upload-input,
+  .admin-panel__filters-field,
+  .admin-panel__filters-input,
+  .admin-panel__status-label {
+    font-size: 1rem;
+  }
+
+  .admin-panel__status-message,
+  .admin-panel__table,
+  .admin-panel__table th,
+  .admin-panel__table td,
+  .admin-panel__pagination-button,
+  .admin-panel__badge,
+  .admin-panel__history-title,
+  .admin-panel__history-meta {
+    font-size: 0.95rem;
+  }
+
+  .admin-panel__table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-panel__table th,
+  .admin-panel__table td {
+    white-space: nowrap;
+  }
+
+  .admin-panel__filters {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-panel__upload-button,
+  .admin-panel__logout {
+    width: 100%;
+    text-align: center;
+  }
+}
