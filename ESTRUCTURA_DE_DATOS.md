@@ -1,5 +1,5 @@
 
-## 2. Diccionario de Datos (todas las tablas, orden alfabético)
+## Diccionario de Datos (todas las tablas, orden alfabético)
 
 <!-- INICIO DICCIONARIO ORDENADO -->
 
