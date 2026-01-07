@@ -1,3 +1,42 @@
+# ESTRUCTURA_DE_DATOS.md
+
+Este documento contiene la descripción completa de la estructura de datos del sistema SEP Evaluación Diagnóstica. Aquí encontrarás:
+
+- El diagrama entidad-relación (ER) que muestra las relaciones entre las principales entidades y catálogos del sistema.
+- Un diccionario de datos unificado y ordenado alfabéticamente, con la definición de todas las tablas, sus campos y descripciones.
+- Catálogos, tablas auxiliares y estructuras derivadas de archivos fuente (.DBF) integradas en el modelo.
+- Reglas de negocio, índices, procedimientos, vistas, políticas de seguridad y ejemplos de datos relevantes.
+- Notas técnicas y recomendaciones para migración, respaldo y auditoría.
+
+Este archivo sirve como referencia técnica para desarrolladores, analistas, auditores y cualquier persona que requiera comprender la estructura y funcionamiento de la base de datos del sistema.
+
+## Diagrama Entidad-Relación (ER)
+
+```mermaid
+erDiagram
+    ESCUELAS ||--o{ USUARIOS : tiene
+    ESCUELAS ||--o{ GRUPOS : agrupa
+    GRUPOS ||--o{ ESTUDIANTES : contiene
+    ESTUDIANTES ||--o{ VALORACIONES : recibe
+    VALORACIONES }o--|| MATERIAS : evalua
+    VALORACIONES }o--|| PERIODOS_EVALUACION : en
+    USUARIOS ||--o{ VALORACIONES : registra
+    EVALUACIONES ||--|| VALORACIONES : referencia
+    ESCUELAS ||--|| CAT_TURNOS : turno
+    ESCUELAS ||--|| CAT_ENTIDADES_FEDERATIVAS : entidad
+    ESCUELAS ||--|| CAT_NIVELES_EDUCATIVOS : nivel
+    ESCUELAS ||--|| CAT_CICLOS_ESCOLARES : ciclo
+    GRUPOS ||--|| CAT_GRADOS : grado
+    GRUPOS ||--|| ESCUELAS : escuela
+    EVALUACIONES ||--|| ESTUDIANTES : estudiante
+    EVALUACIONES ||--|| MATERIAS : materia
+    EVALUACIONES ||--|| PERIODOS_EVALUACION : periodo
+    MATERIAS ||--o{ COMPETENCIAS : define
+    COMPETENCIAS ||--o{ RESULTADOS_COMPETENCIAS : mide
+    EVALUACIONES ||--o{ RESULTADOS_COMPETENCIAS : genera
+    USUARIOS ||--o{ LOG_ACTIVIDADES : registra
+    USUARIOS ||--|| CAT_ROLES_USUARIO : rol
+```
 
 # ESTRUCTURA_DE_DATOS.md
 
