@@ -41,6 +41,7 @@ erDiagram
     EVALUACIONES ||--o{ RESULTADOS_COMPETENCIAS : genera
     USUARIOS ||--o{ LOG_ACTIVIDADES : registra
     USUARIOS ||--|| CAT_ROLES_USUARIO : rol
+```
 ### SEC1.DBF
 | Campo         | Tipo        | Descripción                                      |
 |--------------|-------------|--------------------------------------------------|
