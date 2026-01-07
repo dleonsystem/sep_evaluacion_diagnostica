@@ -1,21 +1,28 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AdminAuthService } from '../../services/admin-auth.service';
 
 @Component({
   selector: 'app-admin-panel',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './admin-panel.component.html',
   styleUrl: './admin-panel.component.scss',
 })
 export class AdminPanelComponent implements OnInit {
   selectedFile: File | null = null;
+  selectedExcelKey = '';
   uploadStatus: 'idle' | 'uploading' | 'success' | 'error' = 'idle';
   feedbackMessage = '';
   uploadHistory: Array<{ name: string; size: number; uploadedAt: string }> = [];
   private readonly uploadHistoryKey = 'adminPanelPdfHistory';
+  readonly excelOptions = [
+    { key: 'preescolar', label: 'Excel Preescolar' },
+    { key: 'primaria', label: 'Excel Primaria' },
+    { key: 'secundaria', label: 'Excel Secundaria' },
+  ];
 
   constructor(private readonly adminAuthService: AdminAuthService) {}
 
@@ -37,6 +44,12 @@ export class AdminPanelComponent implements OnInit {
   }
 
   subirPdf(): void {
+    if (!this.selectedExcelKey) {
+      this.uploadStatus = 'error';
+      this.feedbackMessage = 'Selecciona el Excel asociado antes de subir el PDF.';
+      return;
+    }
+
     if (!this.selectedFile) {
       this.uploadStatus = 'error';
       this.feedbackMessage = 'No se ha seleccionado ningún archivo.';
@@ -56,19 +69,36 @@ export class AdminPanelComponent implements OnInit {
     this.uploadStatus = 'uploading';
     this.feedbackMessage = 'Cargando archivo...';
 
-    setTimeout(() => {
-      this.uploadStatus = 'success';
-      this.feedbackMessage = 'PDF cargado correctamente.';
+    const fileToUpload = this.selectedFile;
+    const excelKey = this.selectedExcelKey;
 
-      const metadata = {
-        name: this.selectedFile?.name ?? 'PDF',
-        size: this.selectedFile?.size ?? 0,
-        uploadedAt: new Date().toISOString(),
-      };
+    this.readPdfAsBase64(fileToUpload)
+      .then((pdfBase64) => {
+        const metadata = {
+          excelKey,
+          pdfName: fileToUpload.name,
+          pdfBase64,
+          fecha: new Date().toISOString(),
+        };
 
-      this.uploadHistory = [metadata, ...this.uploadHistory].slice(0, 5);
-      this.saveUploadHistory();
-    }, 1500);
+        localStorage.setItem(excelKey, JSON.stringify(metadata));
+
+        this.uploadStatus = 'success';
+        this.feedbackMessage = 'PDF cargado correctamente.';
+
+        const historyEntry = {
+          name: fileToUpload.name,
+          size: fileToUpload.size,
+          uploadedAt: metadata.fecha,
+        };
+
+        this.uploadHistory = [historyEntry, ...this.uploadHistory].slice(0, 5);
+        this.saveUploadHistory();
+      })
+      .catch(() => {
+        this.uploadStatus = 'error';
+        this.feedbackMessage = 'No se pudo leer el PDF. Intenta nuevamente.';
+      });
   }
 
   obtenerToken(): string | null {
@@ -99,5 +129,20 @@ export class AdminPanelComponent implements OnInit {
 
   private saveUploadHistory(): void {
     localStorage.setItem(this.uploadHistoryKey, JSON.stringify(this.uploadHistory));
+  }
+
+  private readPdfAsBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result);
+          return;
+        }
+        reject(new Error('Formato inválido'));
+      };
+      reader.onerror = () => reject(new Error('Error al leer archivo'));
+      reader.readAsDataURL(file);
+    });
   }
 }
