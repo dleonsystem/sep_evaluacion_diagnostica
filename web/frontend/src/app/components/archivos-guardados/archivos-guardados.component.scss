@@ -3,7 +3,8 @@
   margin: 0 auto;
   padding: 2rem 1.5rem 3rem;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  color: #0f172a;
+  color: #13322e;
+  font-size: 1.05rem;
 }
 
 .archivos__encabezado {
@@ -13,22 +14,23 @@
 .archivos__eyebrow {
   text-transform: uppercase;
   font-weight: 700;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   letter-spacing: 0.08em;
-  color: #2563eb;
+  color: #611232;
   margin: 0 0 0.35rem;
 }
 
 .archivos__titulo {
   margin: 0.2rem 0;
-  font-size: 1.6rem;
+  font-size: 1.9rem;
   font-weight: 700;
 }
 
 .archivos__descripcion {
   margin: 0;
-  color: #475569;
+  color: #13322e;
   line-height: 1.5;
+  font-size: 1.05rem;
 }
 
 .archivos__mensajes {
@@ -43,23 +45,24 @@
   border-radius: 12px;
   font-weight: 600;
   line-height: 1.4;
+  font-size: 1rem;
 }
 
 .archivos__mensaje--info {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
+  background: #f2f2f2;
+  color: #611232;
+  border: 1px solid #a57f2c;
 }
 
 .archivos__mensaje--error {
-  background: #fef2f2;
-  color: #b91c1c;
-  border: 1px solid #fecdd3;
+  background: #f6e8e8;
+  color: #611232;
+  border: 1px solid #9d2449;
 }
 
 .archivos__tabla {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e5e7eb;
   border-radius: 16px;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
   overflow: hidden;
@@ -71,20 +74,20 @@
 }
 
 .archivos thead {
-  background: #f8fafc;
+  background: #f6eddc;
 }
 
 .archivos th,
 .archivos td {
   padding: 0.9rem 1rem;
   text-align: left;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
 }
 
 .archivos th {
   font-weight: 700;
-  color: #1e293b;
-  border-bottom: 1px solid #e2e8f0;
+  color: #13322e;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .archivos tbody tr:nth-child(even) {
@@ -92,7 +95,7 @@
 }
 
 .archivos tbody tr:hover {
-  background: #f1f5f9;
+  background: #f6eddc;
 }
 
 .archivos__acciones {
@@ -104,8 +107,8 @@
 .archivos__accion {
   padding: 0.45rem 0.75rem;
   border-radius: 10px;
-  border: 1px solid #2563eb;
-  background: #2563eb;
+  border: 1px solid #611232;
+  background: #9d2449;
   color: #fff;
   cursor: pointer;
   font-weight: 600;
@@ -113,8 +116,8 @@
 }
 
 .archivos__accion:hover {
-  background: #1d4ed8;
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+  background: #611232;
+  box-shadow: 0 8px 20px rgba(97, 18, 50, 0.25);
   transform: translateY(-1px);
 }
 
@@ -123,9 +126,9 @@
 }
 
 .archivos__accion--peligro {
-  background: #fee2e2;
-  border-color: #fca5a5;
-  color: #b91c1c;
+  background: #f6e8e8;
+  border-color: #9d2449;
+  color: #611232;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -133,8 +136,8 @@
 }
 
 .archivos__accion--peligro:hover {
-  background: #fecdd3;
-  box-shadow: 0 8px 20px rgba(248, 113, 113, 0.25);
+  background: #f0d7d7;
+  box-shadow: 0 8px 20px rgba(97, 18, 50, 0.2);
   transform: translateY(-1px);
 }
 
@@ -151,21 +154,22 @@
 
 .archivos__resultado-nombre {
   font-weight: 600;
-  color: #1e293b;
-  font-size: 0.9rem;
+  color: #13322e;
+  font-size: 1rem;
 }
 
 .archivos__vacio {
   text-align: center;
   padding: 2rem 1rem;
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
+  background: #f6eddc;
+  border: 1px dashed #a57f2c;
   border-radius: 16px;
-  color: #475569;
+  color: #13322e;
+  font-size: 1.05rem;
 }
 
 .archivos__link {
-  color: #2563eb;
+  color: #9d2449;
   font-weight: 700;
   text-decoration: none;
 }
@@ -195,7 +199,7 @@
 
   .archivos td {
     padding: 0.75rem 0.9rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e5e7eb;
     position: relative;
   }
 
@@ -204,10 +208,10 @@
     position: absolute;
     left: 0.9rem;
     top: 0.4rem;
-    font-size: 0.78rem;
+    font-size: 0.85rem;
     font-weight: 700;
     text-transform: uppercase;
-    color: #64748b;
+    color: #98989a;
   }
 
   .archivos tr:last-child td:last-child {
