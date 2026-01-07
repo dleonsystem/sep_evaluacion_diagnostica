@@ -4,6 +4,14 @@
 ## 1. Introducción
 Este documento describe la estructura de datos del sistema SEP Evaluación Diagnóstica, incluyendo el modelo entidad-relación, diccionario de datos, catálogos, reglas de negocio, índices, procedimientos, vistas, seguridad, datos semilla, ejemplos y consideraciones de migración. El objetivo es proporcionar una referencia técnica completa y alineada con las mejores prácticas para el desarrollo, mantenimiento y auditoría del sistema.
 
+**Nota sobre nomenclatura de archivos .DBF:**
+
+- Las siglas **PRE** corresponden a archivos de educación preescolar.
+- Las siglas **PRI** corresponden a archivos de educación primaria.
+- Las siglas **SEC** corresponden a archivos de educación secundaria.
+
+Esta convención aplica a todas las tablas y descripciones de datos relacionadas con los archivos .DBF documentados en este archivo.
+
 ## 1. Diagrama Entidad-Relación (ER)
 
 A continuación se presenta el diagrama entidad-relación inferido del sistema, basado en los esquemas y modelos encontrados en la documentación:
@@ -33,6 +41,173 @@ erDiagram
     EVALUACIONES ||--o{ RESULTADOS_COMPETENCIAS : genera
     USUARIOS ||--o{ LOG_ACTIVIDADES : registra
     USUARIOS ||--|| CAT_ROLES_USUARIO : rol
+### SEC1.DBF
+| Campo         | Tipo        | Descripción                                      |
+|--------------|-------------|--------------------------------------------------|
+| CCT          | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO        | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT      | CHAR(48)    | Nombre del Centro de Trabajo                     |
+| NIVEL        | CHAR(10)    | Nivel educativo                                  |
+| FASE         | CHAR(7)     | Fase de la evaluación                            |
+| GRADO        | CHAR(11)    | Grado escolar                                    |
+| CORREO1      | CHAR(21)    | Correo electrónico principal                     |
+| CORREO2      | CHAR(9)     | Correo electrónico alternativo                   |
+| MATRICULA_   | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA       | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE   | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO       | CHAR(10)    | Género                                           |
+| GRUPO        | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C1_A2   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 2            |
+| EIA1_C1_A3   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 3            |
+| EIA1_C2_A1   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_A2   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
+| EIA1_C3_A1   | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C4_A1   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA1_C4_B1   | CHAR(10)    | Resultado EIA1, Competencia 4, Bloque 1          |
+| EIA1_C5_A1   | CHAR(10)    | Resultado EIA1, Competencia 5, Área 1            |
+| EIA1_C5_B1   | CHAR(10)    | Resultado EIA1, Competencia 5, Bloque 1          |
+| EIA1_C5_C1   | CHAR(10)    | Resultado EIA1, Competencia 5, Componente 1      |
+| EIA2_C1_A1   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C1_A2   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 2            |
+| EIA2_C2_A1   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C2_A2   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 2            |
+| EIA2_C2_B1   | CHAR(10)    | Resultado EIA2, Competencia 2, Bloque 1          |
+| EIA2_C2_B2   | CHAR(10)    | Resultado EIA2, Competencia 2, Bloque 2          |
+| EIA2_C3_A1   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_B1   | CHAR(10)    | Resultado EIA2, Competencia 3, Bloque 1          |
+| EIA2_C3_C1   | CHAR(10)    | Resultado EIA2, Competencia 3, Componente 1      |
+| EIA2_C4_A1   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| PLEN         | CHAR(10)    | Indicador de plenitud                            |
+| PSPC         | CHAR(10)    | Indicador PSPC                                   |
+| PENS         | CHAR(10)    | Indicador PENS                                   |
+| PHYC         | CHAR(10)    | Indicador PHYC                                   |
+| ID           | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI   | CHAR(22)    | Nombre de archivo original                       |
+
+### SEC2.DBF
+| Campo         | Tipo        | Descripción                                      |
+|--------------|-------------|--------------------------------------------------|
+| CCT          | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO        | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT      | CHAR(48)    | Nombre del Centro de Trabajo                     |
+| NIVEL        | CHAR(10)    | Nivel educativo                                  |
+| FASE         | CHAR(7)     | Fase de la evaluación                            |
+| GRADO        | CHAR(11)    | Grado escolar                                    |
+| CORREO1      | CHAR(21)    | Correo electrónico principal                     |
+| CORREO2      | CHAR(9)     | Correo electrónico alternativo                   |
+| MATRICULA_   | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA       | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE   | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO       | CHAR(10)    | Género                                           |
+| GRUPO        | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C1_A2   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 2            |
+| EIA1_C1_A3   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 3            |
+| EIA1_C2_A1   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_A2   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
+| EIA1_C3_A1   | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C4_A1   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA1_C4_B1   | CHAR(10)    | Resultado EIA1, Competencia 4, Bloque 1          |
+| EIA1_C5_A1   | CHAR(10)    | Resultado EIA1, Competencia 5, Área 1            |
+| EIA1_C5_B1   | CHAR(10)    | Resultado EIA1, Competencia 5, Bloque 1          |
+| EIA1_C5_C1   | CHAR(10)    | Resultado EIA1, Competencia 5, Componente 1      |
+| EIA2_C1_A1   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C1_A2   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 2            |
+| EIA2_C2_A1   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C2_A2   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 2            |
+| EIA2_C2_B1   | CHAR(10)    | Resultado EIA2, Competencia 2, Bloque 1          |
+| EIA2_C2_B2   | CHAR(10)    | Resultado EIA2, Competencia 2, Bloque 2          |
+| EIA2_C3_A1   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_B1   | CHAR(10)    | Resultado EIA2, Competencia 3, Bloque 1          |
+| EIA2_C3_C1   | CHAR(10)    | Resultado EIA2, Competencia 3, Componente 1      |
+| EIA2_C4_A1   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| PLEN         | CHAR(10)    | Indicador de plenitud                            |
+| PSPC         | CHAR(10)    | Indicador PSPC                                   |
+| PENS         | CHAR(10)    | Indicador PENS                                   |
+| PHYC         | CHAR(10)    | Indicador PHYC                                   |
+| ID           | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI   | CHAR(22)    | Nombre de archivo original                       |
+
+### SEC3.DBF
+| Campo         | Tipo        | Descripción                                      |
+|--------------|-------------|--------------------------------------------------|
+| CCT          | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO        | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT      | CHAR(48)    | Nombre del Centro de Trabajo                     |
+| NIVEL        | CHAR(10)    | Nivel educativo                                  |
+| FASE         | CHAR(7)     | Fase de la evaluación                            |
+| GRADO        | CHAR(11)    | Grado escolar                                    |
+| CORREO1      | CHAR(21)    | Correo electrónico principal                     |
+| CORREO2      | CHAR(9)     | Correo electrónico alternativo                   |
+| MATRICULA_   | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA       | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE   | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO       | CHAR(10)    | Género                                           |
+| GRUPO        | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C1_A2   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 2            |
+| EIA1_C1_A3   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 3            |
+| EIA1_C2_A1   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_A2   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
+| EIA1_C2_B1   | CHAR(10)    | Resultado EIA1, Competencia 2, Bloque 1          |
+| EIA1_C3_A1   | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C3_A2   | CHAR(10)    | Resultado EIA1, Competencia 3, Área 2            |
+| EIA1_C4_A1   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA1_C4_A2   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 2            |
+| EIA2_C1_A1   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C1_A2   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 2            |
+| EIA2_C1_A3   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 3            |
+| EIA2_C2_A1   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C2_A2   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 2            |
+| EIA2_C3_A1   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_A2   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 2            |
+| EIA2_C3_A3   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 3            |
+| EIA2_C4_A1   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| EIA2_C4_A2   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 2            |
+| PLEN         | CHAR(10)    | Indicador de plenitud                            |
+| PSPC         | CHAR(10)    | Indicador PSPC                                   |
+| PENS         | CHAR(10)    | Indicador PENS                                   |
+| PHYC         | CHAR(10)    | Indicador PHYC                                   |
+| ID           | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI   | CHAR(22)    | Nombre de archivo original                       |
+
+### PRI6.DBF
+| Campo         | Tipo        | Descripción                                      |
+|--------------|-------------|--------------------------------------------------|
+| CCT          | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO        | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT      | CHAR(29)    | Nombre del Centro de Trabajo                     |
+| NIVEL        | CHAR(10)    | Nivel educativo                                  |
+| FASE         | CHAR(7)     | Fase de la evaluación                            |
+| GRADO        | CHAR(11)    | Grado escolar                                    |
+| CORREO1      | CHAR(26)    | Correo electrónico principal                     |
+| CORREO2      | CHAR(29)    | Correo electrónico alternativo                   |
+| MATRICULA_   | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA       | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE   | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO       | CHAR(10)    | Género                                           |
+| GRUPO        | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C1_B1   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 1          |
+| EIA1_C1_B2   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 2          |
+| EIA1_C2_A1   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_B1   | CHAR(10)    | Resultado EIA1, Competencia 2, Bloque 1          |
+| EIA1_C3_A1   | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C3_B1   | CHAR(10)    | Resultado EIA1, Competencia 3, Bloque 1          |
+| EIA1_C4_A1   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA2_C1_A1   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C1_B1   | CHAR(10)    | Resultado EIA2, Competencia 1, Bloque 1          |
+| EIA2_C2_A1   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C4_A1   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| PLEN         | CHAR(10)    | Indicador de plenitud                            |
+| PSPC         | CHAR(10)    | Indicador PSPC                                   |
+| PENS         | CHAR(10)    | Indicador PENS                                   |
+| PHYC         | CHAR(10)    | Indicador PHYC                                   |
+| ID           | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI   | CHAR(23)    | Nombre de archivo original                       |
+
 ```
 
 ---
@@ -47,6 +222,245 @@ erDiagram
 ---
 
 ## 2. Diccionario de Datos
+
+### PRE3.DBF
+| Campo         | Tipo        | Descripción                                      |
+|--------------|-------------|--------------------------------------------------|
+| CCT          | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO        | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT      | CHAR(31)    | Nombre del Centro de Trabajo                     |
+| NIVEL        | CHAR(10)    | Nivel educativo                                  |
+| FASE         | CHAR(7)     | Fase de la evaluación                            |
+| GRADO        | CHAR(11)    | Grado escolar                                    |
+| CORREO1      | CHAR(32)    | Correo electrónico principal                     |
+| CORREO2      | CHAR(32)    | Correo electrónico alternativo                   |
+| MATRICULA_   | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA       | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE   | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO       | CHAR(10)    | Género                                           |
+| GRUPO        | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C1_A2   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 2            |
+| EIA1_C2_A1   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_A2   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
+| EIA1_C3_A1   | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C3_A2   | CHAR(10)    | Resultado EIA1, Competencia 3, Área 2            |
+| EIA2_C1_A1   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C2_A1   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C4_A1   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| EIA2_C4_A2   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 2            |
+| PLEN         | CHAR(10)    | Indicador de plenitud                            |
+| PSPC         | CHAR(10)    | Indicador PSPC                                   |
+| PENS         | CHAR(10)    | Indicador PENS                                   |
+| PHYC         | CHAR(10)    | Indicador PHYC                                   |
+| ID           | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI   | CHAR(24)    | Nombre de archivo original                       |
+### PRI1.DBF
+| Campo         | Tipo        | Descripción                                      |
+|--------------|-------------|--------------------------------------------------|
+| CCT          | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO        | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT      | CHAR(29)    | Nombre del Centro de Trabajo                     |
+| NIVEL        | CHAR(10)    | Nivel educativo                                  |
+| FASE         | CHAR(7)     | Fase de la evaluación                            |
+| GRADO        | CHAR(11)    | Grado escolar                                    |
+| CORREO1      | CHAR(26)    | Correo electrónico principal                     |
+| CORREO2      | CHAR(29)    | Correo electrónico alternativo                   |
+| MATRICULA_   | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA       | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE   | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO       | CHAR(10)    | Género                                           |
+| GRUPO        | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C2_A1   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_A2   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
+| EIA1_C3_A1   | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C4_A1   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA2_C1_A1   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C2_A1   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_A2   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 2            |
+| EIA2_C4_A1   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| PLEN         | CHAR(10)    | Indicador de plenitud                            |
+| PSPC         | CHAR(10)    | Indicador PSPC                                   |
+| PENS         | CHAR(10)    | Indicador PENS                                   |
+| PHYC         | CHAR(10)    | Indicador PHYC                                   |
+| ID           | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI   | CHAR(23)    | Nombre de archivo original                       |
+### PRI2.DBF
+### PRI3.DBF
+| Campo         | Tipo        | Descripción                                      |
+|--------------|-------------|--------------------------------------------------|
+| CCT          | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO        | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT      | CHAR(29)    | Nombre del Centro de Trabajo                     |
+| NIVEL        | CHAR(10)    | Nivel educativo                                  |
+| FASE         | CHAR(7)     | Fase de la evaluación                            |
+| GRADO        | CHAR(11)    | Grado escolar                                    |
+| CORREO1      | CHAR(26)    | Correo electrónico principal                     |
+| CORREO2      | CHAR(29)    | Correo electrónico alternativo                   |
+| MATRICULA_   | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA       | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE   | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO       | CHAR(10)    | Género                                           |
+| GRUPO        | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C1_A2   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 2            |
+| EIA1_C1_B1   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 1          |
+| EIA1_C1_B2   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 2          |
+| EIA1_C1_B3   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 3          |
+| EIA1_C2_A1   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_A2   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
+| EIA1_C2_A3   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 3            |
+| EIA1_C2_B1   | CHAR(10)    | Resultado EIA1, Competencia 2, Bloque 1          |
+| EIA1_C3_A1   | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C3_B1   | CHAR(10)    | Resultado EIA1, Competencia 3, Bloque 1          |
+| EIA1_C4_A1   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA1_C4_A2   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 2            |
+| EIA1_C4_A3   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 3            |
+| EIA2_C1_A1   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C1_B1   | CHAR(10)    | Resultado EIA2, Competencia 1, Bloque 1          |
+| EIA2_C2_A1   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_B1   | CHAR(10)    | Resultado EIA2, Competencia 3, Bloque 1          |
+| EIA2_C3_C1   | CHAR(10)    | Resultado EIA2, Competencia 3, Componente 1      |
+| EIA2_C3_C2   | CHAR(10)    | Resultado EIA2, Competencia 3, Componente 2      |
+| EIA2_C4_A1   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| EIA2_C4_B1   | CHAR(10)    | Resultado EIA2, Competencia 4, Bloque 1          |
+| EIA2_C5_A1   | CHAR(10)    | Resultado EIA2, Competencia 5, Área 1            |
+| EIA2_C5_A2   | CHAR(10)    | Resultado EIA2, Competencia 5, Área 2            |
+| EIA2_C5_A3   | CHAR(10)    | Resultado EIA2, Competencia 5, Área 3            |
+| PLEN         | CHAR(10)    | Indicador de plenitud                            |
+| PSPC         | CHAR(10)    | Indicador PSPC                                   |
+| PENS         | CHAR(10)    | Indicador PENS                                   |
+| PHYC         | CHAR(10)    | Indicador PHYC                                   |
+| ID           | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI   | CHAR(23)    | Nombre de archivo original                       |
+### PRI4.DBF
+| Campo         | Tipo        | Descripción                                      |
+|--------------|-------------|--------------------------------------------------|
+| CCT          | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO        | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT      | CHAR(29)    | Nombre del Centro de Trabajo                     |
+| NIVEL        | CHAR(10)    | Nivel educativo                                  |
+| FASE         | CHAR(7)     | Fase de la evaluación                            |
+| GRADO        | CHAR(11)    | Grado escolar                                    |
+| CORREO1      | CHAR(24)    | Correo electrónico principal                     |
+| CORREO2      | CHAR(29)    | Correo electrónico alternativo                   |
+| MATRICULA_   | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA       | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE   | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO       | CHAR(10)    | Género                                           |
+| GRUPO        | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C1_A2   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 2            |
+| EIA1_C1_B1   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 1          |
+| EIA1_C1_B2   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 2          |
+| EIA1_C1_B3   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 3          |
+| EIA1_C2_A1   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_A2   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
+| EIA1_C2_A3   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 3            |
+| EIA1_C2_B1   | CHAR(10)    | Resultado EIA1, Competencia 2, Bloque 1          |
+| EIA1_C3_A1   | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C3_B1   | CHAR(10)    | Resultado EIA1, Competencia 3, Bloque 1          |
+| EIA1_C4_A1   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA1_C4_A2   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 2            |
+| EIA1_C4_A3   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 3            |
+| EIA2_C1_A1   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C1_B1   | CHAR(10)    | Resultado EIA2, Competencia 1, Bloque 1          |
+| EIA2_C2_A1   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_B1   | CHAR(10)    | Resultado EIA2, Competencia 3, Bloque 1          |
+| EIA2_C3_C1   | CHAR(10)    | Resultado EIA2, Competencia 3, Componente 1      |
+| EIA2_C3_C2   | CHAR(10)    | Resultado EIA2, Competencia 3, Componente 2      |
+| EIA2_C4_A1   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| EIA2_C4_B1   | CHAR(10)    | Resultado EIA2, Competencia 4, Bloque 1          |
+| EIA2_C5_A1   | CHAR(10)    | Resultado EIA2, Competencia 5, Área 1            |
+| EIA2_C5_A2   | CHAR(10)    | Resultado EIA2, Competencia 5, Área 2            |
+| EIA2_C5_A3   | CHAR(10)    | Resultado EIA2, Competencia 5, Área 3            |
+| PLEN         | CHAR(10)    | Indicador de plenitud                            |
+| PSPC         | CHAR(10)    | Indicador PSPC                                   |
+| PENS         | CHAR(10)    | Indicador PENS                                   |
+| PHYC         | CHAR(10)    | Indicador PHYC                                   |
+| ID           | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI   | CHAR(23)    | Nombre de archivo original                       |
+### PRI5.DBF
+| Campo         | Tipo        | Descripción                                      |
+|--------------|-------------|--------------------------------------------------|
+| CCT          | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO        | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT      | CHAR(29)    | Nombre del Centro de Trabajo                     |
+| NIVEL        | CHAR(10)    | Nivel educativo                                  |
+| FASE         | CHAR(7)     | Fase de la evaluación                            |
+| GRADO        | CHAR(11)    | Grado escolar                                    |
+| CORREO1      | CHAR(24)    | Correo electrónico principal                     |
+| CORREO2      | CHAR(29)    | Correo electrónico alternativo                   |
+| MATRICULA_   | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA       | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE   | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO       | CHAR(10)    | Género                                           |
+| GRUPO        | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C1_B1   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 1          |
+| EIA1_C1_B2   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 2          |
+| EIA1_C2_A1   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_B1   | CHAR(10)    | Resultado EIA1, Competencia 2, Bloque 1          |
+| EIA1_C3_A1   | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C3_B1   | CHAR(10)    | Resultado EIA1, Competencia 3, Bloque 1          |
+| EIA1_C4_A1   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA2_C1_A1   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C1_B1   | CHAR(10)    | Resultado EIA2, Competencia 1, Bloque 1          |
+| EIA2_C2_A1   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_B1   | CHAR(10)    | Resultado EIA2, Competencia 3, Bloque 1          |
+| EIA2_C4_A1   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| PLEN         | CHAR(10)    | Indicador de plenitud                            |
+| PSPC         | CHAR(10)    | Indicador PSPC                                   |
+| PENS         | CHAR(10)    | Indicador PENS                                   |
+| PHYC         | CHAR(10)    | Indicador PHYC                                   |
+| ID           | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI   | CHAR(23)    | Nombre de archivo original                       |
+
+...existing code...
+
+| Campo         | Tipo        | Descripción                                      |
+|--------------|-------------|--------------------------------------------------|
+| CCT          | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO        | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT      | CHAR(29)    | Nombre del Centro de Trabajo                     |
+| NIVEL        | CHAR(10)    | Nivel educativo                                  |
+| FASE         | CHAR(7)     | Fase de la evaluación                            |
+| GRADO        | CHAR(11)    | Grado escolar                                    |
+| CORREO1      | CHAR(26)    | Correo electrónico principal                     |
+| CORREO2      | CHAR(29)    | Correo electrónico alternativo                   |
+| MATRICULA_   | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA       | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE   | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO       | CHAR(10)    | Género                                           |
+| GRUPO        | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C2_A1   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_A2   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
+| EIA1_C3_A1   | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C4_A1   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA2_C1_A1   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C2_A1   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_A2   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 2            |
+| EIA2_C4_A1   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| PLEN         | CHAR(10)    | Indicador de plenitud                            |
+| PSPC         | CHAR(10)    | Indicador PSPC                                   |
+| PENS         | CHAR(10)    | Indicador PENS                                   |
+| PHYC         | CHAR(10)    | Indicador PHYC                                   |
+| ID           | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI   | CHAR(23)    | Nombre de archivo original                       |
+
+...existing code...
+
+...existing code...
+
+...existing code...
 
 ### ARCHIVOS_FRV
 | Campo           | Tipo         | Descripción                       |
@@ -129,7 +543,6 @@ erDiagram
 | ip_address      | INET         | IP de origen                      |
 | created_at      | TIMESTAMP    | Fecha de creación                 |
 
-### AUDIT_LOG
 | Campo           | Tipo         | Descripción                       |
 |-----------------|--------------|-----------------------------------|
 | id              | BIGSERIAL    | Identificador único               |
@@ -142,6 +555,36 @@ erDiagram
 | ip_address      | INET         | IP de origen                      |
 | user_agent      | TEXT         | User agent                        |
 | created_at      | TIMESTAMP    | Fecha de auditoría                |
+
+### CONFIGURACIONES_USUARIO
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id              | UUID         | Identificador único               |
+| usuario_id      | UUID         | Relación con USUARIOS             |
+| clave           | VARCHAR(100) | Nombre de la configuración        |
+| valor           | TEXT         | Valor de la configuración         |
+| actualizado_en  | TIMESTAMP    | Fecha de última actualización     |
+
+### BITACORA_DETALLADA
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id              | BIGSERIAL    | Identificador único               |
+| usuario_id      | UUID         | Relación con USUARIOS             |
+| accion          | VARCHAR(100) | Acción realizada                  |
+| descripcion     | TEXT         | Descripción detallada             |
+| modulo          | VARCHAR(100) | Módulo o componente               |
+| resultado       | VARCHAR(50)  | Resultado (OK, ERROR, etc.)       |
+| ip_address      | INET         | IP de origen                      |
+| fecha           | TIMESTAMP    | Fecha y hora                      |
+
+### CATALOGO_ERRORES
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| codigo          | VARCHAR(20)  | Código de error                   |
+| mensaje         | VARCHAR(255) | Mensaje corto                     |
+| descripcion     | TEXT         | Descripción detallada             |
+| modulo          | VARCHAR(100) | Módulo o componente relacionado   |
+| solucion        | TEXT         | Sugerencia de solución            |
 
 ### ESCUELAS
 | Campo           | Tipo         | Descripción                       |
