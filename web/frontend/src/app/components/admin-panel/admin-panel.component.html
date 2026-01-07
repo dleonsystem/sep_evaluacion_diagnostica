@@ -88,8 +88,8 @@
                     name="excelSeleccionado"
                     [checked]="excelSeleccionado?.key === excel.key"
                     (change)="seleccionarExcel(excel)"
+                    aria-label="Seleccionar registro"
                   />
-                  <span>Seleccionar</span>
                 </label>
               </td>
               <td>{{ excel.nombre }}</td>
