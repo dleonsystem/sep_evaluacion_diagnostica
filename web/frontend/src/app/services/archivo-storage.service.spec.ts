@@ -39,6 +39,11 @@ describe('ArchivoStorageService', () => {
     const registros = service.obtenerRegistros('demo@correo.mx');
     expect(registros.length).toBe(2);
     expect(registros.map((registro) => registro.cct)).toEqual(['DEF9876543', 'ABC1234567']);
+    registros.forEach((registro) => {
+      expect(registro.claveEstable).toBe(
+        `${registro.cct}|${registro.correo}|${registro.nombre}|${registro.fechaGuardado}`
+      );
+    });
   });
 
   it('should replace duplicates when forcing replacement for the same email and CCT', async () => {
