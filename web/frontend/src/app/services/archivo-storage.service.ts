@@ -10,6 +10,8 @@ export interface RegistroArchivo {
   claveEstable: string;
   cct?: string;
   correo?: string;
+  nivel?: string;
+  estatus?: 'asignado' | 'pendiente';
 }
 
 export interface ResultadoGuardado {
@@ -67,7 +69,8 @@ export class ArchivoStorageService {
       hash,
       claveEstable,
       cct: parametros?.cct,
-      correo: emailNormalizado || undefined
+      correo: emailNormalizado || undefined,
+      nivel: 'preescolar'
     };
 
     const duplicado = registros.find(
