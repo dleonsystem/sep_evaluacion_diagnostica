@@ -2,6 +2,17 @@
   <div class="admin-login__card">
     <h1>Acceso administrador</h1>
     <p>Ingresa el correo y contraseña asignados para la carga de PDFs.</p>
+    <div class="admin-login__credenciales">
+      <span class="admin-login__credenciales-title">Credenciales de acceso</span>
+      <div class="admin-login__credenciales-item">
+        <span class="admin-login__credenciales-label">Correo:</span>
+        <span class="admin-login__credenciales-value">admin@sep.mx</span>
+      </div>
+      <div class="admin-login__credenciales-item">
+        <span class="admin-login__credenciales-label">Contraseña:</span>
+        <span class="admin-login__credenciales-value">admin123</span>
+      </div>
+    </div>
 
     <form (ngSubmit)="iniciarSesion()" #loginForm="ngForm" novalidate>
       <label for="correo-admin">Correo</label>
