@@ -20,6 +20,7 @@ export class AdminPanelComponent implements OnInit {
   feedbackMessage = '';
   uploadHistory: Array<{ name: string; size: number; uploadedAt: string }> = [];
   excelDisponibles: ExcelDisponible[] = [];
+  excelSeleccionado: ExcelDisponible | null = null;
   filtroTexto = '';
   filtroEstatus: 'todos' | 'asignado' | 'pendiente' = 'todos';
   filtroFecha = '';
@@ -52,9 +53,9 @@ export class AdminPanelComponent implements OnInit {
   }
 
   async subirPdf(): Promise<void> {
-    if (!this.selectedNivel) {
+    if (!this.excelSeleccionado) {
       this.uploadStatus = 'error';
-      this.feedbackMessage = 'Selecciona el nivel asociado antes de subir el PDF.';
+      this.feedbackMessage = 'Selecciona un registro de Excel antes de subir el PDF.';
       return;
     }
 
@@ -78,8 +79,8 @@ export class AdminPanelComponent implements OnInit {
     this.feedbackMessage = 'Cargando archivo...';
 
     const fileToUpload = this.selectedFile;
-    const excelKey = this.selectedNivel;
-    const excelSeleccionado = this.excelDisponibles.find((excel) => excel.key === excelKey);
+    const excelKey = this.excelSeleccionado.key;
+    const excelSeleccionado = this.excelSeleccionado;
 
     if (this.existePdfParaExcel(excelKey)) {
       const confirmacion = await Swal.fire({
@@ -166,6 +167,12 @@ export class AdminPanelComponent implements OnInit {
 
   onFiltrosActualizados(): void {
     this.paginaActual = 1;
+  }
+
+  seleccionarExcel(excel: ExcelDisponible): void {
+    this.excelSeleccionado = excel;
+    this.uploadStatus = 'idle';
+    this.feedbackMessage = `Registro seleccionado: ${excel.nombre}.`;
   }
 
   private loadUploadHistory(): Array<{ name: string; size: number; uploadedAt: string }> {
