@@ -1,4 +1,16 @@
 
+# ESTRUCTURA_DE_DATOS.md
+
+Este documento contiene la descripción completa de la estructura de datos del sistema SEP Evaluación Diagnóstica. Aquí encontrarás:
+
+- El diagrama entidad-relación (ER) que muestra las relaciones entre las principales entidades y catálogos del sistema.
+- Un diccionario de datos unificado y ordenado alfabéticamente, con la definición de todas las tablas, sus campos y descripciones.
+- Catálogos, tablas auxiliares y estructuras derivadas de archivos fuente (.DBF) integradas en el modelo.
+- Reglas de negocio, índices, procedimientos, vistas, políticas de seguridad y ejemplos de datos relevantes.
+- Notas técnicas y recomendaciones para migración, respaldo y auditoría.
+
+Este archivo sirve como referencia técnica para desarrolladores, analistas, auditores y cualquier persona que requiera comprender la estructura y funcionamiento de la base de datos del sistema.
+
 ## Diccionario de Datos (todas las tablas, orden alfabético)
 
 <!-- INICIO DICCIONARIO ORDENADO -->
