@@ -21,11 +21,14 @@
         class="admin-panel__upload-input"
         [(ngModel)]="selectedExcelKey"
       >
-        <option value="" disabled>Selecciona una opción</option>
-        <option *ngFor="let excel of excelOptions" [value]="excel.key">
-          {{ excel.label }}
+        <option value="" disabled>Selecciona un Excel</option>
+        <option *ngFor="let excel of excelDisponibles" [value]="excel.key">
+          {{ excel.nombre }} · {{ excel.cct }} · {{ excel.correo }}
         </option>
       </select>
+      <p class="admin-panel__helper" *ngIf="!excelDisponibles.length">
+        Aún no hay Excels disponibles para asociar. Valida un archivo desde el módulo de carga.
+      </p>
 
       <label class="admin-panel__upload-label" for="pdf-upload">Selecciona un PDF</label>
       <input
@@ -50,6 +53,31 @@
         <span class="admin-panel__status-message">
           {{ feedbackMessage || 'Sin acciones por el momento.' }}
         </span>
+      </div>
+
+      <div class="admin-panel__excel-list" *ngIf="excelDisponibles.length">
+        <span class="admin-panel__history-title">Excels disponibles</span>
+        <div class="admin-panel__table">
+          <div class="admin-panel__table-row admin-panel__table-row--header">
+            <span>Nombre</span>
+            <span>CCT</span>
+            <span>Correo</span>
+            <span>Estatus</span>
+          </div>
+          <div class="admin-panel__table-row" *ngFor="let excel of excelDisponibles">
+            <span>{{ excel.nombre }}</span>
+            <span>{{ excel.cct }}</span>
+            <span>{{ excel.correo }}</span>
+            <span>
+              <span
+                class="admin-panel__badge"
+                [class.admin-panel__badge--assigned]="excel.estatus === 'asignado'"
+              >
+                {{ excel.estatus === 'asignado' ? 'Asignado' : 'Pendiente' }}
+              </span>
+            </span>
+          </div>
+        </div>
       </div>
 
       <div class="admin-panel__history" *ngIf="uploadHistory.length">

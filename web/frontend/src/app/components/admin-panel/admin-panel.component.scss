@@ -46,6 +46,12 @@
   gap: 0.75rem;
 }
 
+.admin-panel__helper {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
 .admin-panel__upload-label {
   font-weight: 600;
   color: #0f172a;
@@ -109,6 +115,63 @@
 
 .admin-panel__status-message {
   font-size: 0.95rem;
+}
+
+.admin-panel__excel-list {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-panel__table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.admin-panel__table-row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.7fr 1.4fr 0.7fr;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #e2e8f0;
+  color: #0f172a;
+}
+
+.admin-panel__table-row--header {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: #475569;
+  border-bottom: 1px solid #cbd5f5;
+}
+
+.admin-panel__table-row:last-child {
+  border-bottom: none;
+}
+
+.admin-panel__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.admin-panel__badge--assigned {
+  background: #dcfce7;
+  color: #166534;
 }
 
 .admin-panel__history {

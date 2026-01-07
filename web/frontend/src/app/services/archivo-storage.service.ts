@@ -119,6 +119,13 @@ export class ArchivoStorageService {
     return registros[correoNormalizado] ?? [];
   }
 
+  obtenerTodosRegistros(): RegistroArchivo[] {
+    const registrosPorCorreo = this.obtenerMapaRegistros();
+    const registros = Object.values(registrosPorCorreo).flat();
+
+    return registros.sort((a, b) => b.fechaGuardado.localeCompare(a.fechaGuardado));
+  }
+
   descargarRegistro(registro: RegistroArchivo): void {
     const blob = this.base64ABlob(registro.contenidoBase64);
     const url = URL.createObjectURL(blob);
