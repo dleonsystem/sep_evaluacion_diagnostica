@@ -20,8 +20,8 @@ export class ArchivosGuardadosComponent implements OnInit {
   mensajeInfo: string | null = null;
   mensajeError: string | null = null;
   correoActivo: string | null = null;
-  private readonly pdfKeys = ['preescolar', 'primaria', 'secundaria'];
-  private resultadosPdf: Record<string, PdfMetadata> = {};
+  private readonly pdfStoragePrefix = 'pdf-resultados';
+  private resultadosPdf: Record<string, PdfMetadataConStorage> = {};
 
   constructor(
     private readonly archivoStorageService: ArchivoStorageService,
@@ -36,13 +36,13 @@ export class ArchivosGuardadosComponent implements OnInit {
     }
 
     this.correoActivo = this.authService.obtenerCredenciales()?.correo ?? null;
-    this.cargarResultadosPdf();
     this.cargarRegistros();
   }
 
   cargarRegistros(): void {
     this.mensajeError = null;
     this.registros = this.archivoStorageService.obtenerRegistros(this.correoActivo);
+    this.cargarResultadosPdf();
 
     if (this.registros.length === 0) {
       this.mensajeInfo = 'Aún no has cargado archivos de Preescolar en este navegador.';
@@ -97,8 +97,8 @@ export class ArchivosGuardadosComponent implements OnInit {
     }
   }
 
-  descargarResultados(excelKey: string): void {
-    const data = localStorage.getItem(excelKey);
+  descargarResultados(storageKey: string): void {
+    const data = localStorage.getItem(storageKey);
     if (!data) {
       return;
     }
@@ -138,18 +138,16 @@ export class ArchivosGuardadosComponent implements OnInit {
     }
   }
 
-  obtenerPdfPorRegistro(registro: RegistroArchivo): PdfMetadata | null {
-    const claveExcel = this.obtenerClaveExcel(registro);
-    if (!claveExcel) {
-      return null;
-    }
-    return this.resultadosPdf[claveExcel] ?? null;
+  obtenerPdfPorRegistro(registro: RegistroArchivo): PdfMetadataConStorage | null {
+    const storageKey = this.obtenerPdfStorageKey(registro);
+    return this.resultadosPdf[storageKey] ?? null;
   }
 
   private cargarResultadosPdf(): void {
     this.resultadosPdf = {};
-    this.pdfKeys.forEach((clave) => {
-      const data = localStorage.getItem(clave);
+    this.registros.forEach((registro) => {
+      const storageKey = this.obtenerPdfStorageKey(registro);
+      const data = localStorage.getItem(storageKey);
       if (!data) {
         return;
       }
@@ -157,7 +155,7 @@ export class ArchivosGuardadosComponent implements OnInit {
       try {
         const parsed = JSON.parse(data) as PdfMetadata;
         if (parsed?.pdfBase64) {
-          this.resultadosPdf[clave] = parsed;
+          this.resultadosPdf[storageKey] = { ...parsed, storageKey };
         }
       } catch (error) {
         return;
@@ -165,18 +163,13 @@ export class ArchivosGuardadosComponent implements OnInit {
     });
   }
 
-  private obtenerClaveExcel(registro: RegistroArchivo): string | null {
-    const ruta = (registro.ruta ?? '').toLowerCase();
-    if (ruta.includes('/preescolar/')) {
-      return 'preescolar';
-    }
-    if (ruta.includes('/primaria/')) {
-      return 'primaria';
-    }
-    if (ruta.includes('/secundaria/')) {
-      return 'secundaria';
-    }
-    return null;
+  private obtenerPdfStorageKey(registro: RegistroArchivo): string {
+    const claveEstable =
+      registro.claveEstable ??
+      `${(registro.cct ?? '').trim()}|${(registro.correo ?? '').trim().toLowerCase()}|${
+        registro.nombre
+      }|${registro.fechaGuardado}`;
+    return `${this.pdfStoragePrefix}:${claveEstable}`;
   }
 }
 
@@ -185,4 +178,8 @@ interface PdfMetadata {
   pdfName: string;
   pdfBase64: string;
   fecha: string;
+}
+
+interface PdfMetadataConStorage extends PdfMetadata {
+  storageKey: string;
 }

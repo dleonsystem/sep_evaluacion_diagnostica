@@ -3,6 +3,8 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AdminAuthService } from '../../services/admin-auth.service';
+import { ArchivoStorageService, RegistroArchivo } from '../../services/archivo-storage.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-admin-panel',
@@ -17,17 +19,18 @@ export class AdminPanelComponent implements OnInit {
   uploadStatus: 'idle' | 'uploading' | 'success' | 'error' = 'idle';
   feedbackMessage = '';
   uploadHistory: Array<{ name: string; size: number; uploadedAt: string }> = [];
+  excelDisponibles: ExcelDisponible[] = [];
   private readonly uploadHistoryKey = 'adminPanelPdfHistory';
-  readonly excelOptions = [
-    { key: 'preescolar', label: 'Excel Preescolar' },
-    { key: 'primaria', label: 'Excel Primaria' },
-    { key: 'secundaria', label: 'Excel Secundaria' },
-  ];
+  private readonly pdfStoragePrefix = 'pdf-resultados';
 
-  constructor(private readonly adminAuthService: AdminAuthService) {}
+  constructor(
+    private readonly adminAuthService: AdminAuthService,
+    private readonly archivoStorageService: ArchivoStorageService
+  ) {}
 
   ngOnInit(): void {
     this.uploadHistory = this.loadUploadHistory();
+    this.cargarExcelDisponibles();
   }
 
   seleccionarArchivo(event: Event): void {
@@ -43,7 +46,7 @@ export class AdminPanelComponent implements OnInit {
     this.feedbackMessage = `Archivo seleccionado: ${this.selectedFile.name}`;
   }
 
-  subirPdf(): void {
+  async subirPdf(): Promise<void> {
     if (!this.selectedExcelKey) {
       this.uploadStatus = 'error';
       this.feedbackMessage = 'Selecciona el Excel asociado antes de subir el PDF.';
@@ -71,6 +74,26 @@ export class AdminPanelComponent implements OnInit {
 
     const fileToUpload = this.selectedFile;
     const excelKey = this.selectedExcelKey;
+    const excelSeleccionado = this.excelDisponibles.find((excel) => excel.key === excelKey);
+
+    if (this.existePdfParaExcel(excelKey)) {
+      const confirmacion = await Swal.fire({
+        title: '¿Reemplazar PDF existente?',
+        text: `Ya hay un PDF asignado a ${excelSeleccionado?.nombre ?? 'este Excel'} (${
+          excelSeleccionado?.cct ?? 'CCT no registrada'
+        }, ${excelSeleccionado?.correo ?? 'correo no registrado'}).`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, reemplazar',
+        cancelButtonText: 'Cancelar'
+      });
+
+      if (!confirmacion.isConfirmed) {
+        this.uploadStatus = 'idle';
+        this.feedbackMessage = 'Carga cancelada. Se mantuvo el PDF anterior.';
+        return;
+      }
+    }
 
     this.readPdfAsBase64(fileToUpload)
       .then((pdfBase64) => {
@@ -81,7 +104,7 @@ export class AdminPanelComponent implements OnInit {
           fecha: new Date().toISOString(),
         };
 
-        localStorage.setItem(excelKey, JSON.stringify(metadata));
+        localStorage.setItem(this.obtenerPdfStorageKey(excelKey), JSON.stringify(metadata));
 
         this.uploadStatus = 'success';
         this.feedbackMessage = 'PDF cargado correctamente.';
@@ -94,6 +117,7 @@ export class AdminPanelComponent implements OnInit {
 
         this.uploadHistory = [historyEntry, ...this.uploadHistory].slice(0, 5);
         this.saveUploadHistory();
+        this.actualizarEstadoExcel(excelKey);
       })
       .catch(() => {
         this.uploadStatus = 'error';
@@ -131,6 +155,47 @@ export class AdminPanelComponent implements OnInit {
     localStorage.setItem(this.uploadHistoryKey, JSON.stringify(this.uploadHistory));
   }
 
+  private cargarExcelDisponibles(): void {
+    const registros = this.archivoStorageService.obtenerTodosRegistros();
+    this.excelDisponibles = registros.map((registro) => {
+      const key = this.obtenerClaveExcel(registro);
+      return {
+        key,
+        nombre: registro.nombre,
+        cct: registro.cct ?? '—',
+        correo: registro.correo ?? '—',
+        estatus: this.existePdfParaExcel(key) ? 'asignado' : 'pendiente'
+      };
+    });
+  }
+
+  private actualizarEstadoExcel(excelKey: string): void {
+    this.excelDisponibles = this.excelDisponibles.map((excel) => {
+      if (excel.key !== excelKey) {
+        return excel;
+      }
+      return { ...excel, estatus: 'asignado' };
+    });
+  }
+
+  private existePdfParaExcel(excelKey: string): boolean {
+    return !!localStorage.getItem(this.obtenerPdfStorageKey(excelKey));
+  }
+
+  private obtenerPdfStorageKey(excelKey: string): string {
+    return `${this.pdfStoragePrefix}:${excelKey}`;
+  }
+
+  private obtenerClaveExcel(registro: RegistroArchivo): string {
+    if (registro.claveEstable) {
+      return registro.claveEstable;
+    }
+
+    const cct = (registro.cct ?? '').trim();
+    const correo = (registro.correo ?? '').trim().toLowerCase();
+    return `${cct}|${correo}|${registro.nombre}|${registro.fechaGuardado}`;
+  }
+
   private readPdfAsBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -145,4 +210,12 @@ export class AdminPanelComponent implements OnInit {
       reader.readAsDataURL(file);
     });
   }
+}
+
+interface ExcelDisponible {
+  key: string;
+  nombre: string;
+  cct: string;
+  correo: string;
+  estatus: 'asignado' | 'pendiente';
 }
