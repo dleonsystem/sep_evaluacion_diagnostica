@@ -5,6 +5,16 @@ export interface RespuestaCargaPdf {
   mensaje: string;
 }
 
+export interface ExcelDisponibleDto {
+  key: string;
+  nombre: string;
+  cct: string;
+  correo: string;
+  nivel: string;
+  fecha: string;
+  estatus: 'asignado' | 'pendiente';
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminUploadService {
   private readonly endpointCarga = '/api/admin/pdf';

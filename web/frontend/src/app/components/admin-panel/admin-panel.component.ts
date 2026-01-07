@@ -15,7 +15,7 @@ import Swal from 'sweetalert2';
 })
 export class AdminPanelComponent implements OnInit {
   selectedFile: File | null = null;
-  selectedExcelKey = '';
+  selectedNivel = '';
   uploadStatus: 'idle' | 'uploading' | 'success' | 'error' = 'idle';
   feedbackMessage = '';
   uploadHistory: Array<{ name: string; size: number; uploadedAt: string }> = [];
@@ -52,9 +52,9 @@ export class AdminPanelComponent implements OnInit {
   }
 
   async subirPdf(): Promise<void> {
-    if (!this.selectedExcelKey) {
+    if (!this.selectedNivel) {
       this.uploadStatus = 'error';
-      this.feedbackMessage = 'Selecciona el Excel asociado antes de subir el PDF.';
+      this.feedbackMessage = 'Selecciona el nivel asociado antes de subir el PDF.';
       return;
     }
 
@@ -78,7 +78,7 @@ export class AdminPanelComponent implements OnInit {
     this.feedbackMessage = 'Cargando archivo...';
 
     const fileToUpload = this.selectedFile;
-    const excelKey = this.selectedExcelKey;
+    const excelKey = this.selectedNivel;
     const excelSeleccionado = this.excelDisponibles.find((excel) => excel.key === excelKey);
 
     if (this.existePdfParaExcel(excelKey)) {
@@ -194,13 +194,17 @@ export class AdminPanelComponent implements OnInit {
     const registros = this.archivoStorageService.obtenerTodosRegistros();
     this.excelDisponibles = registros.map((registro) => {
       const key = this.obtenerClaveExcel(registro);
+      const nivel = this.obtenerNivelRegistro(registro);
+      const fecha = registro.fechaGuardado || new Date().toISOString();
+      const estatus = registro.estatus ?? (this.existePdfParaExcel(key) ? 'asignado' : 'pendiente');
       return {
         key,
         nombre: registro.nombre,
         cct: registro.cct ?? '—',
         correo: registro.correo ?? '—',
-        estatus: this.existePdfParaExcel(key) ? 'asignado' : 'pendiente',
-        fechaGuardado: registro.fechaGuardado
+        estatus,
+        fecha,
+        nivel
       };
     });
 
@@ -220,6 +224,7 @@ export class AdminPanelComponent implements OnInit {
     const texto = this.filtroTexto.trim().toLowerCase();
     const estatus = this.filtroEstatus;
     const fecha = this.filtroFecha;
+    const nivel = this.selectedNivel;
 
     return listado.filter((excel) => {
       const coincideTexto =
@@ -228,9 +233,10 @@ export class AdminPanelComponent implements OnInit {
         excel.cct.toLowerCase().includes(texto) ||
         excel.correo.toLowerCase().includes(texto);
       const coincideEstatus = estatus === 'todos' || excel.estatus === estatus;
-      const coincideFecha = !fecha || this.obtenerFechaISO(excel.fechaGuardado) === fecha;
+      const coincideFecha = !fecha || this.obtenerFechaISO(excel.fecha) === fecha;
+      const coincideNivel = !nivel || excel.nivel === nivel;
 
-      return coincideTexto && coincideEstatus && coincideFecha;
+      return coincideTexto && coincideEstatus && coincideFecha && coincideNivel;
     });
   }
 
@@ -275,6 +281,25 @@ export class AdminPanelComponent implements OnInit {
     return `${cct}|${correo}|${registro.nombre}|${registro.fechaGuardado}`;
   }
 
+  private obtenerNivelRegistro(registro: RegistroArchivo): string {
+    if (registro.nivel) {
+      return registro.nivel;
+    }
+
+    const ruta = registro.ruta?.toLowerCase() ?? '';
+    if (ruta.includes('/primaria/')) {
+      return 'primaria';
+    }
+    if (ruta.includes('/secundaria/')) {
+      return 'secundaria';
+    }
+    if (ruta.includes('/preescolar/')) {
+      return 'preescolar';
+    }
+
+    return 'preescolar';
+  }
+
   private readPdfAsBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -297,5 +322,6 @@ interface ExcelDisponible {
   cct: string;
   correo: string;
   estatus: 'asignado' | 'pendiente';
-  fechaGuardado: string;
+  fecha: string;
+  nivel: string;
 }
