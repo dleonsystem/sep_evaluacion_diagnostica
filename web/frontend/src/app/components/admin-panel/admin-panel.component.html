@@ -15,6 +15,18 @@
     </ng-template>
 
     <div class="admin-panel__upload">
+      <label class="admin-panel__upload-label" for="excel-key">Selecciona el Excel asociado</label>
+      <select
+        id="excel-key"
+        class="admin-panel__upload-input"
+        [(ngModel)]="selectedExcelKey"
+      >
+        <option value="" disabled>Selecciona una opción</option>
+        <option *ngFor="let excel of excelOptions" [value]="excel.key">
+          {{ excel.label }}
+        </option>
+      </select>
+
       <label class="admin-panel__upload-label" for="pdf-upload">Selecciona un PDF</label>
       <input
         id="pdf-upload"
