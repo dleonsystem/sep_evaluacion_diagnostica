@@ -97,20 +97,45 @@ export class ArchivosGuardadosComponent implements OnInit {
     }
   }
 
-  descargarResultados(registro: RegistroArchivo): void {
-    const pdf = this.obtenerPdfPorRegistro(registro);
-    if (!pdf) {
+  descargarResultados(excelKey: string): void {
+    const data = localStorage.getItem(excelKey);
+    if (!data) {
       return;
     }
 
-    const enlace = document.createElement('a');
-    enlace.href = pdf.pdfBase64;
-    enlace.download = pdf.pdfName ?? 'resultados.pdf';
-    enlace.style.display = 'none';
+    try {
+      const parsed = JSON.parse(data) as PdfMetadata;
+      if (!parsed?.pdfBase64) {
+        return;
+      }
 
-    document.body.appendChild(enlace);
-    enlace.click();
-    document.body.removeChild(enlace);
+      const [header, base64Data] = parsed.pdfBase64.split(',');
+      if (!base64Data) {
+        return;
+      }
+
+      const mimeMatch = header?.match(/data:(.*?);base64/);
+      const mimeType = mimeMatch?.[1] ?? 'application/pdf';
+      const byteString = atob(base64Data);
+      const bytes = new Uint8Array(byteString.length);
+      for (let i = 0; i < byteString.length; i += 1) {
+        bytes[i] = byteString.charCodeAt(i);
+      }
+
+      const blob = new Blob([bytes], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const enlace = document.createElement('a');
+      enlace.href = url;
+      enlace.download = parsed.pdfName ?? 'resultados.pdf';
+      enlace.style.display = 'none';
+
+      document.body.appendChild(enlace);
+      enlace.click();
+      document.body.removeChild(enlace);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      return;
+    }
   }
 
   obtenerPdfPorRegistro(registro: RegistroArchivo): PdfMetadata | null {
