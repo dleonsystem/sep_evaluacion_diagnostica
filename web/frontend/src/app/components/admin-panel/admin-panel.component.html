@@ -35,6 +35,39 @@
 
       <div class="admin-panel__excel-list" *ngIf="excelDisponibles.length">
         <span class="admin-panel__history-title">Excels disponibles</span>
+        <div class="admin-panel__filters">
+          <label class="admin-panel__filters-field">
+            <span class="admin-panel__filters-label">Buscar</span>
+            <input
+              class="admin-panel__filters-input"
+              type="text"
+              placeholder="Nombre, CCT o correo"
+              [(ngModel)]="filtroTexto"
+              (ngModelChange)="onFiltrosActualizados()"
+            />
+          </label>
+          <label class="admin-panel__filters-field">
+            <span class="admin-panel__filters-label">Estatus</span>
+            <select
+              class="admin-panel__filters-input"
+              [(ngModel)]="filtroEstatus"
+              (ngModelChange)="onFiltrosActualizados()"
+            >
+              <option value="todos">Todos</option>
+              <option value="asignado">Asignado</option>
+              <option value="pendiente">Pendiente</option>
+            </select>
+          </label>
+          <label class="admin-panel__filters-field">
+            <span class="admin-panel__filters-label">Fecha</span>
+            <input
+              class="admin-panel__filters-input"
+              type="date"
+              [(ngModel)]="filtroFecha"
+              (ngModelChange)="onFiltrosActualizados()"
+            />
+          </label>
+        </div>
         <table class="admin-panel__table">
           <thead>
             <tr>

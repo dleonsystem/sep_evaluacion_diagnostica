@@ -20,6 +20,9 @@ export class AdminPanelComponent implements OnInit {
   feedbackMessage = '';
   uploadHistory: Array<{ name: string; size: number; uploadedAt: string }> = [];
   excelDisponibles: ExcelDisponible[] = [];
+  filtroTexto = '';
+  filtroEstatus: 'todos' | 'asignado' | 'pendiente' = 'todos';
+  filtroFecha = '';
   paginaActual = 1;
   tamanioPagina = 10;
   private readonly uploadHistoryKey = 'adminPanelPdfHistory';
@@ -136,7 +139,7 @@ export class AdminPanelComponent implements OnInit {
   }
 
   get excelDisponiblesFiltrados(): ExcelDisponible[] {
-    return this.excelDisponibles;
+    return this.aplicarFiltros(this.excelDisponibles);
   }
 
   get totalPaginas(): number {
@@ -159,6 +162,10 @@ export class AdminPanelComponent implements OnInit {
 
   irAPagina(pagina: number): void {
     this.paginaActual = Math.min(Math.max(pagina, 1), this.totalPaginas);
+  }
+
+  onFiltrosActualizados(): void {
+    this.paginaActual = 1;
   }
 
   private loadUploadHistory(): Array<{ name: string; size: number; uploadedAt: string }> {
@@ -192,7 +199,8 @@ export class AdminPanelComponent implements OnInit {
         nombre: registro.nombre,
         cct: registro.cct ?? '—',
         correo: registro.correo ?? '—',
-        estatus: this.existePdfParaExcel(key) ? 'asignado' : 'pendiente'
+        estatus: this.existePdfParaExcel(key) ? 'asignado' : 'pendiente',
+        fechaGuardado: registro.fechaGuardado
       };
     });
 
@@ -206,6 +214,32 @@ export class AdminPanelComponent implements OnInit {
       }
       return { ...excel, estatus: 'asignado' };
     });
+  }
+
+  private aplicarFiltros(listado: ExcelDisponible[]): ExcelDisponible[] {
+    const texto = this.filtroTexto.trim().toLowerCase();
+    const estatus = this.filtroEstatus;
+    const fecha = this.filtroFecha;
+
+    return listado.filter((excel) => {
+      const coincideTexto =
+        !texto ||
+        excel.nombre.toLowerCase().includes(texto) ||
+        excel.cct.toLowerCase().includes(texto) ||
+        excel.correo.toLowerCase().includes(texto);
+      const coincideEstatus = estatus === 'todos' || excel.estatus === estatus;
+      const coincideFecha = !fecha || this.obtenerFechaISO(excel.fechaGuardado) === fecha;
+
+      return coincideTexto && coincideEstatus && coincideFecha;
+    });
+  }
+
+  private obtenerFechaISO(fecha: string): string {
+    const fechaParsed = new Date(fecha);
+    if (Number.isNaN(fechaParsed.getTime())) {
+      return '';
+    }
+    return fechaParsed.toISOString().slice(0, 10);
   }
 
   private obtenerTotalPaginas(listado: ExcelDisponible[]): number {
@@ -263,4 +297,5 @@ interface ExcelDisponible {
   cct: string;
   correo: string;
   estatus: 'asignado' | 'pendiente';
+  fechaGuardado: string;
 }
