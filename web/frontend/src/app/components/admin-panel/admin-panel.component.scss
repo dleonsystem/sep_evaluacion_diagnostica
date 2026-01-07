@@ -2,6 +2,7 @@
   max-width: 1120px;
   margin: 0 auto;
   padding: 3rem 2rem;
+  color: #13322e;
 }
 
 .admin-panel__card {
@@ -9,7 +10,7 @@
   background: #ffffff;
   border-radius: 16px;
   padding: 2.5rem;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 20px 40px rgba(97, 18, 50, 0.12);
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -18,8 +19,8 @@
 .admin-panel__token {
   padding: 1rem;
   border-radius: 12px;
-  background: #f1f5f9;
-  color: #0f172a;
+  background: #f6eddc;
+  color: #13322e;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -27,20 +28,20 @@
 }
 
 .admin-panel__token--warning {
-  background: #fef3c7;
-  color: #92400e;
+  background: #f2f2f2;
+  color: #611232;
 }
 
 .admin-panel__link {
-  color: #1d4ed8;
+  color: #9d2449;
   text-decoration: none;
 }
 
 .admin-panel__upload {
   padding: 1.5rem;
   border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  background: #f6eddc;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -50,21 +51,21 @@
 .admin-panel__helper {
   margin: 0;
   font-size: 1.5rem;
-  color: #64748b;
+  color: #13322e;
 }
 
 .admin-panel__upload-label {
   font-weight: 600;
-  color: #0f172a;
+  color: #13322e;
   font-size: 1.5rem;
 }
 
 .admin-panel__upload-input {
   padding: 0.65rem 0.75rem;
   border-radius: 10px;
-  border: 1px solid #cbd5f5;
+  border: 1px solid #a57f2c;
   background: #ffffff;
-  color: #0f172a;
+  color: #13322e;
   font-size: 1.5rem;
 }
 
@@ -73,7 +74,7 @@
   padding: 0.75rem 1.75rem;
   border-radius: 999px;
   border: none;
-  background: #1d4ed8;
+  background: #9d2449;
   color: #ffffff;
   font-weight: 600;
   cursor: pointer;
@@ -82,31 +83,31 @@
 .admin-panel__status {
   padding: 0.75rem 1rem;
   border-radius: 12px;
-  background: #e2e8f0;
-  color: #0f172a;
+  background: #f2f2f2;
+  color: #13322e;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
 .admin-panel__status--idle {
-  background: #e2e8f0;
-  color: #475569;
+  background: #f2f2f2;
+  color: #611232;
 }
 
 .admin-panel__status--uploading {
-  background: #dbeafe;
-  color: #1e3a8a;
+  background: #f6eddc;
+  color: #611232;
 }
 
 .admin-panel__status--success {
-  background: #dcfce7;
-  color: #166534;
+  background: #f6eddc;
+  color: #13322e;
 }
 
 .admin-panel__status--error {
-  background: #fee2e2;
-  color: #991b1b;
+  background: #f6e8e8;
+  color: #611232;
 }
 
 .admin-panel__status-label {
@@ -124,7 +125,7 @@
   padding: 0.75rem 1rem;
   border-radius: 12px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -142,7 +143,7 @@
   flex-direction: column;
   gap: 0.35rem;
   font-size: 1.5rem;
-  color: #475569;
+  color: #13322e;
 }
 
 .admin-panel__filters-label {
@@ -152,9 +153,9 @@
 .admin-panel__filters-input {
   padding: 0.55rem 0.65rem;
   border-radius: 10px;
-  border: 1px solid #cbd5f5;
+  border: 1px solid #a57f2c;
   background: #ffffff;
-  color: #0f172a;
+  color: #13322e;
   font-size: 1.5rem;
 }
 
@@ -168,8 +169,8 @@
 .admin-panel__table td {
   text-align: left;
   padding: 0.5rem 0.25rem;
-  border-bottom: 1px solid #e2e8f0;
-  color: #0f172a;
+  border-bottom: 1px solid #e5e7eb;
+  color: #13322e;
 }
 
 .admin-panel__table th {
@@ -177,8 +178,8 @@
   text-transform: uppercase;
   font-size: 1.25rem;
   letter-spacing: 0.05em;
-  color: #475569;
-  border-bottom: 1px solid #cbd5f5;
+  color: #611232;
+  border-bottom: 1px solid #a57f2c;
 }
 
 .admin-panel__table tbody tr:last-child td {
@@ -191,15 +192,15 @@
   justify-content: center;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
-  background: #e2e8f0;
-  color: #475569;
+  background: #f2f2f2;
+  color: #611232;
   font-weight: 600;
   font-size: 1.25rem;
 }
 
 .admin-panel__badge--assigned {
-  background: #dcfce7;
-  color: #166534;
+  background: #f6eddc;
+  color: #13322e;
 }
 
 .admin-panel__pagination {
@@ -213,17 +214,17 @@
 .admin-panel__pagination-button {
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
-  border: 1px solid #cbd5f5;
+  border: 1px solid #a57f2c;
   background: #ffffff;
-  color: #1e293b;
+  color: #13322e;
   font-size: 1.25rem;
   font-weight: 600;
   cursor: pointer;
 }
 
 .admin-panel__pagination-button--active {
-  background: #1d4ed8;
-  border-color: #1d4ed8;
+  background: #611232;
+  border-color: #611232;
   color: #ffffff;
 }
 
@@ -236,7 +237,7 @@
   padding: 0.75rem 1rem;
   border-radius: 12px;
   background: #ffffff;
-  border: 1px dashed #cbd5f5;
+  border: 1px dashed #a57f2c;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -247,7 +248,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #1e293b;
+  color: #611232;
 }
 
 .admin-panel__history-list {
@@ -263,7 +264,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  color: #334155;
+  color: #13322e;
 }
 
 .admin-panel__history-name {
@@ -272,7 +273,7 @@
 
 .admin-panel__history-meta {
   font-size: 1.25rem;
-  color: #64748b;
+  color: #98989a;
 }
 
 .admin-panel__logout {
@@ -280,7 +281,7 @@
   padding: 0.75rem 1.5rem;
   border-radius: 999px;
   border: none;
-  background: #ef4444;
+  background: #611232;
   color: #ffffff;
   font-weight: 600;
   cursor: pointer;
