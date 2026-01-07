@@ -24,6 +24,7 @@
           <th>Fecha de guardado</th>
           <th>Ruta de referencia</th>
           <th>Acciones</th>
+          <th>Resultados</th>
         </tr>
       </thead>
       <tbody>
@@ -57,6 +58,18 @@
                 </svg>
               </button>
             </div>
+          </td>
+          <td data-label="Resultados">
+            <ng-container *ngIf="obtenerPdfPorRegistro(registro) as resultadoPdf; else pendienteResultado">
+              <button
+                type="button"
+                class="archivos__accion"
+                (click)="descargarResultados(registro)"
+              >
+                Descargar resultados
+              </button>
+            </ng-container>
+            <ng-template #pendienteResultado>Pendiente</ng-template>
           </td>
         </tr>
       </tbody>
