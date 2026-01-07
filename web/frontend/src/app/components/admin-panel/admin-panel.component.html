@@ -27,7 +27,8 @@
         <option value="secundaria">Secundaria</option>
       </select>
       <p class="admin-panel__helper">
-        El listado de Excels depende del nivel seleccionado.
+        El listado de Excels depende del nivel seleccionado. Primero selecciona un registro y luego
+        sube el PDF correspondiente.
       </p>
       <p class="admin-panel__helper" *ngIf="!excelDisponibles.length">
         Aún no hay Excels disponibles para asociar. Valida un archivo desde el módulo de carga.
@@ -71,6 +72,7 @@
         <table class="admin-panel__table">
           <thead>
             <tr>
+              <th scope="col">Seleccionar</th>
               <th scope="col">Nombre</th>
               <th scope="col">CCT</th>
               <th scope="col">Correo</th>
@@ -79,6 +81,17 @@
           </thead>
           <tbody>
             <tr *ngFor="let excel of excelDisponiblesPaginados">
+              <td>
+                <label class="admin-panel__select">
+                  <input
+                    type="radio"
+                    name="excelSeleccionado"
+                    [checked]="excelSeleccionado?.key === excel.key"
+                    (change)="seleccionarExcel(excel)"
+                  />
+                  <span>Seleccionar</span>
+                </label>
+              </td>
               <td>{{ excel.nombre }}</td>
               <td>{{ excel.cct }}</td>
               <td>{{ excel.correo }}</td>
@@ -123,6 +136,9 @@
       </div>
 
       <label class="admin-panel__upload-label" for="pdf-upload">Selecciona un PDF</label>
+      <p class="admin-panel__helper" *ngIf="!excelSeleccionado">
+        Selecciona un registro de Excel para habilitar la carga del PDF.
+      </p>
       <input
         id="pdf-upload"
         class="admin-panel__upload-input"
@@ -130,7 +146,12 @@
         accept="application/pdf"
         (change)="seleccionarArchivo($event)"
       />
-      <button class="admin-panel__upload-button" type="button" (click)="subirPdf()">
+      <button
+        class="admin-panel__upload-button"
+        type="button"
+        (click)="subirPdf()"
+        [disabled]="!excelSeleccionado"
+      >
         Subir PDF
       </button>
 
