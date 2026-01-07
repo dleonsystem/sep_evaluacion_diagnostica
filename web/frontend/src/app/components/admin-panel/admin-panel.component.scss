@@ -28,7 +28,7 @@
 }
 
 .admin-panel__token--warning {
-  background: #ddc9a3;
+  background: #f2f2f2;
   color: #611232;
 }
 
@@ -40,7 +40,7 @@
 .admin-panel__upload {
   padding: 1.5rem;
   border-radius: 16px;
-  border: 1px solid #ddc9a3;
+  border: 1px solid #e5e7eb;
   background: #f6eddc;
   display: flex;
   flex-direction: column;
@@ -83,7 +83,7 @@
 .admin-panel__status {
   padding: 0.75rem 1rem;
   border-radius: 12px;
-  background: #ddc9a3;
+  background: #f2f2f2;
   color: #13322e;
   display: flex;
   flex-direction: column;
@@ -91,7 +91,7 @@
 }
 
 .admin-panel__status--idle {
-  background: #ddc9a3;
+  background: #f2f2f2;
   color: #611232;
 }
 
@@ -125,7 +125,7 @@
   padding: 0.75rem 1rem;
   border-radius: 12px;
   background: #ffffff;
-  border: 1px solid #ddc9a3;
+  border: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -169,7 +169,7 @@
 .admin-panel__table td {
   text-align: left;
   padding: 0.5rem 0.25rem;
-  border-bottom: 1px solid #ddc9a3;
+  border-bottom: 1px solid #e5e7eb;
   color: #13322e;
 }
 
@@ -192,7 +192,7 @@
   justify-content: center;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
-  background: #ddc9a3;
+  background: #f2f2f2;
   color: #611232;
   font-weight: 600;
   font-size: 1.25rem;
