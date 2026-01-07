@@ -15,45 +15,23 @@
     </ng-template>
 
     <div class="admin-panel__upload">
-      <label class="admin-panel__upload-label" for="excel-key">Selecciona el Excel asociado</label>
+      <label class="admin-panel__upload-label" for="nivel-select">Selecciona el nivel</label>
       <select
-        id="excel-key"
+        id="nivel-select"
         class="admin-panel__upload-input"
         [(ngModel)]="selectedExcelKey"
       >
-        <option value="" disabled>Selecciona un Excel</option>
-        <option *ngFor="let excel of excelDisponibles" [value]="excel.key">
-          {{ excel.nombre }} · {{ excel.cct }} · {{ excel.correo }}
-        </option>
+        <option value="" disabled>Selecciona un nivel</option>
+        <option value="preescolar">Preescolar</option>
+        <option value="primaria">Primaria</option>
+        <option value="secundaria">Secundaria</option>
       </select>
+      <p class="admin-panel__helper">
+        El listado de Excels depende del nivel seleccionado.
+      </p>
       <p class="admin-panel__helper" *ngIf="!excelDisponibles.length">
         Aún no hay Excels disponibles para asociar. Valida un archivo desde el módulo de carga.
       </p>
-
-      <label class="admin-panel__upload-label" for="pdf-upload">Selecciona un PDF</label>
-      <input
-        id="pdf-upload"
-        class="admin-panel__upload-input"
-        type="file"
-        accept="application/pdf"
-        (change)="seleccionarArchivo($event)"
-      />
-      <button class="admin-panel__upload-button" type="button" (click)="subirPdf()">
-        Subir PDF
-      </button>
-
-      <div
-        class="admin-panel__status"
-        [class.admin-panel__status--idle]="uploadStatus === 'idle'"
-        [class.admin-panel__status--uploading]="uploadStatus === 'uploading'"
-        [class.admin-panel__status--success]="uploadStatus === 'success'"
-        [class.admin-panel__status--error]="uploadStatus === 'error'"
-      >
-        <span class="admin-panel__status-label">Estado de carga:</span>
-        <span class="admin-panel__status-message">
-          {{ feedbackMessage || 'Sin acciones por el momento.' }}
-        </span>
-      </div>
 
       <div class="admin-panel__excel-list" *ngIf="excelDisponibles.length">
         <span class="admin-panel__history-title">Excels disponibles</span>
@@ -78,6 +56,31 @@
             </span>
           </div>
         </div>
+      </div>
+
+      <label class="admin-panel__upload-label" for="pdf-upload">Selecciona un PDF</label>
+      <input
+        id="pdf-upload"
+        class="admin-panel__upload-input"
+        type="file"
+        accept="application/pdf"
+        (change)="seleccionarArchivo($event)"
+      />
+      <button class="admin-panel__upload-button" type="button" (click)="subirPdf()">
+        Subir PDF
+      </button>
+
+      <div
+        class="admin-panel__status"
+        [class.admin-panel__status--idle]="uploadStatus === 'idle'"
+        [class.admin-panel__status--uploading]="uploadStatus === 'uploading'"
+        [class.admin-panel__status--success]="uploadStatus === 'success'"
+        [class.admin-panel__status--error]="uploadStatus === 'error'"
+      >
+        <span class="admin-panel__status-label">Estado de carga:</span>
+        <span class="admin-panel__status-message">
+          {{ feedbackMessage || 'Sin acciones por el momento.' }}
+        </span>
       </div>
 
       <div class="admin-panel__history" *ngIf="uploadHistory.length">
