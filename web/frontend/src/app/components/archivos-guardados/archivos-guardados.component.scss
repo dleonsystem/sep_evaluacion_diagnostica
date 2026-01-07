@@ -143,6 +143,18 @@
   height: 1.15rem;
 }
 
+.archivos__resultado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.archivos__resultado-nombre {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.9rem;
+}
+
 .archivos__vacio {
   text-align: center;
   padding: 2rem 1rem;

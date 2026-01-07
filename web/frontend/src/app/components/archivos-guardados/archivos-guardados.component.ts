@@ -143,6 +143,11 @@ export class ArchivosGuardadosComponent implements OnInit {
     return this.resultadosPdf[storageKey] ?? null;
   }
 
+  obtenerEtiquetaPdf(resultado: PdfMetadataConStorage): string {
+    const nombre = resultado.pdfName?.trim();
+    return nombre ? nombre : 'PDF asignado';
+  }
+
   private cargarResultadosPdf(): void {
     this.resultadosPdf = {};
     this.registros.forEach((registro) => {
