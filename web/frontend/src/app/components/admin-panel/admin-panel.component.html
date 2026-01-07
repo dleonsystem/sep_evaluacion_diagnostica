@@ -1,12 +1,12 @@
 <section class="admin-panel">
   <div class="admin-panel__card">
-    <h1>Panel de administrador</h1>
-    <p>Token activo para la carga de PDFs.</p>
+    <h2>Panel de administrador</h2>
+   <!--  <p>Token activo para la carga de PDFs.</p> -->
 
-    <div class="admin-panel__token" *ngIf="obtenerToken(); else sinSesion">
+    <!-- <div class="admin-panel__token" *ngIf="obtenerToken(); else sinSesion">
       <span>Token almacenado:</span>
       <code>{{ obtenerToken() }}</code>
-    </div>
+    </div> -->
 
     <ng-template #sinSesion>
       <div class="admin-panel__token admin-panel__token--warning">
