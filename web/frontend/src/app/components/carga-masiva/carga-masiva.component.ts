@@ -304,7 +304,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         const confirmacion = await Swal.fire({
           icon: 'question',
           title: 'Archivo ya existe',
-          text: 'Ya tienes una copia con el mismo contenido. ¿Quieres sustituirla?',
+          text: `Ya tienes una copia del archivo "${resultado.archivo.name}" con el mismo contenido. ¿Quieres sustituirla?`,
           showCancelButton: true,
           confirmButtonText: 'Sí, sustituir',
           cancelButtonText: 'Cancelar'
@@ -460,6 +460,10 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
   onEliminarResultado(resultado: ResultadoArchivo): void {
     this.resultados = this.resultados.filter((item) => item !== resultado);
+  }
+
+  limpiarResultados(): void {
+    this.resultados = [];
   }
 
   limpiarSeleccion(input: HTMLInputElement): void {

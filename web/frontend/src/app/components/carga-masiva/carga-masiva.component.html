@@ -99,6 +99,16 @@
   </div>
 
   <div class="carga__estado" *ngIf="resultados.length">
+    <div class="carga__estado-header">
+      <div>
+        <p class="carga__estado-eyebrow">Resultados de validación</p>
+        <h2 class="carga__estado-titulo">Estado de tus archivos</h2>
+      </div>
+      <button type="button" class="carga__boton-secundario carga__boton-limpiar" (click)="limpiarResultados()">
+        Limpiar resultados
+      </button>
+    </div>
+
     <section class="carga__credenciales" *ngIf="credencialesMostradas">
       <div class="carga__credenciales-header">
         <div class="carga__credenciales-icono" aria-hidden="true">🔑</div>
@@ -138,14 +148,19 @@
             Archivo detectado: {{ obtenerEtiquetaTipo(resultado.tipoDetectado) }}
           </p>
         </div>
-        <span
-          class="carga__chip"
-          [class.carga__chip--progreso]="resultado.estado === 'validando'"
-          [class.carga__chip--error]="resultado.estado === 'error'"
-          [class.carga__chip--exito]="resultado.estado === 'exito'"
-        >
-          {{ resultado.estado === 'validando' ? 'Validando' : resultado.estado === 'exito' ? 'Validado' : 'Con errores' }}
-        </span>
+        <div class="carga__detalle-status">
+          <span
+            class="carga__estado-indicador"
+            [class.carga__estado-indicador--progreso]="resultado.estado === 'validando'"
+            [class.carga__estado-indicador--error]="resultado.estado === 'error'"
+            [class.carga__estado-indicador--exito]="resultado.estado === 'exito'"
+          >
+            <span class="carga__estado-punto" aria-hidden="true"></span>
+            <span class="carga__estado-texto">
+              {{ resultado.estado === 'validando' ? 'Validando' : resultado.estado === 'exito' ? 'Validado' : 'Con errores' }}
+            </span>
+          </span>
+        </div>
       </header>
 
       <p
