@@ -337,6 +337,29 @@
   gap: 1rem;
 }
 
+.carga__estado-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.carga__estado-eyebrow {
+  margin: 0;
+  color: #0f766e;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+}
+
+.carga__estado-titulo {
+  margin: 0.2rem 0 0;
+  font-size: 1.25rem;
+  color: #111827;
+}
+
 .carga__detalle {
   background: #f9fafb;
   padding: 1rem;
@@ -384,6 +407,50 @@
   margin: 0;
   display: grid;
   gap: 0.3rem;
+}
+
+.carga__detalle-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.carga__estado-indicador {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+  background: #f8fafc;
+}
+
+.carga__estado-punto {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.06);
+}
+
+.carga__estado-indicador--progreso {
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.carga__estado-indicador--error {
+  color: #b91c1c;
+  border-color: #fecdd3;
+  background: #fef2f2;
+}
+
+.carga__estado-indicador--exito {
+  color: #047857;
+  border-color: #a7f3d0;
+  background: #ecfdf3;
 }
 
 .carga__chip {
@@ -576,6 +643,10 @@
 .carga__boton-secundario {
   background: #e5e7eb;
   color: #1f2937;
+}
+
+.carga__boton-limpiar {
+  border: 1px solid #cbd5e1;
 }
 
 .carga__boton-primario:hover,
