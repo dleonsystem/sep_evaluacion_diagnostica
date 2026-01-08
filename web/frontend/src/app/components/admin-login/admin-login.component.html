@@ -43,7 +43,12 @@
           (click)="toggleMostrarContrasena()"
           [attr.aria-pressed]="mostrarContrasena"
         >
-          {{ mostrarContrasena ? 'Ocultar' : 'Mostrar' }}
+          <i
+            class="bi"
+            [ngClass]="mostrarContrasena ? 'bi-eye-slash' : 'bi-eye'"
+            aria-hidden="true"
+          ></i>
+          <span class="admin-login__toggle-text">{{ mostrarContrasena ? 'Ocultar' : 'Mostrar' }}</span>
         </button>
       </div>
 
