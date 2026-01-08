@@ -87,12 +87,19 @@ input:focus {
   color: #2e7d32;
   font-weight: 600;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .login__toggle:focus {
   outline: 2px solid rgba(46, 125, 50, 0.4);
   outline-offset: 2px;
   border-radius: 6px;
+}
+
+.login__toggle-text {
+  font-size: 0.95rem;
 }
 
 .login__hint {

@@ -29,7 +29,12 @@
           placeholder="Clave enviada en tu primer carga"
         />
         <button class="login__toggle" type="button" (click)="mostrarContrasena = !mostrarContrasena">
-          {{ mostrarContrasena ? 'Ocultar' : 'Mostrar' }}
+          <i
+            class="bi"
+            [ngClass]="mostrarContrasena ? 'bi-eye-slash' : 'bi-eye'"
+            aria-hidden="true"
+          ></i>
+          <span class="login__toggle-text">{{ mostrarContrasena ? 'Ocultar' : 'Mostrar' }}</span>
         </button>
       </div>
       <p class="login__hint">Usa la contraseña generada en tu primer envío.</p>

@@ -102,11 +102,18 @@
   cursor: pointer;
   padding: 0.35rem 0.5rem;
   border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .admin-login__toggle:focus-visible {
   outline: 2px solid #9d2449;
   outline-offset: 2px;
+}
+
+.admin-login__toggle-text {
+  font-size: 0.95rem;
 }
 
 .admin-login__error {
