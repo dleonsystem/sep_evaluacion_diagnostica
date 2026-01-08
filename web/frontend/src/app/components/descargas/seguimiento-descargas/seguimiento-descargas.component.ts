@@ -2,7 +2,12 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { finalize, Subject, takeUntil } from 'rxjs';
-import { SeguimientoFiltro, SeguimientoService, SeguimientoSnapshot } from '../../../services/seguimiento.service';
+import {
+  EstadoDescarga,
+  SeguimientoFiltro,
+  SeguimientoService,
+  SeguimientoSnapshot
+} from '../../../services/seguimiento.service';
 
 @Component({
   selector: 'app-seguimiento-descargas',
@@ -58,6 +63,23 @@ export class SeguimientoDescargasComponent implements OnInit, OnDestroy {
             : 'No fue posible obtener el seguimiento. Intenta nuevamente.';
         }
       });
+  }
+
+  obtenerEtiquetaEstado(estado: EstadoDescarga): string {
+    switch (estado) {
+      case 'completada':
+        return 'Completada';
+      case 'en-proceso':
+        return 'En proceso';
+      case 'error':
+        return 'Error';
+      default:
+        return estado;
+    }
+  }
+
+  reintentarDescarga(): void {
+    this.consultar();
   }
 
   private construirFiltro(): SeguimientoFiltro {
