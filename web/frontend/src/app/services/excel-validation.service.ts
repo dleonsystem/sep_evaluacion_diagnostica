@@ -637,7 +637,7 @@ export class ExcelValidationService {
     const alumnos: AlumnoValidado[] = [];
 
     hojasRequeridas
-      .filter((hoja) => hoja !== 'ESC')
+      .filter((hoja) => hoja !== this.hojasBase.esc && hoja !== this.hojasBase.instrucciones)
       .forEach((hoja) => {
         const hojaSheet = workbook.Sheets[hoja];
         if (!hojaSheet) {
@@ -708,7 +708,7 @@ export class ExcelValidationService {
     const alumnos: AlumnoValidado[] = [];
 
     hojasRequeridas
-      .filter((hoja) => hoja !== 'ESC')
+      .filter((hoja) => hoja !== this.hojasBase.esc && hoja !== this.hojasBase.instrucciones)
       .forEach((hoja) => {
         const hojaSheet = workbook.Sheets[hoja];
         if (!hojaSheet) {
