@@ -225,20 +225,25 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     try {
       const buffer = await file.arrayBuffer();
-      const tipoArchivo = await this.excelValidationService.detectarTipoArchivo(buffer);
-      resultadoArchivo.tipoDetectado = tipoArchivo;
+      const deteccion = await this.excelValidationService.detectarNivelConDetalle(buffer);
+      resultadoArchivo.tipoDetectado = deteccion.nivel;
 
-      if (!tipoArchivo) {
-        resultadoArchivo.mensajeInformativo = 'No se reconoció el formato.';
-        this.actualizarErrores(resultadoArchivo, [
-          'No se reconoció el formato. Verifica que sea una plantilla válida de Preescolar, Primaria o Secundaria.'
-        ]);
+      if (!deteccion.nivel) {
+        resultadoArchivo.mensajeInformativo = 'No se reconoció el nivel del archivo.';
+        this.actualizarErrores(
+          resultadoArchivo,
+          deteccion.mensajesError.length
+            ? deteccion.mensajesError
+            : [
+                'No se reconoció el formato. Verifica que sea una plantilla válida de Preescolar, Primaria o Secundaria.'
+              ]
+        );
         await this.finalizarConError(resultadoArchivo);
         return;
       }
 
-      resultadoArchivo.mensajeInformativo = `Archivo detectado: ${this.obtenerEtiquetaTipo(tipoArchivo)}. Validando reglas específicas...`;
-      const resultado = await this.validarPorTipo(tipoArchivo, buffer);
+      resultadoArchivo.mensajeInformativo = `Archivo detectado: ${this.obtenerEtiquetaTipo(deteccion.nivel)}. Validando reglas específicas...`;
+      const resultado = await this.validarPorTipo(deteccion.nivel, buffer);
       await this.procesarResultado(resultado, resultadoArchivo);
     } catch (error) {
       this.actualizarErrores(resultadoArchivo, [
@@ -282,7 +287,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     try {
       const guardado = await this.archivoStorageService.guardarArchivoPreescolar(resultado.archivoOriginal, {
         cct: resultado.escDatos?.cct,
-        correo: this.correoControl.value
+        correo: this.correoControl.value,
+        nivel: resultado.tipoDetectado ?? undefined
       });
       await this.mostrarConfirmacionGuardado(guardado, 'guardado', resultado);
       if (resultado.escDatos && resultado.resultadoExito && resultado.pdfTipo !== 'exito') {
@@ -311,7 +317,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
               {
                 forzarReemplazo: true,
                 cct: resultado.escDatos?.cct,
-                correo: this.correoControl.value
+                correo: this.correoControl.value,
+                nivel: resultado.tipoDetectado ?? undefined
               }
             );
             await this.mostrarConfirmacionGuardado(resultadoReemplazo, 'reemplazo', resultado);
@@ -470,7 +477,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     resultadoArchivo.notaGuardado = resultado.nota;
     resultadoArchivo.guardado = true;
     resultadoArchivo.mensajeInformativo =
-      'El archivo se conservó en el almacenamiento local del navegador. Copia el archivo a assets/archivos/preescolar/ en tu proyecto si lo necesitas.';
+      'El archivo se conservó en el almacenamiento local del navegador. Copia el archivo a ' +
+      `${this.obtenerRutaReferencia(resultadoArchivo.tipoDetectado)} en tu proyecto si lo necesitas.`;
 
     const esReemplazo = tipo === 'reemplazo';
 
@@ -695,6 +703,11 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
 
     return error.trim();
+  }
+
+  private obtenerRutaReferencia(tipo: TipoArchivoCarga | null): string {
+    const nivel = tipo ?? 'preescolar';
+    return `assets/archivos/${nivel}/`;
   }
 
   obtenerEtiquetaTipo(tipo: TipoArchivoCarga | null): string {
