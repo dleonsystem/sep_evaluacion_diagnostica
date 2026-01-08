@@ -20,6 +20,8 @@ export class LoginComponent implements OnInit {
   autenticando = false;
   redirect = '/carga-masiva';
   contrasenaGuardada: string | null = null;
+  credencialesGuardadas = false;
+  mostrarContrasena = false;
 
   constructor(
     private readonly authService: AuthService,
@@ -29,7 +31,8 @@ export class LoginComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const credenciales = this.estadoCredencialesService.obtener() ?? this.authService.obtenerCredenciales();
+    const credencialesPersistidas = this.authService.obtenerCredenciales();
+    const credenciales = this.estadoCredencialesService.obtener() ?? credencialesPersistidas;
 
     if (!credenciales) {
       void this.router.navigate(['/carga-masiva']);
@@ -38,7 +41,8 @@ export class LoginComponent implements OnInit {
 
     this.redirect = this.route.snapshot.queryParamMap.get('redirect') ?? this.redirect;
     this.correo = credenciales.correo;
-    this.contrasenaGuardada = credenciales.contrasena;
+    this.contrasenaGuardada = credencialesPersistidas?.contrasena ?? null;
+    this.credencialesGuardadas = Boolean(credencialesPersistidas);
     if (!this.contrasena) {
       this.contrasena = credenciales.contrasena;
     }
@@ -59,7 +63,8 @@ export class LoginComponent implements OnInit {
       });
       await this.router.navigateByUrl(this.redirect);
     } catch (error) {
-      this.error = error instanceof Error ? error.message : 'No fue posible iniciar sesión.';
+      const mensajeError = error instanceof Error ? error.message : 'Ocurrió un error inesperado.';
+      this.error = `No se pudo iniciar sesión. ${mensajeError}`;
       await Swal.fire({
         icon: 'error',
         title: 'No se pudo iniciar sesión',

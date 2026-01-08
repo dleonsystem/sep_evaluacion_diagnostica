@@ -11,30 +11,42 @@
         type="email"
         required
         [(ngModel)]="correo"
+        #correoModel="ngModel"
         autocomplete="email"
         placeholder="correo@dominio.com"
       />
 
       <label for="contrasena">Contraseña</label>
-      <input
-        id="contrasena"
-        name="contrasena"
-        type="password"
-        required
-        [(ngModel)]="contrasena"
-        autocomplete="current-password"
-        placeholder="Clave enviada en tu primer carga"
-      />
+      <div class="login__password-field">
+        <input
+          id="contrasena"
+          name="contrasena"
+          [type]="mostrarContrasena ? 'text' : 'password'"
+          required
+          [(ngModel)]="contrasena"
+          #contrasenaModel="ngModel"
+          autocomplete="current-password"
+          placeholder="Clave enviada en tu primer carga"
+        />
+        <button class="login__toggle" type="button" (click)="mostrarContrasena = !mostrarContrasena">
+          {{ mostrarContrasena ? 'Ocultar' : 'Mostrar' }}
+        </button>
+      </div>
+      <p class="login__hint">Usa la contraseña generada en tu primer envío.</p>
 
-      <div class="login__alerta" *ngIf="contrasenaGuardada">
-        Ya existe una contraseña guardada para {{ correo }}. La llenamos por ti para que puedas continuar con tus cargas sin
-        generar una nueva clave.
+      <div class="login__alerta" *ngIf="credencialesGuardadas">
+        Ya existen credenciales guardadas para {{ correo }}. Si es necesario, puedes actualizar la contraseña antes de
+        continuar.
       </div>
 
       <div class="login__error" *ngIf="error">{{ error }}</div>
 
-      <button class="login__submit" type="submit" [disabled]="loginForm.invalid || autenticando">
-        {{ autenticando ? 'Validando...' : 'Iniciar sesión' }}
+      <button
+        class="login__submit"
+        type="submit"
+        [disabled]="correoModel.invalid || contrasenaModel.invalid || autenticando"
+      >
+        {{ autenticando ? 'Validando...' : 'Ingresar' }}
       </button>
     </form>
 
