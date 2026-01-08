@@ -27,12 +27,19 @@ export interface ResultadoValidacion {
 
 export type TipoArchivoCarga = 'preescolar' | 'primaria' | 'secundaria';
 
+export interface ResultadoDeteccionNivel {
+  nivel: TipoArchivoCarga | null;
+  hojas: string[];
+  mensajesError: string[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class ExcelValidationService {
   private xlsxPromise: Promise<any> | null = null;
   // Hojas base (centralizadas para evitar duplicidad de nombres).
   private readonly hojasBase = {
     esc: 'ESC',
+    instrucciones: 'INSTRUCCIONES',
     primero: 'PRIMERO',
     segundo: 'SEGUNDO',
     tercero: 'TERCERO',
@@ -42,9 +49,10 @@ export class ExcelValidationService {
   };
   // Configuración por nivel (hojas requeridas por tipo de archivo).
   private readonly hojasPorNivel = {
-    preescolar: [this.hojasBase.esc, this.hojasBase.tercero],
+    preescolar: [this.hojasBase.esc, this.hojasBase.instrucciones, this.hojasBase.tercero],
     primaria: [
       this.hojasBase.esc,
+      this.hojasBase.instrucciones,
       this.hojasBase.primero,
       this.hojasBase.segundo,
       this.hojasBase.tercero,
@@ -52,7 +60,13 @@ export class ExcelValidationService {
       this.hojasBase.quinto,
       this.hojasBase.sexto
     ],
-    secundaria: [this.hojasBase.esc, this.hojasBase.primero, this.hojasBase.segundo, this.hojasBase.tercero]
+    secundaria: [
+      this.hojasBase.esc,
+      this.hojasBase.instrucciones,
+      this.hojasBase.primero,
+      this.hojasBase.segundo,
+      this.hojasBase.tercero
+    ]
   };
   // Encabezados base (centralizados por nivel/sección).
   private readonly encabezadosEscBase = {
@@ -386,10 +400,24 @@ export class ExcelValidationService {
     ]
   };
   async detectarTipoArchivo(buffer: ArrayBuffer): Promise<TipoArchivoCarga | null> {
+    const resultado = await this.detectarNivelConDetalle(buffer);
+    return resultado.nivel;
+  }
+
+  async detectarNivelConDetalle(buffer: ArrayBuffer): Promise<ResultadoDeteccionNivel> {
     const xlsx = await this.cargarXlsx();
     const workbook = xlsx.read(buffer, { type: 'array' });
     const hojas = workbook.SheetNames as string[];
-    return this.detectarNivel(this.normalizarHojas(hojas));
+    const hojasNormalizadas = this.normalizarHojas(hojas);
+    const nivel = this.detectarNivel(hojasNormalizadas);
+    if (!nivel) {
+      return {
+        nivel: null,
+        hojas,
+        mensajesError: this.construirMensajesNivelNoReconocido(hojasNormalizadas)
+      };
+    }
+    return { nivel, hojas, mensajesError: [] };
   }
 
   async validarArchivo(buffer: ArrayBuffer): Promise<ResultadoValidacion> {
@@ -402,7 +430,7 @@ export class ExcelValidationService {
     if (!nivel) {
       return {
         ok: false,
-        errores: ['No se reconoció el formato del archivo. Usa una plantilla oficial vigente.'],
+        errores: this.construirMensajesNivelNoReconocido(hojasNormalizadas),
         advertencias: [],
         hojasEncontradas: hojas
       };
@@ -609,7 +637,7 @@ export class ExcelValidationService {
     const alumnos: AlumnoValidado[] = [];
 
     hojasRequeridas
-      .filter((hoja) => hoja !== 'ESC')
+      .filter((hoja) => hoja !== this.hojasBase.esc && hoja !== this.hojasBase.instrucciones)
       .forEach((hoja) => {
         const hojaSheet = workbook.Sheets[hoja];
         if (!hojaSheet) {
@@ -680,7 +708,7 @@ export class ExcelValidationService {
     const alumnos: AlumnoValidado[] = [];
 
     hojasRequeridas
-      .filter((hoja) => hoja !== 'ESC')
+      .filter((hoja) => hoja !== this.hojasBase.esc && hoja !== this.hojasBase.instrucciones)
       .forEach((hoja) => {
         const hojaSheet = workbook.Sheets[hoja];
         if (!hojaSheet) {
@@ -903,6 +931,17 @@ export class ExcelValidationService {
       }
     }
     return faltantes;
+  }
+
+  private construirMensajesNivelNoReconocido(hojasNormalizadas: Set<string>): string[] {
+    const hojas = Array.from(hojasNormalizadas);
+    const hojasListado = hojas.length ? hojas.sort().join(', ') : 'ninguna';
+    return [
+      `No se pudo determinar el nivel con las hojas encontradas: ${hojasListado}.`,
+      'Patrones esperados: Preescolar (ESC, INSTRUCCIONES, TERCERO); ' +
+        'Primaria (ESC, INSTRUCCIONES, PRIMERO, SEGUNDO, TERCERO, CUARTO, QUINTO, SEXTO); ' +
+        'Secundaria (ESC, INSTRUCCIONES, PRIMERO, SEGUNDO, TERCERO).'
+    ];
   }
 
   private limpiarTexto(valor: any): string {
