@@ -1021,116 +1021,232 @@ Se utilizan tipos ENUM en PostgreSQL para garantizar integridad y claridad en lo
 - **estado_archivo**: ('CARGADO', 'VALIDADO', 'PROCESADO', 'ERROR')
 - **estado_ticket**: ('ABIERTO', 'EN_PROCESO', 'CERRADO')
 
-### Triggers avanzados
-Se implementan triggers para:
-- Auditoría de cambios en tablas críticas (AUDIT_LOG)
-- Actualización automática de timestamps (`updated_at`)
-- Validación de integridad antes de inserciones/actualizaciones
 
-Ejemplo:
-```sql
-CREATE TRIGGER set_updated_at BEFORE UPDATE ON archivos_frv
-FOR EACH ROW EXECUTE FUNCTION set_timestamp();
-```
+### ARCHIVOS_FRV
+| Campo              | Tipo         | Descripción                       |
+|--------------------|--------------|-----------------------------------|
+| id                 | UUID         | Identificador único               |
+| escuela_id         | UUID         | Relación con ESCUELAS             |
+| usuario_id         | UUID         | Relación con USUARIOS             |
+| ciclo_escolar      | VARCHAR(9)   | Ciclo escolar                     |
+| nivel              | ENUM         | Nivel educativo                   |
+| estado             | ENUM         | Estado del archivo                |
+| file_path          | VARCHAR(500) | Ruta en filesystem                |
+| filename_original  | VARCHAR(255) | Nombre original del archivo       |
+| file_size          | BIGINT       | Tamaño en bytes                   |
+| mime_type          | VARCHAR(50)  | Tipo MIME                         |
+| validacion_resultado| JSONB       | Resultado de validación           |
+| validado_en        | TIMESTAMP    | Fecha de validación               |
+| procesado_en       | TIMESTAMP    | Fecha de procesamiento            |
+| total_estudiantes  | INT          | Total de estudiantes              |
+| created_at         | TIMESTAMP    | Fecha de creación                 |
+| updated_at         | TIMESTAMP    | Fecha de actualización            |
 
-### Funciones y Procedimientos
-Funciones almacenadas para:
-- Validación de archivos
-- Generación de reportes
-- Auditoría y logging
+### BITACORA_DETALLADA
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id              | BIGSERIAL    | Identificador único               |
+| usuario_id      | UUID         | Relación con USUARIOS             |
+| accion          | VARCHAR(100) | Acción realizada                  |
+| descripcion     | TEXT         | Descripción detallada             |
+| modulo          | VARCHAR(100) | Módulo o componente               |
+| resultado       | VARCHAR(50)  | Resultado (OK, ERROR, etc.)       |
+| ip_address      | INET         | IP de origen                      |
+| fecha           | TIMESTAMP    | Fecha y hora                      |
 
-Ejemplo:
-```sql
-CREATE OR REPLACE FUNCTION set_timestamp()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-```
+### CATALOGO_ERRORES
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| codigo          | VARCHAR(20)  | Código de error                   |
+| mensaje         | VARCHAR(255) | Mensaje corto                     |
+| descripcion     | TEXT         | Descripción detallada             |
+| modulo          | VARCHAR(100) | Módulo o componente relacionado   |
+| solucion        | TEXT         | Sugerencia de solución            |
 
-### Vistas Materializadas
-Se utilizan para acelerar reportes agregados y consultas frecuentes, por ejemplo:
-- Reporte de conteo de estudiantes por ciclo y nivel
-- Resumen de tickets de soporte por estado
+### COMPETENCIAS
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id_competencia  | INT          | Identificador de competencia      |
+| id_materia      | INT          | Relación con MATERIAS             |
+| codigo          | VARCHAR(20)  | Código de competencia             |
+| descripcion     | VARCHAR(500) | Descripción                       |
+| nivel_esperado  | INT          | Nivel esperado (1-4)              |
 
-Ejemplo:
-```sql
-CREATE MATERIALIZED VIEW resumen_estudiantes AS
-SELECT ciclo_escolar, nivel, COUNT(*) AS total
-FROM estudiantes
-GROUP BY ciclo_escolar, nivel;
-```
+### CONFIGURACIONES_USUARIO
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id              | UUID         | Identificador único               |
+| usuario_id      | UUID         | Relación con USUARIOS             |
+| clave           | VARCHAR(100) | Nombre de la configuración        |
+| valor           | TEXT         | Valor de la configuración         |
+| actualizado_en  | TIMESTAMP    | Fecha de última actualización     |
 
-### Permisos y Seguridad
-Políticas de acceso:
-- Solo usuarios autenticados pueden acceder a datos sensibles
-- Uso de roles: `admin`, `soporte`, `escuela`, `consulta`
-- Restricción de UPDATE/DELETE en tablas críticas a roles autorizados
+### PRI1
+| Campo         | Tipo        | Descripción                                      |
+|--------------|-------------|--------------------------------------------------|
+| CCT          | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO        | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT      | CHAR(29)    | Nombre del Centro de Trabajo                     |
+| NIVEL        | CHAR(10)    | Nivel educativo                                  |
+| FASE         | CHAR(7)     | Fase de la evaluación                            |
+| GRADO        | CHAR(11)    | Grado escolar                                    |
+| CORREO1      | CHAR(26)    | Correo electrónico principal                     |
+| CORREO2      | CHAR(29)    | Correo electrónico alternativo                   |
+| MATRICULA_   | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA       | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE   | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO       | CHAR(10)    | Género                                           |
+| GRUPO        | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C2_A1   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_A2   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
+| EIA1_C3_A1   | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C4_A1   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA2_C1_A1   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C2_A1   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_A2   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 2            |
+| EIA2_C4_A1   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| PLEN         | CHAR(10)    | Indicador de plenitud                            |
+| PSPC         | CHAR(10)    | Indicador PSPC                                   |
+| PENS         | CHAR(10)    | Indicador PENS                                   |
+| PHYC         | CHAR(10)    | Indicador PHYC                                   |
+| ID           | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI   | CHAR(23)    | Nombre de archivo original                       |
 
-Ejemplo:
-```sql
-GRANT SELECT, INSERT ON archivos_frv TO soporte;
-REVOKE DELETE ON archivos_frv FROM escuela;
-```
+### PRI2
+### PRI3
+| Campo         | Tipo        | Descripción                                      |
+|--------------|-------------|--------------------------------------------------|
+| CCT          | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO        | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT      | CHAR(29)    | Nombre del Centro de Trabajo                     |
+| NIVEL        | CHAR(10)    | Nivel educativo                                  |
+| FASE         | CHAR(7)     | Fase de la evaluación                            |
+| GRADO        | CHAR(11)    | Grado escolar                                    |
+| CORREO1      | CHAR(26)    | Correo electrónico principal                     |
+| CORREO2      | CHAR(29)    | Correo electrónico alternativo                   |
+| MATRICULA_   | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA       | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE   | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO       | CHAR(10)    | Género                                           |
+| GRUPO        | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C1_A2   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 2            |
+| EIA1_C1_B1   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 1          |
+| EIA1_C1_B2   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 2          |
+| EIA1_C1_B3   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 3          |
+| EIA1_C2_A1   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_A2   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
+| EIA1_C2_A3   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 3            |
+| EIA1_C2_B1   | CHAR(10)    | Resultado EIA1, Competencia 2, Bloque 1          |
+| EIA1_C3_A1   | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C3_B1   | CHAR(10)    | Resultado EIA1, Competencia 3, Bloque 1          |
+| EIA1_C4_A1   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA1_C4_A2   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 2            |
+| EIA1_C4_A3   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 3            |
+| EIA2_C1_A1   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C1_B1   | CHAR(10)    | Resultado EIA2, Competencia 1, Bloque 1          |
+| EIA2_C2_A1   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_B1   | CHAR(10)    | Resultado EIA2, Competencia 3, Bloque 1          |
+| EIA2_C3_C1   | CHAR(10)    | Resultado EIA2, Competencia 3, Componente 1      |
+| EIA2_C3_C2   | CHAR(10)    | Resultado EIA2, Competencia 3, Componente 2      |
+| EIA2_C4_A1   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| EIA2_C4_B1   | CHAR(10)    | Resultado EIA2, Competencia 4, Bloque 1          |
+| EIA2_C5_A1   | CHAR(10)    | Resultado EIA2, Competencia 5, Área 1            |
+| EIA2_C5_A2   | CHAR(10)    | Resultado EIA2, Competencia 5, Área 2            |
+| EIA2_C5_A3   | CHAR(10)    | Resultado EIA2, Competencia 5, Área 3            |
+| PLEN         | CHAR(10)    | Indicador de plenitud                            |
+| PSPC         | CHAR(10)    | Indicador PSPC                                   |
+| PENS         | CHAR(10)    | Indicador PENS                                   |
+| PHYC         | CHAR(10)    | Indicador PHYC                                   |
+| ID           | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI   | CHAR(23)    | Nombre de archivo original                       |
 
-### Datos Semilla (Seed Data)
-Se incluyen datos iniciales para catálogos y pruebas:
-- Niveles educativos
-- Estados de archivo y ticket
-- Usuarios de ejemplo
+### PRI4
+| Campo         | Tipo        | Descripción                                      |
+|--------------|-------------|--------------------------------------------------|
+| CCT          | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO        | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT      | CHAR(29)    | Nombre del Centro de Trabajo                     |
+| NIVEL        | CHAR(10)    | Nivel educativo                                  |
+| FASE         | CHAR(7)     | Fase de la evaluación                            |
+| GRADO        | CHAR(11)    | Grado escolar                                    |
+| CORREO1      | CHAR(24)    | Correo electrónico principal                     |
+| CORREO2      | CHAR(29)    | Correo electrónico alternativo                   |
+| MATRICULA_   | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA       | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE   | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO       | CHAR(10)    | Género                                           |
+| GRUPO        | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C1_A2   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 2            |
+| EIA1_C1_B1   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 1          |
+| EIA1_C1_B2   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 2          |
+| EIA1_C1_B3   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 3          |
+| EIA1_C2_A1   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_A2   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
+| EIA1_C2_A3   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 3            |
+| EIA1_C2_B1   | CHAR(10)    | Resultado EIA1, Competencia 2, Bloque 1          |
+| EIA1_C3_A1   | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C3_B1   | CHAR(10)    | Resultado EIA1, Competencia 3, Bloque 1          |
+| EIA1_C4_A1   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA1_C4_A2   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 2            |
+| EIA1_C4_A3   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 3            |
+| EIA2_C1_A1   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C1_B1   | CHAR(10)    | Resultado EIA2, Competencia 1, Bloque 1          |
+| EIA2_C2_A1   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_B1   | CHAR(10)    | Resultado EIA2, Competencia 3, Bloque 1          |
+| EIA2_C3_C1   | CHAR(10)    | Resultado EIA2, Competencia 3, Componente 1      |
+| EIA2_C3_C2   | CHAR(10)    | Resultado EIA2, Competencia 3, Componente 2      |
+| EIA2_C4_A1   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| EIA2_C4_B1   | CHAR(10)    | Resultado EIA2, Competencia 4, Bloque 1          |
+| EIA2_C5_A1   | CHAR(10)    | Resultado EIA2, Competencia 5, Área 1            |
+| EIA2_C5_A2   | CHAR(10)    | Resultado EIA2, Competencia 5, Área 2            |
+| EIA2_C5_A3   | CHAR(10)    | Resultado EIA2, Competencia 5, Área 3            |
+| PLEN         | CHAR(10)    | Indicador de plenitud                            |
+| PSPC         | CHAR(10)    | Indicador PSPC                                   |
+| PENS         | CHAR(10)    | Indicador PENS                                   |
+| PHYC         | CHAR(10)    | Indicador PHYC                                   |
+| ID           | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI   | CHAR(23)    | Nombre de archivo original                       |
 
-Ejemplo:
-```sql
-INSERT INTO catalogo_niveles (clave, descripcion) VALUES ('PRIMARIA', 'Primaria');
-INSERT INTO usuarios (id, nombre, rol) VALUES ('uuid', 'Admin', 'admin');
-```
-
-- Trigger para auditar cambios en tablas críticas (insert/update/delete en ESCUELAS, ESTUDIANTES, VALORACIONES).
-- Procedimiento para cierre de periodo escolar (actualiza estatus y bloquea nuevas valoraciones).
-- Trigger para validar unicidad de CURP antes de insertar estudiante.
-
----
-
-## 9. Políticas de seguridad y acceso
-
-- Solo usuarios con rol ADMIN pueden eliminar registros.
-- Los DIRECTORES solo pueden ver y editar datos de su escuela.
-- Los DOCENTES solo pueden consultar valoraciones de sus grupos.
-- Acceso a reportes restringido por rol y entidad federativa.
-
----
-
-## 10. Ejemplos de datos
-
-### ESCUELAS
-| id | cct | nombre | id_turno | id_nivel | id_entidad | id_ciclo |
-|----|-----|--------|----------|----------|------------|----------|
-| 1  | 09ABC1234X | Primaria Benito Juárez | 1 | 2 | 9 | 1 |
-
-### USUARIOS
-| id | nombre | email | id_rol | escuela_id |
-|----|--------|-------|--------|------------|
-| 1  | Juan Pérez | juan@escuela.edu.mx | 2 | 1 |
-
-### ESTUDIANTES
-| id | nombre | curp | grupo_id |
-|----|--------|------|----------|
-| 1  | Ana López | LOAA010101MDFRNN09 | 1 |
-
----
-
-## 11. Diagrama físico (referencial)
-
-> Nota: El diagrama físico puede generarse con herramientas como pgAdmin, MySQL Workbench o dbdiagram.io. Aquí se recomienda incluir una imagen o enlace al archivo fuente del diagrama físico.
-
----
-
-## 12. Consideraciones de migración y respaldo
-
-- Realizar respaldos automáticos diarios de la base de datos.
-- Probar restauraciones periódicas para validar integridad.
-- Documentar scripts de migración y versionado de esquema.
-- Considerar migración a la nube o escalabilidad horizontal si el volumen de datos crece.
+### PRI5
+| Campo         | Tipo        | Descripción                                      |
+|--------------|-------------|--------------------------------------------------|
+| CCT          | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO        | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT      | CHAR(29)    | Nombre del Centro de Trabajo                     |
+| NIVEL        | CHAR(10)    | Nivel educativo                                  |
+| FASE         | CHAR(7)     | Fase de la evaluación                            |
+| GRADO        | CHAR(11)    | Grado escolar                                    |
+| CORREO1      | CHAR(24)    | Correo electrónico principal                     |
+| CORREO2      | CHAR(29)    | Correo electrónico alternativo                   |
+| MATRICULA_   | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA       | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE   | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO       | CHAR(10)    | Género                                           |
+| GRUPO        | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C1_B1   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 1          |
+| EIA1_C1_B2   | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 2          |
+| EIA1_C2_A1   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_B1   | CHAR(10)    | Resultado EIA1, Competencia 2, Bloque 1          |
+| EIA1_C3_A1   | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C3_B1   | CHAR(10)    | Resultado EIA1, Competencia 3, Bloque 1          |
+| EIA1_C4_A1   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA2_C1_A1   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C1_B1   | CHAR(10)    | Resultado EIA2, Competencia 1, Bloque 1          |
+| EIA2_C2_A1   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_B1   | CHAR(10)    | Resultado EIA2, Competencia 3, Bloque 1          |
+| EIA2_C4_A1   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| PLEN         | CHAR(10)    | Indicador de plenitud                            |
+| PSPC         | CHAR(10)    | Indicador PSPC                                   |
+| PENS         | CHAR(10)    | Indicador PENS                                   |
+| PHYC         | CHAR(10)    | Indicador PHYC                                   |
+| ID           | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI   | CHAR(23)    | Nombre de archivo original                       |
 
