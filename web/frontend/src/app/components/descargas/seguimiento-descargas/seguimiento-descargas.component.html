@@ -94,11 +94,23 @@
             <td>{{ descarga.archivo }}</td>
             <td>{{ descarga.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
             <td>
-              <span class="chip" [ngClass]="descarga.estado">{{ descarga.estado }}</span>
+              <span class="chip" [ngClass]="descarga.estado">{{ obtenerEtiquetaEstado(descarga.estado) }}</span>
             </td>
             <td>
-              <span class="reintentos" *ngIf="descarga.estado === 'error'">{{ descarga.reintentos }} reintentos sugeridos</span>
-              <span *ngIf="descarga.estado !== 'error'">{{ descarga.reintentos }}</span>
+              <div class="acciones">
+                <span class="reintentos" *ngIf="descarga.estado === 'error'">
+                  {{ descarga.reintentos }} reintentos sugeridos
+                </span>
+                <span *ngIf="descarga.estado !== 'error'">{{ descarga.reintentos }}</span>
+                <button
+                  *ngIf="descarga.estado === 'error'"
+                  type="button"
+                  class="btn btn-secundario"
+                  (click)="reintentarDescarga()"
+                >
+                  Reintentar
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
