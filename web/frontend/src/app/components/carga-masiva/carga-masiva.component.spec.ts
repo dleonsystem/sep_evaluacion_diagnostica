@@ -21,8 +21,16 @@ const resultadoValido: ResultadoValidacion = {
 class ExcelValidationServiceStub {
   resultado: ResultadoValidacion = resultadoValido;
 
-  detectarTipoArchivo(): Promise<'preescolar'> {
-    return Promise.resolve('preescolar');
+  detectarNivelConDetalle(): Promise<{
+    nivel: 'preescolar';
+    hojas: string[];
+    mensajesError: string[];
+  }> {
+    return Promise.resolve({
+      nivel: 'preescolar',
+      hojas: ['ESC', 'TERCERO', 'INSTRUCCIONES'],
+      mensajesError: []
+    });
   }
 
   validarPreescolar(): Promise<ResultadoValidacion> {
@@ -41,7 +49,7 @@ class ExcelValidationServiceStub {
 class ArchivoStorageServiceStub {
   guardarArchivoPreescolar(
     _archivo: File,
-    _contexto?: { email: string; cct: string },
+    _contexto?: { email?: string; cct?: string; nivel?: string },
     _opciones?: { forzarReemplazo?: boolean }
   ): Promise<{ rutaVirtual: string; modo: 'localStorage'; nota: string }> {
     return Promise.resolve({

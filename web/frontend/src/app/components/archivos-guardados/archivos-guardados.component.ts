@@ -45,12 +45,12 @@ export class ArchivosGuardadosComponent implements OnInit {
     this.cargarResultadosPdf();
 
     if (this.registros.length === 0) {
-      this.mensajeInfo = 'Aún no has cargado archivos de Preescolar en este navegador.';
+      this.mensajeInfo = 'Aún no has cargado archivos en este navegador.';
       return;
     }
 
     this.mensajeInfo =
-      'Los archivos permanecen en el almacenamiento local del navegador. Copia el archivo a assets/archivos/preescolar/ dentro de tu proyecto si necesitas usarlo en otra sesión.';
+      'Los archivos permanecen en el almacenamiento local del navegador. Copia el archivo a assets/archivos/{nivel}/ dentro de tu proyecto si necesitas usarlo en otra sesión.';
   }
 
   descargar(registro: RegistroArchivo): void {
@@ -146,6 +146,19 @@ export class ArchivosGuardadosComponent implements OnInit {
   obtenerEtiquetaPdf(resultado: PdfMetadataConStorage): string {
     const nombre = resultado.pdfName?.trim();
     return nombre ? nombre : 'PDF asignado';
+  }
+
+  obtenerEtiquetaNivel(nivel?: string): string {
+    switch ((nivel ?? '').toLowerCase()) {
+      case 'primaria':
+        return 'Primaria';
+      case 'secundaria':
+        return 'Secundaria';
+      case 'preescolar':
+        return 'Preescolar';
+      default:
+        return 'No identificado';
+    }
   }
 
   private cargarResultadosPdf(): void {

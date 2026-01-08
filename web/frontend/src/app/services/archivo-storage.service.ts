@@ -35,10 +35,17 @@ export class ArchivoStorageService {
 
   async guardarArchivoPreescolar(
     archivo: File,
-    parametros?: { forzarReemplazo?: boolean; cct?: string; correo?: string; email?: string },
+    parametros?: {
+      forzarReemplazo?: boolean;
+      cct?: string;
+      correo?: string;
+      email?: string;
+      nivel?: RegistroArchivo['nivel'];
+    },
     opciones?: { forzarReemplazo?: boolean }
   ): Promise<ResultadoGuardado> {
-    const rutaDestino = `assets/archivos/preescolar/${archivo.name}`;
+    const nivel = parametros?.nivel ?? 'preescolar';
+    const rutaDestino = `assets/archivos/${nivel}/${archivo.name}`;
     const buffer = await archivo.arrayBuffer();
     const hash = await this.calcularHash(buffer);
     const contenido = this.arrayBufferABase64(buffer);
@@ -70,7 +77,7 @@ export class ArchivoStorageService {
       claveEstable,
       cct: parametros?.cct,
       correo: emailNormalizado || undefined,
-      nivel: 'preescolar'
+      nivel
     };
 
     const duplicado = registros.find(
