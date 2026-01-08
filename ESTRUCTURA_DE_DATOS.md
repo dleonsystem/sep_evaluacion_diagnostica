@@ -671,6 +671,25 @@ Este archivo sirve como referencia técnica para desarrolladores, analistas, aud
 ---
 
 ## 2. Diccionario de Datos
+### ARCHIVOS_FRV
+| Campo              | Tipo         | Descripción                       |
+|--------------------|--------------|-----------------------------------|
+| id                 | UUID         | Identificador único               |
+| escuela_id         | UUID         | Relación con ESCUELAS             |
+| usuario_id         | UUID         | Relación con USUARIOS             |
+| ciclo_escolar      | VARCHAR(9)   | Ciclo escolar                     |
+| nivel              | ENUM         | Nivel educativo                   |
+| estado             | ENUM         | Estado del archivo                |
+| file_path          | VARCHAR(500) | Ruta en filesystem                |
+| filename_original  | VARCHAR(255) | Nombre original del archivo       |
+| file_size          | BIGINT       | Tamaño en bytes                   |
+| mime_type          | VARCHAR(50)  | Tipo MIME                         |
+| validacion_resultado| JSONB       | Resultado de validación           |
+| validado_en        | TIMESTAMP    | Fecha de validación               |
+| procesado_en       | TIMESTAMP    | Fecha de procesamiento            |
+| total_estudiantes  | INT          | Total de estudiantes              |
+| created_at         | TIMESTAMP    | Fecha de creación                 |
+| updated_at         | TIMESTAMP    | Fecha de actualización            |
 
 ### PRE3.DBF
 | Campo         | Tipo        | Descripción                                      |
