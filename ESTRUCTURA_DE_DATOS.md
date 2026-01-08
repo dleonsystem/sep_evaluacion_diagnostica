@@ -673,6 +673,61 @@ Este archivo sirve como referencia técnica para desarrolladores, analistas, aud
 
 
 ## 2. Diccionario de Datos
+---
+
+## Ejemplo de registros por tabla
+
+### Ejemplo: ESCUELAS
+| id                                   | cct       | nombre                | estado   | cp     | telefono   | email                | director         | fecha_registro       | estatus | id_turno | id_nivel | id_entidad | id_ciclo |
+|--------------------------------------|-----------|-----------------------|----------|--------|------------|----------------------|------------------|----------------------|---------|----------|----------|------------|----------|
+| 123e4567-e89b-12d3-a456-426614174000 | 09ABC1234 | Primaria Benito Juárez| CDMX     | 01234  | 5551234567 | director@escuela.mx  | Juan Pérez       | 2025-08-15T08:00:00 | A       | 1        | 2        | 9          | 2025     |
+
+### Ejemplo: ESTUDIANTES
+| id                                   | nombre           | grupo_id | curp              | fecha_nacimiento | estatus |
+|--------------------------------------|------------------|----------|-------------------|------------------|---------|
+| 223e4567-e89b-12d3-a456-426614174001 | Ana López García | 1        | LOGA010101MDFRNN09| 2010-01-01       | A       |
+
+### Ejemplo: VALORACIONES
+| id                                   | estudiante_id                          | materia_id | periodo_id | valor | fecha                |
+|--------------------------------------|----------------------------------------|------------|------------|-------|----------------------|
+| 323e4567-e89b-12d3-a456-426614174002 | 223e4567-e89b-12d3-a456-426614174001   | 5          | 1          | 3     | 2025-09-10T10:00:00  |
+
+---
+
+## Diagrama Entidad-Relación (ER) simplificado
+
+```mermaid
+erDiagram
+    ESCUELAS ||--o{ GRUPOS : agrupa
+    GRUPOS ||--o{ ESTUDIANTES : contiene
+    ESTUDIANTES ||--o{ VALORACIONES : recibe
+    VALORACIONES }o--|| MATERIAS : evalua
+    VALORACIONES }o--|| PERIODOS_EVALUACION : en
+    ESCUELAS ||--o{ USUARIOS : tiene
+    USUARIOS ||--o{ LOG_ACTIVIDADES : registra
+```
+
+---
+
+## Relaciones clave entre tablas
+
+- **ESCUELAS** (id) → **GRUPOS** (escuela_id)
+- **GRUPOS** (id_grupo) → **ESTUDIANTES** (grupo_id)
+- **ESTUDIANTES** (id) → **VALORACIONES** (estudiante_id)
+- **MATERIAS** (codigo) → **VALORACIONES** (materia_id)
+- **PERIODOS_EVALUACION** (id_periodo) → **VALORACIONES** (periodo_id)
+- **USUARIOS** (id) → **LOG_ACTIVIDADES** (id_usuario)
+
+---
+
+## Notas de uso y mejores prácticas
+
+- Mantén la integridad referencial: no elimines registros de tablas padre si existen hijos relacionados.
+- Usa los catálogos para validar datos de entrada (niveles, turnos, entidades, etc.).
+- Los identificadores UUID deben ser únicos y generados por el sistema.
+- Los campos de auditoría (created_at, updated_at) ayudan a rastrear cambios y depuración.
+- Para migraciones, respalda siempre los datos antes de realizar cambios estructurales.
+- Consulta los ejemplos para entender el formato esperado de los datos.
 
 ### ARCHIVOS_FRV
 | Campo              | Tipo         | Descripción                       |
