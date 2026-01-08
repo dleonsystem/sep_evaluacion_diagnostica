@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import {
   ArchivoStorageService,
@@ -11,7 +12,7 @@ import Swal from 'sweetalert2';
 @Component({
   selector: 'app-archivos-guardados',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './archivos-guardados.component.html',
   styleUrl: './archivos-guardados.component.scss'
 })
@@ -20,6 +21,7 @@ export class ArchivosGuardadosComponent implements OnInit {
   mensajeInfo: string | null = null;
   mensajeError: string | null = null;
   correoActivo: string | null = null;
+  filtroTexto = '';
   private readonly pdfStoragePrefix = 'pdf-resultados';
   private resultadosPdf: Record<string, PdfMetadataConStorage> = {};
 
@@ -62,6 +64,19 @@ export class ArchivosGuardadosComponent implements OnInit {
       this.mensajeError =
         error instanceof Error ? error.message : 'No se pudo descargar el archivo seleccionado.';
     }
+  }
+
+  get registrosFiltrados(): RegistroArchivo[] {
+    const filtro = this.filtroTexto.trim().toLowerCase();
+    if (!filtro) {
+      return this.registros;
+    }
+
+    return this.registros.filter((registro) => {
+      const nombre = registro.nombre?.toLowerCase() ?? '';
+      const cct = registro.cct?.toLowerCase() ?? '';
+      return nombre.includes(filtro) || cct.includes(filtro);
+    });
   }
 
   async eliminar(registro: RegistroArchivo): Promise<void> {
@@ -161,6 +176,42 @@ export class ArchivosGuardadosComponent implements OnInit {
       default:
         return 'No identificado';
     }
+  }
+
+  formatearFecha(fecha?: string): string {
+    if (!fecha) {
+      return '—';
+    }
+
+    const parsed = new Date(fecha);
+    if (Number.isNaN(parsed.getTime())) {
+      return '—';
+    }
+
+    return new Intl.DateTimeFormat('es-MX', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(parsed);
+  }
+
+  formatearTamano(bytes?: number): string {
+    if (bytes === null || bytes === undefined || Number.isNaN(bytes)) {
+      return '—';
+    }
+
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+
+    const unidades = ['KB', 'MB', 'GB'];
+    let valor = bytes / 1024;
+    let indice = 0;
+    while (valor >= 1024 && indice < unidades.length - 1) {
+      valor /= 1024;
+      indice += 1;
+    }
+
+    return `${valor.toFixed(valor >= 10 ? 1 : 2)} ${unidades[indice]}`;
   }
 
   private cargarResultadosPdf(): void {
