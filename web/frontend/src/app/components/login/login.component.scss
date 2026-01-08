@@ -69,6 +69,38 @@ input:focus {
   font-size: 1.25rem;
 }
 
+.login__password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login__password-field input {
+  padding-right: 5.5rem;
+}
+
+.login__toggle {
+  position: absolute;
+  right: 0.75rem;
+  background: transparent;
+  border: none;
+  color: #2e7d32;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login__toggle:focus {
+  outline: 2px solid rgba(46, 125, 50, 0.4);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.login__hint {
+  margin: -0.5rem 0 1rem;
+  color: #718096;
+  font-size: 0.95rem;
+}
+
 .login__submit {
   width: 100%;
   background: #2e7d32;
