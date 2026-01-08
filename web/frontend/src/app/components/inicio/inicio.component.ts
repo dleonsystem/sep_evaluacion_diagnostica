@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 
 @Component({
@@ -8,7 +8,9 @@ import { Router, RouterModule } from '@angular/router';
   templateUrl: './inicio.component.html',
   styleUrl: './inicio.component.scss'
 })
-export class InicioComponent {
+export class InicioComponent implements OnInit {
+  readonly resumenCarga = this.crearResumenVacio('Última carga');
+  readonly resumenDescarga = this.crearResumenVacio('Última descarga');
 
   usuarioAutenticado = false;
   readonly llaveMxImage =
@@ -18,6 +20,14 @@ export class InicioComponent {
 
   constructor(private readonly router: Router) {}
 
+  ngOnInit(): void {
+    const ultimaCarga = this.obtenerUltimaCarga();
+    const ultimaDescarga = this.obtenerUltimaDescarga();
+
+    this.resumenCarga.detalle = ultimaCarga;
+    this.resumenDescarga.detalle = ultimaDescarga;
+  }
+
   llaveMx(): void {
     // TODO: Integrar redirección a LlaveMX cuando esté disponible
     console.log('Redirigir a registro de LlaveMX');
@@ -26,5 +36,67 @@ export class InicioComponent {
   iniciarSesion(): void {
     void this.router.navigate(['/login'], { queryParams: { redirect: '/carga-masiva' } });
   }
-}
 
+  private obtenerUltimaCarga(): string {
+    const data = localStorage.getItem('archivos-preescolar');
+    if (!data) {
+      return 'Sin cargas registradas.';
+    }
+
+    try {
+      const registrosPorCorreo = JSON.parse(data) as Record<
+        string,
+        Array<{ nombre: string; fechaGuardado: string }>
+      >;
+      const registros = Object.values(registrosPorCorreo).flat();
+      if (!registros.length) {
+        return 'Sin cargas registradas.';
+      }
+
+      const ultimo = registros.reduce((actual, siguiente) =>
+        siguiente.fechaGuardado > actual.fechaGuardado ? siguiente : actual
+      );
+      return `${ultimo.nombre} • ${this.formatearFecha(ultimo.fechaGuardado)}`;
+    } catch (error) {
+      console.error('No se pudo leer el historial de cargas', error);
+      return 'No disponible.';
+    }
+  }
+
+  private obtenerUltimaDescarga(): string {
+    const data = localStorage.getItem('ultima-descarga');
+    if (!data) {
+      return 'Sin descargas registradas.';
+    }
+
+    try {
+      const parsed = JSON.parse(data) as { nombre?: string; fecha?: string };
+      const nombre = parsed?.nombre?.trim();
+      const fecha = parsed?.fecha;
+      if (!fecha) {
+        return 'Sin descargas registradas.';
+      }
+      const detalleFecha = this.formatearFecha(fecha);
+      return nombre ? `${nombre} • ${detalleFecha}` : detalleFecha;
+    } catch (error) {
+      console.error('No se pudo leer el historial de descargas', error);
+      return 'No disponible.';
+    }
+  }
+
+  private formatearFecha(fechaIso: string): string {
+    const fecha = new Date(fechaIso);
+    if (Number.isNaN(fecha.getTime())) {
+      return 'Fecha no válida';
+    }
+
+    return new Intl.DateTimeFormat('es-MX', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(fecha);
+  }
+
+  private crearResumenVacio(etiqueta: string): { etiqueta: string; detalle: string } {
+    return { etiqueta, detalle: 'Cargando...' };
+  }
+}
