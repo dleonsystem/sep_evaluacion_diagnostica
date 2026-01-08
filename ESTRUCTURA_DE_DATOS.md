@@ -671,6 +671,30 @@ Este archivo sirve como referencia técnica para desarrolladores, analistas, aud
 ---
 
 ## 2. Diccionario de Datos
+### CONFIGURACIONES_USUARIO
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id              | UUID         | Identificador único               |
+| usuario_id      | UUID         | Relación con USUARIOS             |
+| clave           | VARCHAR(100) | Nombre de la configuración        |
+| valor           | TEXT         | Valor de la configuración         |
+| actualizado_en  | TIMESTAMP    | Fecha de última actualización     |
+### COMPETENCIAS
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id_competencia  | INT          | Identificador de competencia      |
+| id_materia      | INT          | Relación con MATERIAS             |
+| codigo          | VARCHAR(20)  | Código de competencia             |
+| descripcion     | VARCHAR(500) | Descripción                       |
+| nivel_esperado  | INT          | Nivel esperado (1-4)              |
+### CATALOGO_ERRORES
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| codigo          | VARCHAR(20)  | Código de error                   |
+| mensaje         | VARCHAR(255) | Mensaje corto                     |
+| descripcion     | TEXT         | Descripción detallada             |
+| modulo          | VARCHAR(100) | Módulo o componente relacionado   |
+| solucion        | TEXT         | Sugerencia de solución            |
 ### BITACORA_DETALLADA
 | Campo           | Tipo         | Descripción                       |
 |-----------------|--------------|-----------------------------------|
