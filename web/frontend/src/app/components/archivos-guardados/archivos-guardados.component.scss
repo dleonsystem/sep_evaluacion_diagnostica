@@ -40,6 +40,41 @@
   gap: 0.5rem;
 }
 
+.archivos__controles {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1.5rem 0 1rem;
+  flex-wrap: wrap;
+}
+
+.archivos__control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: #13322e;
+}
+
+.archivos__control input {
+  min-width: 280px;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid #cbd5f5;
+  font-size: 1.2rem;
+}
+
+.archivos__control input:focus {
+  outline: 2px solid rgba(97, 18, 50, 0.35);
+  border-color: #611232;
+}
+
+.archivos__contador {
+  font-weight: 600;
+  color: #611232;
+}
+
 .archivos__mensaje {
   padding: 0.9rem 1rem;
   border-radius: 12px;
@@ -112,6 +147,9 @@
   color: #fff;
   cursor: pointer;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.2s ease;
 }
 

@@ -13,6 +13,20 @@
     <p class="archivos__mensaje archivos__mensaje--error" *ngIf="mensajeError">{{ mensajeError }}</p>
   </div>
 
+  <div class="archivos__controles" *ngIf="registros.length">
+    <label class="archivos__control">
+      <span>Buscar por nombre o CCT</span>
+      <input
+        type="search"
+        placeholder="Ej. CCT 09ABC1234 o nombre del archivo"
+        [(ngModel)]="filtroTexto"
+      />
+    </label>
+    <span class="archivos__contador">
+      {{ registrosFiltrados.length }} de {{ registros.length }} archivos
+    </span>
+  </div>
+
   <div class="archivos__tabla" *ngIf="registros.length; else sinRegistros">
     <table>
       <thead>
@@ -21,24 +35,33 @@
           <th>Nivel</th>
           <th>CCT</th>
           <th>Correo</th>
-          <th>Peso (KB)</th>
+          <th>Tamaño</th>
           <th>Fecha de guardado</th>
           <th>Acciones</th>
           <th>Resultados</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let registro of registros">
+        <tr *ngFor="let registro of registrosFiltrados">
           <td data-label="Nombre">{{ registro.nombre }}</td>
           <td data-label="Nivel">{{ obtenerEtiquetaNivel(registro.nivel) }}</td>
           <td data-label="CCT">{{ registro.cct || '—' }}</td>
           <td data-label="Correo">{{ registro.correo || '—' }}</td>
-          <td data-label="Peso">{{ (registro.tamano / 1024) | number:'1.0-2' }}</td>
-          <td data-label="Fecha">{{ registro.fechaGuardado | date:'medium' }}</td>
+          <td data-label="Tamaño">{{ formatearTamano(registro.tamano) }}</td>
+          <td data-label="Fecha">{{ formatearFecha(registro.fechaGuardado) }}</td>
           <td data-label="Acciones">
             <div class="archivos__acciones">
               <button type="button" class="archivos__accion" (click)="descargar(registro)">
-                Descargar copia
+                <svg class="archivos__icono" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path
+                    d="M12 4v10m0 0l-4-4m4 4l4-4M5 20h14"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                Descargar
               </button>
               <button
                 type="button"
