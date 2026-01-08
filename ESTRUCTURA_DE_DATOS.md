@@ -671,6 +671,17 @@ Este archivo sirve como referencia técnica para desarrolladores, analistas, aud
 ---
 
 ## 2. Diccionario de Datos
+### BITACORA_DETALLADA
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id              | BIGSERIAL    | Identificador único               |
+| usuario_id      | UUID         | Relación con USUARIOS             |
+| accion          | VARCHAR(100) | Acción realizada                  |
+| descripcion     | TEXT         | Descripción detallada             |
+| modulo          | VARCHAR(100) | Módulo o componente               |
+| resultado       | VARCHAR(50)  | Resultado (OK, ERROR, etc.)       |
+| ip_address      | INET         | IP de origen                      |
+| fecha           | TIMESTAMP    | Fecha y hora                      |
 ### ARCHIVOS_FRV
 | Campo              | Tipo         | Descripción                       |
 |--------------------|--------------|-----------------------------------|
