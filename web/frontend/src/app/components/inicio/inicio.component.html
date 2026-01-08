@@ -75,6 +75,38 @@
 
   </section>
 
+  <section class="flujo-rapido mt-4 mb-5">
+    <div class="flujo-rapido__encabezado">
+      <h3 class="flujo-rapido__titulo">Flujo rápido para subir y descargar resultados</h3>
+      <p class="flujo-rapido__descripcion">
+        Sigue estos pasos para completar tu envío y consultar el estado más reciente en tu navegador.
+      </p>
+    </div>
+    <ol class="flujo-rapido__pasos">
+      <li>Descargar plantilla</li>
+      <li>Validar archivo</li>
+      <li>Descargar resultados</li>
+    </ol>
+    <div class="flujo-rapido__acciones">
+      <a class="flujo-rapido__boton flujo-rapido__boton--primario" routerLink="/carga-masiva">
+        Cargar archivo
+      </a>
+      <a class="flujo-rapido__boton flujo-rapido__boton--secundario" routerLink="/archivos-preescolar">
+        Ver archivos guardados
+      </a>
+    </div>
+    <div class="flujo-rapido__estado">
+      <div class="flujo-rapido__tarjeta">
+        <span class="flujo-rapido__etiqueta">{{ resumenCarga.etiqueta }}</span>
+        <p class="flujo-rapido__detalle">{{ resumenCarga.detalle }}</p>
+      </div>
+      <div class="flujo-rapido__tarjeta">
+        <span class="flujo-rapido__etiqueta">{{ resumenDescarga.etiqueta }}</span>
+        <p class="flujo-rapido__detalle">{{ resumenDescarga.detalle }}</p>
+      </div>
+    </div>
+  </section>
+
   <section class="acciones-captura mt-5 mb-10">
     <h3 class="acciones-captura__titulo">Elige cómo registrar tus movimientos</h3>
     <p class="acciones-captura__descripcion">

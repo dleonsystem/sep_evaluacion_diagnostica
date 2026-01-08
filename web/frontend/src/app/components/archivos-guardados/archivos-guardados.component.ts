@@ -56,6 +56,7 @@ export class ArchivosGuardadosComponent implements OnInit {
   descargar(registro: RegistroArchivo): void {
     try {
       this.archivoStorageService.descargarRegistro(registro);
+      this.registrarDescarga(registro.nombre);
       this.mensajeError = null;
     } catch (error) {
       this.mensajeError =
@@ -133,6 +134,7 @@ export class ArchivosGuardadosComponent implements OnInit {
       enlace.click();
       document.body.removeChild(enlace);
       URL.revokeObjectURL(url);
+      this.registrarDescarga(enlace.download);
     } catch (error) {
       return;
     }
@@ -188,6 +190,14 @@ export class ArchivosGuardadosComponent implements OnInit {
         registro.nombre
       }|${registro.fechaGuardado}`;
     return `${this.pdfStoragePrefix}:${claveEstable}`;
+  }
+
+  private registrarDescarga(nombre: string): void {
+    const payload = {
+      nombre,
+      fecha: new Date().toISOString()
+    };
+    localStorage.setItem('ultima-descarga', JSON.stringify(payload));
   }
 }
 
