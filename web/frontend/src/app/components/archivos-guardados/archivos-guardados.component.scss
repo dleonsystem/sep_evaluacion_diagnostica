@@ -200,18 +200,24 @@
   .archivos td {
     padding: 0.75rem 0.9rem;
     border-bottom: 1px solid #e5e7eb;
-    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
   }
 
   .archivos td::before {
     content: attr(data-label);
-    position: absolute;
-    left: 0.9rem;
-    top: 0.4rem;
+    position: static;
+    display: block;
     font-size: 1.25rem;
     font-weight: 700;
     text-transform: uppercase;
     color: #98989a;
+  }
+
+  .archivos__acciones {
+    flex-wrap: wrap;
+    row-gap: 0.4rem;
   }
 
   .archivos tr:last-child td:last-child {
