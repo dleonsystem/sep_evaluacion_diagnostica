@@ -23,7 +23,6 @@
           <th>Correo</th>
           <th>Peso (KB)</th>
           <th>Fecha de guardado</th>
-          <th>Ruta de referencia</th>
           <th>Acciones</th>
           <th>Resultados</th>
         </tr>
@@ -36,7 +35,6 @@
           <td data-label="Correo">{{ registro.correo || '—' }}</td>
           <td data-label="Peso">{{ (registro.tamano / 1024) | number:'1.0-2' }}</td>
           <td data-label="Fecha">{{ registro.fechaGuardado | date:'medium' }}</td>
-          <td data-label="Ruta">{{ registro.ruta }}</td>
           <td data-label="Acciones">
             <div class="archivos__acciones">
               <button type="button" class="archivos__accion" (click)="descargar(registro)">
