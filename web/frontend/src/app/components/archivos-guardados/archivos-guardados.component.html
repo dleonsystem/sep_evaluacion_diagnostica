@@ -1,9 +1,9 @@
 <section class="archivos">
   <header class="archivos__encabezado">
-    <p class="archivos__eyebrow">Cargas realizadas · Preescolar</p>
+    <p class="archivos__eyebrow">Cargas realizadas</p>
     <h1 class="archivos__titulo">Archivos almacenados en este navegador</h1>
     <p class="archivos__descripcion">
-      Aquí podrás consultar los archivos que has validado y guardado desde el módulo de carga de Preescolar.
+      Aquí podrás consultar los archivos que has validado y guardado desde el módulo de carga.
       Los datos permanecen en el <strong>almacenamiento local del navegador</strong> y no se envían a un servidor.
     </p>
   </header>
@@ -18,11 +18,11 @@
       <thead>
         <tr>
           <th>Nombre</th>
+          <th>Nivel</th>
           <th>CCT</th>
           <th>Correo</th>
           <th>Peso (KB)</th>
           <th>Fecha de guardado</th>
-          <th>Ruta de referencia</th>
           <th>Acciones</th>
           <th>Resultados</th>
         </tr>
@@ -30,11 +30,11 @@
       <tbody>
         <tr *ngFor="let registro of registros">
           <td data-label="Nombre">{{ registro.nombre }}</td>
+          <td data-label="Nivel">{{ obtenerEtiquetaNivel(registro.nivel) }}</td>
           <td data-label="CCT">{{ registro.cct || '—' }}</td>
           <td data-label="Correo">{{ registro.correo || '—' }}</td>
           <td data-label="Peso">{{ (registro.tamano / 1024) | number:'1.0-2' }}</td>
           <td data-label="Fecha">{{ registro.fechaGuardado | date:'medium' }}</td>
-          <td data-label="Ruta">{{ registro.ruta }}</td>
           <td data-label="Acciones">
             <div class="archivos__acciones">
               <button type="button" class="archivos__accion" (click)="descargar(registro)">
