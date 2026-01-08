@@ -646,6 +646,7 @@ Este archivo sirve como referencia técnica para desarrolladores, analistas, aud
 | estatus         | CHAR(1)      | Estado (A=Activo, I=Inactivo)     |
 
 ### VALORACIONES
+
 | Campo           | Tipo         | Descripción                       |
 |-----------------|--------------|-----------------------------------|
 | id              | UUID         | Identificador único               |
@@ -654,6 +655,12 @@ Este archivo sirve como referencia técnica para desarrolladores, analistas, aud
 | periodo_id      | INT          | Relación con PERIODOS_EVALUACION  |
 | valor           | INT          | Valoración (0-3)                  |
 | fecha           | DATETIME     | Fecha de valoración               |
+
+#### Restricciones y claves
+- **PK:** id
+- **FK:** estudiante_id → ESTUDIANTES(id)
+- **FK:** materia_id → MATERIAS(id_materia)
+- **FK:** periodo_id → PERIODOS_EVALUACION(id_periodo)
 
 <!-- FIN DICCIONARIO ORDENADO -->
 
