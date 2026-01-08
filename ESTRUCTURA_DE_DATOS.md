@@ -655,17 +655,7 @@ Este archivo sirve como referencia técnica para desarrolladores, analistas, aud
 | valor           | INT          | Valoración (0-3)                  |
 | fecha           | DATETIME     | Fecha de valoración               |
 
-<!-- FIN DICCIONARIO ORDENADO -->
 
-...existing code...
-| EIA2_C3_A1   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
-| EIA2_C4_A1   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
-| PLEN         | CHAR(10)    | Indicador de plenitud                            |
-| PSPC         | CHAR(10)    | Indicador PSPC                                   |
-| PENS         | CHAR(10)    | Indicador PENS                                   |
-| PHYC         | CHAR(10)    | Indicador PHYC                                   |
-| ID           | CHAR(19)    | Identificador único                              |
-| ARCHIVOORI   | CHAR(23)    | Nombre de archivo original                       |
 
 ```
 
