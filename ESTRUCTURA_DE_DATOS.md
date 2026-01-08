@@ -257,6 +257,37 @@ Este archivo sirve como referencia técnica para desarrolladores, analistas, aud
 | PHYC         | CHAR(10)    | Indicador PHYC                                   |
 | ID           | CHAR(19)    | Identificador único                              |
 | ARCHIVOORI   | CHAR(23)    | Nombre de archivo original                       |
+| Campo         | Tipo        | Descripción                                      |
+|--------------|-------------|--------------------------------------------------|
+| CCT          | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO        | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT      | CHAR(29)    | Nombre del Centro de Trabajo                     |
+| NIVEL        | CHAR(10)    | Nivel educativo                                  |
+| FASE         | CHAR(7)     | Fase de la evaluación                            |
+| GRADO        | CHAR(11)    | Grado escolar                                    |
+| CORREO1      | CHAR(26)    | Correo electrónico principal                     |
+| CORREO2      | CHAR(29)    | Correo electrónico alternativo                   |
+| MATRICULA_   | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA       | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE   | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO       | CHAR(10)    | Género                                           |
+| GRUPO        | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1   | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C2_A1   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_A2   | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
+| EIA1_C3_A1   | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C4_A1   | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA2_C1_A1   | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C2_A1   | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_A2   | CHAR(10)    | Resultado EIA2, Competencia 3, Área 2            |
+| EIA2_C4_A1   | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| PLEN         | CHAR(10)    | Indicador de plenitud                            |
+| PSPC         | CHAR(10)    | Indicador PSPC                                   |
+| PENS         | CHAR(10)    | Indicador PENS                                   |
+| PHYC         | CHAR(10)    | Indicador PHYC                                   |
+| ID           | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI   | CHAR(23)    | Nombre de archivo original                       |
 
 
 ### PRI2
