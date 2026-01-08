@@ -80,12 +80,47 @@
   width: 100%;
 }
 
+.admin-login__password {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.admin-login__password input {
+  padding-right: 5.5rem;
+}
+
+.admin-login__toggle {
+  position: absolute;
+  right: 0.55rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #611232;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+  border-radius: 999px;
+}
+
+.admin-login__toggle:focus-visible {
+  outline: 2px solid #9d2449;
+  outline-offset: 2px;
+}
+
 .admin-login__error {
   margin-top: 0.75rem;
   padding: 0.75rem 1rem;
   border-radius: 10px;
   background: #ffe4e6;
   color: #611232;
+}
+
+.admin-login__help {
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+  color: #4b5563;
 }
 
 .admin-login__submit {

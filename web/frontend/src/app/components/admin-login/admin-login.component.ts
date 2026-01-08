@@ -15,6 +15,7 @@ import { AdminAuthService } from '../../services/admin-auth.service';
 export class AdminLoginComponent {
   correo = '';
   contrasena = '';
+  mostrarContrasena = false;
   error: string | null = null;
   autenticando = false;
 
@@ -47,5 +48,9 @@ export class AdminLoginComponent {
     } finally {
       this.autenticando = false;
     }
+  }
+
+  toggleMostrarContrasena(): void {
+    this.mostrarContrasena = !this.mostrarContrasena;
   }
 }
