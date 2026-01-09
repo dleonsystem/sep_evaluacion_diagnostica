@@ -656,7 +656,7 @@ Este archivo sirve como referencia técnica para desarrolladores, analistas, aud
 | fecha           | DATETIME     | Fecha de valoración               |
 
 
-
+````
 ---
 
 ### Descripción de entidades principales:
