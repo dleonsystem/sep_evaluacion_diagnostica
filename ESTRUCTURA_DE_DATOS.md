@@ -666,7 +666,7 @@ Este archivo sirve como referencia técnica para desarrolladores, analistas, aud
  **COMPETENCIAS**: Competencias evaluadas por materia.
  **RESULTADOS_COMPETENCIAS**: Logros por competencia en cada evaluación.
  **LOG_ACTIVIDADES**: Bitácora de actividades y auditoría.
- **CAT_GRADOS**: Catálogo de grados escolares.
+
 
 ---
 ---
