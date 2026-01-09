@@ -657,8 +657,6 @@ Este archivo sirve como referencia técnica para desarrolladores, analistas, aud
 
 
 
-```
-
 ---
 
 ### Descripción de entidades principales:
