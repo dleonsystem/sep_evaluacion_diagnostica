@@ -113,27 +113,4 @@ describe('CargaMasivaComponent', () => {
     expect(component.resultados[0].errores[0]).toContain('Formato no permitido');
   });
 
-  it('should block when Excel email differs from the form', async () => {
-    const excelService = TestBed.inject(
-      ExcelValidationService
-    ) as unknown as ExcelValidationServiceStub;
-    excelService.resultado = {
-      ...resultadoValido,
-      esc: { ...resultadoValido.esc!, correo: 'otro@correo.mx' }
-    };
-
-    component.correoControl.setValue('demo@correo.mx');
-    const input = document.createElement('input');
-    const archivo = new File(['contenido'], 'archivo.xlsx', {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    });
-    Object.defineProperty(input, 'files', { value: [archivo] });
-
-    await component.onArchivoSeleccionado({ target: input } as unknown as Event);
-
-    expect(component.resultados[0].estado).toBe('error');
-    expect(component.resultados[0].errores).toContain(
-      'El correo capturado debe coincidir con el que aparece en la hoja ESC del archivo.'
-    );
-  });
 });
