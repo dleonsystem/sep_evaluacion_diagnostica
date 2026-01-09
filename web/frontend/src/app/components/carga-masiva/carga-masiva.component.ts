@@ -373,25 +373,6 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.authService.coincidenCredenciales(resultado.esc.cct, resultado.esc.correo)) {
-      this.agregarErrores(resultadoArchivo, [
-        'El CCT y el correo deben coincidir con los registrados en tu primer envío.'
-      ]);
-      await this.finalizarConError(resultadoArchivo);
-      return;
-    }
-
-    const correoFormulario = this.correoControl.value.trim().toLowerCase();
-    const correoEnArchivo = (resultado.esc.correo ?? '').trim().toLowerCase();
-
-    if (correoFormulario !== correoEnArchivo) {
-      this.agregarErrores(resultadoArchivo, [
-        'El correo capturado debe coincidir con el que aparece en la hoja ESC del archivo.'
-      ]);
-      await this.finalizarConError(resultadoArchivo);
-      return;
-    }
-
     let habiaCredenciales = false;
     let nuevasCredenciales: { contrasena: string; esNueva: boolean } | null = null;
     const fechaDisponible = this.calcularFechaDisponible();
