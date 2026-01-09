@@ -567,7 +567,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     resultadoArchivo.pdfEstado = 'generando';
     resultadoArchivo.pdfMensaje = 'Creando PDF con el detalle de errores...';
     resultadoArchivo.pdfError = null;
-    resultadoArchivo.pdfNombre = `errores-${resultadoArchivo.archivo.name.replace(/\s+/g, '-')}`;
+    const nombreBase = resultadoArchivo.archivo.name.replace(/\s+/g, '-').replace(/\.[^/.]+$/, '');
+    resultadoArchivo.pdfNombre = `errores-${nombreBase}.pdf`;
 
     try {
       const blob = await this.mockPdfService.generarPdfErrores({
