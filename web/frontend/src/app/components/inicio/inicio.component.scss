@@ -326,7 +326,7 @@ $gray-light: #f7f7f7;
     position: relative;
     background: #f8fafc;
     border-radius: 16px;
-    padding: 1.25rem 1.5rem 1.25rem 4rem;
+    padding: 1.25rem 1.5rem 1.25rem 5rem;
     font-size: 1.4rem;
     font-weight: 600;
     color: #111827;
@@ -335,7 +335,7 @@ $gray-light: #f7f7f7;
     &::before {
       content: counter(pasos);
       position: absolute;
-      left: 1.5rem;
+      left: 1.25rem;
       top: 50%;
       transform: translateY(-50%);
       width: 34px;

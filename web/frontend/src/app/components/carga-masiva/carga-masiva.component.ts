@@ -373,25 +373,6 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.authService.coincidenCredenciales(resultado.esc.cct, resultado.esc.correo)) {
-      this.agregarErrores(resultadoArchivo, [
-        'El CCT y el correo deben coincidir con los registrados en tu primer envío.'
-      ]);
-      await this.finalizarConError(resultadoArchivo);
-      return;
-    }
-
-    const correoFormulario = this.correoControl.value.trim().toLowerCase();
-    const correoEnArchivo = (resultado.esc.correo ?? '').trim().toLowerCase();
-
-    if (correoFormulario !== correoEnArchivo) {
-      this.agregarErrores(resultadoArchivo, [
-        'El correo capturado debe coincidir con el que aparece en la hoja ESC del archivo.'
-      ]);
-      await this.finalizarConError(resultadoArchivo);
-      return;
-    }
-
     let habiaCredenciales = false;
     let nuevasCredenciales: { contrasena: string; esNueva: boolean } | null = null;
     const fechaDisponible = this.calcularFechaDisponible();
@@ -586,7 +567,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     resultadoArchivo.pdfEstado = 'generando';
     resultadoArchivo.pdfMensaje = 'Creando PDF con el detalle de errores...';
     resultadoArchivo.pdfError = null;
-    resultadoArchivo.pdfNombre = `errores-${resultadoArchivo.archivo.name.replace(/\s+/g, '-')}`;
+    const nombreBase = resultadoArchivo.archivo.name.replace(/\s+/g, '-').replace(/\.[^/.]+$/, '');
+    resultadoArchivo.pdfNombre = `errores-${nombreBase}.pdf`;
 
     try {
       const blob = await this.mockPdfService.generarPdfErrores({
