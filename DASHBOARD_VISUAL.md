@@ -41,7 +41,6 @@ gantt
 ## 🎯 KPIs FASE 1 (Portal Híbrido - Marzo 2026)
 
 ```mermaid
-%%{init: {'theme':'base'}}%%
 quadrantChart
     title Métricas de Éxito Fase 1
     x-axis Bajo Impacto --> Alto Impacto
