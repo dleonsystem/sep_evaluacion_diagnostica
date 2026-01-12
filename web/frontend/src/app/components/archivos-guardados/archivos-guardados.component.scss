@@ -1,0 +1,264 @@
+.archivos {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #13322e;
+  font-size: 1.5rem;
+}
+
+.archivos__encabezado {
+  margin-bottom: 1.5rem;
+}
+
+.archivos__eyebrow {
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: 0.08em;
+  color: #611232;
+  margin: 0 0 0.35rem;
+}
+
+.archivos__titulo {
+  margin: 0.2rem 0;
+  font-size: 1.9rem;
+  font-weight: 700;
+}
+
+.archivos__descripcion {
+  margin: 0;
+  color: #13322e;
+  line-height: 1.5;
+  font-size: 1rem;
+}
+
+.archivos__mensajes {
+  margin: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.archivos__controles {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1.5rem 0 1rem;
+  flex-wrap: wrap;
+}
+
+.archivos__control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: #13322e;
+}
+
+.archivos__control input {
+  min-width: 280px;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid #cbd5f5;
+  font-size: 1.2rem;
+}
+
+.archivos__control input:focus {
+  outline: 2px solid rgba(97, 18, 50, 0.35);
+  border-color: #611232;
+}
+
+.archivos__contador {
+  font-weight: 600;
+  color: #611232;
+}
+
+.archivos__mensaje {
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  font-size: 1.5rem;
+}
+
+.archivos__mensaje--info {
+  background: #f2f2f2;
+  color: #611232;
+  border: 1px solid #a57f2c;
+}
+
+.archivos__mensaje--error {
+  background: #f6e8e8;
+  color: #611232;
+  border: 1px solid #9d2449;
+}
+
+.archivos__tabla {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.archivos table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.archivos thead {
+  background: #f6eddc;
+}
+
+.archivos th,
+.archivos td {
+  padding: 0.9rem 1rem;
+  text-align: left;
+  font-size: 1.25rem;
+}
+
+.archivos th {
+  font-weight: 700;
+  color: #13322e;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.archivos tbody tr:nth-child(even) {
+  background: #fff;
+}
+
+.archivos tbody tr:hover {
+  background: #f6eddc;
+}
+
+.archivos__acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.archivos__accion {
+  padding: 0.45rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid #611232;
+  background: #9d2449;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.2s ease;
+}
+
+.archivos__accion:hover {
+  background: #611232;
+  box-shadow: 0 8px 20px rgba(97, 18, 50, 0.25);
+  transform: translateY(-1px);
+}
+
+.archivos__accion:active {
+  transform: translateY(0);
+}
+
+.archivos__accion--peligro {
+  background: #f6e8e8;
+  border-color: #9d2449;
+  color: #611232;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem;
+}
+
+.archivos__accion--peligro:hover {
+  background: #f0d7d7;
+  box-shadow: 0 8px 20px rgba(97, 18, 50, 0.2);
+  transform: translateY(-1px);
+}
+
+.archivos__icono {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.archivos__resultado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.archivos__resultado-nombre {
+  font-weight: 600;
+  color: #13322e;
+  font-size: 1.5rem;
+}
+
+.archivos__vacio {
+  text-align: center;
+  padding: 2rem 1rem;
+  background: #f6eddc;
+  border: 1px dashed #a57f2c;
+  border-radius: 16px;
+  color: #13322e;
+  font-size: 1.5rem;
+}
+
+.archivos__link {
+  color: #9d2449;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.archivos__link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 720px) {
+  .archivos__tabla {
+    box-shadow: none;
+  }
+
+  .archivos table,
+  .archivos thead,
+  .archivos tbody,
+  .archivos th,
+  .archivos td,
+  .archivos tr {
+    display: block;
+    width: 100%;
+  }
+
+  .archivos thead {
+    display: none;
+  }
+
+  .archivos td {
+    padding: 0.75rem 0.9rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .archivos td::before {
+    content: attr(data-label);
+    position: static;
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #98989a;
+  }
+
+  .archivos__acciones {
+    flex-wrap: wrap;
+    row-gap: 0.4rem;
+  }
+
+  .archivos tr:last-child td:last-child {
+    border-bottom: none;
+  }
+}

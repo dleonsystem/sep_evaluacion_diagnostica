@@ -1,0 +1,77 @@
+<div class="descargas">
+  <header class="encabezado">
+    <h1>Descarga de versiones</h1>
+    <p>Ingresa con el correo y contraseña generada para acceder a las ligas de descarga.</p>
+  </header>
+
+  <section class="tarjeta">
+    <div *ngIf="!autenticado" class="formulario">
+      <form [formGroup]="accesoForm" (ngSubmit)="iniciarSesion()">
+        <div class="campo">
+          <label for="correo">Correo electrónico</label>
+          <input
+            id="correo"
+            type="email"
+            formControlName="correo"
+            placeholder="usuario@dominio.com"
+            [class.error]="accesoForm.controls.correo.invalid && accesoForm.controls.correo.touched"
+          />
+          <small *ngIf="accesoForm.controls.correo.invalid && accesoForm.controls.correo.touched">
+            Ingresa un correo válido.
+          </small>
+        </div>
+
+        <div class="campo">
+          <label for="contrasena">Contraseña generada</label>
+          <input
+            id="contrasena"
+            type="password"
+            formControlName="contrasena"
+            placeholder="Ej. Abc123456789"
+            [class.error]="accesoForm.controls.contrasena.invalid && accesoForm.controls.contrasena.touched"
+          />
+          <small *ngIf="accesoForm.controls.contrasena.invalid && accesoForm.controls.contrasena.touched">
+            La contraseña es obligatoria.
+          </small>
+        </div>
+
+        <button type="submit" [disabled]="autenticando" class="btn primario">
+          {{ autenticando ? 'Validando...' : 'Ingresar' }}
+        </button>
+      </form>
+    </div>
+
+    <div *ngIf="autenticado" class="contenido">
+      <app-seguimiento-descargas></app-seguimiento-descargas>
+
+      <div class="estado" *ngIf="cargandoVersiones">Cargando versiones disponibles...</div>
+      <div class="estado estado-error" *ngIf="error && !cargandoVersiones">{{ error }}</div>
+
+      <div *ngIf="!cargandoVersiones && !error">
+        <table class="tabla" *ngIf="versiones.length; else sinVersiones">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Versión</th>
+              <th>Fecha de publicación</th>
+              <th>Descarga</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let version of versiones">
+              <td>{{ version.numero }}</td>
+              <td>{{ version.nombre }}</td>
+              <td>{{ version.fechaPublicacion | date: 'dd/MM/yyyy' }}</td>
+              <td>
+                <button class="btn" type="button" (click)="descargar(version)">Descargar</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <ng-template #sinVersiones>
+          <p class="estado">No hay versiones disponibles por el momento.</p>
+        </ng-template>
+      </div>
+    </div>
+  </section>
+</div>

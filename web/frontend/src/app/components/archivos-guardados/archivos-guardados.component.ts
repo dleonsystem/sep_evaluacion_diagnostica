@@ -1,0 +1,264 @@
+import { CommonModule } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
+import {
+  ArchivoStorageService,
+  RegistroArchivo
+} from '../../services/archivo-storage.service';
+import { AuthService } from '../../services/auth.service';
+import Swal from 'sweetalert2';
+
+@Component({
+  selector: 'app-archivos-guardados',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule],
+  templateUrl: './archivos-guardados.component.html',
+  styleUrl: './archivos-guardados.component.scss'
+})
+export class ArchivosGuardadosComponent implements OnInit {
+  registros: RegistroArchivo[] = [];
+  mensajeInfo: string | null = null;
+  mensajeError: string | null = null;
+  correoActivo: string | null = null;
+  filtroTexto = '';
+  private readonly pdfStoragePrefix = 'pdf-resultados';
+  private resultadosPdf: Record<string, PdfMetadataConStorage> = {};
+
+  constructor(
+    private readonly archivoStorageService: ArchivoStorageService,
+    private readonly authService: AuthService,
+    private readonly router: Router
+  ) {}
+
+  ngOnInit(): void {
+    if (this.authService.requiereLoginParaNuevaCarga()) {
+      void this.router.navigate(['/login'], { queryParams: { redirect: '/archivos-preescolar' } });
+      return;
+    }
+
+    this.correoActivo = this.authService.obtenerCredenciales()?.correo ?? null;
+    this.cargarRegistros();
+  }
+
+  cargarRegistros(): void {
+    this.mensajeError = null;
+    this.registros = this.archivoStorageService.obtenerRegistros(this.correoActivo);
+    this.cargarResultadosPdf();
+
+    if (this.registros.length === 0) {
+      this.mensajeInfo = 'Aún no has cargado archivos en este navegador.';
+      return;
+    }
+
+    this.mensajeInfo =
+      'Los archivos permanecen en el almacenamiento local del navegador. Copia el archivo a assets/archivos/{nivel}/ dentro de tu proyecto si necesitas usarlo en otra sesión.';
+  }
+
+  descargar(registro: RegistroArchivo): void {
+    try {
+      this.archivoStorageService.descargarRegistro(registro);
+      this.registrarDescarga(registro.nombre);
+      this.mensajeError = null;
+    } catch (error) {
+      this.mensajeError =
+        error instanceof Error ? error.message : 'No se pudo descargar el archivo seleccionado.';
+    }
+  }
+
+  get registrosFiltrados(): RegistroArchivo[] {
+    const filtro = this.filtroTexto.trim().toLowerCase();
+    if (!filtro) {
+      return this.registros;
+    }
+
+    return this.registros.filter((registro) => {
+      const nombre = registro.nombre?.toLowerCase() ?? '';
+      const cct = registro.cct?.toLowerCase() ?? '';
+      return nombre.includes(filtro) || cct.includes(filtro);
+    });
+  }
+
+  async eliminar(registro: RegistroArchivo): Promise<void> {
+    const confirmacion = await Swal.fire({
+      title: '¿Eliminar este archivo?',
+      text: 'Se quitará la copia guardada en este navegador.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (!confirmacion.isConfirmed) {
+      return;
+    }
+
+    try {
+      this.archivoStorageService.eliminarRegistro(registro);
+      this.cargarRegistros();
+      await Swal.fire({
+        title: 'Archivo eliminado',
+        text: 'El registro se eliminó del almacenamiento local.',
+        icon: 'success'
+      });
+    } catch (error) {
+      const mensajeError =
+        error instanceof Error ? error.message : 'No se pudo eliminar el archivo seleccionado.';
+      this.mensajeError = mensajeError;
+      await Swal.fire({
+        title: 'No se pudo eliminar',
+        text: mensajeError,
+        icon: 'error'
+      });
+    }
+  }
+
+  descargarResultados(storageKey: string): void {
+    const data = localStorage.getItem(storageKey);
+    if (!data) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(data) as PdfMetadata;
+      if (!parsed?.pdfBase64) {
+        return;
+      }
+
+      const [header, base64Data] = parsed.pdfBase64.split(',');
+      if (!base64Data) {
+        return;
+      }
+
+      const mimeMatch = header?.match(/data:(.*?);base64/);
+      const mimeType = mimeMatch?.[1] ?? 'application/pdf';
+      const byteString = atob(base64Data);
+      const bytes = new Uint8Array(byteString.length);
+      for (let i = 0; i < byteString.length; i += 1) {
+        bytes[i] = byteString.charCodeAt(i);
+      }
+
+      const blob = new Blob([bytes], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const enlace = document.createElement('a');
+      enlace.href = url;
+      enlace.download = parsed.pdfName ?? 'resultados.pdf';
+      enlace.style.display = 'none';
+
+      document.body.appendChild(enlace);
+      enlace.click();
+      document.body.removeChild(enlace);
+      URL.revokeObjectURL(url);
+      this.registrarDescarga(enlace.download);
+    } catch (error) {
+      return;
+    }
+  }
+
+  obtenerPdfPorRegistro(registro: RegistroArchivo): PdfMetadataConStorage | null {
+    const storageKey = this.obtenerPdfStorageKey(registro);
+    return this.resultadosPdf[storageKey] ?? null;
+  }
+
+  obtenerEtiquetaPdf(resultado: PdfMetadataConStorage): string {
+    const nombre = resultado.pdfName?.trim();
+    return nombre ? nombre : 'PDF asignado';
+  }
+
+  obtenerEtiquetaNivel(nivel?: string): string {
+    switch ((nivel ?? '').toLowerCase()) {
+      case 'primaria':
+        return 'Primaria';
+      case 'secundaria':
+        return 'Secundaria';
+      case 'preescolar':
+        return 'Preescolar';
+      default:
+        return 'No identificado';
+    }
+  }
+
+  formatearFecha(fecha?: string): string {
+    if (!fecha) {
+      return '—';
+    }
+
+    const parsed = new Date(fecha);
+    if (Number.isNaN(parsed.getTime())) {
+      return '—';
+    }
+
+    return new Intl.DateTimeFormat('es-MX', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(parsed);
+  }
+
+  formatearTamano(bytes?: number): string {
+    if (bytes === null || bytes === undefined || Number.isNaN(bytes)) {
+      return '—';
+    }
+
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+
+    const unidades = ['KB', 'MB', 'GB'];
+    let valor = bytes / 1024;
+    let indice = 0;
+    while (valor >= 1024 && indice < unidades.length - 1) {
+      valor /= 1024;
+      indice += 1;
+    }
+
+    return `${valor.toFixed(valor >= 10 ? 1 : 2)} ${unidades[indice]}`;
+  }
+
+  private cargarResultadosPdf(): void {
+    this.resultadosPdf = {};
+    this.registros.forEach((registro) => {
+      const storageKey = this.obtenerPdfStorageKey(registro);
+      const data = localStorage.getItem(storageKey);
+      if (!data) {
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(data) as PdfMetadata;
+        if (parsed?.pdfBase64) {
+          this.resultadosPdf[storageKey] = { ...parsed, storageKey };
+        }
+      } catch (error) {
+        return;
+      }
+    });
+  }
+
+  private obtenerPdfStorageKey(registro: RegistroArchivo): string {
+    const claveEstable =
+      registro.claveEstable ??
+      `${(registro.cct ?? '').trim()}|${(registro.correo ?? '').trim().toLowerCase()}|${
+        registro.nombre
+      }|${registro.fechaGuardado}`;
+    return `${this.pdfStoragePrefix}:${claveEstable}`;
+  }
+
+  private registrarDescarga(nombre: string): void {
+    const payload = {
+      nombre,
+      fecha: new Date().toISOString()
+    };
+    localStorage.setItem('ultima-descarga', JSON.stringify(payload));
+  }
+}
+
+interface PdfMetadata {
+  excelKey: string;
+  pdfName: string;
+  pdfBase64: string;
+  fecha: string;
+}
+
+interface PdfMetadataConStorage extends PdfMetadata {
+  storageKey: string;
+}

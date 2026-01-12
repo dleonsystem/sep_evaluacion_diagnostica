@@ -1,41 +1,35 @@
 # Plan de Iteraciones – RUP
-
-## Plataforma de Gestión de Valoraciones EIA 2025–2026
+## Plataforma de Recepción, Validación y Descarga de Archivos EIA (2ª aplicación)
 
 ---
 
 ## 1. Fase de Inicio (Inception)
 
 **Objetivos:**
-
-- Definir visión del sistema.
-- Identificar actores y casos de uso principales.
-- Establecer alcance de las etapas 1 y 2.
-- Identificar riesgos de alto nivel.
+- Definir visión y alcances conforme al documento `plataforma_recepcion_validacion_descarga_EIA.md`.
+- Identificar actores: escuela anónima/autenticada, sistema externo y operador técnico SEP.
+- Acordar reglas de validación (10 verificaciones, incluyendo huella hash para diferenciar archivos con el mismo nombre) y lineamientos de credenciales/PDFs.
 
 **Entregables:**
-
-- Documento de Visión.
+- Documento de Visión v2.0.
 - Lista inicial de riesgos.
-- Modelo de casos de uso de alto nivel.
+- Modelo de casos de uso actualizado.
 
 ---
 
 ## 2. Fase de Elaboración (Elaboration)
 
-### Iteración E1 – Modelado de requerimientos
+## Iteración E1 – Requerimientos y modelo de datos
 
 **Objetivos:**
-
-- Completar la SRS.
-- Detallar casos de uso prioritarios (CU-01, CU-02, CU-05, CU-07, CU-08).
-- Definir modelo de datos conceptual.
+- Completar SRS v2.0 con reglas de validación (incluida huella hash), generación de credenciales, control de reenvíos autenticados y repositorios separados.
+- Definir modelo de datos para solicitudes, credenciales, ligas de descarga y bitácora.
+- Ajustar casos de uso detallados para carga anónima y descargas autenticadas.
 
 **Entregables:**
-
-- SRS v1.x.
+- SRS v2.0.
+- Modelo de datos conceptual y físico inicial (PostgreSQL).
 - Casos de uso detallados.
-- Modelo de datos conceptual.
 
 **Criterios de Aceptación:**
 
@@ -48,17 +42,13 @@
 ### Iteración E2 – Diseño arquitectónico y tecnológico
 
 **Objetivos:**
-
-- Definir arquitectura de software.
-- Seleccionar frameworks concretos en Node.js (por ejemplo, Express o NestJS) y afinar configuración de Angular.
-- Definir estrategia de despliegue inicial (ambientes: desarrollo, pruebas, producción).
+- Definir arquitectura FastAPI + Angular 19 (signals) + workers Redis (validación/PDF) con lineamientos de estilo gob.mx v3 incluidos desde CDN en `index.html`.
+- Diseñar separación de repositorios (recepción vs. resultados) y capacidad mínima de 1 TB.
+- Planear integración con sistema externo de resultados (ingesta de ligas/archivos).
 
 **Entregables:**
-
-- Documento de Arquitectura (SAD) actualizado.
-- Prototipo técnico mínimo:
-  - Endpoint de ejemplo en Node.js.
-  - Pantalla simple en Angular 19 consumiendo el endpoint.
+- SAD actualizado.
+- Prototipo técnico mínimo: endpoint FastAPI de validación simulada + pantalla Angular de carga anónima con estado “Validando tu archivo…” usando la guía gráfica gob.mx.
 
 **Criterios de Aceptación:**
 
@@ -73,69 +63,39 @@
 
 ## 3. Fase de Construcción (Construction)
 
-### Iteración C1 – Núcleo Etapa 1
+## Iteración C1 – Núcleo de recepción y validación
 
 **Objetivos:**
-
-- Implementar autenticación (login, logout).
-- Implementar carga de valoraciones con validaciones básicas.
-- Implementar bitácora de actividades.
+- Implementar carga anónima de archivo .xlsx solo para primer envío; bloquear reenvío anónimo si ya existe credencial.
+- Ejecutar 10 validaciones con workers y generar PDF de confirmación/errores (incluye huella hash para distinguir archivos iguales por nombre).
+- Generar credenciales en primera carga válida y registrar solicitud con consecutivo (almacenando hash de archivo); pedir login para reenvíos posteriores y detectar si el archivo es idéntico al previo.
 
 **Entregables:**
+- Pantalla de carga anónima y mensaje en línea.
+- Workers de validación + generación de PDFs.
+- Repositorio de recepción operativo (filesystem + registros en PostgreSQL).
 
-- Módulo de login en Angular + API de autenticación en Node.js.
-- Pantalla de carga de valoraciones.
-- Registro de eventos (logins y cargas) en PostgreSQL.
-- Pruebas unitarias e integración básicas.
+**Plan de trabajo detallado – SPA Angular 19 (signals) con guía gob.mx v3**
+- **Punto de partida:** Angular CLI 19.2.x ya instalado; `index.html` incluye los assets de la guía gráfica gob.mx v3 desde CDN; el backend Python será construido por otro equipo.
+- **¿Qué es SPA?** Una Single Page Application: el shell se renderiza una vez y las vistas cambian en el navegador (sin recargar toda la página) usando enrutamiento de Angular.
+- **Pasos previstos:**
+  1. Definir rutas iniciales (`/` carga anónima, `/login`, `/descargas`) y un layout base que use los estilos gob.mx ya cargados.
+  2. Crear el componente de inicio/carga con signals para estado de archivo, progreso y mensajes ("Validando tu archivo...").
+  3. Implementar servicios HTTP y de estado con signals que hoy regresen datos simulados/localStorage, respetando las firmas esperadas del futuro backend FastAPI para conmutar sin cambios cuando esté listo.
+  4. Preparar componentes de autenticación y listado de descargas reutilizando la guía gráfica (tablas, alerts, botones) con datos de prueba.
+  5. Validar accesibilidad y consistencia visual con la guía gráfica en navegación SPA (sin recargas completas) y documentar cómo activar la fuente de datos real cuando esté disponible.
 
-**Criterios de Aceptación:**
-
-- [ ] Usuario puede autenticarse con credenciales válidas (éxito en 100% de casos válidos)
-- [ ] Sistema rechaza credenciales inválidas con mensaje claro (100% de casos inválidos)
-- [ ] Sesión expira automáticamente tras 30 minutos de inactividad
-- [ ] Carga de archivos .xlsx y .xls funciona para formatos válidos (éxito ≥ 95%)
-- [ ] Validaciones básicas detectan errores críticos (CCT inválido, hojas faltantes)
-- [ ] Auditoría registra al menos: usuario, acción, timestamp, IP, resultado
-- [ ] Cobertura de pruebas unitarias ≥ 75% en módulos críticos
-- [ ] 0 defectos críticos o mayores en pruebas de integración
-
-### Iteración C2 – Descarga SEP y mejoras
+## Iteración C2 – Portal de descargas y publicación de ligas
 
 **Objetivos:**
-
-- Implementar descarga de valoraciones para usuarios SEP.
-- Mejorar interfaz de usuario (filtros, tablas, mensajes).
-- Optimizar auditoría y filtros de bitácora.
-
-**Entregables:**
-
-- Pantalla de descarga para SEP con filtros.
-- Mejora de bitácora y reportes básicos.
-- Versión lista para piloto de Etapa 1.
-
-**Criterios de Aceptación:**
-
-- [ ] Usuarios SEP pueden filtrar archivos por: CCT, entidad, fecha, estado
-- [ ] Descarga de archivos se completa en < 5 segundos para archivos ≤ 5 MB
-- [ ] Interfaz cumple con estándares de accesibilidad WCAG 2.1 nivel AA
-- [ ] Bitácora permite búsqueda por usuario, acción, rango de fechas
-- [ ] Sistema soporta 100 usuarios concurrentes sin degradación > 20% en rendimiento
-- [ ] Piloto con 50 escuelas reales ejecutado exitosamente
-- [ ] Feedback de usuarios piloto incorporado (al menos 80% de sugerencias críticas)
-
-### Iteración C3 – Etapa 2 (Resultados)
-
-**Objetivos:**
-
-- Implementar carga de resultados por SEP Federal.
-- Implementar descarga de resultados por director escolar.
-- Ajustes derivados del piloto y retroalimentación.
+- Implementar login (CCT + contraseña generada) y módulo de descargas.
+- Consumir ligas/archivos provistos por el sistema externo y listarlos por versión/consecutivo (iniciando con datos simulados en frontend; conmutar a FastAPI en cuanto el equipo de backend entregue endpoints).
+- Ajustar monitoreo técnico (logs, espacio en disco, salud de workers).
 
 **Entregables:**
-
-- Módulo de carga de resultados.
-- Módulo de descarga de resultados por escuela.
-- Versión candidata a producción.
+- Portal de descargas autenticado.
+- Integración con repositorio de resultados.
+- Panel técnico básico.
 
 **Criterios de Aceptación:**
 
@@ -153,25 +113,11 @@
 ## 4. Fase de Transición (Transition)
 
 **Objetivos:**
-
-- Despliegue en ambiente productivo.
-- Capacitación a usuarios clave (SEP, directores).
-- Soporte intensivo durante ventana de recepción de archivos.
+- Despliegue en ambientes de prueba y producción bajo HTTPS.
+- Capacitación breve a operadores y mesa de ayuda.
+- Soporte intensivo durante la ventana de recepción/descarga y validación de carga pico (120,000 solicitudes).
 
 **Entregables:**
-
-- Manual de usuario.
-- Manual de administración.
-- Informe de cierre de proyecto y lecciones aprendidas.
-
-**Criterios de Aceptación:**
-
-- [ ] Sistema desplegado en producción con 99.5% de disponibilidad durante primer mes
-- [ ] Al menos 200 directores escolares capacitados presencialmente o en línea
-- [ ] 50 usuarios SEP (estatales + federales) capacitados en todas las funcionalidades
-- [ ] Manuales de usuario distribuidos y accesibles en plataforma (formato PDF + videos)
-- [ ] Equipo de soporte disponible 12 horas/día durante ventana crítica de recepción
-- [ ] Menos de 5% de tickets de soporte clasificados como "críticos" sin resolver en 4 horas
-- [ ] Tasa de adopción ≥ 70% (escuelas usando plataforma vs. enviando por correo)
-- [ ] Informe de cierre documenta al menos 10 lecciones aprendidas y 5 mejoras recomendadas
-- [ ] Aprobación final de cierre de proyecto por parte del sponsor (SEP)
+- Manual de usuario (carga anónima y descargas autenticadas).
+- Manual técnico (operación de workers y repositorios).
+- Informe de cierre y lecciones aprendidas.

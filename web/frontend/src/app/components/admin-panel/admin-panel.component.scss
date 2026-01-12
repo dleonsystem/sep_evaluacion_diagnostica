@@ -1,0 +1,346 @@
+.admin-panel {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+  color: #13322e;
+}
+
+.admin-panel__card {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 2.5rem;
+  box-shadow: 0 20px 40px rgba(97, 18, 50, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.admin-panel__token {
+  padding: 1rem;
+  border-radius: 12px;
+  background: #f8f8f8;
+  color: #13322e;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  word-break: break-all;
+}
+
+.admin-panel__token--warning {
+  background: #f2f2f2;
+  color: #611232;
+}
+
+.admin-panel__link {
+  color: #9d2449;
+  text-decoration: none;
+}
+
+.admin-panel__upload {
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  background: #f8f8f8;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-size: 1.5rem;
+}
+
+.admin-panel__helper {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #13322e;
+}
+
+.admin-panel__upload-label {
+  font-weight: 600;
+  color: #13322e;
+  font-size: 1.5rem;
+}
+
+.admin-panel__upload-input {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid #a57f2c;
+  background: #ffffff;
+  color: #13322e;
+  font-size: 1.5rem;
+}
+
+.admin-panel__upload-button {
+  align-self: flex-start;
+  padding: 0.75rem 1.75rem;
+  border-radius: 999px;
+  border: none;
+  background: #9d2449;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-panel__status {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: #f2f2f2;
+  color: #13322e;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-panel__status--idle {
+  background: #f2f2f2;
+  color: #611232;
+}
+
+.admin-panel__status--uploading {
+  background: #f8f8f8;
+  color: #611232;
+}
+
+.admin-panel__status--success {
+  background: #f8f8f8;
+  color: #13322e;
+}
+
+.admin-panel__status--error {
+  background: #f6e8e8;
+  color: #611232;
+}
+
+.admin-panel__status-label {
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-panel__status-message {
+  font-size: 1.5rem;
+}
+
+.admin-panel__excel-list {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-panel__filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.admin-panel__filters-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 1.5rem;
+  color: #13322e;
+}
+
+.admin-panel__filters-label {
+  font-weight: 600;
+}
+
+.admin-panel__filters-input {
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid #a57f2c;
+  background: #ffffff;
+  color: #13322e;
+  font-size: 1.5rem;
+}
+
+.admin-panel__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1.25rem;
+}
+
+.admin-panel__table th,
+.admin-panel__table td {
+  text-align: left;
+  padding: 0.5rem 0.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  color: #13322e;
+}
+
+.admin-panel__table th {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 1.25rem;
+  letter-spacing: 0.05em;
+  color: #611232;
+  border-bottom: 1px solid #a57f2c;
+}
+
+.admin-panel__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-panel__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: #f2f2f2;
+  color: #611232;
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.admin-panel__badge--assigned {
+  background: #f8f8f8;
+  color: #13322e;
+}
+
+.admin-panel__pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding-top: 0.5rem;
+}
+
+.admin-panel__pagination-button {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid #a57f2c;
+  background: #ffffff;
+  color: #13322e;
+  font-size: 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-panel__pagination-button--active {
+  background: #611232;
+  border-color: #611232;
+  color: #ffffff;
+}
+
+.admin-panel__pagination-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.admin-panel__history {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px dashed #a57f2c;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-panel__history-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #611232;
+}
+
+.admin-panel__history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-panel__history-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  color: #13322e;
+}
+
+.admin-panel__history-name {
+  font-weight: 600;
+}
+
+.admin-panel__history-meta {
+  font-size: 1.25rem;
+  color: #98989a;
+}
+
+.admin-panel__logout {
+  align-self: flex-start;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  border: none;
+  background: #611232;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 540px) {
+  .admin-panel {
+    padding: 1.5rem 1rem;
+  }
+
+  .admin-panel__card {
+    padding: 1.5rem;
+    gap: 1rem;
+  }
+
+  .admin-panel__upload {
+    padding: 1.1rem;
+    font-size: 1rem;
+  }
+
+  .admin-panel__helper,
+  .admin-panel__upload-label,
+  .admin-panel__upload-input,
+  .admin-panel__filters-field,
+  .admin-panel__filters-input,
+  .admin-panel__status-label {
+    font-size: 1rem;
+  }
+
+  .admin-panel__status-message,
+  .admin-panel__table,
+  .admin-panel__table th,
+  .admin-panel__table td,
+  .admin-panel__pagination-button,
+  .admin-panel__badge,
+  .admin-panel__history-title,
+  .admin-panel__history-meta {
+    font-size: 0.95rem;
+  }
+
+  .admin-panel__table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-panel__table th,
+  .admin-panel__table td {
+    white-space: nowrap;
+  }
+
+  .admin-panel__filters {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-panel__upload-button,
+  .admin-panel__logout {
+    width: 100%;
+    text-align: center;
+  }
+}

@@ -1,0 +1,60 @@
+<section class="login">
+  <div class="login__card">
+    <h1>Inicia sesión para continuar</h1>
+    <p>Usa el correo y la contraseña generada en tu primer envío.</p>
+
+    <form (ngSubmit)="iniciarSesion()" #loginForm="ngForm" novalidate>
+      <label for="correo">Correo (usuario)</label>
+      <input
+        id="correo"
+        name="correo"
+        type="email"
+        required
+        [(ngModel)]="correo"
+        #correoModel="ngModel"
+        autocomplete="email"
+        placeholder="correo@dominio.com"
+      />
+
+      <label for="contrasena">Contraseña</label>
+      <div class="login__password-field">
+        <input
+          id="contrasena"
+          name="contrasena"
+          [type]="mostrarContrasena ? 'text' : 'password'"
+          required
+          [(ngModel)]="contrasena"
+          #contrasenaModel="ngModel"
+          autocomplete="current-password"
+          placeholder="Clave enviada en tu primer carga"
+        />
+        <button class="login__toggle" type="button" (click)="mostrarContrasena = !mostrarContrasena">
+          <i
+            class="bi"
+            [ngClass]="mostrarContrasena ? 'bi-eye-slash' : 'bi-eye'"
+            aria-hidden="true"
+          ></i>
+          <span class="login__toggle-text">{{ mostrarContrasena ? 'Ocultar' : 'Mostrar' }}</span>
+        </button>
+      </div>
+      <p class="login__hint">Usa la contraseña generada en tu primer envío.</p>
+
+      <div class="login__alerta" *ngIf="credencialesGuardadas">
+        Ya existen credenciales guardadas para {{ correo }}. Si es necesario, puedes actualizar la contraseña antes de
+        continuar.
+      </div>
+
+      <div class="login__error" *ngIf="error">{{ error }}</div>
+
+      <button
+        class="login__submit"
+        type="submit"
+        [disabled]="correoModel.invalid || contrasenaModel.invalid || autenticando"
+      >
+        {{ autenticando ? 'Validando...' : 'Ingresar' }}
+      </button>
+    </form>
+
+    <a class="login__link" routerLink="/carga-masiva">Volver a la carga masiva</a>
+  </div>
+</section>

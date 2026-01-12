@@ -1,0 +1,71 @@
+<section class="admin-login">
+  <div class="admin-login__card">
+    <h1>Acceso administrador</h1>
+    <p>Ingresa el correo y contraseña asignados para la carga de PDFs.</p>
+    <div class="admin-login__credenciales">
+      <span class="admin-login__credenciales-title">Credenciales de acceso</span>
+      <div class="admin-login__credenciales-item">
+        <span class="admin-login__credenciales-label">Correo:</span>
+        <span class="admin-login__credenciales-value">admin&#64;sep.mx</span>
+      </div>
+      <div class="admin-login__credenciales-item">
+        <span class="admin-login__credenciales-label">Contraseña:</span>
+        <span class="admin-login__credenciales-value">admin123</span>
+      </div>
+    </div>
+
+    <form (ngSubmit)="iniciarSesion()" #loginForm="ngForm" novalidate>
+      <label for="correo-admin">Correo</label>
+      <input
+        id="correo-admin"
+        name="correo"
+        type="email"
+        required
+        [(ngModel)]="correo"
+        autocomplete="email"
+        placeholder="admin@plataforma.local"
+      />
+
+      <label for="contrasena-admin">Contraseña</label>
+      <div class="admin-login__password">
+        <input
+          id="contrasena-admin"
+          name="contrasena"
+          [type]="mostrarContrasena ? 'text' : 'password'"
+          required
+          [(ngModel)]="contrasena"
+          autocomplete="current-password"
+          placeholder="********"
+        />
+        <button
+          class="admin-login__toggle"
+          type="button"
+          (click)="toggleMostrarContrasena()"
+          [attr.aria-pressed]="mostrarContrasena"
+        >
+          <i
+            class="bi"
+            [ngClass]="mostrarContrasena ? 'bi-eye-slash' : 'bi-eye'"
+            aria-hidden="true"
+          ></i>
+          <span class="admin-login__toggle-text">{{ mostrarContrasena ? 'Ocultar' : 'Mostrar' }}</span>
+        </button>
+      </div>
+
+      <div class="admin-login__error" *ngIf="error">{{ error }}</div>
+      <p class="admin-login__help" *ngIf="error">
+        Si las credenciales no son válidas, contacta al equipo de soporte para restablecer el acceso.
+      </p>
+
+      <button
+        class="admin-login__submit"
+        type="submit"
+        [disabled]="loginForm.invalid || !correo || !contrasena || autenticando"
+      >
+        {{ autenticando ? 'Validando...' : 'Iniciar sesión' }}
+      </button>
+    </form>
+
+    <a class="admin-login__link" routerLink="/inicio">Volver al inicio</a>
+  </div>
+</section>
