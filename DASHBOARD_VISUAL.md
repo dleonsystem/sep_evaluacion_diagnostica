@@ -67,7 +67,6 @@ quadrantChart
 | **Tiempo Validación FRV** | 15 min (manual) | 30 seg (auto) | 15 seg (opt.) | Procesamiento |
 | **Adopción Portal Web** | 0% | 50% (150K escuelas) | 100% (300K) | Usuarios activos |
 | **Compliance LGPDP** | 57% | 86% | 100% | Cumplimiento legal |
-| **Costos Licencias Anuales** | $16,000 | $8,000 (híbrido) | $0 | Ahorro financiero |
 | **Tiempo Deploy Cambios** | 2 semanas | 3 días | 1 hora (CI/CD) | Agilidad |
 | **Incidentes Seguridad** | 3/año (Flash) | 0/año | 0/año | Vulnerabilidades |
 | **Tickets Soporte** | 500/mes | 150/mes (-70%) | 50/mes (-90%) | Validación auto |
@@ -266,16 +265,17 @@ quadrantChart
 
 ### Comparativa Financiera
 
-| Opción | Inversión | Tiempo | Riesgo | Beneficio | ROI |
-|--------|-----------|--------|--------|-----------|-----|
-| **A. Mantener** | $500/mes | 0 | ⚠️ Alto | ❌ Nulo | -$6,000/año |
-| **B. Estabilizar** | $6,100 | 1 mes | ✅ Bajo | ⚠️ Limitado | 2-3 años |
-| **C. Modernizar** | $35,300 | 3 meses | ⚠️ Medio | ✅ Alto | **3-4 años** |
-| **D. Reescribir** | $94,700 | 6 meses | ❌ Alto | ✅ Máximo | 8-10 años |
+| Opción | Tiempo | Riesgo | Beneficio | ROI |
+| ------ | ------ | ------ | --------- | --- |
+| **A. Mantener** | 0 | ⚠️ Alto | ❌ Nulo | -$6,000/año |
+| **B. Estabilizar** | 1 mes | ✅ Bajo | ⚠️ Limitado | 2-3 años |
+| **C. Modernizar** | 3 meses | ⚠️ Medio | ✅ Alto | **3-4 años** |
+| **D. Reescribir** | 6 meses | ❌ Alto | ✅ Máximo | 8-10 años |
 
-**🏆 RECOMENDACIÓN: Opción C - Modernización Completa**
+### 🏆 RECOMENDACIÓN: Opción C - Modernización Completa
 
 **Justificación:**
+
 - Balance óptimo costo/beneficio/riesgo
 - Elimina vulnerabilidades críticas (Flash, LGPDP)
 - Extiende vida útil del sistema 5+ años
@@ -310,7 +310,7 @@ quadrantChart
 ### Top 5 Riesgos Críticos
 
 | # | Riesgo | Probabilidad | Impacto | Exposición | Estado |
-|---|--------|--------------|---------|------------|--------|
+| --- | -------- | ------------ | ------- | ---------- | ------ |
 | 1 | **Flash Components EOL** | 95% | 9/10 | 8.55 | 🔴 CRÍTICO |
 | 2 | **Pérdida Código Fuente** | 70% | 10/10 | 7.00 | 🔴 CRÍTICO |
 | 3 | **Cumplimiento LGPDP** | 55% | 8/10 | 4.40 | 🟡 ALTO |
