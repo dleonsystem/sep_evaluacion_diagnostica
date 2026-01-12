@@ -6,7 +6,9 @@
 
 ---
 
-# 1. Introducción
+## 1. Introducción
+
+### 1.1 Propósito
 
 ## 1.1 Propósito
 Detallar los requerimientos funcionales y no funcionales de la plataforma encargada de **recibir archivos .xlsx sin autenticación previa**, validarlos automáticamente, generar credenciales en la **primera carga válida** y publicar las **ligas de descarga** de resultados que son procesados en un sistema externo. Si una escuela ya generó credenciales en una primera carga válida, los reenvíos posteriores **requieren autenticación previa** y, sin importar el nombre del archivo, se distinguen versiones por su **huella de contenido (hash)** para evitar confusiones entre archivos iguales y diferentes.
@@ -21,7 +23,8 @@ La plataforma cubre únicamente el flujo de recepción–validación–descarga 
 - Registro de cada carga válida como solicitud independiente con consecutivo.
 - Exposición de ligas de descarga depositadas por un **sistema externo** que procesa los archivos.
 
-## 1.3 Público objetivo
+### 1.3 Público objetivo
+
 - Equipo de desarrollo (backend y frontend).
 - Analistas funcionales SEP.
 - Personal QA.
@@ -29,12 +32,16 @@ La plataforma cubre únicamente el flujo de recepción–validación–descarga 
 
 ---
 
-# 2. Descripción general
+## 2. Descripción general
+
+### 2.1 Perspectiva del producto
 
 ## 2.1 Perspectiva del producto
 Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend FastAPI en Python 3.12** y **almacenamiento PostgreSQL + Filesystem**. No realiza cálculos educativos; actúa como **pasarela de validación y distribución de archivos**. El backend Python será implementado por otro equipo; el frontend entregará pantallas funcionales con servicios Angular que hoy responden con datos de prueba/localStorage, pero conservan las mismas firmas HTTP para conmutar a FastAPI sin reescritura. La lógica de negocio debe **bloquear reenvíos anónimos** si ya existe una credencial previa para el mismo CCT/correo, solicitar autenticación antes de permitir la nueva carga y **registrar la huella (hash) de cada archivo** para distinguir versiones aunque el nombre sea idéntico.
 
-## 2.2 Interfaces del sistema
+### 2.2 Interfaces del sistema
+
+#### 2.2.1 Interfaces de usuario
 
 ### 2.2.1 Interfaces de usuario
 - Pantalla de carga anónima de archivo.
@@ -57,16 +64,16 @@ Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend F
 
 ---
 
-# 3. Actores y casos de uso
+## 3. Actores y casos de uso
 
-## 3.1 Actores
+### 3.1 Actores
 
 - **Escuela (anónima):** carga archivo .xlsx sin autenticarse cuando es su primer envío; recibe PDF de confirmación/errores.
 - **Escuela autenticada:** usa CCT + contraseña (correo validado en primera carga) para reenviar archivos, cargar nuevas versiones (identificadas por hash) y descargar resultados publicados.
 - **Sistema externo de procesamiento:** genera resultados y deposita ligas/archivos para publicación.
 - **Operador técnico SEP:** supervisa logs y repositorios de archivos.
 
-## 3.2 Lista de casos de uso (resumen)
+### 3.2 Lista de casos de uso (resumen)
 
 - CU-01 Cargar archivo .xlsx sin login (primer envío).
 - CU-02 Validar estructura y contenido (10 verificaciones, incluye hash de archivo).
@@ -137,7 +144,7 @@ Si la estructura o los valores no cumplen, el archivo se **rechaza** y se entreg
 
 ---
 
-# 7. Criterios de aceptación
+## 7. Criterios de aceptación
 
 - Cualquier escuela puede subir un archivo .xlsx y recibir PDF de confirmación o errores sin iniciar sesión **solo si es su primer envío (no existen credenciales previas para su CCT/correo)**.
 - Las 10 reglas de validación se ejecutan y rechazan archivos que no cumplan estructura/valores o que sean idénticos a un envío previo (mismo hash para el mismo CCT/correo).

@@ -3,13 +3,13 @@
 
 ---
 
-# 1. Introducción
+## 1. Introducción
 
 Describe la arquitectura de alto nivel para la plataforma que **recibe archivos .xlsx sin autenticación previa** (solo en el primer envío), los valida automáticamente, genera credenciales en la primera carga válida y publica ligas de descarga generadas por un sistema externo. Si ya existen credenciales para el CCT/correo, los **reenvíos requieren autenticación previa**.
 
 ---
 
-# 2. Visión arquitectónica
+## 2. Visión arquitectónica
 
 Arquitectura web de tres capas y procesos desacoplados:
 
@@ -20,9 +20,9 @@ Arquitectura web de tres capas y procesos desacoplados:
 
 ---
 
-# 3. Vista lógica
+## 3. Vista lógica
 
-## 3.1 Componentes principales
+### 3.1 Componentes principales
 
 - **Módulo de Recepción Anónima (primer envío)**
   - Carga de archivo .xlsx sin login cuando no existan credenciales previas para el CCT/correo.
@@ -52,7 +52,7 @@ Arquitectura web de tres capas y procesos desacoplados:
 
 ---
 
-# 4. Vista de despliegue (Mermaid)
+## 4. Vista de despliegue (Mermaid)
 
 ```mermaid
 flowchart LR
@@ -75,7 +75,7 @@ flowchart LR
 
 ---
 
-# 5. Decisiones tecnológicas clave
+## 5. Decisiones tecnológicas clave
 
 - **Frontend:** Angular 19 + TypeScript (signals) con Angular CLI 19.2.x sobre Node 22.x y estilos base gob.mx v3 incluidos vía CDN en `index.html`. Los servicios Angular expondrán interfaces HTTP tipificadas; mientras no exista backend disponible, responderán con datos simulados/localStorage pero sin romper la forma de los endpoints.
 - **Backend:** Python 3.12 + FastAPI (desarrollado por un equipo distinto; la integración del frontend será transparente gracias a la capa de servicios simulados).
@@ -87,7 +87,7 @@ flowchart LR
 
 ---
 
-# 6. Consideraciones de seguridad
+## 6. Consideraciones de seguridad
 
 - Hashing de contraseñas generadas (no se almacenan en texto plano).
 - Repositorios de archivos con controles de acceso segregados (recepción vs. resultados).

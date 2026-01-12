@@ -6,7 +6,9 @@
 
 ---
 
-# 1. Introducción
+## 1. Introducción
+
+### 1.1 Propósito del documento
 
 ## 1.1 Propósito del documento
 Definir objetivos, alcance, usuarios, funciones y restricciones de la plataforma web que **recibe, valida y publica descargas** para la segunda aplicación de los Ejercicios Integradores del Aprendizaje (EIA), sin procesar evaluaciones ni determinar si un envío es primera o segunda aplicación.
@@ -21,7 +23,8 @@ El sistema realiza:
 - **Registro de solicitudes**: cada carga válida es independiente con consecutivo; repositorio de archivos recibidos.
 - **Publicación de ligas de descarga** entregadas por un sistema externo que procesa los archivos.
 
-## 1.3 Definiciones, acrónimos y abreviaturas
+### 1.3 Definiciones, acrónimos y abreviaturas
+
 - **EIA:** Ejercicios Integradores del Aprendizaje.
 - **CCT:** Clave del Centro de Trabajo (usuario de acceso a descargas).
 - **PDF de confirmación/errores:** comprobantes automáticos generados tras la validación.
@@ -33,7 +36,9 @@ El sistema realiza:
 
 ---
 
-# 2. Posicionamiento
+## 2. Posicionamiento
+
+### 2.1 Oportunidad de negocio
 
 ## 2.1 Oportunidad de negocio
 Sustituir el envío de archivos por correo en la segunda aplicación EIA por un flujo automatizado de recepción, validación y publicación de descargas, manteniendo trazabilidad y seguridad.
@@ -50,7 +55,8 @@ Sustituir el envío de archivos por correo en la segunda aplicación EIA por un 
 - Separación de repositorios de recepción y resultados para evitar confusión.
 - Publicación rápida de ligas de descarga generadas por el sistema externo.
 
-## 2.4 Interesados clave
+### 2.4 Interesados clave
+
 - Área responsable de la Evaluación Diagnóstica en la SEP.
 - Directivos escolares (envían archivos, descargan resultados).
 - Equipos técnicos (operación, soporte y validación).
@@ -58,9 +64,11 @@ Sustituir el envío de archivos por correo en la segunda aplicación EIA por un 
 
 ---
 
-# 3. Descripción del usuario
+## 3. Descripción del usuario
 
-## 3.1 Perfiles de usuario
+### 3.1 Perfiles de usuario
+
+#### Director escolar
 
 ### Escuela (anónima)
 - Sube archivo .xlsx sin iniciar sesión **solo en su primer envío**.
@@ -78,7 +86,9 @@ Sustituir el envío de archivos por correo en la segunda aplicación EIA por un 
 
 ---
 
-# 4. Descripción general del sistema
+## 4. Descripción general del sistema
+
+### 4.1 Perspectiva del sistema
 
 ## 4.1 Perspectiva del sistema
 Aplicación web de tres capas con **Angular 19 (signals)**, **FastAPI (Python 3.12)** y **PostgreSQL + Filesystem**, apoyada por workers para validación y PDFs. No calcula resultados; solo publica ligas entregadas por el sistema externo. La SPA usa la **guía gráfica gob.mx v3** cargada vía CDN (estilos y scripts en `index.html`). Mientras el backend Python es implementado por otro equipo, el frontend entregará pantallas funcionales con servicios Angular que devuelven datos de prueba/localStorage pero mantienen las mismas firmas HTTP previstas para FastAPI, para que el cambio a los endpoints reales sea transparente.
@@ -99,7 +109,9 @@ Aplicación web de tres capas con **Angular 19 (signals)**, **FastAPI (Python 3.
 
 ---
 
-# 5. Requerimientos de alto nivel
+## 5. Requerimientos de alto nivel
+
+### 5.1 Requerimientos funcionales (resumen)
 
 ## 5.1 Requerimientos funcionales (resumen)
 - RF-01: Recepción anónima de archivo .xlsx con etiqueta de validación en línea **solo en el primer envío**; si ya existe credencial se exige login antes de reenviar.
@@ -118,7 +130,9 @@ Aplicación web de tres capas con **Angular 19 (signals)**, **FastAPI (Python 3.
 
 ---
 
-# 6. Alcance
+## 6. Alcance
+
+### 6.1 Lo que sí incluye
 
 ## 6.1 Lo que sí incluye
 - Recepción y validación de archivos .xlsx de la segunda aplicación EIA.

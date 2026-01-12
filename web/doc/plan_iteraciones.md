@@ -3,7 +3,7 @@
 
 ---
 
-# 1. Fase de Inicio (Inception)
+## 1. Fase de Inicio (Inception)
 
 **Objetivos:**
 - Definir visión y alcances conforme al documento `plataforma_recepcion_validacion_descarga_EIA.md`.
@@ -17,7 +17,7 @@
 
 ---
 
-# 2. Fase de Elaboración (Elaboration)
+## 2. Fase de Elaboración (Elaboration)
 
 ## Iteración E1 – Requerimientos y modelo de datos
 
@@ -31,7 +31,15 @@
 - Modelo de datos conceptual y físico inicial (PostgreSQL).
 - Casos de uso detallados.
 
-## Iteración E2 – Diseño arquitectónico y tecnológico
+**Criterios de Aceptación:**
+
+- [ ] SRS completa con al menos 15 requisitos funcionales documentados y validados
+- [ ] Los 5 casos de uso prioritarios están detallados con flujos principales y alternativos
+- [ ] Modelo de datos conceptual incluye al menos 30 entidades con relaciones definidas
+- [ ] Revisión y aprobación del stakeholder (SEP) sobre la SRS
+- [ ] 100% de trazabilidad entre requisitos y casos de uso
+
+### Iteración E2 – Diseño arquitectónico y tecnológico
 
 **Objetivos:**
 - Definir arquitectura FastAPI + Angular 19 (signals) + workers Redis (validación/PDF) con lineamientos de estilo gob.mx v3 incluidos desde CDN en `index.html`.
@@ -42,9 +50,18 @@
 - SAD actualizado.
 - Prototipo técnico mínimo: endpoint FastAPI de validación simulada + pantalla Angular de carga anónima con estado “Validando tu archivo…” usando la guía gráfica gob.mx.
 
+**Criterios de Aceptación:**
+
+- [ ] Documento de Arquitectura (SAD) aprobado con diagramas de componentes e infraestructura
+- [ ] Prototipo funcional desplegado en ambiente de desarrollo
+- [ ] Endpoint de prueba responde con latencia < 200ms bajo carga de 10 peticiones/seg
+- [ ] Pantalla Angular se comunica exitosamente con el backend y muestra datos
+- [ ] Ambientes de desarrollo, pruebas y producción configurados y documentados
+- [ ] Framework backend seleccionado y justificación documentada
+
 ---
 
-# 3. Fase de Construcción (Construction)
+## 3. Fase de Construcción (Construction)
 
 ## Iteración C1 – Núcleo de recepción y validación
 
@@ -80,9 +97,20 @@
 - Integración con repositorio de resultados.
 - Panel técnico básico.
 
+**Criterios de Aceptación:**
+
+- [ ] SEP Federal puede cargar archivos de resultados masivos (> 10,000 registros)
+- [ ] Proceso de carga masiva se completa en < 2 horas para 50,000 escuelas
+- [ ] Directores escolares solo ven resultados de su CCT (seguridad validada al 100%)
+- [ ] Notificaciones automáticas se envían a directores cuando resultados están listos
+- [ ] 95% de notificaciones se entregan exitosamente en < 5 minutos
+- [ ] Pruebas de carga con 1,000 descargas simultáneas sin errores
+- [ ] 0 defectos críticos pendientes en ambiente de pruebas
+- [ ] Aprobación formal de SEP para paso a producción
+
 ---
 
-# 4. Fase de Transición (Transition)
+## 4. Fase de Transición (Transition)
 
 **Objetivos:**
 - Despliegue en ambientes de prueba y producción bajo HTTPS.

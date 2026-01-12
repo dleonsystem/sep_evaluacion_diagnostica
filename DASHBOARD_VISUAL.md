@@ -1,4 +1,5 @@
 # 📊 DASHBOARD VISUAL - SiCRER 24/25 SEPT
+
 ## Versión 2.0 - Métricas Estrategia Bifásica
 
 > **Panel de Métricas y Visualizaciones del Análisis Técnico**
@@ -38,85 +39,16 @@ gantt
 
 ---
 
-## 💰 ANÁLISIS FINANCIERO VISUAL
-
-### Comparativa Costos Microsoft vs Open Source (3 Años)
-
-```mermaid
-%%{init: {'theme':'base'}}%%
-pie title Costos Reales Sistema Actual vs Modernizado (3 Años MXN)
-    "Sistema Actual (Crystal Reports): $180,000" : 180000
-    "Sistema Modernizado (Open Source): $0" : 0
-```
-
-**Nota:** Sistema actual NO usa SQL Server ni Azure. Solo costo real es Crystal Reports.
-
-### Desglose Ahorro por Componente
-
-```mermaid
-graph TB
-    A[Ahorro Real Total<br/>$9,000 USD<br/>$180,000 MXN] --> B[Crystal Reports SAP<br/>Única licencia comercial]
-    
-    B --> B1[Año 1: $60,000 MXN]
-    B --> B2[Año 2: $60,000 MXN]
-    B --> B3[Año 3: $60,000 MXN]
-    
-    C[Sin Cambio $0] --> C1[MS Access<br/>Ya en Office SEP]
-    C --> C2[Hosting<br/>Centro datos SEP]
-    C --> C3[Runtime<br/>.NET Framework Windows]
-    
-    style A fill:#69db7c,stroke:#2f9e44,color:#000
-    style B fill:#ffd43b,stroke:#fab005
-    style C fill:#e9ecef,stroke:#868e96
-```
-
-**Aclaración:** Sistema actual opera con MS Access + Crystal Reports en centro de datos SEP. NO usa SQL Server, Azure Blob, ni servicios cloud.
-
-### Proyección Financiera 5 Años (Desarrollo Interno SEP)
-
-```mermaid
-xychart-beta
-    title "Análisis Break-Even (Break-even: 5.8 meses)"
-    x-axis [Año 1, Año 2, Año 3, Año 4, Año 5]
-    y-axis "Ahorro Neto (Miles USD)" -20 --> 200
-    line "Infraestructura" [16.6, 16.6, 16.6, 16.6, 16.6]
-    line "Ahorro Acumulado" [21.7, 60.0, 98.3, 136.6, 174.9]
-```
-
-**🎯 Nota:** Gráfico muestra solo costos de infraestructura. Personal DGADAI + DGTIC ya presupuestado.
-
----
-
 ## 🎯 KPIs FASE 1 (Portal Híbrido - Marzo 2026)
-
-```mermaid
-%%{init: {'theme':'base'}}%%
-quadrantChart
-    title Métricas de Éxito Fase 1
-    x-axis Bajo Impacto --> Alto Impacto
-    y-axis Baja Urgencia --> Alta Urgencia
-    quadrant-1 Prioridad Crítica
-    quadrant-2 Implementar Rápido
-    quadrant-3 Monitorear
-    quadrant-4 Optimizar Después
-    
-    Adopción Web 50%: [0.8, 0.9]
-    Validación 30seg: [0.9, 0.8]
-    Tickets -70%: [0.7, 0.9]
-    Uptime 99.5%: [0.9, 0.95]
-    Satisfacción 8/10: [0.6, 0.7]
-    LGPDP 86%: [0.85, 0.85]
-```
 
 ### Tabla KPIs Detallada
 
 | KPI | Baseline (Legacy) | Target Fase 1 | Target Fase 2 | Métrica |
-|-----|-------------------|---------------|---------------|----------|
+| --- | --- | --- | --- | --- |
 | **Uptime** | 95% | 99.5% | 99.9% | Disponibilidad sistema |
 | **Tiempo Validación FRV** | 15 min (manual) | 30 seg (auto) | 15 seg (opt.) | Procesamiento |
 | **Adopción Portal Web** | 0% | 50% (150K escuelas) | 100% (300K) | Usuarios activos |
 | **Compliance LGPDP** | 57% | 86% | 100% | Cumplimiento legal |
-| **Costos Licencias Anuales** | $16,000 | $8,000 (híbrido) | $0 | Ahorro financiero |
 | **Tiempo Deploy Cambios** | 2 semanas | 3 días | 1 hora (CI/CD) | Agilidad |
 | **Incidentes Seguridad** | 3/año (Flash) | 0/año | 0/año | Vulnerabilidades |
 | **Tickets Soporte** | 500/mes | 150/mes (-70%) | 50/mes (-90%) | Validación auto |
@@ -185,6 +117,7 @@ pie title Evaluación Global del Sistema (6.5/10)
 ```
 
 **Desglose de la Puntuación:**
+
 - ✅ **Funcionalidad:** 8/10 - Sistema operativo cumpliendo objetivos educativos
 - ⚠️ **Arquitectura:** 5/10 - Tecnologías obsoletas pero estables
 - ❌ **Seguridad:** 3/10 - Vulnerabilidades críticas (Flash, LGPDP)
@@ -197,6 +130,7 @@ pie title Evaluación Global del Sistema (6.5/10)
 ## 📦 Composición del Repositorio
 
 **Actualizado con archivos reales disponibles:**
+
 - ✅ 4 Formatos FRV Excel (455 KB)
 - ✅ 18 Reportes PDF ejemplo (32 MB)
 - ✅ Plantilla de correo Word
@@ -213,6 +147,7 @@ pie title Distribución de Archivos por Tamaño (287 MB Total con nuevos archivo
 ```
 
 **Top 5 Archivos Más Grandes:**
+
 1. 📄 `res_est_f6.rpt` - 21.47 MB (Crystal Reports)
 2. 📄 `res_est_f6a.rpt` - 18.54 MB (Crystal Reports)
 3. 📄 `res_est_f2.rpt` - 17.88 MB (Crystal Reports)
@@ -315,16 +250,17 @@ quadrantChart
 
 ### Comparativa Financiera
 
-| Opción | Inversión | Tiempo | Riesgo | Beneficio | ROI |
-|--------|-----------|--------|--------|-----------|-----|
-| **A. Mantener** | $500/mes | 0 | ⚠️ Alto | ❌ Nulo | -$6,000/año |
-| **B. Estabilizar** | $6,100 | 1 mes | ✅ Bajo | ⚠️ Limitado | 2-3 años |
-| **C. Modernizar** | $35,300 | 3 meses | ⚠️ Medio | ✅ Alto | **3-4 años** |
-| **D. Reescribir** | $94,700 | 6 meses | ❌ Alto | ✅ Máximo | 8-10 años |
+| Opción | Tiempo | Riesgo | Beneficio | ROI |
+| ------ | ------ | ------ | --------- | --- |
+| **A. Mantener** | 0 | ⚠️ Alto | ❌ Nulo | -$6,000/año |
+| **B. Estabilizar** | 1 mes | ✅ Bajo | ⚠️ Limitado | 2-3 años |
+| **C. Modernizar** | 3 meses | ⚠️ Medio | ✅ Alto | **3-4 años** |
+| **D. Reescribir** | 6 meses | ❌ Alto | ✅ Máximo | 8-10 años |
 
-**🏆 RECOMENDACIÓN: Opción C - Modernización Completa**
+### 🏆 RECOMENDACIÓN: Opción C - Modernización Completa
 
 **Justificación:**
+
 - Balance óptimo costo/beneficio/riesgo
 - Elimina vulnerabilidades críticas (Flash, LGPDP)
 - Extiende vida útil del sistema 5+ años
@@ -359,7 +295,7 @@ quadrantChart
 ### Top 5 Riesgos Críticos
 
 | # | Riesgo | Probabilidad | Impacto | Exposición | Estado |
-|---|--------|--------------|---------|------------|--------|
+| --- | -------- | ------------ | ------- | ---------- | ------ |
 | 1 | **Flash Components EOL** | 95% | 9/10 | 8.55 | 🔴 CRÍTICO |
 | 2 | **Pérdida Código Fuente** | 70% | 10/10 | 7.00 | 🔴 CRÍTICO |
 | 3 | **Cumplimiento LGPDP** | 55% | 8/10 | 4.40 | 🟡 ALTO |
@@ -549,7 +485,7 @@ flowchart TD
 ### Estado Actual de Cumplimiento
 
 | Requisito LGPDP | Estado | Prioridad | Acción |
-|-----------------|--------|-----------|--------|
+| --------------- | ------ | --------- | ------ |
 | Aviso de Privacidad | ❌ No identificado | 🔴 Alta | Crear e implementar |
 | Consentimiento Tutores | ❓ Desconocido | 🔴 Alta | Validar proceso |
 | Encriptación BD | ❌ Access sin cifrar | 🔴 Crítica | **Migrar a SQL TDE** |
@@ -642,13 +578,13 @@ flowchart LR
 graph TD
     A[Sistema Actual<br/>SiCRER 24/25] --> B{Decisión<br/>Estratégica}
     
-    B -->|Opción A<br/>Hacer Nada| C[❌ Deuda Técnica Crece<br/>Vulnerabilidades Aumentan<br/>Costo: $500/mes indefinido]
+    B -->|Opción A<br/>Hacer Nada| C[❌ Deuda Técnica Crece<br/>Vulnerabilidades Aumentan<br/>]
     
-    B -->|Opción B<br/>Estabilizar| D[⚠️ Solución Temporal<br/>Elimina riesgos críticos<br/>Costo: $6,100 - 1 mes]
+    B -->|Opción B<br/>Estabilizar| D[⚠️ Solución Temporal<br/>Elimina riesgos críticos<br/>1 mes]
     
-    B -->|Opción C<br/>🏆 MODERNIZAR| E[✅ Solución Sostenible<br/>Elimina deuda técnica<br/>Costo: $35,300 - 3 meses]
+    B -->|Opción C<br/>🏆 MODERNIZAR| E[✅ Solución Sostenible<br/>Elimina deuda técnica<br/>3 meses]
     
-    B -->|Opción D<br/>Reescribir| F[⚠️ Mayor Inversión<br/>Sistema completamente nuevo<br/>Costo: $94,700 - 6 meses]
+    B -->|Opción D<br/>Reescribir| F[⚠️ Mayor Inversión<br/>Sistema completamente nuevo<br/>6 meses]
     
     C --> G[💀 Sistema obsoleto<br/>en 1-2 años]
     D --> H[🔧 Extender vida<br/>2-3 años]
@@ -669,7 +605,7 @@ graph TD
 ### Recomendación Final
 
 > **PROCEDER CON OPCIÓN C - MODERNIZACIÓN COMPLETA**
-> 
+>
 > - ✅ **Balance óptimo** entre costo, tiempo y beneficio
 > - ✅ **Elimina vulnerabilidades críticas** (Flash, LGPDP, .NET EOL)
 > - ✅ **Extiende vida útil** del sistema 5-7 años
@@ -684,7 +620,7 @@ graph TD
 ## 📚 Navegación de Documentación
 
 | Documento | Audiencia | Propósito | Tiempo Lectura |
-|-----------|-----------|-----------|----------------|
+| --------- | --------- | --------- | -------------- |
 | [README.md](README.md) | General | Introducción y estructura | 5 min |
 | [INDICE_DOCUMENTACION.md](INDICE_DOCUMENTACION.md) | Todos | Índice y guía de navegación | 3 min |
 | **[DASHBOARD_VISUAL.md](DASHBOARD_VISUAL.md)** | **PM/Stakeholders** | **📊 Este documento - Métricas visuales** | **10 min** |
@@ -701,6 +637,7 @@ graph TD
 **Metodología:** Personal Software Process + Rational Unified Process
 
 > 💡 **Tip:** Todos los diagramas Mermaid son interactivos en GitHub. Los colores indican criticidad:
+>
 > - 🔴 Rojo = Crítico/Obsoleto
 > - 🟡 Amarillo = Advertencia/Atención
 > - 🟢 Verde = Óptimo/Recomendado

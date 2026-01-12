@@ -185,6 +185,38 @@
 - **RF-14.5** El sistema debe generar contraseña temporal en creación
 - **RF-14.6** El sistema debe forzar cambio de contraseña en primer login
 - **RF-14.7** El sistema debe enviar credenciales por email seguro
+- **RF-14.8** El sistema debe implementar gestión granular de permisos por módulo:
+  - Lectura (consulta de datos)
+  - Escritura (creación y modificación)
+  - Eliminación (borrado lógico/físico)
+  - Aprobación (workflows de validación)
+  - Exportación (descarga de reportes y datos)
+- **RF-14.9** El sistema debe permitir asignar permisos por combinación rol + módulo:
+  - Módulo Escuelas: [Lectura, Escritura, Eliminación]
+  - Módulo Usuarios: [Lectura, Escritura, Eliminación, Aprobación]
+  - Módulo Valoraciones: [Lectura, Escritura, Aprobación, Exportación]
+  - Módulo Tickets: [Lectura, Escritura, Aprobación]
+  - Módulo Reportes: [Lectura, Exportación]
+  - Módulo Auditoría: [Lectura, Exportación]
+- **RF-14.10** El sistema debe validar permisos en cada endpoint de API mediante decoradores:
+  ```python
+  @require_permission('valoraciones', 'lectura')
+  @require_permission('reportes', 'exportacion')
+  ```
+- **RF-14.11** El sistema debe almacenar permisos en tabla PERMISOS_ROL con estructura:
+  ```sql
+  PERMISOS_ROL (
+    rol VARCHAR(20),
+    modulo VARCHAR(30),
+    puede_leer BOOLEAN,
+    puede_escribir BOOLEAN,
+    puede_eliminar BOOLEAN,
+    puede_aprobar BOOLEAN,
+    puede_exportar BOOLEAN
+  )
+  ```
+- **RF-14.12** El sistema debe permitir a administradores definir roles personalizados con permisos específicos
+- **RF-14.13** El sistema debe registrar en auditoría todos los cambios de permisos con trazabilidad completa
 
 ### RF-15: Integración con Legacy (Fase 1 - TEMPORAL) ⚠️
 - **RF-15.1** El sistema debe exportar FRV validados a carpeta compartida para procesamiento legacy
@@ -209,6 +241,66 @@
 - **RF-16.8** La generación de resultados, comparativos y paquetes ZIP corresponde a un sistema externo; el portal solo debe mostrar las ligas de descarga depositadas externamente.
 - **RF-16.9** El módulo de descarga debe permitir autenticación por correo y contraseña para listar todas las versiones disponibles con número consecutivo y liga de descarga.
 - **RF-16.10** El sistema debe ofrecer un panel básico de monitoreo técnico para seguimiento de solicitudes y descargas.
+
+### RF-17: Gestión de Sesiones y Seguridad
+- **RF-17.1** El sistema debe implementar timeout de sesión por inactividad de 30 minutos.
+- **RF-17.2** El sistema debe permitir cierre de sesión simultáneo en múltiples dispositivos.
+- **RF-17.3** El sistema debe registrar intentos fallidos de login y bloquear cuenta tras 5 intentos consecutivos.
+- **RF-17.4** El sistema debe mantener histórico de sesiones activas con información de dispositivo, IP y ubicación.
+- **RF-17.5** El sistema debe enviar notificación de email cuando se detecte inicio de sesión desde nueva ubicación o dispositivo.
+
+### RF-18: Gestión de Contraseñas
+- **RF-18.1** El sistema debe forzar cambio de contraseña temporal en primer acceso.
+- **RF-18.2** El sistema debe validar fortaleza de contraseña: mínimo 8 caracteres, mayúsculas, minúsculas, números y símbolos.
+- **RF-18.3** El sistema debe prevenir reutilización de últimas 5 contraseñas.
+- **RF-18.4** El sistema debe expirar contraseñas cada 90 días para roles administrativos.
+- **RF-18.5** El sistema debe permitir recuperación de contraseña mediante token enviado por email con vigencia de 2 horas.
+
+### RF-19: Validación Avanzada de Archivos FRV
+- **RF-19.1** El sistema debe validar unicidad de CURP dentro del mismo archivo.
+- **RF-19.2** El sistema debe detectar y rechazar archivos con estructura de hojas incorrecta (número o nombres).
+- **RF-19.3** El sistema debe validar coherencia entre total de alumnos declarado y registros en archivo.
+- **RF-19.4** El sistema debe validar formato de CCT según patrón oficial (2 dígitos + 1 letra + 7 alfanuméricos).
+- **RF-19.5** El sistema debe permitre validación por chunks para archivos grandes (>100MB) sin timeout.
+- **RF-19.6** El sistema debe generar reporte detallado de errores con número de fila y columna específica.
+
+### RF-20: Reportes Consolidados y Comparativos
+- **RF-20.1** El sistema debe generar reporte consolidado por entidad federativa con estadísticas agregadas.
+- **RF-20.2** El sistema debe generar reporte comparativo entre periodos de evaluación de la misma escuela.
+- **RF-20.3** El sistema debe generar reporte de tendencias por nivel educativo y grado.
+- **RF-20.4** El sistema debe permitir exportación de reportes en formatos PDF, Excel y CSV.
+- **RF-20.5** El sistema debe incluir gráficas estadísticas en reportes (barras, pastel, líneas de tendencia).
+
+### RF-21: Auditoría y Trazabilidad LGPDP
+- **RF-21.1** El sistema debe registrar todos los accesos a datos personales (CURP, nombres) con timestamp, usuario e IP.
+- **RF-21.2** El sistema debe permitir generación de reporte de auditoría por rango de fechas y tipo de operación.
+- **RF-21.3** El sistema debe mantener histórico de cambios (valores anteriores/nuevos) en tablas críticas.
+- **RF-21.4** El sistema debe implementar derecho de acceso ARCO: consulta de datos personales por titular.
+- **RF-21.5** El sistema debe implementar derecho de rectificación ARCO: corrección de datos personales.
+- **RF-21.6** El sistema debe implementar derecho de cancelación ARCO: eliminación de datos personales (soft delete).
+- **RF-21.7** El sistema debe registrar todas las solicitudes ARCO con seguimiento de estado.
+
+### RF-22: Notificaciones y Alertas
+- **RF-22.1** El sistema debe enviar notificación de email cuando reporte esté disponible para descarga.
+- **RF-22.2** El sistema debe enviar alerta de email a administrador cuando archivo FRV sea rechazado.
+- **RF-22.3** El sistema debe enviar recordatorio de email 3 días antes de expiración de reporte.
+- **RF-22.4** El sistema debe enviar notificación de cambio de contraseña exitoso.
+- **RF-22.5** El sistema debe enviar alerta cuando se detecte actividad sospechosa (múltiples intentos fallidos).
+- **RF-22.6** El sistema debe permitir configuración de preferencias de notificaciones por usuario.
+
+### RF-23: Configuración del Sistema
+- **RF-23.1** El sistema debe permitir configuración de parámetros globales sin requerir redeploy (timeouts, límites).
+- **RF-23.2** El sistema debe permitir activación/desactivación de periodos de evaluación por administrador.
+- **RF-23.3** El sistema debe permitir configuración de plantillas de email (bienvenida, notificaciones, alertas).
+- **RF-23.4** El sistema debe permitir configuración de reglas de validación de archivos FRV por nivel educativo.
+- **RF-23.5** El sistema debe mantener histórico de cambios en configuraciones con usuario y timestamp.
+
+### RF-24: Validaciones de Negocio
+- **RF-24.1** El sistema debe validar que escuela no suba más de 1 archivo FRV por periodo de evaluación.
+- **RF-24.2** El sistema debe validar que valoración (0-3) sea coherente con observaciones registradas.
+- **RF-24.3** El sistema debe validar que número de alumnos en archivo no exceda capacidad declarada de escuela.
+- **RF-24.4** El sistema debe prevenir eliminación de periodo de evaluación con datos asociados.
+- **RF-24.5** El sistema debe validar que fecha de carga de archivo esté dentro del periodo activo.
 
 ---
 

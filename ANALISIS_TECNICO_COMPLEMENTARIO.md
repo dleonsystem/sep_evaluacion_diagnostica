@@ -1166,11 +1166,11 @@ SiCRER 24_25 SEPT.exe (13.23 MB)
 
 | Componente | Versión | Estado | CVEs Conocidos | Recomendación |
 |------------|---------|--------|----------------|---------------|
-| .NET Framework 4.5 | 4.0.30319 | ❌ EOL (2022) | Múltiples | Migrar a .NET 8 |
-| Crystal Reports 13.0 | 13.0.2000.0 | ⚠️ Antigua | Posibles | Actualizar/Reemplazar |
-| ADODB 7.0 | 7.0.3300.0 | ⚠️ Legacy | N/A | Migrar a EF Core |
+| .NET Framework 4.5 | 4.0.30319 | ❌ EOL (2022) | Múltiples | Reemplazar con Node.js 20 LTS |
+| Crystal Reports 13.0 | 13.0.2000.0 | ⚠️ Antigua | Posibles | Reemplazar con Puppeteer |
+| ADODB 7.0 | 7.0.3300.0 | ⚠️ Legacy | N/A | Migrar a Prisma ORM |
 | Flash Components | Varios | ❌ EOL (2020) | Críticas | **ELIMINAR** |
-| Log4Net | 1.2.10.0 | ⚠️ Antigua | CVE-2018-1285 | Actualizar a 2.x |
+| Log4Net | 1.2.10.0 | ⚠️ Antigua | CVE-2018-1285 | Reemplazar con Winston |
 
 ---
 
@@ -1532,7 +1532,7 @@ INNER JOIN CAT_GRADOS g ON gr.ID_GRADO = g.ID_GRADO;
 **PROBLEMA CRÍTICO:** 
 - Access .mdb tiene límite de **2 GB**
 - Con ~180,000 estudiantes ya se excede capacidad
-- **Urgente migración a SQL Server**
+- **Urgente migración a PostgreSQL 16**
 
 ---
 
@@ -1709,25 +1709,18 @@ flowchart LR
         B3[Setup Ambiente<br/>Dev/Test]
     end
     
-    subgraph "Fase 2: Migración BD"
+    subgraph "Fase 2: Migración BD Access → PostgreSQL"
         C1[Exportar Esquema]
-        C2[Crear BD SQL Server]
+        C2[Crear BD PostgreSQL]
         C3[Migrar Datos]
         C4[Validar Integridad]
     end
     
-    subgraph "⚠️ [OBSOLETO] Fase 3 .NET - NO IMPLEMENTAR"
-        D1[❌ Upgrade .NET 8]
-        D2[❌ Migrar ADO a EF Core]
-        D3[Eliminar Flash]
-        D4[❌ Crystal → RDLC]
-    end
-    
-    subgraph "✅ Estado Futuro Real: Open Source"
-        E1[React 18<br/>Web SPA]
-        E2[(PostgreSQL 16<br/>Open Source)]
-        E3[Puppeteer<br/>PDF Open Source]
-        E4[Filesystem SSD<br/>✅ SIMPLE]
+    subgraph "Fase 3: Stack Open Source"
+        D1[React 18 SPA]
+        D2[NestJS 10 API]
+        D3[Puppeteer PDF]
+        D4[Filesystem SSD]
     end
     
     A1 --> B1
@@ -1739,18 +1732,16 @@ flowchart LR
     
     B3 --> C1 --> C2 --> C3 --> C4
     
-    C4 --> D1 --> D2 --> D3 --> D4
-    
-    D1 --> E1
-    D2 --> E2
-    D3 --> E4
-    D4 --> E3
+    C4 --> D1
+    C4 --> D2
+    C4 --> D3
+    C4 --> D4
     
     style A4 fill:#ff6b6b,stroke:#c92a2a,color:#fff
-    style E1 fill:#69db7c,stroke:#2f9e44,color:#fff
-    style E2 fill:#69db7c,stroke:#2f9e44,color:#fff
-    style E3 fill:#69db7c,stroke:#2f9e44,color:#fff
-    style E4 fill:#69db7c,stroke:#2f9e44,color:#fff
+    style D1 fill:#69db7c,stroke:#2f9e44,color:#fff
+    style D2 fill:#69db7c,stroke:#2f9e44,color:#fff
+    style D3 fill:#69db7c,stroke:#2f9e44,color:#fff
+    style D4 fill:#69db7c,stroke:#2f9e44,color:#fff
 ```
 
 ### 4.1 Fase 1: Preparación (Semanas 1-2)
@@ -1769,10 +1760,10 @@ DÍA 3-4: Análisis de dependencias
 ├── Mapear flujos de datos
 └── Documentar integraciones
 
-DÍA 5: Setup de entorno de desarrollo ⚠️ [ACTUALIZAR A STACK OPEN SOURCE]
-├── ❌ Instalar Visual Studio 2022 → ✅ VS Code
-├── ❌ Instalar .NET 8.0 SDK → ✅ Node.js 20 LTS
-├── ❌ Instalar SQL Server Express → ✅ PostgreSQL 16
+DÍA 5: Setup de entorno de desarrollo
+├── Instalar VS Code + extensiones
+├── Instalar Node.js 20 LTS
+├── Instalar PostgreSQL 16
 └── Configurar Git repository
 ```
 
@@ -1797,71 +1788,62 @@ DÍA 5: Preparación de datos
 └── Preparar datos de prueba
 ```
 
-### 5.2 Fase 2: Migración de Base de Datos (Semana 3-4)
+### 5.2 Fase 2: Migración de Base de Datos Access → PostgreSQL (Semana 3-4)
 
 **Semana 3:**
 ```sql
--- SCRIPT DE MIGRACIÓN ACCESS → SQL SERVER
+-- SCRIPT DE MIGRACIÓN ACCESS → POSTGRESQL
 
--- DÍA 1: Crear esquema en SQL Server
-USE master;
-GO
+-- DÍA 1: Crear esquema en PostgreSQL
+CREATE DATABASE sicrer_evaluaciones;
 
-CREATE DATABASE SiCRER_Evaluaciones;
-GO
+\c sicrer_evaluaciones;
 
-USE SiCRER_Evaluaciones;
-GO
-
--- Implementar esquema completo (ver sección 2.1)
+-- Implementar esquema completo con Prisma migrations
 -- Agregar índices y constraints
 
-CREATE INDEX IDX_Estudiantes_CURP ON ESTUDIANTES(CURP);
-CREATE INDEX IDX_Estudiantes_Grupo ON ESTUDIANTES(ID_GRUPO);
-CREATE INDEX IDX_Evaluaciones_Estudiante ON EVALUACIONES(ID_ESTUDIANTE);
-CREATE INDEX IDX_Evaluaciones_Periodo ON EVALUACIONES(ID_PERIODO);
-CREATE INDEX IDX_Resultados_Evaluacion ON RESULTADOS_COMPETENCIAS(ID_EVALUACION);
+CREATE INDEX idx_estudiantes_curp ON estudiantes(curp);
+CREATE INDEX idx_estudiantes_grupo ON estudiantes(id_grupo);
+CREATE INDEX idx_evaluaciones_estudiante ON evaluaciones(id_estudiante);
+CREATE INDEX idx_evaluaciones_periodo ON evaluaciones(id_periodo);
+CREATE INDEX idx_resultados_evaluacion ON resultados_competencias(id_evaluacion);
 
--- DÍA 2-3: Migrar datos
--- Usar SQL Server Migration Assistant (SSMA) o
--- Import and Export Wizard
--- O script PowerShell custom
+-- DÍA 2-3: Migrar datos usando pgloader o scripts Node.js
+-- Ejemplo script Node.js con Prisma
 
 -- DÍA 4: Validación de datos
 SELECT 
-    'CAT_ESCUELAS' AS Tabla,
-    COUNT(*) AS Registros_Access,
-    (SELECT COUNT(*) FROM SiCRER_Evaluaciones.dbo.CAT_ESCUELAS) AS Registros_SQL
-FROM [AccessDB].CAT_ESCUELAS
+    'cat_escuelas' AS tabla,
+    COUNT(*) AS registros_postgresql
+FROM cat_escuelas
 UNION ALL
 SELECT 
-    'ESTUDIANTES',
-    COUNT(*),
-    (SELECT COUNT(*) FROM SiCRER_Evaluaciones.dbo.ESTUDIANTES)
-FROM [AccessDB].ESTUDIANTES;
+    'estudiantes',
+    COUNT(*)
+FROM estudiantes;
 -- Repetir para todas las tablas
 
 -- DÍA 5: Optimización
--- Actualizar estadísticas
-UPDATE STATISTICS CAT_ESCUELAS;
-UPDATE STATISTICS ESTUDIANTES;
-UPDATE STATISTICS EVALUACIONES;
+ANALYZE cat_escuelas;
+ANALYZE estudiantes;
+ANALYZE evaluaciones;
 
--- Rebuild índices
-ALTER INDEX ALL ON CAT_ESCUELAS REBUILD;
-ALTER INDEX ALL ON ESTUDIANTES REBUILD;
+-- Vacuum y reindex
+VACUUM ANALYZE;
+REINDEX TABLE cat_escuelas;
+REINDEX TABLE estudiantes;
 ```
 
 **Semana 4:**
 ```
-DÍA 1-2: Stored Procedures
-├── Crear SPs para operaciones comunes
-├── SP_InsertarEstudiante
-├── SP_RegistrarEvaluacion
-├── SP_GenerarReporteEscuela
-└── SP_GenerarReporteGrupo
+DÍA 1-2: Funciones y vistas PostgreSQL
+├── Crear funciones para operaciones comunes
+├── fn_insertar_estudiante
+├── fn_registrar_evaluacion
+├── fn_generar_reporte_escuela
+└── fn_generar_reporte_grupo
 
-DÍA 3: Vistas y funciones
+DÍA 3: Vistas materializadas
 ├── Crear vistas para reportes
 ├── Funciones de cálculo de promedios
 └── Funciones de estadísticas
@@ -1870,7 +1852,7 @@ DÍA 4-5: Testing de BD
 ├── Pruebas de integridad
 ├── Pruebas de rendimiento
 ├── Comparación con Access
-└── Documentación de BD
+└── Documentación de BD con Prisma
 ```
 
 ### 5.3 Fase 3: Migración de Aplicación (Semana 5-8)
@@ -1886,33 +1868,25 @@ OleDbConnection conn = new OleDbConnection(
     "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=bd24.25.1.mdb"
 );
 
-// DESPUÉS (.NET 8.0 con Entity Framework Core):
-using Microsoft.EntityFrameworkCore;
+// DESPUÉS (Node.js 20 con Prisma ORM):
+import { PrismaClient } from '@prisma/client';
 
-public class SiCRERContext : DbContext
-{
-    protected override void OnConfiguring(DbContextOptionsBuilder options)
-        => options.UseSqlServer(
-            "Server=.\\SQLEXPRESS;Database=SiCRER_Evaluaciones;Trusted_Connection=True;TrustServerCertificate=True"
-        );
-
-    public DbSet<Escuela> Escuelas { get; set; }
-    public DbSet<Estudiante> Estudiantes { get; set; }
-    public DbSet<Evaluacion> Evaluaciones { get; set; }
-}
+const prisma = new PrismaClient();
 
 // Uso:
-using (var context = new SiCRERContext())
-{
-    var escuelas = context.Escuelas
-        .Include(e => e.Grupos)
-        .ThenInclude(g => g.Estudiantes)
-        .ToList();
-}
+const escuelasConGrupos = await prisma.escuela.findMany({
+  include: {
+    grupos: {
+      include: {
+        estudiantes: true
+      }
+    }
+  }
+});
 ```
 
-**Semana 7: Reemplazo de Crystal Reports**
-```csharp
+**Semana 7: Reemplazo de Crystal Reports con Puppeteer**
+```typescript
 // ANTES (Crystal Reports):
 using CrystalDecisions.CrystalReports.Engine;
 
@@ -1921,21 +1895,22 @@ report.Load("res_est_f5.rpt");
 report.SetDataSource(dataSet);
 crystalReportViewer1.ReportSource = report;
 
-// DESPUÉS (Microsoft RDLC):
-using Microsoft.Reporting.WinForms;
+// DESPUÉS (Puppeteer + Handlebars):
+import puppeteer from 'puppeteer';
+import Handlebars from 'handlebars';
+import fs from 'fs/promises';
 
-ReportViewer reportViewer = new ReportViewer();
-reportViewer.LocalReport.ReportPath = "ReporteEstudiante.rdlc";
+const template = await fs.readFile('templates/reporte-estudiante.hbs', 'utf-8');
+const compiledTemplate = Handlebars.compile(template);
+const html = compiledTemplate({ estudiantes });
 
-ReportDataSource rds = new ReportDataSource("DataSetEstudiantes", estudiantes);
-reportViewer.LocalReport.DataSources.Clear();
-reportViewer.LocalReport.DataSources.Add(rds);
+const browser = await puppeteer.launch();
+const page = await browser.newPage();
+await page.setContent(html);
+const pdfBuffer = await page.pdf({ format: 'A4' });
+await browser.close();
 
-reportViewer.RefreshReport();
-
-// Exportar a PDF:
-byte[] pdfBytes = reportViewer.LocalReport.Render("PDF");
-File.WriteAllBytes("reporte.pdf", pdfBytes);
+await fs.writeFile('reporte.pdf', pdfBuffer);
 ```
 
 **Semana 8: Eliminar Flash y Testing**
@@ -2024,15 +1999,15 @@ telemetry.TrackMetric("TiempoGeneracionReporte", tiempoMs);
 | 1.1 | Localizar código fuente | 0 | 0 | 4 | 0 | 4 |
 | 1.2 | Documentar sistema actual | 0 | 0 | 16 | 0 | 16 |
 | 1.3 | Setup entorno desarrollo | 0 | 0 | 8 | 0 | 8 |
-| 2.1 | Diseño esquema SQL Server | 0 | 0 | 24 | 0 | 24 |
-| 2.2 | Scripts migración datos | 500 | 0 | 32 | 8 | 40 |
-| 2.3 | Stored Procedures | 1,200 | 0 | 48 | 12 | 60 |
+| 2.1 | Diseño esquema PostgreSQL + Prisma | 0 | 0 | 24 | 0 | 24 |
+| 2.2 | Scripts migración datos Access → PG | 500 | 0 | 32 | 8 | 40 |
+| 2.3 | Funciones y vistas PostgreSQL | 800 | 0 | 40 | 10 | 50 |
 | 2.4 | Testing BD | 0 | 0 | 0 | 24 | 24 |
-| 3.1 | Upgrade .NET Framework → 8 | 0 | 15,000 | 120 | 30 | 150 |
-| 3.2 | Migrar ADO → EF Core | 2,000 | 8,000 | 80 | 20 | 100 |
+| 3.1 | Portal React 18 + TypeScript | 0 | 12,000 | 100 | 25 | 125 |
+| 3.2 | Backend NestJS 10 + Prisma | 1,500 | 6,000 | 70 | 18 | 88 |
 | 3.3 | Eliminar Flash components | 0 | 3,000 | 40 | 10 | 50 |
-| 3.4 | Reemplazar Crystal Reports | 3,500 | 5,000 | 120 | 40 | 160 |
-| 3.5 | Actualizar UI Windows Forms | 0 | 4,000 | 60 | 15 | 75 |
+| 3.4 | Reportes Puppeteer + Handlebars | 2,800 | 4,000 | 100 | 35 | 135 |
+| 3.5 | UI Components Material UI | 0 | 3,500 | 55 | 14 | 69 |
 | 4.1 | Testing funcional | 0 | 0 | 0 | 40 | 40 |
 | 4.2 | Testing de regresión | 0 | 0 | 0 | 30 | 30 |
 | 4.3 | Testing de rendimiento | 0 | 0 | 8 | 16 | 24 |
@@ -2080,10 +2055,10 @@ CON EQUIPO DE 2 DESARROLLADORES:
 | ID | Riesgo | P | I | Exposición | Mitigación | Contingencia |
 |----|--------|---|---|------------|------------|--------------|
 | RT-01 | Pérdida código fuente | 0.7 | 10 | 7.0 | Backup inmediato, decompilación | Reescritura desde cero |
-| RT-02 | Incompatibilidad .NET 8 | 0.4 | 8 | 3.2 | Análisis previo de APIs | Usar .NET 6 LTS |
+| RT-02 | Complejidad React + TypeScript | 0.3 | 6 | 1.8 | Capacitación equipo | Usar componentes pre-hechos |
 | RT-03 | Corrupción datos migración | 0.3 | 9 | 2.7 | Validación exhaustiva | Rollback a Access |
-| RT-04 | Rendimiento SQL Server | 0.2 | 6 | 1.2 | Indexación adecuada | Optimizar consultas |
-| RT-05 | Reportes RDLC no equivalentes | 0.5 | 7 | 3.5 | Validación visual | Mantener Crystal temporal |
+| RT-04 | Rendimiento PostgreSQL | 0.2 | 6 | 1.2 | Indexación adecuada | Optimizar consultas |
+| RT-05 | Reportes Puppeteer no equivalentes | 0.4 | 7 | 2.8 | Validación visual pixel-perfect | Mantener Crystal temporal |
 | RT-06 | Resistencia usuarios | 0.4 | 5 | 2.0 | Capacitación temprana | Soporte extendido |
 | RT-07 | Tiempo estimación incorrecto | 0.6 | 8 | 4.8 | Buffers 20% | Re-priorizar features |
 | RT-08 | Dependencias ocultas | 0.5 | 6 | 3.0 | Análisis profundo código | Desarrollo incremental |
@@ -2830,191 +2805,53 @@ export class StorageConfigService {
 
 ## 9. CONCLUSIONES TÉCNICAS - STACK OPEN SOURCE
 
-### 9.0 Arquitectura Open Source Aprobada
-
-⚠️ **NOTA**: Las secciones 9.0.1 a 9.0.3 describen una arquitectura .NET 8 que fue **DESCARTADA**. La estrategia aprobada es **bifásica con stack open source** (React 18 + Node.js 20 LTS + NestJS 10 + PostgreSQL 16). Ver secciones 1-8 de este documento para arquitectura real.
-
-#### 9.0.1 ⚠️ [OBSOLETO] Visión Arquitectura .NET 8 (NO IMPLEMENTAR)
-
-```mermaid
-graph TB
-    subgraph "Capa de Presentación"
-        A1[Navegador Web<br/>Chrome/Edge/Firefox/Safari]
-        A2[Aplicación Móvil<br/>Android/iOS]
-        A3[PWA<br/>Progressive Web App]
-    end
-    
-    subgraph "Capa de Seguridad"
-        B1[Azure AD / OAuth2<br/>Autenticación]
-        B2[API Gateway<br/>Rate Limiting]
-        B3[Role-Based Access<br/>Autorización]
-    end
-    
-    subgraph "Capa de Servicios - ASP.NET Core 8"
-        C1[Web API Controllers]
-        C2[Evaluaciones Service]
-        C3[Reportes Service]
-        C4[Usuarios Service]
-        C5[Catálogos Service]
-    end
-    
-    subgraph "Capa de Negocio"
-        D1[Business Logic]
-        D2[Validation Rules]
-        D3[Workflows]
-        D4[Event Handlers]
-    end
-    
-    subgraph "Capa de Datos"
-        E1[Entity Framework Core]
-        E2[Repository Pattern]
-        E3[Unit of Work]
-        E4[Migrations]
-    end
-    
-    subgraph "Capa de Persistencia"
-        F1[(PostgreSQL 16<br/>Open Source)]
-        F2[Filesystem SSD<br/>PDFs/Archivos FRV]
-        F3[node-cache<br/>Cache Memoria]
-    end
-    
-    subgraph "Servicios Externos"
-        G1[SendGrid<br/>Email Service]
-        G2[Telerik/FastReport<br/>Generación Reportes]
-        G3[Application Insights<br/>Telemetría]
-        G4[Azure Backup<br/>Respaldos]
-    end
-    
-    A1 --> B1
-    A2 --> B1
-    A3 --> B1
-    
-    B1 --> B2 --> B3
-    B3 --> C1
-    B3 --> C2
-    B3 --> C3
-    B3 --> C4
-    B3 --> C5
-    
-    C1 --> D1
-    C2 --> D2
-    C3 --> D3
-    C4 --> D4
-    C5 --> D1
-    
-    D1 --> E1
-    D2 --> E2
-    D3 --> E3
-    D4 --> E4
-    
-    E1 --> F1
-    E2 --> F2
-    E3 --> F3
-    E4 --> F1
-    
-    C3 --> G1
-    C3 --> G2
-    C1 --> G3
-    F1 --> G4
-    
-    style A1 fill:#61dafb,stroke:#282c34,color:#000
-    style A2 fill:#61dafb,stroke:#282c34,color:#000
-    style A3 fill:#61dafb,stroke:#282c34,color:#000
-    style B1 fill:#ffd43b,stroke:#fab005,color:#000
-    style C1 fill:#512bd4,stroke:#512bd4,color:#fff
-    style C2 fill:#512bd4,stroke:#512bd4,color:#fff
-    style C3 fill:#512bd4,stroke:#512bd4,color:#fff
-    style C4 fill:#512bd4,stroke:#512bd4,color:#fff
-    style C5 fill:#512bd4,stroke:#512bd4,color:#fff
-    style F1 fill:#00758f,stroke:#00758f,color:#fff
-    style F2 fill:#0089d6,stroke:#0078d4,color:#fff
-    style F3 fill:#d92b21,stroke:#a41e11,color:#fff
-```
-
-#### 8.0.2 Stack Tecnológico Recomendado
-
-| Capa | Tecnología Actual | Tecnología Propuesta | Justificación |
-|------|-------------------|---------------------|---------------|
-| **Frontend** | Windows Forms .NET 4.5 | React 18 + TypeScript | Multiplataforma, moderna, gran comunidad |
-| **Backend** | N/A (monolítico) | ASP.NET Core 8 Web API | Soporte LTS hasta 2026, alto rendimiento |
-| **Base de Datos** | MS Access .mdb | SQL Server 2022 Express | Sin límites 2GB, enterprise-ready |
-| **ORM** | ADODB (legacy) | Entity Framework Core 8 | Type-safe, migrations, LINQ |
-| **Reportes** | Crystal Reports 13 | Telerik Reporting | Moderna, .NET Core compatible |
-| **Autenticación** | Básica (sin encriptación) | Azure AD B2C + JWT | Estándar industria, OAuth2/OIDC |
-| **Cache** | N/A | Redis Cloud | Rendimiento, sesiones distribuidas |
-| **Storage** | Sistema de archivos | Azure Blob Storage | Escalable, geo-redundante |
-| **Monitoreo** | Logs locales | Application Insights | Telemetría en tiempo real, alertas |
-| **CI/CD** | Manual | Azure DevOps Pipelines | Automatización, calidad |
-
-#### 8.0.3 Beneficios de la Arquitectura Propuesta
-
-**Técnicos:**
-- ✅ Escalabilidad horizontal (múltiples instancias)
-- ✅ Alta disponibilidad (99.9% uptime)
-- ✅ Rendimiento optimizado (cache, CDN)
-- ✅ Seguridad moderna (OAuth2, HTTPS, tokens)
-- ✅ Multiplataforma (web, móvil, desktop)
-
-**Operacionales:**
-- ✅ Despliegue continuo (CI/CD)
-- ✅ Monitoreo proactivo (alertas)
-- ✅ Backups automatizados
-- ✅ Disaster recovery < 1 hora
-- ✅ Costos predecibles (cloud)
-
-**De Negocio:**
-- ✅ Acceso desde cualquier dispositivo
-- ✅ Actualizaciones sin reinstalar
-- ✅ Mejor experiencia de usuario
-- ✅ Datos en tiempo real
-- ✅ Integración con otros sistemas SEP
-
----
-
-### 8.1 Factibilidad Técnica: MEDIA-ALTA (7/10)
+### 9.1 Factibilidad Técnica: ALTA (8.5/10)
 
 **Factores Positivos:**
-- ✅ Tecnologías .NET bien documentadas
-- ✅ Herramientas de migración disponibles
-- ✅ Arquitectura relativamente estándar
-- ✅ Equipo con experiencia en Windows Forms
+- ✅ Stack open source maduro y probado (React 18, NestJS 10, PostgreSQL 16)
+- ✅ Ecosistema npm con 2M+ paquetes disponibles
+- ✅ Comunidad global activa (facilita soporte y contratación)
+- ✅ Documentación exhaustiva y ejemplos reales
+- ✅ Arquitectura híbrida Fase 1 minimiza riesgos
 
-**Factores Negativos:**
-- ❌ Posible pérdida de código fuente
-- ❌ Componentes obsoletos (Flash)
-- ❌ Complejidad reportes Crystal
-- ❌ Volumen de datos considerable
+**Factores de Riesgo:**
+- ⚠️ Posible pérdida de código fuente original
+- ⚠️ Componentes obsoletos Flash requieren eliminación
+- ⚠️ Complejidad reportes Crystal Reports
+- ⚠️ Volumen de datos considerable (550 GB/año)
 
-### 8.2 Deuda Técnica Actual: ALTA
+### 9.2 Deuda Técnica Actual: CRÍTICA
 
 **Estimación de Deuda Técnica:**
 ```
-Costo de Re-desarrollo completo: $150,000 USD
-Costo de Modernización propuesta: $94,700 USD
-Deuda Técnica = $55,300 USD
+Costo de Re-desarrollo completo: $180,000 MXN
+Costo de Modernización bifásica: $180,000 MXN
+Deuda Técnica Acumulada: $0 (break-even)
 
-Interés mensual (mantenimiento extra): $1,100 USD
-Tiempo para duplicar deuda: 50 meses
+Ahorro Crystal Reports: $180,000 MXN en 3 años
+Ahorro infraestructura: $54,000 MXN en 3 años
+Ahorro desarrollo: $1,042,000 MXN vs outsourcing
+
+TOTAL AHORROS: $1,276,000 MXN
 ```
 
-### 8.3 Recomendación Final del Análisis Técnico
+### 9.3 Recomendación Final del Análisis Técnico
 
-**PROCEDER CON MODERNIZACIÓN GRADUAL**
+**✅ PROCEDER CON ESTRATEGIA BIFÁSICA OPEN SOURCE**
 
-**Prioridad Máxima (1-2 meses):**
-1. Asegurar código fuente
-2. Migrar base de datos a SQL Server
-3. Eliminar componentes Flash
+**Fase 1: Portal Híbrido (Marzo 2026 - 4 meses):**
+1. Portal React 18 + NestJS 10
+2. Validador automático FRV (SheetJS)
+3. Sistema tickets y notificaciones
+4. Integración con legacy vía sincronización nocturna
+5. Compliance LGPDP 86%
 
-**Prioridad Alta (3-6 meses):**
-1. Upgrade a .NET 8.0
-2. Reemplazar Crystal Reports
-3. Implementar seguridad LGPDP
-
-**Prioridad Media (6-12 meses):**
-1. Considerar arquitectura web
-2. Implementar APIs
-3. Sistema de autenticación robusto
+**Fase 2: Migración Completa (Septiembre 2026 - 6 meses):**
+1. Migración PostgreSQL 16 completa
+2. Generación reportes Puppeteer
+3. Módulo ARCO (Compliance LGPDP 100%)
+4. Deprecación total sistema legacy
+5. Filesystem SSD organizado
 
 ---
 
