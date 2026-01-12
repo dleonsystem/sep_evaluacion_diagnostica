@@ -38,55 +38,6 @@ gantt
 
 ---
 
-## 💰 ANÁLISIS FINANCIERO VISUAL
-
-### Comparativa Costos Microsoft vs Open Source (3 Años)
-
-```mermaid
-%%{init: {'theme':'base'}}%%
-pie title Costos Reales Sistema Actual vs Modernizado (3 Años MXN)
-    "Sistema Actual (Crystal Reports): $180,000" : 180000
-    "Sistema Modernizado (Open Source): $0" : 0
-```
-
-**Nota:** Sistema actual NO usa SQL Server ni Azure. Solo costo real es Crystal Reports.
-
-### Desglose Ahorro por Componente
-
-```mermaid
-graph TB
-    A[Ahorro Real Total<br/>$9,000 USD<br/>$180,000 MXN] --> B[Crystal Reports SAP<br/>Única licencia comercial]
-    
-    B --> B1[Año 1: $60,000 MXN]
-    B --> B2[Año 2: $60,000 MXN]
-    B --> B3[Año 3: $60,000 MXN]
-    
-    C[Sin Cambio $0] --> C1[MS Access<br/>Ya en Office SEP]
-    C --> C2[Hosting<br/>Centro datos SEP]
-    C --> C3[Runtime<br/>.NET Framework Windows]
-    
-    style A fill:#69db7c,stroke:#2f9e44,color:#000
-    style B fill:#ffd43b,stroke:#fab005
-    style C fill:#e9ecef,stroke:#868e96
-```
-
-**Aclaración:** Sistema actual opera con MS Access + Crystal Reports en centro de datos SEP. NO usa SQL Server, Azure Blob, ni servicios cloud.
-
-### Proyección Financiera 5 Años (Desarrollo Interno SEP)
-
-```mermaid
-xychart-beta
-    title "Análisis Break-Even (Break-even: 5.8 meses)"
-    x-axis [Año 1, Año 2, Año 3, Año 4, Año 5]
-    y-axis "Ahorro Neto (Miles USD)" -20 --> 200
-    line "Infraestructura" [16.6, 16.6, 16.6, 16.6, 16.6]
-    line "Ahorro Acumulado" [21.7, 60.0, 98.3, 136.6, 174.9]
-```
-
-**🎯 Nota:** Gráfico muestra solo costos de infraestructura. Personal DGADAI + DGTIC ya presupuestado.
-
----
-
 ## 🎯 KPIs FASE 1 (Portal Híbrido - Marzo 2026)
 
 ```mermaid
