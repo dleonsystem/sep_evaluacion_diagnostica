@@ -674,7 +674,7 @@ graph LR
 
 ### 9.1 Scorecard General del Proyecto
 
-```
+``` txt
 ╔════════════════════════════════════════════════════════════╗
 ║         EVALUACIÓN GENERAL DE DOCUMENTACIÓN                ║
 ║         Sistema de Evaluación Diagnóstica SEP              ║
