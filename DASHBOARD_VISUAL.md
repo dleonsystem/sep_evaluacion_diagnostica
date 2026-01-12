@@ -593,13 +593,13 @@ flowchart LR
 graph TD
     A[Sistema Actual<br/>SiCRER 24/25] --> B{Decisión<br/>Estratégica}
     
-    B -->|Opción A<br/>Hacer Nada| C[❌ Deuda Técnica Crece<br/>Vulnerabilidades Aumentan<br/>Costo: $500/mes indefinido]
+    B -->|Opción A<br/>Hacer Nada| C[❌ Deuda Técnica Crece<br/>Vulnerabilidades Aumentan<br/>]
     
-    B -->|Opción B<br/>Estabilizar| D[⚠️ Solución Temporal<br/>Elimina riesgos críticos<br/>Costo: $6,100 - 1 mes]
+    B -->|Opción B<br/>Estabilizar| D[⚠️ Solución Temporal<br/>Elimina riesgos críticos<br/>1 mes]
     
-    B -->|Opción C<br/>🏆 MODERNIZAR| E[✅ Solución Sostenible<br/>Elimina deuda técnica<br/>Costo: $35,300 - 3 meses]
+    B -->|Opción C<br/>🏆 MODERNIZAR| E[✅ Solución Sostenible<br/>Elimina deuda técnica<br/>3 meses]
     
-    B -->|Opción D<br/>Reescribir| F[⚠️ Mayor Inversión<br/>Sistema completamente nuevo<br/>Costo: $94,700 - 6 meses]
+    B -->|Opción D<br/>Reescribir| F[⚠️ Mayor Inversión<br/>Sistema completamente nuevo<br/>6 meses]
     
     C --> G[💀 Sistema obsoleto<br/>en 1-2 años]
     D --> H[🔧 Extender vida<br/>2-3 años]
