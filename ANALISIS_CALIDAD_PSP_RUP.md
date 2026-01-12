@@ -636,11 +636,12 @@ ARCHIVOS_FRV, BLOQUEOS_IP, CAMBIOS_AUDITORIA, CAT_CICLOS_ESCOLARES, CAT_ENTIDADE
 - USUARIOS: Ahora incluye preferencias_notif JSONB (antes tabla separada)
 
 **Beneficios de optimización:**
-- ✅ -21% reducción de tablas (38 → 30)
-- ✅ 100% trazabilidad tabla → RF activo
-- ✅ Cero duplicación de funcionalidad
-- ✅ -35% complejidad de queries
-- ✅ -30% joins en operaciones típicas
+
+1. ✅ -21% reducción de tablas (38 → 30)
+2. ✅ 100% trazabilidad tabla → RF activo
+3. ✅ Cero duplicación de funcionalidad
+4. ✅ -35% complejidad de queries
+5. ✅ -30% joins en operaciones típicas
 6. PLANTILLAS_EMAIL (templates de notificaciones)
 7. ESTADISTICAS_USO (métricas de sistema)
 8. TAREAS_PROGRAMADAS (jobs asíncronos)
@@ -1671,12 +1672,14 @@ La rápida corrección de 5 defectos en 3 días demuestra:
 #### Impacto de Optimización Propuesto
 
 **Antes:**
+
 - Tablas: 38
 - Complejidad: ALTA
 - Joins promedio: 4-6
 - Tablas sin RF: 5
 
 **Después (Propuesta):**
+
 - Tablas: 30 (-21%)
 - Complejidad: MEDIA (-35%)
 - Joins promedio: 3-4 (-30%)
@@ -1685,6 +1688,7 @@ La rápida corrección de 5 defectos en 3 días demuestra:
 #### Recomendaciones Inmediatas
 
 1. **ELIMINAR (6 tablas):**
+
    ```sql
    DROP TABLE BITACORA_DETALLADA;
    DROP TABLE CACHE_QUERIES;
@@ -1695,6 +1699,7 @@ La rápida corrección de 5 defectos en 3 días demuestra:
    ```
 
 2. **CONSOLIDAR (1 tabla):**
+
    ```sql
    ALTER TABLE LOG_ACTIVIDADES 
      ADD COLUMN modulo VARCHAR(100),
@@ -1702,6 +1707,7 @@ La rápida corrección de 5 defectos en 3 días demuestra:
    ```
 
 3. **SIMPLIFICAR (1 tabla):**
+
    ```sql
    ALTER TABLE USUARIOS 
      ADD COLUMN preferencias_notif JSONB DEFAULT '{}';
@@ -1743,6 +1749,7 @@ La rápida corrección de 5 defectos en 3 días demuestra:
 **Estado Final:** ✅ **COMPLETADO**  
 **Impacto Real en Score PSP:** **+8.3 puntos** (74.2 → 82.5)  
 **Nuevas Fortalezas:**
+
 - ✅ 100% trazabilidad tabla → RF activo
 - ✅ 100% cobertura RF → Caso de Uso
 - ✅ Cero duplicación en modelo de datos
@@ -1750,6 +1757,7 @@ La rápida corrección de 5 defectos en 3 días demuestra:
 - ✅ -35% reducción de complejidad de queries
 
 **Beneficios Cuantificables:**
+
 | Métrica | Antes | Después | Mejora |
 |---------|-------|---------|--------|
 | Tablas | 38 | 30 | -21% |
