@@ -433,6 +433,7 @@ Esta decisión es consistente con metodologías ágiles y RUP iterativo, prioriz
 
 **Nota sobre Prototipos HTML:**
 Se adoptaron prototipos funcionales en HTML como estrategia ágil para:
+
 - ✅ Acelerar validación con usuarios finales
 - ✅ Reducir tiempo de desarrollo (vs wireframes estáticos)
 - ✅ Facilitar transición directa a implementación Angular
@@ -750,11 +751,11 @@ Análisis de una muestra de 1,000 palabras de cada documento:
 
 ### 6.3 Gaps Menores (Prioridad Baja)
 
-| ID | Brecha | Impacto | Esfuerzo Estimado | Prioridad |
-| ---- | -------- | --------- | ----------------- | --------- |
-| GAP-011 | Glosario incompleto (acrónimos) | 🟡 MENOR | 4h | P3 |
-| GAP-012 | Pocos diagramas de estado | 🟡 MENOR | 12h | P3 |
-| GAP-013 | Sin guía de contribución Git | 🟡 MENOR | 6h | P3 |
+| ID | Brecha | Impacto | Esfuerzo Estimado | Prioridad | Estado |
+| ---- | -------- | --------- | ----------------- | --------- | ------ |
+| GAP-011 | Glosario incompleto (acrónimos) | 🟡 MENOR | 4h | P3 | 🔴 PENDIENTE |
+| GAP-012 | Pocos diagramas de estado | 🟡 MENOR | 12h | P3 | 🔴 PENDIENTE |
+| GAP-013 | Sin guía de contribución Git | 🟡 MENOR | 6h | P3 | 🔴 PENDIENTE |
 | GAP-014 | Falta matriz trazabilidad req-CU | 🟡 MENOR | 8h | P3 | 🔴 PENDIENTE |
 
 **📊 Total Esfuerzo para Cerrar Gaps:**
