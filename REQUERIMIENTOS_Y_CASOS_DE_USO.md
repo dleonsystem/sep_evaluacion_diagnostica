@@ -264,154 +264,43 @@
 - **RF-19.5** El sistema debe permitre validación por chunks para archivos grandes (>100MB) sin timeout.
 - **RF-19.6** El sistema debe generar reporte detallado de errores con número de fila y columna específica.
 
-### RF-20: Sincronización de Catálogos
-- **RF-20.1** El sistema debe sincronizar catálogo de escuelas desde fuente externa (SIGED) diariamente.
-- **RF-20.2** El sistema debe sincronizar catálogo de entidades federativas desde fuente oficial.
-- **RF-20.3** El sistema debe permitir actualización manual de catálogos por administrador.
-- **RF-20.4** El sistema debe registrar fecha y usuario de última sincronización de cada catálogo.
-- **RF-20.5** El sistema debe notificar por email al administrador en caso de falla en sincronización automática.
+### RF-20: Reportes Consolidados y Comparativos
+- **RF-20.1** El sistema debe generar reporte consolidado por entidad federativa con estadísticas agregadas.
+- **RF-20.2** El sistema debe generar reporte comparativo entre periodos de evaluación de la misma escuela.
+- **RF-20.3** El sistema debe generar reporte de tendencias por nivel educativo y grado.
+- **RF-20.4** El sistema debe permitir exportación de reportes en formatos PDF, Excel y CSV.
+- **RF-20.5** El sistema debe incluir gráficas estadísticas en reportes (barras, pastel, líneas de tendencia).
 
-### RF-21: Reportes Consolidados y Comparativos
-- **RF-21.1** El sistema debe generar reporte consolidado por entidad federativa con estadísticas agregadas.
-- **RF-21.2** El sistema debe generar reporte comparativo entre periodos de evaluación de la misma escuela.
-- **RF-21.3** El sistema debe generar reporte de tendencias por nivel educativo y grado.
-- **RF-21.4** El sistema debe permitir exportación de reportes en formatos PDF, Excel y CSV.
-- **RF-21.5** El sistema debe incluir gráficas estadísticas en reportes (barras, pastel, líneas de tendencia).
+### RF-21: Auditoría y Trazabilidad LGPDP
+- **RF-21.1** El sistema debe registrar todos los accesos a datos personales (CURP, nombres) con timestamp, usuario e IP.
+- **RF-21.2** El sistema debe permitir generación de reporte de auditoría por rango de fechas y tipo de operación.
+- **RF-21.3** El sistema debe mantener histórico de cambios (valores anteriores/nuevos) en tablas críticas.
+- **RF-21.4** El sistema debe implementar derecho de acceso ARCO: consulta de datos personales por titular.
+- **RF-21.5** El sistema debe implementar derecho de rectificación ARCO: corrección de datos personales.
+- **RF-21.6** El sistema debe implementar derecho de cancelación ARCO: eliminación de datos personales (soft delete).
+- **RF-21.7** El sistema debe registrar todas las solicitudes ARCO con seguimiento de estado.
 
-### RF-22: Dashboard y Visualizaciones
-- **RF-22.1** El sistema debe mostrar dashboard con estadísticas en tiempo real de archivos procesados.
-- **RF-22.2** El sistema debe mostrar mapa de calor de participación por entidad federativa.
-- **RF-22.3** El sistema debe mostrar gráfica de distribución de valoraciones (0-3) por nivel educativo.
-- **RF-22.4** El sistema debe mostrar indicadores de avance de carga por periodo (% escuelas participantes).
-- **RF-22.5** El sistema debe permitir filtrado de dashboard por entidad, periodo y nivel educativo.
+### RF-22: Notificaciones y Alertas
+- **RF-22.1** El sistema debe enviar notificación de email cuando reporte esté disponible para descarga.
+- **RF-22.2** El sistema debe enviar alerta de email a administrador cuando archivo FRV sea rechazado.
+- **RF-22.3** El sistema debe enviar recordatorio de email 3 días antes de expiración de reporte.
+- **RF-22.4** El sistema debe enviar notificación de cambio de contraseña exitoso.
+- **RF-22.5** El sistema debe enviar alerta cuando se detecte actividad sospechosa (múltiples intentos fallidos).
+- **RF-22.6** El sistema debe permitir configuración de preferencias de notificaciones por usuario.
 
-### RF-23: Auditoría y Trazabilidad LGPDP
-- **RF-23.1** El sistema debe registrar todos los accesos a datos personales (CURP, nombres) con timestamp, usuario e IP.
-- **RF-23.2** El sistema debe permitir generación de reporte de auditoría por rango de fechas y tipo de operación.
-- **RF-23.3** El sistema debe mantener histórico de cambios (valores anteriores/nuevos) en tablas críticas.
-- **RF-23.4** El sistema debe implementar derecho de acceso ARCO: consulta de datos personales por titular.
-- **RF-23.5** El sistema debe implementar derecho de rectificación ARCO: corrección de datos personales.
-- **RF-23.6** El sistema debe implementar derecho de cancelación ARCO: eliminación de datos personales (soft delete).
-- **RF-23.7** El sistema debe registrar todas las solicitudes ARCO con seguimiento de estado.
+### RF-23: Configuración del Sistema
+- **RF-23.1** El sistema debe permitir configuración de parámetros globales sin requerir redeploy (timeouts, límites).
+- **RF-23.2** El sistema debe permitir activación/desactivación de periodos de evaluación por administrador.
+- **RF-23.3** El sistema debe permitir configuración de plantillas de email (bienvenida, notificaciones, alertas).
+- **RF-23.4** El sistema debe permitir configuración de reglas de validación de archivos FRV por nivel educativo.
+- **RF-23.5** El sistema debe mantener histórico de cambios en configuraciones con usuario y timestamp.
 
-### RF-24: Notificaciones y Alertas
-- **RF-24.1** El sistema debe enviar notificación de email cuando reporte esté disponible para descarga.
-- **RF-24.2** El sistema debe enviar alerta de email a administrador cuando archivo FRV sea rechazado.
-- **RF-24.3** El sistema debe enviar recordatorio de email 3 días antes de expiración de reporte.
-- **RF-24.4** El sistema debe enviar notificación de cambio de contraseña exitoso.
-- **RF-24.5** El sistema debe enviar alerta cuando se detecte actividad sospechosa (múltiples intentos fallidos).
-- **RF-24.6** El sistema debe permitir configuración de preferencias de notificaciones por usuario.
-
-### RF-25: Búsqueda y Filtros Avanzados
-- **RF-25.1** El sistema debe permitir búsqueda de escuelas por CCT, nombre, entidad o nivel educativo.
-- **RF-25.2** El sistema debe permitir filtrado de archivos FRV por estado, periodo, escuela y fecha de carga.
-- **RF-25.3** El sistema debe permitir búsqueda de evaluaciones por CURP, grado, materia o rango de valoración.
-- **RF-25.4** El sistema debe implementar búsqueda con autocompletado en campos de CCT y nombre de escuela.
-- **RF-25.5** El sistema debe permitir exportación de resultados de búsqueda a Excel.
-
-### RF-26: Gestión de Archivos Temporales
-- **RF-26.1** El sistema debe almacenar archivos en proceso de carga en área temporal con expiración de 24 horas.
-- **RF-26.2** El sistema debe soportar carga por chunks para archivos grandes con reensambla automático.
-- **RF-26.3** El sistema debe calcular hash SHA-256 de archivos para detectar duplicados exactos.
-- **RF-26.4** El sistema debe limpiar archivos temporales expirados automáticamente mediante job programado.
-- **RF-26.5** El sistema debe permitir reanudación de carga interrumpida desde el último chunk exitoso.
-
-### RF-27: Respaldos y Recuperación
-- **RF-27.1** El sistema debe realizar respaldo automático diario de base de datos a las 2:00 AM.
-- **RF-27.2** El sistema debe mantener respaldos de archivos FRV por al menos 2 años.
-- **RF-27.3** El sistema debe permitir restauración de respaldo de base de datos por administrador.
-- **RF-27.4** El sistema debe mantener versionado de archivos FRV cuando se recarguen por la misma escuela.
-- **RF-27.5** El sistema debe registrar todas las operaciones de respaldo y restauración en bitácora.
-
-### RF-28: Configuración del Sistema
-- **RF-28.1** El sistema debe permitir configuración de parámetros globales sin requerir redeploy (timeouts, límites).
-- **RF-28.2** El sistema debe permitir activación/desactivación de periodos de evaluación por administrador.
-- **RF-28.3** El sistema debe permitir configuración de plantillas de email (bienvenida, notificaciones, alertas).
-- **RF-28.4** El sistema debe permitir configuración de reglas de validación de archivos FRV por nivel educativo.
-- **RF-28.5** El sistema debe mantener histórico de cambios en configuraciones con usuario y timestamp.
-
-### RF-29: Estadísticas de Uso
-- **RF-29.1** El sistema debe registrar métricas de uso diarias: usuarios activos, archivos procesados, reportes generados.
-- **RF-29.2** El sistema debe generar reporte mensual de estadísticas de uso del sistema.
-- **RF-29.3** El sistema debe mostrar tiempo promedio de procesamiento de archivos FRV por nivel educativo.
-- **RF-29.4** El sistema debe registrar horarios pico de uso para planificación de capacidad.
-- **RF-29.5** El sistema debe generar reporte de adopción por entidad federativa (% escuelas participantes).
-
-### RF-30: Integración y APIs
-- **RF-30.1** El sistema debe exponer API REST para consulta de estadísticas por sistemas externos.
-- **RF-30.2** El sistema debe implementar autenticación API mediante API Keys con rate limiting.
-- **RF-30.3** El sistema debe permitir integración con sistema de notificaciones SMS externo.
-- **RF-30.4** El sistema debe exponer webhook para notificar a sistemas externos cuando reporte esté listo.
-- **RF-30.5** El sistema debe documentar todas las APIs en formato OpenAPI 3.0 (Swagger).
-
-### RF-31: Soporte Multiidioma (Futuro)
-- **RF-31.1** El sistema debe soportar interfaz en español (idioma principal).
-- **RF-31.2** El sistema debe permitir configuración de idioma secundario (lenguas indígenas) para futuras versiones.
-- **RF-31.3** El sistema debe almacenar plantillas de email en español con posibilidad de traducción.
-
-### RF-32: Accesibilidad Web
-- **RF-32.1** El sistema debe cumplir estándares WCAG 2.1 nivel AA de accesibilidad.
-- **RF-32.2** El sistema debe soportar navegación completa mediante teclado.
-- **RF-32.3** El sistema debe incluir textos alternativos (alt) en todas las imágenes e íconos.
-- **RF-32.4** El sistema debe mantener contraste mínimo de 4.5:1 entre texto y fondo.
-- **RF-32.5** El sistema debe ser compatible con lectores de pantalla (JAWS, NVDA).
-
-### RF-33: Gestión de Cache
-- **RF-33.1** El sistema debe cachear catálogos de entidades y niveles educativos con TTL de 24 horas.
-- **RF-33.2** El sistema debe cachear consultas frecuentes de reportes con TTL de 1 hora.
-- **RF-33.3** El sistema debe invalidar cache automáticamente cuando se actualicen datos subyacentes.
-- **RF-33.4** El sistema debe mostrar métricas de efectividad de cache (hit rate, miss rate).
-- **RF-33.5** El sistema debe permitir limpieza manual de cache por administrador.
-
-### RF-34: Jobs Programados y Tareas Asíncronas
-- **RF-34.1** El sistema debe ejecutar job de limpieza de sesiones expiradas diariamente a las 3:00 AM.
-- **RF-34.2** El sistema debe ejecutar job de envío de notificaciones pendientes cada 15 minutos.
-- **RF-34.3** El sistema debe ejecutar job de generación de reportes consolidados semanalmente los lunes.
-- **RF-34.4** El sistema debe registrar ejecución de jobs con timestamp inicio/fin y estado (éxito/error).
-- **RF-34.5** El sistema debe implementar reintentos automáticos (hasta 3) para jobs fallidos.
-- **RF-34.6** El sistema debe enviar alerta de email al administrador cuando job falle tras 3 reintentos.
-
-### RF-35: Validaciones de Negocio
-- **RF-35.1** El sistema debe validar que escuela no suba más de 1 archivo FRV por periodo de evaluación.
-- **RF-35.2** El sistema debe validar que valoración (0-3) sea coherente con observaciones registradas.
-- **RF-35.3** El sistema debe validar que número de alumnos en archivo no exceda capacidad declarada de escuela.
-- **RF-35.4** El sistema debe prevenir eliminación de periodo de evaluación con datos asociados.
-- **RF-35.5** El sistema debe validar que fecha de carga de archivo esté dentro del periodo activo.
-
-### RF-36: Gestión de Tickets Avanzada
-- **RF-36.1** El sistema debe asignar automáticamente tickets a técnico disponible según categoría.
-- **RF-36.2** El sistema debe escalar automáticamente ticket a supervisor si no se resuelve en 48 horas.
-- **RF-36.3** El sistema debe permitir adjuntar archivos (imágenes, PDFs) a tickets con límite de 10MB.
-- **RF-36.4** El sistema debe generar reporte de SLA (tiempo de respuesta) de tickets por categoría.
-- **RF-36.5** El sistema debe enviar encuesta de satisfacción automática al cerrar ticket.
-
-### RF-37: Monitoreo y Alertas del Sistema
-- **RF-37.1** El sistema debe monitorear uso de CPU, memoria y disco con alertas cuando excedan 80%.
-- **RF-37.2** El sistema debe monitorear disponibilidad de base de datos con ping cada minuto.
-- **RF-37.3** El sistema debe registrar errores de aplicación en log centralizado con stack trace completo.
-- **RF-37.4** El sistema debe enviar alerta inmediata al equipo técnico cuando servicio crítico falle.
-- **RF-37.5** El sistema debe generar reporte semanal de salud del sistema (uptime, errores, performance).
-
-### RF-38: Exportación de Datos
-- **RF-38.1** El sistema debe permitir exportación masiva de evaluaciones a formato CSV.
-- **RF-38.2** El sistema debe permitir exportación de catálogo de escuelas a Excel.
-- **RF-38.3** El sistema debe permitir exportación de bitácora de auditoría a formato JSON.
-- **RF-38.4** El sistema debe incluir timestamp y usuario en nombre de archivos exportados.
-- **RF-38.5** El sistema debe comprimir exportaciones grandes (>50MB) en formato ZIP.
-
-### RF-39: Gestión de Permisos Granulares
-- **RF-39.1** El sistema debe permitir asignación de permisos específicos por módulo (escuelas, usuarios, reportes).
-- **RF-39.2** El sistema debe implementar permisos de lectura/escritura/eliminación independientes.
-- **RF-39.3** El sistema debe permitir creación de roles personalizados por administrador.
-- **RF-39.4** El sistema debe validar permisos antes de ejecutar cualquier operación crítica.
-- **RF-39.5** El sistema debe mostrar permisos efectivos de usuario en su perfil.
-
-### RF-40: Calidad de Datos
-- **RF-40.1** El sistema debe detectar y reportar inconsistencias en datos de escuelas (CCT duplicados).
-- **RF-40.2** El sistema debe sugerir correcciones automáticas para errores comunes (mayúsculas/minúsculas).
-- **RF-40.3** El sistema debe validar integridad referencial entre tablas antes de operaciones de eliminación.
-- **RF-40.4** El sistema debe generar reporte mensual de calidad de datos con métricas de completitud.
-- **RF-40.5** El sistema debe permitir ejecución de scripts de limpieza de datos por administrador.
+### RF-24: Validaciones de Negocio
+- **RF-24.1** El sistema debe validar que escuela no suba más de 1 archivo FRV por periodo de evaluación.
+- **RF-24.2** El sistema debe validar que valoración (0-3) sea coherente con observaciones registradas.
+- **RF-24.3** El sistema debe validar que número de alumnos en archivo no exceda capacidad declarada de escuela.
+- **RF-24.4** El sistema debe prevenir eliminación de periodo de evaluación con datos asociados.
+- **RF-24.5** El sistema debe validar que fecha de carga de archivo esté dentro del periodo activo.
 
 ---
 

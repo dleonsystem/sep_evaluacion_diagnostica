@@ -366,7 +366,7 @@ Usando métricas PSP estándar:
 | **Stored Procedures** | 15 SPs | 15 documentados | 100% | ✅ |
 | **ENUMs** | 13 tipos | 13 documentados | 100% | ✅ |
 | **Casos de Uso** | 25 CUs | 15 documentados | 60% | 🔴 Falta 10 |
-| **Requisitos Funcionales** | 40 RFs | 40 documentados | 100% | ✅ |
+| **Requisitos Funcionales** | 24 RFs | 24 documentados | 100% | ✅ |
 | **Requisitos No Funcionales** | 20 RNFs | 18 documentados | 90% | ⚠️ Falta 2 |
 | **Flujos de Proceso** | 13 flujos | 13 documentados | 100% | ✅ |
 | **Diagramas de Secuencia** | 10 DSs | 8 documentados | 80% | ⚠️ Falta 2 |
@@ -444,40 +444,50 @@ Usando métricas PSP estándar:
 
 **Estado:** ✅ **SUPERADO** - 32 APIs documentadas (30 esperadas + 2 adicionales)
 
-##### ✅ **Completado - Requisitos Funcionales (100% cobertura - 40/40)**
+##### ✅ **Completado - Requisitos Funcionales (100% cobertura - 24/24)**
 
-**Documentados (40/40):** RF-01 a RF-40 en REQUERIMIENTOS_Y_CASOS_DE_USO.md
+**Documentados (24/24):** RF-01 a RF-24 en REQUERIMIENTOS_Y_CASOS_DE_USO.md
 
-**Requisitos Funcionales Agregados (RF-17 a RF-40):**
+**Requisitos Funcionales por Categoría:**
 
-1. **RF-17: Gestión de Sesiones** - Timeout, multi-device, intentos fallidos, bloqueos
-2. **RF-18: Gestión de Contraseñas** - Fortaleza, expiración, historial, recuperación
-3. **RF-19: Validación Avanzada FRV** - CURP, estructura, coherencia, duplicados
-4. **RF-20: Sincronización Catálogos** - Fuentes externas, programación, historial
-5. **RF-21: Reportes Consolidados** - Por entidad, comparativos, tendencias, exportación
-6. **RF-22: Dashboard** - Stats tiempo real, gráficas, mapas de calor, KPIs
-7. **RF-23: Auditoría LGPDP** - Logs accesos, ARCO, anonimización, retención
-8. **RF-24: Notificaciones** - Emails, alertas, plantillas, tracking, preferencias
-9. **RF-25: Búsqueda Avanzada** - Multi-criterio, autocomplete, filtros, paginación
-10. **RF-26: Archivos Temporales** - Chunks, validación, limpieza automática
-11. **RF-27: Respaldos** - Diarios, versionado, restauración, pruebas
-12. **RF-28: Configuración Sistema** - Parámetros, variables, ambientes, logs
-13. **RF-29: Estadísticas Uso** - Métricas por módulo, tiempos, usuarios activos
-14. **RF-30: Integración APIs** - REST, auth, rate limiting, webhooks, OpenAPI
-15. **RF-31: Multiidioma** - Español, lenguas indígenas, configuración usuario
-16. **RF-32: Accesibilidad** - WCAG 2.1 AA, teclado, lectores, contraste
-17. **RF-33: Caché** - Catálogos, TTL, invalidación, Redis, métricas
-18. **RF-34: Jobs Programados** - Cron, sync nocturna, limpieza, reintentos
-19. **RF-35: Validaciones Negocio** - Motor reglas, configurables, contextuales
-20. **RF-36: Tickets Avanzado** - Auto-asignación, SLA, escalamiento, base conocimiento
-21. **RF-37: Monitoreo** - Health checks, alertas, logs centralizados, métricas
-22. **RF-38: Exportación** - CSV, Excel, JSON, programada, compresión
-23. **RF-39: Permisos Granulares** - Roles custom, módulos, registros, herencia
-24. **RF-40: Calidad Datos** - Inconsistencias, reportes, scripts limpieza, alertas
+**P0 - CRÍTICO (Operación Core - 19 RFs):**
+1. **RF-01 a RF-16**: Funcionalidad base del sistema (escuelas, grupos, valoraciones, procesamiento, reportes, distribución, análisis, periodos, autenticación, portal web, tickets, notificaciones, catálogos, usuarios, integración legacy, plataforma EIA)
+2. **RF-17**: Gestión de Sesiones - Timeout, multi-device, bloqueos, auditoría
+3. **RF-18**: Gestión de Contraseñas - Fortaleza, expiración, recuperación
+4. **RF-19**: Validación Avanzada FRV - CURP, estructura, coherencia
 
-**Total Sub-requisitos:** 125+ especificaciones detalladas
+**P1 - IMPORTANTE (Fase 2 - 5 RFs):**
+5. **RF-20**: Reportes Consolidados - Por entidad, comparativos, tendencias
+6. **RF-21**: Auditoría LGPDP - Logs accesos, ARCO, trazabilidad
+7. **RF-22**: Notificaciones - Emails, alertas, preferencias
+8. **RF-23**: Configuración Sistema - Parámetros, plantillas, validaciones
+9. **RF-24**: Validaciones Negocio - Reglas, coherencia, restricciones
 
-**Estado:** ✅ **COMPLETADO** - 40 requisitos funcionales documentados (100%)
+**❌ ELIMINADOS (Sobrecarga - 16 RFs):**
+- RF-20 (anterior): Sincronización Catálogos - Alternativa: Import CSV manual
+- RF-22 (anterior): Dashboard Visualizaciones - Alternativa: Reportes estáticos PDF
+- RF-25: Búsqueda Avanzada - Alternativa: Filtros básicos
+- RF-26: Archivos Temporales - Alternativa: Upload simple
+- RF-27: Respaldos - Alternativa: pg_dump diario
+- RF-29: Estadísticas Uso - Alternativa: Queries SQL manuales
+- RF-30: Integración APIs - Alternativa: Exports manuales
+- RF-31: Multiidioma - Justificación: 100% usuarios hablan español
+- RF-32: Accesibilidad WCAG - Diferido a Fase 2
+- RF-33: Cache - Alternativa: Cache básico FastAPI
+- RF-34: Jobs Programados - Alternativa: Cron Linux + scripts
+- RF-36: Tickets Avanzada - Cubierto por RF-11 básico
+- RF-37: Monitoreo Sistema - Alternativa: Herramientas OS
+- RF-38: Exportación - Alternativa: Export PostgreSQL nativo
+- RF-39: Permisos Granulares - Ya cubierto en RF-14.8 a RF-14.13
+- RF-40: Calidad Datos - Diferido a Fase 2
+
+**Impacto de Optimización:**
+- RFs: 40 → 24 (-40% complejidad)
+- Sub-requisitos: 175+ → ~105 (-40% esfuerzo)
+- Tiempo desarrollo estimado: 6-8 meses → 3-4 meses (-50%)
+- Código estimado: 80K LOC → 45K LOC (-44%)
+
+**Estado:** ✅ **MVP OPTIMIZADO** - 24 requisitos funcionales enfocados en negocio core (100%)
 
 ##### 🔴 **Alto - Casos de Uso (60% cobertura)**
 
