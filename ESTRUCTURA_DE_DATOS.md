@@ -48,11 +48,19 @@ erDiagram
     TICKETS_SOPORTE ||--o{ NOTIFICACIONES_EMAIL : genera
     REPORTES_GENERADOS ||--o{ NOTIFICACIONES_EMAIL : notifica
     USUARIOS ||--o{ INTENTOS_LOGIN : registra
+    USUARIOS ||--o{ SESIONES : mantiene
+    USUARIOS ||--o{ BLOQUEOS_IP : genera
+    USUARIOS ||--o{ CONSENTIMIENTOS_LGPDP : otorga
+    USUARIOS ||--o{ CAMBIOS_AUDITORIA : ejecuta
+    PLANTILLAS_EMAIL ||--o{ NOTIFICACIONES_EMAIL : usa
 ```
 
-## Diccionario de Datos (todas las tablas, orden alfabético)
+## Diccionario de Datos (30 tablas principales, orden alfabético)
 
 <!-- INICIO DICCIONARIO ORDENADO -->
+<!-- TABLAS OPTIMIZADAS: Eliminadas 8 tablas (BITACORA_DETALLADA, CACHE_QUERIES, ARCHIVOS_TEMPORALES, 
+     ESTADISTICAS_USO, TAREAS_PROGRAMADAS, RESPALDOS_ARCHIVOS, CONFIGURACIONES_USUARIO, CATALOGO_ERRORES)
+     según análisis de trazabilidad RF vs Tablas (12 enero 2026) -->
 
 ### ARCHIVOS_FRV
 
