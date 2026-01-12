@@ -833,7 +833,7 @@ ARCHIVOS_FRV, BLOQUEOS_IP, CAMBIOS_AUDITORIA, CAT_CICLOS_ESCOLARES, CAT_ENTIDADE
 **Justificación de tablas agregadas:**
 
 | Tabla | Justificación | Requisito Base |
-|-------|---------------|----------------|
+| ------- | --------------- | ---------------- |
 | CAMBIOS_AUDITORIA | Compliance LGPDP Art. 34 LFPDPPP - trazabilidad obligatoria | RNF-04.4 |
 | BLOQUEOS_IP | Seguridad - prevención de ataques de fuerza bruta | RNF-04.9 |
 | CACHE_QUERIES | Performance - RNF-01: respuesta <200ms | RNF-01.1 |
@@ -1632,6 +1632,7 @@ La rápida corrección de 5 defectos en 3 días demuestra:
 #### Resumen Ejecutivo
 
 **Inventario de Tablas:**
+
 - Total tablas diseñadas: **38**
 - Tablas justificadas (con RF asociado): **30** (79%)
 - Tablas problemáticas: **8** (21%)
@@ -1661,7 +1662,7 @@ La rápida corrección de 5 defectos en 3 días demuestra:
 #### Matriz de Trazabilidad (Simplificada)
 
 | Categoría | Tablas | Estado | Decisión |
-|-----------|--------|--------|----------|
+| --------- | ------ | ------ | -------- |
 | **Core** | 11 | ✅ 100% mapeadas | MANTENER |
 | **Catálogos** | 6 | ✅ 100% mapeadas | MANTENER |
 | **Usuarios/Seguridad** | 5 | ✅ 100% mapeadas | MANTENER |
@@ -1731,7 +1732,7 @@ La rápida corrección de 5 defectos en 3 días demuestra:
 #### Métricas de Calidad
 
 | Métrica | Antes | Después | Mejora |
-|---------|-------|---------|--------|
+| ------- | ----- | ------- | ------ |
 | Tablas sin RF | 5 | 0 | ✅ 100% |
 | Duplicación | 1 | 0 | ✅ 100% |
 | Trazabilidad | 79% | 100% | ✅ +21% |
@@ -1761,7 +1762,7 @@ La rápida corrección de 5 defectos en 3 días demuestra:
 **Beneficios Cuantificables:**
 
 | Métrica | Antes | Después | Mejora |
-|---------|-------|---------|--------|
+| ------- | ----- | ------- | ------ |
 | Tablas | 38 | 30 | -21% |
 | Triggers | 28 | 27 | -3.6% |
 | Vistas | 25 | 22 | -12% |
