@@ -23,8 +23,6 @@ Este archivo sirve como referencia técnica para desarrolladores, analistas, aud
 | **Índices** | ~45 | Optimizados para consultas frecuentes |
 | **Consolidaciones** | 2 | LOG_ACTIVIDADES (incluye BITACORA_DETALLADA), USUARIOS (incluye CONFIGURACIONES_USUARIO.preferencias_notif) |
 
-
-
 ## Diagrama Entidad-Relación (ER)
 
 ```mermaid
