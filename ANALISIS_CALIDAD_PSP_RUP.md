@@ -384,6 +384,7 @@ Usando métricas PSP estándar:
 **APIs documentadas (32) en API_SPECIFICATION.md:**
 
 **Autenticación (7 endpoints):**
+
 1. POST /api/auth/login - Autenticación con JWT
 2. POST /api/auth/register - Registro de usuarios (admin)
 3. POST /api/auth/refresh-token - Renovación de tokens
@@ -432,6 +433,7 @@ Usando métricas PSP estándar:
 32. GET /api/catalogos/periodos - Catálogo de periodos
 
 **Características implementadas:**
+
 - ✅ Autenticación JWT con Bearer Token
 - ✅ Refresh tokens para renovación
 - ✅ Rate limiting (100 req/min usuario, 1000 req/min entidad)
@@ -451,6 +453,7 @@ Usando métricas PSP estándar:
 **Requisitos Funcionales por Categoría:**
 
 **P0 - CRÍTICO (Operación Core - 19 RFs):**
+
 1. **RF-01 a RF-16**: Funcionalidad base del sistema (escuelas, grupos, valoraciones, procesamiento, reportes, distribución, análisis, periodos, autenticación, portal web, tickets, notificaciones, catálogos, usuarios, integración legacy, plataforma EIA)
 2. **RF-17**: Gestión de Sesiones - Timeout, multi-device, bloqueos, auditoría
 3. **RF-18**: Gestión de Contraseñas - Fortaleza, expiración, recuperación
@@ -464,6 +467,7 @@ Usando métricas PSP estándar:
 9. **RF-24**: Validaciones Negocio - Reglas, coherencia, restricciones
 
 **❌ ELIMINADOS (Sobrecarga - 16 RFs):**
+
 - RF-20 (anterior): Sincronización Catálogos - Alternativa: Import CSV manual
 - RF-22 (anterior): Dashboard Visualizaciones - Alternativa: Reportes estáticos PDF
 - RF-25: Búsqueda Avanzada - Alternativa: Filtros básicos
@@ -482,6 +486,7 @@ Usando métricas PSP estándar:
 - RF-40: Calidad Datos - Diferido a Fase 2
 
 **Impacto de Optimización:**
+
 - RFs: 40 → 24 (-40% complejidad)
 - Sub-requisitos: 175+ → ~105 (-40% esfuerzo)
 - Tiempo desarrollo estimado: 6-8 meses → 3-4 meses (-50%)
@@ -495,6 +500,7 @@ Usando métricas PSP estándar:
 CU-01 a CU-16 (con inconsistencias en numeración) en REQUERIMIENTOS_Y_CASOS_DE_USO.md
 
 **Faltantes (10 casos de uso):**
+
 1. CU-17: Cambiar contraseña
 2. CU-18: Recuperar contraseña
 3. CU-19: Gestionar perfil de usuario
@@ -510,6 +516,7 @@ CU-01 a CU-16 (con inconsistencias en numeración) en REQUERIMIENTOS_Y_CASOS_DE_
 ##### ✅ **Completado - Vistas de Base de Datos (100% cobertura - 24/24)**
 
 **Vistas originales (9):**
+
 1. reportes_disponibles
 2. v_resumen_evaluaciones_periodo
 3. v_hilo_comentarios_ticket
@@ -545,6 +552,7 @@ CU-01 a CU-16 (con inconsistencias en numeración) en REQUERIMIENTOS_Y_CASOS_DE_
 **Documentados (28 triggers) en ESTRUCTURA_DE_DATOS.md:**
 
 **Triggers originales (16):**
+
 1. auto_generar_credenciales_eia2
 2. calcular_fecha_disponibilidad
 3. registrar_descarga_reporte
@@ -584,6 +592,7 @@ CU-01 a CU-16 (con inconsistencias en numeración) en REQUERIMIENTOS_Y_CASOS_DE_
 ARCHIVOS_FRV, BITACORA_DETALLADA, CATALOGO_ERRORES, CAT_CICLOS_ESCOLARES, CAT_ENTIDADES_FEDERATIVAS, CAT_GRADOS, CAT_NIVELES_EDUCATIVOS, CAT_ROLES_USUARIO, CAT_TURNOS, COMENTARIOS_TICKET, COMPETENCIAS, CONFIGURACIONES_USUARIO, CONSENTIMIENTOS_LGPDP, CREDENCIALES_EIA2, ESCUELAS, ESTUDIANTES, EVALUACIONES, GRUPOS, HISTORICO_PASSWORDS, INTENTOS_LOGIN, LOG_ACTIVIDADES, MATERIAS, NOTIFICACIONES_EMAIL, PERIODOS_EVALUACION, PRE3, PRI1, PRI2, PRI3, PRI4, PRI5, PRI6, REPORTES_GENERADOS, RESULTADOS_COMPETENCIAS, SEC1, SEC2, SEC3, SESIONES, SOLICITUDES_EIA2, TICKETS_SOPORTE, USUARIOS, VALORACIONES
 
 **Faltantes (9 tablas):**
+
 1. RESPALDOS_ARCHIVOS (histórico de versiones)
 2. CAMBIOS_AUDITORIA (log de cambios en datos críticos)
 3. BLOQUEOS_IP (prevención de ataques)
@@ -599,6 +608,7 @@ ARCHIVOS_FRV, BITACORA_DETALLADA, CATALOGO_ERRORES, CAT_CICLOS_ESCOLARES, CAT_EN
 ##### ✅ **Completado - Stored Procedures (100% cobertura - 15/15)**
 
 **Procedimientos originales (10):**
+
 1. limpiar_reportes_expirados - Limpieza de reportes antiguos (job programado)
 2. generar_reporte_evaluaciones_escuela - Generación de reportes por escuela
 3. marcar_comentarios_como_leidos - Gestión de tickets de soporte
@@ -652,6 +662,7 @@ ARCHIVOS_FRV, BITACORA_DETALLADA, CATALOGO_ERRORES, CAT_CICLOS_ESCOLARES, CAT_EN
 **Catálogos (2):** GET entidades, GET periodos
 
 **Especificación completa incluye:**
+
 - Request/Response con ejemplos JSON reales
 - Autenticación JWT con Bearer Token
 - Refresh tokens para renovación segura
@@ -665,6 +676,7 @@ ARCHIVOS_FRV, BITACORA_DETALLADA, CATALOGO_ERRORES, CAT_CICLOS_ESCOLARES, CAT_EN
 - Query parameters documentados
 
 **Impacto Técnico - APIs:**
+
 - **Cobertura:** 7% → **107%** (+100 puntos) ✅
 - **Score parcial:** +7.7 puntos al score general
 - **Base URL:** `https://evaluacion-diagnostica.sep.gob.mx/api/v1`
@@ -680,6 +692,7 @@ ARCHIVOS_FRV, BITACORA_DETALLADA, CATALOGO_ERRORES, CAT_CICLOS_ESCOLARES, CAT_EN
 5. **sp_sincronizar_catalogos_externos** - Sincronización de catálogos ENTIDADES y ESCUELAS desde fuentes externas
 
 **Impacto Técnico - Stored Procedures:**
+
 - **Cobertura:** 67% → **100%** (+33 puntos) ✅
 - **Score parcial:** +2.5 puntos al score general
 
@@ -705,6 +718,7 @@ ARCHIVOS_FRV, BITACORA_DETALLADA, CATALOGO_ERRORES, CAT_CICLOS_ESCOLARES, CAT_EN
 16. **v_tareas_programadas_estado** - Estado de jobs programados con historial de ejecución
 
 **Impacto Técnico:**
+
 - **Cobertura Modelo de Datos:** 82% → **100%** (+18 puntos) ✅
 - **Cobertura Triggers:** 59% → **104%** (+45 puntos) ✅
 - **Cobertura Vistas:** 38% → **104%** (+66 puntos) ✅
@@ -764,6 +778,7 @@ ARCHIVOS_FRV, BITACORA_DETALLADA, CATALOGO_ERRORES, CAT_CICLOS_ESCOLARES, CAT_EN
 12. **limpiar_archivos_temporales_expirados** - Marcado para limpieza de archivos expirados
 
 **Impacto Técnico:**
+
 - **Cobertura Modelo de Datos:** 82% → **100%** (+18 puntos) ✅
 - **Cobertura Triggers:** 59% → **100%** (+41 puntos) ✅
 - **Score general:** 67.15% → **75.5%** (+8.35 puntos) ⬆️
