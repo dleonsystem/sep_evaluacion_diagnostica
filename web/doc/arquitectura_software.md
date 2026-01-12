@@ -1,15 +1,16 @@
 # Documento de Arquitectura de Software (SAD)  
+
 ## Plataforma de Gestión de Valoraciones EIA 2025–2026
 
 ---
 
-# 1. Introducción
+## 1. Introducción
 
 Este documento describe la arquitectura de alto nivel del sistema, las decisiones tecnológicas principales y los componentes esenciales que la conforman.
 
 ---
 
-# 2. Visión arquitectónica
+## 2. Visión arquitectónica
 
 El sistema se basa en una arquitectura web de tres capas:
 
@@ -19,9 +20,9 @@ El sistema se basa en una arquitectura web de tres capas:
 
 ---
 
-# 3. Vista lógica
+## 3. Vista lógica
 
-## 3.1 Componentes principales
+### 3.1 Componentes principales
 
 - **Módulo de Autenticación**
   - Inicio de sesión.
@@ -44,7 +45,7 @@ El sistema se basa en una arquitectura web de tres capas:
 
 ---
 
-# 4. Vista de despliegue (Mermaid)
+## 4. Vista de despliegue (Mermaid)
 
 ```mermaid
 flowchart LR
@@ -60,7 +61,7 @@ Angular 19]
 
 ---
 
-# 5. Decisiones tecnológicas clave
+## 5. Decisiones tecnológicas clave
 
 - **Backend:** Node.js (framework por definir; candidatos: Express, NestJS).
 - **Frontend:** Angular 19.
@@ -71,7 +72,7 @@ Angular 19]
 
 ---
 
-# 6. Consideraciones de seguridad
+## 6. Consideraciones de seguridad
 
 - Todo el tráfico externo se realiza sobre HTTPS.
 - Las contraseñas se almacenan de forma cifrada en la base de datos.
@@ -80,7 +81,7 @@ Angular 19]
 
 ---
 
-# 7. Escalabilidad
+## 7. Escalabilidad
 
 - El frontend puede servirse desde un servidor estático o CDN.
 - El backend en Node.js puede escalarse horizontalmente mediante balanceadores de carga.
@@ -88,7 +89,7 @@ Angular 19]
 
 ---
 
-# 8. Vista de componentes de infraestructura
+## 8. Vista de componentes de infraestructura
 
 El siguiente diagrama muestra la arquitectura de componentes de infraestructura del sistema:
 
@@ -171,42 +172,47 @@ graph TB
     style MONITOR fill:#FF6B6B
 ```
 
-## 8.1 Descripción de componentes
+### 8.1 Descripción de componentes
 
-### Capa de Presentación
+#### Capa de Presentación
+
 - **Angular 19 SPA:** Aplicación de página única servida desde servidor web estático o CDN
 - **Protocolo:** HTTPS con certificado SSL/TLS
 
-### Capa de Aplicación
+#### Capa de Aplicación
+
 - **Load Balancer:** Distribuye peticiones entre instancias de API (NGINX o HAProxy)
 - **FastAPI Instances:** Múltiples instancias para escalamiento horizontal
 - **Conexión:** Pool de conexiones a PostgreSQL (máx. 20 por instancia)
 
-### Capa de Procesamiento Asíncrono
+#### Capa de Procesamiento Asíncrono
+
 - **Redis:** Message broker para colas de tareas Celery
 - **Celery Workers:** Procesamiento paralelo de validaciones, reportes y notificaciones
 - **Configuración:** 3-5 workers por tipo de tarea
 
-### Capa de Datos
+#### Capa de Datos
+
 - **PostgreSQL 16 (Principal):** Base de datos transaccional principal
 - **PostgreSQL (Réplica):** Réplica para consultas de solo lectura (opcional)
 - **Almacenamiento:** Sistema de archivos NFS o almacenamiento de objetos (S3-compatible)
 
-### Servicios Externos
+#### Servicios Externos
+
 - **SMTP Server:** Servidor de correo para notificaciones (ej: SendGrid, Mailgun)
 - **Monitoring:** Prometheus para métricas + Grafana para dashboards
 
-## 8.2 Especificaciones técnicas mínimas
+### 8.2 Especificaciones técnicas mínimas
 
 | Componente | CPU | RAM | Almacenamiento | Observaciones |
-|------------|-----|-----|----------------|---------------|
+| ---------- | --- | --- | -------------- | ------------- |
 | PostgreSQL | 8 cores | 32 GB | 500 GB SSD | RAID 10 recomendado |
 | FastAPI Instance | 4 cores | 8 GB | 50 GB | Escalar según carga |
 | Celery Worker | 2 cores | 4 GB | 20 GB | 1 worker por tarea |
 | Redis | 2 cores | 8 GB | 20 GB | Persistencia habilitada |
 | Almacenamiento | - | - | 2 TB | Crecimiento: ~50 GB/año |
 
-## 8.3 Alta disponibilidad
+### 8.3 Alta disponibilidad
 
 - **RTO (Recovery Time Objective):** < 2 horas
 - **RPO (Recovery Point Objective):** < 15 minutos
