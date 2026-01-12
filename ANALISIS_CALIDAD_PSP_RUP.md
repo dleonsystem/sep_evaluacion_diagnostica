@@ -48,6 +48,7 @@
 ### Activos Identificados (Estrategia Ágil)
 
 **Prototipos HTML Funcionales:**
+
 - ✅ Implementados como estrategia de desarrollo ágil
 - ✅ Permiten validación temprana con usuarios finales
 - ✅ Reducen tiempo vs wireframes estáticos (ahorro: ~40 horas)
@@ -421,6 +422,7 @@ Usando métricas PSP estándar:
 
 **Nota sobre Prototipos HTML:**
 Se adoptaron prototipos funcionales en HTML como estrategia ágil para:
+
 - ✅ Acelerar validación con usuarios finales (ciclos de feedback < 48h)
 - ✅ Reducir tiempo de desarrollo vs wireframes estáticos (-40 horas)
 - ✅ Facilitar transición directa a implementación Angular 17
@@ -756,6 +758,7 @@ Análisis de una muestra de 1,000 palabras de cada documento:
 | GAP-014 | Falta matriz trazabilidad req-CU | 🟡 MENOR | 8h | P3 | 🔴 PENDIENTE |
 
 **📊 Total Esfuerzo para Cerrar Gaps:**
+
 - **Inicial:** ~573 horas (~14 semanas con 1 desarrollador)
 - **Corregido:** -65 horas (GAP-008: -15h, GAP-009: -10h, GAP-005: -40h)
 - **Restante:** ~508 horas (~12.7 semanas con 1 desarrollador)
@@ -1060,6 +1063,7 @@ TOTAL:                528 horas  (~13 semanas con 1 FTE)
 **Veredicto Objetivo:**
 
 El proyecto presenta una **base técnica sólida** con diseño de datos de alta calidad (97/100) y documentación técnica exhaustiva (93/100). Con las correcciones aplicadas, se ha mejorado significativamente en:
+
 - **Calidad de Defectos:** 92/100 → 96/100 (+4 puntos)
 - **Análisis y Diseño:** 82/100 → 87/100 (+5 puntos)
 - **Gestión de Proyecto:** 33/100 → 48/100 (+15 puntos)
@@ -1068,10 +1072,12 @@ El proyecto presenta una **base técnica sólida** con diseño de datos de alta 
 Sin embargo, persisten **gaps críticos** en áreas de implementación ejecutable (69/100), pruebas (0/100) y despliegue (44/100).
 
 **Calificación Global:**
+
 - **Inicial (9 ene 2026):** 70.8/100 - ACEPTABLE CON MEJORAS REQUERIDAS
 - **Post-Corrección (12 ene 2026):** **74.2/100** - ACEPTABLE CON MEJORAS REQUERIDAS ⬆️ +3.4 puntos
 
 **Métricas de Mejora:**
+
 - Incremento absoluto: +3.4 puntos (vs +2.7 inicial)
 - Incremento relativo: +4.8%
 - Defectos corregidos: 5/5 (100%)
@@ -1101,6 +1107,7 @@ Con las correcciones restantes propuestas (13.7 semanas de esfuerzo), el proyect
 **Evaluación del Proceso de Mejora:**
 
 La rápida corrección de 5 defectos en 3 días demuestra:
+
 - ✅ Capacidad de respuesta del equipo
 - ✅ Proceso de documentación maduro
 - ✅ Comprensión profunda de estándares PSP/RUP
