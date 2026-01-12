@@ -1,4 +1,5 @@
 # 📊 DASHBOARD VISUAL - SiCRER 24/25 SEPT
+
 ## Versión 2.0 - Métricas Estrategia Bifásica
 
 > **Panel de Métricas y Visualizaciones del Análisis Técnico**
@@ -44,7 +45,7 @@ gantt
 ### Tabla KPIs Detallada
 
 | KPI | Baseline (Legacy) | Target Fase 1 | Target Fase 2 | Métrica |
-|-----|-------------------|---------------|---------------|----------|
+| --- | --- | --- | --- | --- |
 | **Uptime** | 95% | 99.5% | 99.9% | Disponibilidad sistema |
 | **Tiempo Validación FRV** | 15 min (manual) | 30 seg (auto) | 15 seg (opt.) | Procesamiento |
 | **Adopción Portal Web** | 0% | 50% (150K escuelas) | 100% (300K) | Usuarios activos |
@@ -117,6 +118,7 @@ pie title Evaluación Global del Sistema (6.5/10)
 ```
 
 **Desglose de la Puntuación:**
+
 - ✅ **Funcionalidad:** 8/10 - Sistema operativo cumpliendo objetivos educativos
 - ⚠️ **Arquitectura:** 5/10 - Tecnologías obsoletas pero estables
 - ❌ **Seguridad:** 3/10 - Vulnerabilidades críticas (Flash, LGPDP)
@@ -482,7 +484,7 @@ flowchart TD
 ### Estado Actual de Cumplimiento
 
 | Requisito LGPDP | Estado | Prioridad | Acción |
-|-----------------|--------|-----------|--------|
+| --------------- | ------ | --------- | ------ |
 | Aviso de Privacidad | ❌ No identificado | 🔴 Alta | Crear e implementar |
 | Consentimiento Tutores | ❓ Desconocido | 🔴 Alta | Validar proceso |
 | Encriptación BD | ❌ Access sin cifrar | 🔴 Crítica | **Migrar a SQL TDE** |
@@ -602,7 +604,7 @@ graph TD
 ### Recomendación Final
 
 > **PROCEDER CON OPCIÓN C - MODERNIZACIÓN COMPLETA**
-> 
+>
 > - ✅ **Balance óptimo** entre costo, tiempo y beneficio
 > - ✅ **Elimina vulnerabilidades críticas** (Flash, LGPDP, .NET EOL)
 > - ✅ **Extiende vida útil** del sistema 5-7 años
@@ -617,7 +619,7 @@ graph TD
 ## 📚 Navegación de Documentación
 
 | Documento | Audiencia | Propósito | Tiempo Lectura |
-|-----------|-----------|-----------|----------------|
+| --------- | --------- | --------- | -------------- |
 | [README.md](README.md) | General | Introducción y estructura | 5 min |
 | [INDICE_DOCUMENTACION.md](INDICE_DOCUMENTACION.md) | Todos | Índice y guía de navegación | 3 min |
 | **[DASHBOARD_VISUAL.md](DASHBOARD_VISUAL.md)** | **PM/Stakeholders** | **📊 Este documento - Métricas visuales** | **10 min** |
@@ -634,6 +636,7 @@ graph TD
 **Metodología:** Personal Software Process + Rational Unified Process
 
 > 💡 **Tip:** Todos los diagramas Mermaid son interactivos en GitHub. Los colores indican criticidad:
+>
 > - 🔴 Rojo = Crítico/Obsoleto
 > - 🟡 Amarillo = Advertencia/Atención
 > - 🟢 Verde = Óptimo/Recomendado
