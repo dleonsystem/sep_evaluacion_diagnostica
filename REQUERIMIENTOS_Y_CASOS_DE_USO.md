@@ -185,6 +185,38 @@
 - **RF-14.5** El sistema debe generar contraseña temporal en creación
 - **RF-14.6** El sistema debe forzar cambio de contraseña en primer login
 - **RF-14.7** El sistema debe enviar credenciales por email seguro
+- **RF-14.8** El sistema debe implementar gestión granular de permisos por módulo:
+  - Lectura (consulta de datos)
+  - Escritura (creación y modificación)
+  - Eliminación (borrado lógico/físico)
+  - Aprobación (workflows de validación)
+  - Exportación (descarga de reportes y datos)
+- **RF-14.9** El sistema debe permitir asignar permisos por combinación rol + módulo:
+  - Módulo Escuelas: [Lectura, Escritura, Eliminación]
+  - Módulo Usuarios: [Lectura, Escritura, Eliminación, Aprobación]
+  - Módulo Valoraciones: [Lectura, Escritura, Aprobación, Exportación]
+  - Módulo Tickets: [Lectura, Escritura, Aprobación]
+  - Módulo Reportes: [Lectura, Exportación]
+  - Módulo Auditoría: [Lectura, Exportación]
+- **RF-14.10** El sistema debe validar permisos en cada endpoint de API mediante decoradores:
+  ```python
+  @require_permission('valoraciones', 'lectura')
+  @require_permission('reportes', 'exportacion')
+  ```
+- **RF-14.11** El sistema debe almacenar permisos en tabla PERMISOS_ROL con estructura:
+  ```sql
+  PERMISOS_ROL (
+    rol VARCHAR(20),
+    modulo VARCHAR(30),
+    puede_leer BOOLEAN,
+    puede_escribir BOOLEAN,
+    puede_eliminar BOOLEAN,
+    puede_aprobar BOOLEAN,
+    puede_exportar BOOLEAN
+  )
+  ```
+- **RF-14.12** El sistema debe permitir a administradores definir roles personalizados con permisos específicos
+- **RF-14.13** El sistema debe registrar en auditoría todos los cambios de permisos con trazabilidad completa
 
 ### RF-15: Integración con Legacy (Fase 1 - TEMPORAL) ⚠️
 - **RF-15.1** El sistema debe exportar FRV validados a carpeta compartida para procesamiento legacy

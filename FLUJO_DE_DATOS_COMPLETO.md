@@ -1772,7 +1772,17 @@ def validar_archivo_task(self, solicitud_id: str, archivo_id: str):
         
     except ValidationError as e:
         db.rollback()
-        return {"success": False, "error": str(e)}
+        # Registrar estado fallido
+        solicitud.estado = 'RECHAZADO'
+        solicitud.resultado_validacion = 'ERROR'
+        solicitud.fecha_procesamiento_fin = datetime.now()
+        solicitud.errores_validacion = {"errores": errores}
+        db.commit()
+        
+        # Enviar email con errores
+        enviar_email_validacion_fallida(solicitud, errores)
+        
+        return {"success": False, "error": str(e), "errores": errores}
     
     except Exception as e:
         db.rollback()
@@ -1787,7 +1797,119 @@ class ValidationError(Exception):
     pass
 ```
 
-### 8.3 Endpoint de Consulta de Estado
+### 8.3 Procedimiento de Rollback
+
+En caso de fallo durante la validación o procesamiento, el sistema implementa las siguientes estrategias de rollback:
+
+#### **8.3.1 Rollback de Base de Datos**
+
+```python
+# Rollback automático en bloque try/except
+try:
+    # Operaciones de inserción
+    db.add(valoracion)
+    db.add(evaluacion)
+    db.commit()
+except Exception as e:
+    db.rollback()  # Deshace todos los cambios pendientes
+    logger.error(f"Error en validación: {e}")
+    raise
+```
+
+#### **8.3.2 Rollback de Archivos**
+
+```python
+# Marcar archivo como procesado solo después de commit exitoso
+try:
+    archivo.estado_procesamiento = 'PROCESADO'
+    db.commit()
+except Exception:
+    # Si falla, archivo permanece 'PENDIENTE' y puede reprocesarse
+    archivo.estado_procesamiento = 'ERROR'
+    db.commit()
+```
+
+#### **8.3.3 Rollback de Tareas en Cola**
+
+```python
+@shared_task(bind=True, max_retries=3, autoretry_for=(Exception,))
+def validar_archivo_task(self, solicitud_id: str):
+    try:
+        # Procesamiento
+        process_file(solicitud_id)
+    except Exception as exc:
+        # Si falla, Celery reintentará automáticamente
+        logger.warning(f"Reintento {self.request.retries}/{self.max_retries}")
+        raise self.retry(exc=exc, countdown=60)  # Espera 60s antes de reintentar
+```
+
+#### **8.3.4 Estrategia de Compensación**
+
+En caso de que la solicitud llegue a estado `VALIDADO` pero falle la generación de reportes:
+
+```python
+# Estado de solicitud se mantiene como VALIDADO
+# Tarea de generación de reportes se reintenta independientemente
+generar_reportes_task.apply_async(
+    args=[str(solicitud.id)],
+    retry=True,
+    retry_policy={
+        'max_retries': 5,
+        'interval_start': 60,
+        'interval_step': 120,
+        'interval_max': 600
+    }
+)
+```
+
+#### **8.3.5 Limpieza de Datos Huérfanos**
+
+```sql
+-- Script de limpieza periódica (cron job diario)
+-- Elimina valoraciones/evaluaciones de solicitudes rechazadas hace más de 7 días
+DELETE FROM VALORACIONES
+WHERE solicitud_id IN (
+    SELECT id FROM SOLICITUDES
+    WHERE estado = 'RECHAZADO'
+    AND fecha_procesamiento_fin < NOW() - INTERVAL '7 days'
+);
+
+DELETE FROM EVALUACIONES
+WHERE estudiante_id IN (
+    SELECT e.id FROM ESTUDIANTES e
+    LEFT JOIN VALORACIONES v ON e.id = v.estudiante_id
+    WHERE v.id IS NULL
+);
+```
+
+#### **8.3.6 Notificación de Errores**
+
+```python
+def enviar_email_validacion_fallida(solicitud, errores):
+    """
+    Notifica al usuario que su archivo fue rechazado
+    """
+    email = NOTIFICACIONES_EMAIL(
+        id=uuid4(),
+        usuario_id=solicitud.usuario_id,
+        destinatario=solicitud.usuario.email,
+        asunto="Error en validación de archivo",
+        cuerpo=render_template('email_error.html', errores=errores),
+        tipo='EVALUACION_VALIDADA',
+        estado='PENDIENTE',
+        prioridad='ALTA',
+        referencia_id=solicitud.id,
+        referencia_tipo='SOLICITUD',
+        created_at=datetime.now()
+    )
+    db.add(email)
+    db.commit()
+    
+    # Encolar envío
+    enviar_email_task.delay(str(email.id))
+```
+
+### 8.4 Endpoint de Consulta de Estado
 
 ```python
 @router.get("/solicitudes/{solicitud_id}/estado")
