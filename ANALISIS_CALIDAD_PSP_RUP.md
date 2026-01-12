@@ -611,6 +611,7 @@ CU-01 a CU-16 (con inconsistencias en numeración) en REQUERIMIENTOS_Y_CASOS_DE_
 28. notificar_ticket_asignado
 
 **Trigger eliminado (1 - Optimización 12 enero 2026):**
+
 - ❌ limpiar_archivos_temporales_expirados (tabla ARCHIVOS_TEMPORALES eliminada)
 
 **Estado:** ✅ **OPTIMIZADO** - 27 triggers activos (28 originales - 1 eliminado)
@@ -632,6 +633,7 @@ ARCHIVOS_FRV, BLOQUEOS_IP, CAMBIOS_AUDITORIA, CAT_CICLOS_ESCOLARES, CAT_ENTIDADE
 8. ❌ TAREAS_PROGRAMADAS (RF-34 eliminado)
 
 **Tablas consolidadas (2):**
+
 - LOG_ACTIVIDADES: Ahora incluye columnas de BITACORA_DETALLADA (modulo, resultado)
 - USUARIOS: Ahora incluye preferencias_notif JSONB (antes tabla separada)
 
