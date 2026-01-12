@@ -3570,6 +3570,352 @@ CREATE TRIGGER trg_detectar_ataque_distribuido
     EXECUTE FUNCTION fn_detectar_ataque_distribuido();
 ```
 
+#### Trigger: actualizar_timestamp_usuario
+
+**Propósito:** Actualizar automáticamente el campo updated_at en la tabla USUARIOS.
+
+```sql
+CREATE OR REPLACE FUNCTION fn_actualizar_timestamp_usuario()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_actualizar_timestamp_usuario
+    BEFORE UPDATE ON USUARIOS
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_actualizar_timestamp_usuario();
+```
+
+#### Trigger: actualizar_timestamp_escuela
+
+**Propósito:** Actualizar automáticamente el campo updated_at en la tabla ESCUELAS.
+
+```sql
+CREATE OR REPLACE FUNCTION fn_actualizar_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_actualizar_timestamp_escuela
+    BEFORE UPDATE ON ESCUELAS
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_actualizar_timestamp();
+```
+
+#### Trigger: actualizar_timestamp_archivo
+
+**Propósito:** Actualizar automáticamente el campo updated_at en la tabla ARCHIVOS_FRV.
+
+```sql
+CREATE TRIGGER trg_actualizar_timestamp_archivo
+    BEFORE UPDATE ON ARCHIVOS_FRV
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_actualizar_timestamp();
+```
+
+#### Trigger: validar_cct_formato
+
+**Propósito:** Validar el formato del CCT antes de insertar o actualizar una escuela.
+
+```sql
+CREATE OR REPLACE FUNCTION fn_validar_cct_formato()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Validar formato CCT: 10 caracteres alfanuméricos (2 dígitos estado + 1 letra nivel + 7 alfanuméricos)
+    IF NEW.cct !~ '^[0-9]{2}[A-Z]{1}[A-Z0-9]{7}$' THEN
+        RAISE EXCEPTION 'Formato de CCT inválido: %. Debe ser 2 dígitos + 1 letra + 7 alfanuméricos (ej: 09DPR1234A)', NEW.cct;
+    END IF;
+    
+    -- Convertir a mayúsculas
+    NEW.cct = UPPER(NEW.cct);
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_validar_cct_formato
+    BEFORE INSERT OR UPDATE ON ESCUELAS
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_validar_cct_formato();
+```
+
+#### Trigger: bloquear_usuario_intentos_fallidos
+
+**Propósito:** Bloquear usuario automáticamente después de 5 intentos fallidos consecutivos.
+
+```sql
+CREATE OR REPLACE FUNCTION fn_bloquear_usuario_intentos_fallidos()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_intentos_fallidos INT;
+BEGIN
+    -- Solo si el intento fue fallido
+    IF NEW.exito = FALSE AND NEW.usuario_id IS NOT NULL THEN
+        
+        -- Contar intentos fallidos consecutivos en los últimos 15 minutos
+        SELECT COUNT(*)
+        INTO v_intentos_fallidos
+        FROM INTENTOS_LOGIN
+        WHERE usuario_id = NEW.usuario_id
+          AND exito = FALSE
+          AND created_at > NOW() - INTERVAL '15 minutes';
+        
+        -- Si hay 5 o más intentos fallidos, bloquear por 30 minutos
+        IF v_intentos_fallidos >= 5 THEN
+            UPDATE USUARIOS
+            SET bloqueado_hasta = NOW() + INTERVAL '30 minutes',
+                updated_at = NOW()
+            WHERE id = NEW.usuario_id;
+            
+            -- Registrar en bitácora
+            INSERT INTO BITACORA_DETALLADA (usuario_id, accion, descripcion, modulo, resultado, ip_address, fecha)
+            VALUES (
+                NEW.usuario_id,
+                'BLOQUEO_AUTOMATICO',
+                FORMAT('Usuario bloqueado por %s intentos fallidos', v_intentos_fallidos),
+                'SEGURIDAD',
+                'BLOQUEADO',
+                NEW.ip_address,
+                NOW()
+            );
+        END IF;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_bloquear_usuario_intentos_fallidos
+    AFTER INSERT ON INTENTOS_LOGIN
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_bloquear_usuario_intentos_fallidos();
+```
+
+#### Trigger: registrar_log_actividad
+
+**Propósito:** Registrar automáticamente cambios importantes en LOG_ACTIVIDADES.
+
+```sql
+CREATE OR REPLACE FUNCTION fn_registrar_log_actividad()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Registrar en log de actividades
+    INSERT INTO LOG_ACTIVIDADES (usuario_id, accion, tabla, registro_id, detalle, ip)
+    VALUES (
+        COALESCE(NEW.usuario_id, OLD.usuario_id),
+        CASE 
+            WHEN TG_OP = 'INSERT' THEN 'CREAR'
+            WHEN TG_OP = 'UPDATE' THEN 'MODIFICAR'
+            WHEN TG_OP = 'DELETE' THEN 'ELIMINAR'
+        END,
+        TG_TABLE_NAME,
+        COALESCE(NEW.id::TEXT, OLD.id::TEXT),
+        FORMAT('Operación: %s en %s', TG_OP, TG_TABLE_NAME),
+        inet_client_addr()
+    );
+    
+    RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Aplicar a tablas críticas
+CREATE TRIGGER trg_log_usuarios
+    AFTER INSERT OR UPDATE OR DELETE ON USUARIOS
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_registrar_log_actividad();
+
+CREATE TRIGGER trg_log_escuelas
+    AFTER INSERT OR UPDATE OR DELETE ON ESCUELAS
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_registrar_log_actividad();
+```
+
+#### Trigger: validar_fecha_periodo
+
+**Propósito:** Validar que las fechas de periodo sean coherentes.
+
+```sql
+CREATE OR REPLACE FUNCTION fn_validar_fecha_periodo()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Validar que fecha_fin sea posterior a fecha_inicio
+    IF NEW.fecha_fin <= NEW.fecha_inicio THEN
+        RAISE EXCEPTION 'La fecha de fin (%) debe ser posterior a la fecha de inicio (%)', NEW.fecha_fin, NEW.fecha_inicio;
+    END IF;
+    
+    -- Validar que el periodo no sea excesivamente largo (máximo 1 año)
+    IF NEW.fecha_fin > NEW.fecha_inicio + INTERVAL '1 year' THEN
+        RAISE EXCEPTION 'El periodo no puede exceder 1 año de duración';
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_validar_fecha_periodo
+    BEFORE INSERT OR UPDATE ON PERIODOS_EVALUACION
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_validar_fecha_periodo();
+```
+
+#### Trigger: actualizar_contador_descargas
+
+**Propósito:** Actualizar el contador de descargas cuando se descarga un reporte.
+
+```sql
+CREATE OR REPLACE FUNCTION fn_actualizar_contador_descargas()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.descargado_en IS NOT NULL AND (OLD.descargado_en IS NULL OR NEW.descargado_en > OLD.descargado_en) THEN
+        NEW.total_descargas = COALESCE(OLD.total_descargas, 0) + 1;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_actualizar_contador_descargas
+    BEFORE UPDATE ON REPORTES_GENERADOS
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_actualizar_contador_descargas();
+```
+
+#### Trigger: validar_email_formato
+
+**Propósito:** Validar el formato de email antes de insertar o actualizar usuarios.
+
+```sql
+CREATE OR REPLACE FUNCTION fn_validar_email_formato()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Validar formato básico de email
+    IF NEW.email !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z]{2,}$' THEN
+        RAISE EXCEPTION 'Formato de email inválido: %', NEW.email;
+    END IF;
+    
+    -- Convertir a minúsculas
+    NEW.email = LOWER(NEW.email);
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_validar_email_formato
+    BEFORE INSERT OR UPDATE ON USUARIOS
+    FOR EACH ROW
+    WHEN (NEW.email IS NOT NULL)
+    EXECUTE FUNCTION fn_validar_email_formato();
+```
+
+#### Trigger: archivar_ticket_resuelto
+
+**Propósito:** Actualizar estado de ticket cuando se resuelve.
+
+```sql
+CREATE OR REPLACE FUNCTION fn_archivar_ticket_resuelto()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Si se está marcando como resuelto, actualizar timestamp
+    IF NEW.estado = 'RESUELTO' AND OLD.estado != 'RESUELTO' THEN
+        NEW.resuelto_en = NOW();
+        
+        -- Si no tiene resolución, requerirla
+        IF NEW.resolucion IS NULL OR TRIM(NEW.resolucion) = '' THEN
+            RAISE EXCEPTION 'Se requiere una descripción de resolución para cerrar el ticket';
+        END IF;
+    END IF;
+    
+    -- Si se está cerrando, actualizar timestamp
+    IF NEW.estado = 'CERRADO' AND OLD.estado != 'CERRADO' THEN
+        NEW.cerrado_en = NOW();
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_archivar_ticket_resuelto
+    BEFORE UPDATE ON TICKETS_SOPORTE
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_archivar_ticket_resuelto();
+```
+
+#### Trigger: notificar_ticket_asignado
+
+**Propósito:** Crear notificación automática cuando se asigna un ticket.
+
+```sql
+CREATE OR REPLACE FUNCTION fn_notificar_ticket_asignado()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Si se asignó a un usuario diferente
+    IF NEW.asignado_a IS NOT NULL AND (OLD.asignado_a IS NULL OR NEW.asignado_a != OLD.asignado_a) THEN
+        
+        -- Crear notificación
+        INSERT INTO NOTIFICACIONES_EMAIL (
+            id, usuario_id, destinatario, asunto, cuerpo, tipo, estado, prioridad,
+            referencia_id, referencia_tipo
+        )
+        SELECT 
+            gen_random_uuid(),
+            NEW.asignado_a,
+            u.email,
+            FORMAT('Ticket #%s asignado: %s', NEW.numero_ticket, NEW.asunto),
+            FORMAT('<html><body><h2>Se le ha asignado un nuevo ticket</h2><p><strong>Número:</strong> %s</p><p><strong>Asunto:</strong> %s</p><p><strong>Prioridad:</strong> %s</p><p><strong>Descripción:</strong> %s</p></body></html>',
+                   NEW.numero_ticket, NEW.asunto, NEW.prioridad, NEW.descripcion),
+            'TICKET_CREADO',
+            'PENDIENTE',
+            NEW.prioridad,
+            NEW.id,
+            'TICKET'
+        FROM USUARIOS u
+        WHERE u.id = NEW.asignado_a;
+        
+        -- Actualizar fecha de asignación
+        NEW.asignado_en = NOW();
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_notificar_ticket_asignado
+    BEFORE UPDATE ON TICKETS_SOPORTE
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_notificar_ticket_asignado();
+```
+
+#### Trigger: limpiar_archivos_temporales_expirados
+
+**Propósito:** Marcar para limpieza archivos temporales que expiraron.
+
+```sql
+CREATE OR REPLACE FUNCTION fn_limpiar_archivos_temporales_expirados()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Si el archivo expiró, marcarlo para eliminación
+    IF NEW.expira_en < NOW() AND NEW.estado != 'ERROR' THEN
+        NEW.estado = 'ERROR';
+        NEW.error_mensaje = 'Archivo temporal expirado y marcado para eliminación';
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_limpiar_archivos_temporales
+    BEFORE UPDATE ON ARCHIVOS_TEMPORALES
+    FOR EACH ROW
+    WHEN (NEW.expira_en < NOW())
+    EXECUTE FUNCTION fn_limpiar_archivos_temporales_expirados();
+```
+
 #### Vista: v_intentos_sospechosos
 
 **Propósito:** Vista para monitoreo de seguridad con intentos fallidos agrupados.
@@ -3625,6 +3971,509 @@ WHERE exito = FALSE
 GROUP BY ip_address
 HAVING COUNT(*) >= 5
 ORDER BY total_intentos DESC;
+```
+
+#### Vista: v_escuelas_por_entidad
+
+**Propósito:** Vista consolidada de escuelas agrupadas por entidad federativa con estadísticas.
+
+```sql
+CREATE OR REPLACE VIEW v_escuelas_por_entidad AS
+SELECT 
+    e.entidad_id,
+    ent.nombre AS entidad_nombre,
+    ent.clave AS entidad_clave,
+    COUNT(*) AS total_escuelas,
+    COUNT(*) FILTER (WHERE e.activo = TRUE) AS escuelas_activas,
+    COUNT(*) FILTER (WHERE e.activo = FALSE) AS escuelas_inactivas,
+    COUNT(DISTINCT e.nivel_educativo) AS niveles_educativos,
+    COUNT(DISTINCT e.turno) AS turnos_diferentes,
+    SUM(e.total_alumnos) AS total_alumnos_entidad,
+    AVG(e.total_alumnos) AS promedio_alumnos_escuela,
+    MIN(e.created_at) AS primera_escuela_registrada,
+    MAX(e.updated_at) AS ultima_actualizacion
+FROM ESCUELAS e
+JOIN ENTIDADES ent ON e.entidad_id = ent.id
+GROUP BY e.entidad_id, ent.nombre, ent.clave
+ORDER BY total_escuelas DESC;
+```
+
+#### Vista: v_archivos_pendientes_validacion
+
+**Propósito:** Vista de archivos FRV pendientes de validación con información de escuela y periodo.
+
+```sql
+CREATE OR REPLACE VIEW v_archivos_pendientes_validacion AS
+SELECT 
+    a.id,
+    a.nombre_archivo,
+    a.escuela_id,
+    e.cct,
+    e.nombre AS escuela_nombre,
+    e.entidad_id,
+    a.periodo_id,
+    p.nombre AS periodo_nombre,
+    a.tipo_archivo,
+    a.estado,
+    a.uploaded_en,
+    EXTRACT(EPOCH FROM (NOW() - a.uploaded_en))/3600 AS horas_desde_upload,
+    a.tamano_bytes,
+    a.total_registros,
+    a.usuario_id,
+    u.nombre_completo AS usuario_nombre
+FROM ARCHIVOS_FRV a
+JOIN ESCUELAS e ON a.escuela_id = e.id
+JOIN PERIODOS_EVALUACION p ON a.periodo_id = p.id
+LEFT JOIN USUARIOS u ON a.usuario_id = u.id
+WHERE a.estado IN ('PENDIENTE', 'EN_VALIDACION')
+ORDER BY a.uploaded_en ASC;
+```
+
+#### Vista: v_evaluaciones_estadisticas
+
+**Propósito:** Estadísticas detalladas de evaluaciones por periodo y nivel.
+
+```sql
+CREATE OR REPLACE VIEW v_evaluaciones_estadisticas AS
+SELECT 
+    ev.periodo_id,
+    p.nombre AS periodo_nombre,
+    ev.nivel_educativo,
+    ev.grado,
+    COUNT(*) AS total_evaluaciones,
+    COUNT(DISTINCT ev.escuela_id) AS escuelas_participantes,
+    COUNT(DISTINCT ev.alumno_id) AS alumnos_evaluados,
+    AVG(ev.valoracion) AS promedio_valoracion,
+    STDDEV(ev.valoracion) AS desviacion_estandar,
+    COUNT(*) FILTER (WHERE ev.valoracion = 0) AS nivel_critico,
+    COUNT(*) FILTER (WHERE ev.valoracion = 1) AS nivel_bajo,
+    COUNT(*) FILTER (WHERE ev.valoracion = 2) AS nivel_medio,
+    COUNT(*) FILTER (WHERE ev.valoracion = 3) AS nivel_destacado,
+    COUNT(*) FILTER (WHERE ev.observaciones IS NOT NULL) AS con_observaciones,
+    MIN(ev.created_at) AS primera_evaluacion,
+    MAX(ev.created_at) AS ultima_evaluacion
+FROM EVALUACIONES ev
+JOIN PERIODOS_EVALUACION p ON ev.periodo_id = p.id
+GROUP BY ev.periodo_id, p.nombre, ev.nivel_educativo, ev.grado
+ORDER BY ev.periodo_id DESC, ev.nivel_educativo, ev.grado;
+```
+
+#### Vista: v_reportes_por_generar
+
+**Propósito:** Vista de reportes programados pendientes de generación.
+
+```sql
+CREATE OR REPLACE VIEW v_reportes_por_generar AS
+SELECT 
+    rg.id,
+    rg.escuela_id,
+    e.cct,
+    e.nombre AS escuela_nombre,
+    rg.periodo_id,
+    p.nombre AS periodo_nombre,
+    rg.tipo_reporte,
+    rg.formato,
+    rg.estado,
+    rg.solicitado_en,
+    EXTRACT(EPOCH FROM (NOW() - rg.solicitado_en))/3600 AS horas_esperando,
+    rg.prioridad,
+    rg.usuario_id,
+    u.email AS usuario_email,
+    rg.intentos,
+    rg.error_mensaje
+FROM REPORTES_GENERADOS rg
+JOIN ESCUELAS e ON rg.escuela_id = e.id
+JOIN PERIODOS_EVALUACION p ON rg.periodo_id = p.id
+LEFT JOIN USUARIOS u ON rg.usuario_id = u.id
+WHERE rg.estado IN ('PENDIENTE', 'PROCESANDO', 'ERROR')
+  AND rg.intentos < 3
+ORDER BY 
+    rg.prioridad DESC,
+    rg.solicitado_en ASC;
+```
+
+#### Vista: v_tickets_abiertos_resumen
+
+**Propósito:** Resumen de tickets abiertos con información de asignación y antigüedad.
+
+```sql
+CREATE OR REPLACE VIEW v_tickets_abiertos_resumen AS
+SELECT 
+    t.id,
+    t.numero_ticket,
+    t.asunto,
+    t.categoria,
+    t.prioridad,
+    t.estado,
+    t.created_at,
+    EXTRACT(EPOCH FROM (NOW() - t.created_at))/86400 AS dias_abierto,
+    t.creado_por,
+    uc.nombre_completo AS creador_nombre,
+    uc.email AS creador_email,
+    t.asignado_a,
+    ua.nombre_completo AS asignado_nombre,
+    ua.email AS asignado_email,
+    t.asignado_en,
+    (SELECT COUNT(*) FROM COMENTARIOS_TICKET WHERE ticket_id = t.id) AS total_comentarios,
+    (SELECT MAX(created_at) FROM COMENTARIOS_TICKET WHERE ticket_id = t.id) AS ultimo_comentario,
+    CASE 
+        WHEN t.prioridad = 'URGENTE' AND NOW() - t.created_at > INTERVAL '4 hours' THEN 'SLA_VIOLADO'
+        WHEN t.prioridad = 'ALTA' AND NOW() - t.created_at > INTERVAL '1 day' THEN 'SLA_VIOLADO'
+        WHEN t.prioridad = 'MEDIA' AND NOW() - t.created_at > INTERVAL '3 days' THEN 'SLA_VIOLADO'
+        ELSE 'SLA_OK'
+    END AS estado_sla
+FROM TICKETS_SOPORTE t
+JOIN USUARIOS uc ON t.creado_por = uc.id
+LEFT JOIN USUARIOS ua ON t.asignado_a = ua.id
+WHERE t.estado IN ('ABIERTO', 'EN_PROGRESO', 'ESPERANDO_RESPUESTA')
+ORDER BY 
+    CASE t.prioridad 
+        WHEN 'URGENTE' THEN 1 
+        WHEN 'ALTA' THEN 2 
+        WHEN 'MEDIA' THEN 3 
+        WHEN 'BAJA' THEN 4 
+    END,
+    t.created_at ASC;
+```
+
+#### Vista: v_usuarios_activos_sesion
+
+**Propósito:** Vista de usuarios con sesiones activas y última actividad.
+
+```sql
+CREATE OR REPLACE VIEW v_usuarios_activos_sesion AS
+SELECT 
+    u.id,
+    u.email,
+    u.nombre_completo,
+    u.rol,
+    u.entidad_id,
+    s.id AS sesion_id,
+    s.token_hash,
+    s.ip_address,
+    s.user_agent,
+    s.created_at AS inicio_sesion,
+    s.expires_at AS expira_sesion,
+    s.ultima_actividad,
+    EXTRACT(EPOCH FROM (NOW() - s.ultima_actividad))/60 AS minutos_inactivo,
+    CASE 
+        WHEN s.expires_at < NOW() THEN 'EXPIRADA'
+        WHEN NOW() - s.ultima_actividad > INTERVAL '30 minutes' THEN 'INACTIVA'
+        ELSE 'ACTIVA'
+    END AS estado_sesion
+FROM USUARIOS u
+JOIN SESIONES_USUARIO s ON u.id = s.usuario_id
+WHERE s.revocado = FALSE
+  AND s.expires_at > NOW()
+ORDER BY s.ultima_actividad DESC;
+```
+
+#### Vista: v_bitacora_ultimas_24h
+
+**Propósito:** Registro de actividad de las últimas 24 horas para monitoreo.
+
+```sql
+CREATE OR REPLACE VIEW v_bitacora_ultimas_24h AS
+SELECT 
+    b.id,
+    b.usuario_id,
+    u.email,
+    u.nombre_completo,
+    u.rol,
+    b.accion,
+    b.descripcion,
+    b.modulo,
+    b.resultado,
+    b.ip_address,
+    b.user_agent,
+    b.fecha,
+    b.duracion_ms,
+    b.metadatos
+FROM BITACORA_DETALLADA b
+LEFT JOIN USUARIOS u ON b.usuario_id = u.id
+WHERE b.fecha > NOW() - INTERVAL '24 hours'
+ORDER BY b.fecha DESC;
+```
+
+#### Vista: v_intentos_login_fallidos
+
+**Propósito:** Monitoreo de intentos de login fallidos para detección de ataques.
+
+```sql
+CREATE OR REPLACE VIEW v_intentos_login_fallidos AS
+SELECT 
+    il.id,
+    il.email,
+    il.ip_address,
+    il.user_agent,
+    il.motivo_fallo,
+    il.created_at,
+    il.usuario_id,
+    u.bloqueado_hasta,
+    COUNT(*) OVER (PARTITION BY il.ip_address) AS intentos_desde_ip,
+    COUNT(*) OVER (PARTITION BY il.email) AS intentos_con_email,
+    LAG(il.created_at) OVER (PARTITION BY il.email ORDER BY il.created_at) AS intento_anterior,
+    CASE 
+        WHEN COUNT(*) OVER (PARTITION BY il.ip_address) >= 10 THEN 'IP_SOSPECHOSA'
+        WHEN COUNT(*) OVER (PARTITION BY il.email) >= 5 THEN 'CUENTA_ATACADA'
+        ELSE 'NORMAL'
+    END AS tipo_alerta
+FROM INTENTOS_LOGIN il
+LEFT JOIN USUARIOS u ON il.usuario_id = u.id
+WHERE il.exito = FALSE
+  AND il.created_at > NOW() - INTERVAL '1 hour'
+ORDER BY il.created_at DESC;
+```
+
+#### Vista: v_escuelas_sin_actividad
+
+**Propósito:** Escuelas sin archivos ni evaluaciones en el periodo actual.
+
+```sql
+CREATE OR REPLACE VIEW v_escuelas_sin_actividad AS
+SELECT 
+    e.id,
+    e.cct,
+    e.nombre,
+    e.entidad_id,
+    ent.nombre AS entidad_nombre,
+    e.nivel_educativo,
+    e.turno,
+    e.total_alumnos,
+    e.created_at AS fecha_registro,
+    (SELECT MAX(uploaded_en) FROM ARCHIVOS_FRV WHERE escuela_id = e.id) AS ultimo_archivo,
+    (SELECT MAX(created_at) FROM EVALUACIONES WHERE escuela_id = e.id) AS ultima_evaluacion,
+    EXTRACT(EPOCH FROM (NOW() - COALESCE(
+        (SELECT MAX(uploaded_en) FROM ARCHIVOS_FRV WHERE escuela_id = e.id),
+        e.created_at
+    )))/86400 AS dias_sin_actividad
+FROM ESCUELAS e
+JOIN ENTIDADES ent ON e.entidad_id = ent.id
+WHERE e.activo = TRUE
+  AND NOT EXISTS (
+      SELECT 1 FROM ARCHIVOS_FRV a 
+      WHERE a.escuela_id = e.id 
+        AND a.periodo_id = (SELECT id FROM PERIODOS_EVALUACION WHERE activo = TRUE LIMIT 1)
+  )
+ORDER BY dias_sin_actividad DESC;
+```
+
+#### Vista: v_usuarios_inactivos
+
+**Propósito:** Usuarios que no han iniciado sesión en los últimos 30 días.
+
+```sql
+CREATE OR REPLACE VIEW v_usuarios_inactivos AS
+SELECT 
+    u.id,
+    u.email,
+    u.nombre_completo,
+    u.rol,
+    u.entidad_id,
+    e.nombre AS entidad_nombre,
+    u.activo,
+    u.created_at AS fecha_creacion,
+    u.ultimo_acceso,
+    EXTRACT(EPOCH FROM (NOW() - COALESCE(u.ultimo_acceso, u.created_at)))/86400 AS dias_inactivo,
+    (SELECT COUNT(*) FROM SESIONES_USUARIO WHERE usuario_id = u.id) AS total_sesiones_historicas,
+    CASE 
+        WHEN u.ultimo_acceso IS NULL THEN 'NUNCA_INGRESO'
+        WHEN NOW() - u.ultimo_acceso > INTERVAL '90 days' THEN 'INACTIVO_CRITICO'
+        WHEN NOW() - u.ultimo_acceso > INTERVAL '30 days' THEN 'INACTIVO'
+        ELSE 'ACTIVO_RECIENTE'
+    END AS estado_actividad
+FROM USUARIOS u
+LEFT JOIN ENTIDADES e ON u.entidad_id = e.id
+WHERE COALESCE(u.ultimo_acceso, u.created_at) < NOW() - INTERVAL '30 days'
+  OR u.ultimo_acceso IS NULL
+ORDER BY dias_inactivo DESC;
+```
+
+#### Vista: v_cache_efectividad
+
+**Propósito:** Métricas de efectividad del cache de queries.
+
+```sql
+CREATE OR REPLACE VIEW v_cache_efectividad AS
+SELECT 
+    c.query_key,
+    c.descripcion,
+    c.hits,
+    c.created_at,
+    c.expires_at,
+    EXTRACT(EPOCH FROM (c.expires_at - c.created_at)) AS ttl_seconds,
+    EXTRACT(EPOCH FROM (NOW() - c.created_at))/3600 AS horas_en_cache,
+    c.hits::FLOAT / NULLIF(EXTRACT(EPOCH FROM (NOW() - c.created_at))/3600, 0) AS hits_por_hora,
+    CASE 
+        WHEN c.hits >= 100 THEN 'MUY_EFECTIVO'
+        WHEN c.hits >= 50 THEN 'EFECTIVO'
+        WHEN c.hits >= 10 THEN 'MODERADO'
+        ELSE 'BAJO'
+    END AS nivel_efectividad,
+    c.tamano_bytes
+FROM CACHE_QUERIES c
+WHERE c.expires_at > NOW()
+ORDER BY c.hits DESC, c.created_at DESC;
+```
+
+#### Vista: v_periodos_evaluacion_activos
+
+**Propósito:** Información completa de periodos activos con estadísticas de participación.
+
+```sql
+CREATE OR REPLACE VIEW v_periodos_evaluacion_activos AS
+SELECT 
+    p.id,
+    p.nombre,
+    p.descripcion,
+    p.fecha_inicio,
+    p.fecha_fin,
+    p.activo,
+    EXTRACT(EPOCH FROM (p.fecha_fin - NOW()))/86400 AS dias_restantes,
+    (SELECT COUNT(*) FROM ARCHIVOS_FRV WHERE periodo_id = p.id) AS total_archivos,
+    (SELECT COUNT(*) FROM ARCHIVOS_FRV WHERE periodo_id = p.id AND estado = 'VALIDADO') AS archivos_validados,
+    (SELECT COUNT(*) FROM EVALUACIONES WHERE periodo_id = p.id) AS total_evaluaciones,
+    (SELECT COUNT(DISTINCT escuela_id) FROM ARCHIVOS_FRV WHERE periodo_id = p.id) AS escuelas_participantes,
+    (SELECT COUNT(*) FROM ESCUELAS WHERE activo = TRUE) AS total_escuelas_activas,
+    ROUND(
+        (SELECT COUNT(DISTINCT escuela_id)::NUMERIC FROM ARCHIVOS_FRV WHERE periodo_id = p.id) /
+        NULLIF((SELECT COUNT(*)::NUMERIC FROM ESCUELAS WHERE activo = TRUE), 0) * 100,
+        2
+    ) AS porcentaje_participacion
+FROM PERIODOS_EVALUACION p
+WHERE p.activo = TRUE
+   OR p.fecha_fin > NOW() - INTERVAL '30 days'
+ORDER BY p.fecha_inicio DESC;
+```
+
+#### Vista: v_configuraciones_sistema_activas
+
+**Propósito:** Parámetros de configuración del sistema actualmente en uso.
+
+```sql
+CREATE OR REPLACE VIEW v_configuraciones_sistema_activas AS
+SELECT 
+    c.id,
+    c.clave,
+    c.valor,
+    c.tipo_dato,
+    c.descripcion,
+    c.categoria,
+    c.modificable_usuario,
+    c.requiere_reinicio,
+    c.valor_default,
+    c.updated_at,
+    u.nombre_completo AS modificado_por,
+    CASE 
+        WHEN c.valor = c.valor_default THEN 'DEFAULT'
+        ELSE 'PERSONALIZADO'
+    END AS estado_configuracion,
+    CASE c.tipo_dato
+        WHEN 'INTEGER' THEN c.valor::INTEGER::TEXT
+        WHEN 'BOOLEAN' THEN c.valor::BOOLEAN::TEXT
+        WHEN 'FLOAT' THEN c.valor::FLOAT::TEXT
+        ELSE c.valor
+    END AS valor_tipado
+FROM CONFIGURACIONES_SISTEMA c
+LEFT JOIN USUARIOS u ON c.modificado_por = u.id
+WHERE c.activo = TRUE
+ORDER BY c.categoria, c.clave;
+```
+
+#### Vista: v_auditoria_cambios_recientes
+
+**Propósito:** Últimos cambios registrados en auditoría LGPDP.
+
+```sql
+CREATE OR REPLACE VIEW v_auditoria_cambios_recientes AS
+SELECT 
+    ca.id,
+    ca.tabla,
+    ca.registro_id,
+    ca.campo_modificado,
+    ca.valor_anterior,
+    ca.valor_nuevo,
+    ca.usuario_id,
+    u.email AS usuario_email,
+    u.nombre_completo AS usuario_nombre,
+    ca.ip_address,
+    ca.user_agent,
+    ca.fecha_cambio,
+    ca.motivo,
+    ca.metadata,
+    CASE 
+        WHEN ca.tabla IN ('USUARIOS', 'HISTORICO_PASSWORDS') THEN 'SENSIBLE'
+        WHEN ca.tabla IN ('EVALUACIONES', 'ESCUELAS') THEN 'CRITICO'
+        ELSE 'NORMAL'
+    END AS criticidad_cambio
+FROM CAMBIOS_AUDITORIA ca
+JOIN USUARIOS u ON ca.usuario_id = u.id
+WHERE ca.fecha_cambio > NOW() - INTERVAL '7 days'
+ORDER BY ca.fecha_cambio DESC;
+```
+
+#### Vista: v_estadisticas_uso_sistema
+
+**Propósito:** Métricas agregadas de uso del sistema por día y entidad.
+
+```sql
+CREATE OR REPLACE VIEW v_estadisticas_uso_sistema AS
+SELECT 
+    eu.fecha,
+    eu.entidad_id,
+    e.nombre AS entidad_nombre,
+    eu.metrica,
+    eu.valor,
+    eu.dimensiones,
+    eu.created_at,
+    AVG(eu.valor) OVER (
+        PARTITION BY eu.entidad_id, eu.metrica 
+        ORDER BY eu.fecha 
+        ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+    ) AS promedio_7_dias,
+    eu.valor - LAG(eu.valor) OVER (
+        PARTITION BY eu.entidad_id, eu.metrica 
+        ORDER BY eu.fecha
+    ) AS variacion_dia_anterior
+FROM ESTADISTICAS_USO eu
+LEFT JOIN ENTIDADES e ON eu.entidad_id = e.id
+WHERE eu.fecha > NOW() - INTERVAL '30 days'
+ORDER BY eu.fecha DESC, eu.entidad_id, eu.metrica;
+```
+
+#### Vista: v_tareas_programadas_estado
+
+**Propósito:** Estado de tareas programadas (cron jobs) con historial de ejecución.
+
+```sql
+CREATE OR REPLACE VIEW v_tareas_programadas_estado AS
+SELECT 
+    tp.id,
+    tp.nombre,
+    tp.descripcion,
+    tp.expresion_cron,
+    tp.comando,
+    tp.activo,
+    tp.prioridad,
+    tp.ultima_ejecucion,
+    tp.proxima_ejecucion,
+    tp.estado,
+    tp.intentos,
+    tp.max_intentos,
+    tp.duracion_ultima_ms,
+    tp.error_mensaje,
+    EXTRACT(EPOCH FROM (NOW() - tp.ultima_ejecucion))/3600 AS horas_desde_ultima,
+    EXTRACT(EPOCH FROM (tp.proxima_ejecucion - NOW()))/3600 AS horas_hasta_proxima,
+    CASE 
+        WHEN tp.estado = 'ERROR' AND tp.intentos >= tp.max_intentos THEN 'REQUIERE_ATENCION'
+        WHEN tp.activo = FALSE THEN 'DESHABILITADO'
+        WHEN tp.proxima_ejecucion < NOW() THEN 'ATRASADO'
+        ELSE 'OK'
+    END AS alerta
+FROM TAREAS_PROGRAMADAS tp
+WHERE tp.activo = TRUE
+   OR tp.ultima_ejecucion > NOW() - INTERVAL '7 days'
+ORDER BY tp.proxima_ejecucion ASC;
 ```
 
 #### Procedimiento: registrar_intento_login
@@ -3792,6 +4641,531 @@ $$ LANGUAGE plpgsql;
 --     (SELECT id FROM USUARIOS WHERE email = 'director.school245@edu.mx'),
 --     (SELECT id FROM USUARIOS WHERE rol = 'ADMINISTRADOR' LIMIT 1)
 -- );
+```
+
+#### Procedimiento: procesar_archivo_frv
+
+**Propósito:** Validación completa y carga masiva de archivos FRV con manejo de errores transaccional.
+
+```sql
+CREATE OR REPLACE FUNCTION sp_procesar_archivo_frv(
+    p_archivo_id UUID,
+    p_usuario_id UUID
+)
+RETURNS TABLE(
+    procesado BOOLEAN,
+    registros_insertados INT,
+    registros_rechazados INT,
+    mensaje TEXT,
+    errores JSONB
+) AS $$
+DECLARE
+    v_escuela_id UUID;
+    v_periodo_id UUID;
+    v_tipo_archivo VARCHAR(50);
+    v_estado VARCHAR(50);
+    v_total_registros INT := 0;
+    v_insertados INT := 0;
+    v_rechazados INT := 0;
+    v_errores JSONB := '[]'::JSONB;
+    v_contenido JSONB;
+BEGIN
+    -- Obtener información del archivo
+    SELECT escuela_id, periodo_id, tipo_archivo, estado, contenido_json, total_registros
+    INTO v_escuela_id, v_periodo_id, v_tipo_archivo, v_estado, v_contenido, v_total_registros
+    FROM ARCHIVOS_FRV
+    WHERE id = p_archivo_id;
+    
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT FALSE, 0, 0, 'Archivo no encontrado'::TEXT, '[]'::JSONB;
+        RETURN;
+    END IF;
+    
+    -- Validar que el archivo esté en estado PENDIENTE
+    IF v_estado != 'PENDIENTE' THEN
+        RETURN QUERY SELECT FALSE, 0, 0, FORMAT('Archivo en estado %s, no se puede procesar', v_estado)::TEXT, '[]'::JSONB;
+        RETURN;
+    END IF;
+    
+    -- Actualizar estado a EN_VALIDACION
+    UPDATE ARCHIVOS_FRV
+    SET estado = 'EN_VALIDACION',
+        procesado_en = NOW(),
+        usuario_id = p_usuario_id
+    WHERE id = p_archivo_id;
+    
+    -- Procesar registros según tipo de archivo
+    BEGIN
+        IF v_tipo_archivo = 'FRV_PREESCOLAR' THEN
+            -- Insertar evaluaciones de preescolar
+            INSERT INTO EVALUACIONES (
+                id, escuela_id, periodo_id, alumno_id, grado, nivel_educativo,
+                campo_formativo, valoracion, observaciones, created_at
+            )
+            SELECT 
+                gen_random_uuid(),
+                v_escuela_id,
+                v_periodo_id,
+                gen_random_uuid(), -- Temporal, se debe resolver con ALUMNOS
+                (rec->>'grado')::INT,
+                'PREESCOLAR',
+                rec->>'campo_formativo',
+                (rec->>'valoracion')::INT,
+                rec->>'observaciones',
+                NOW()
+            FROM jsonb_array_elements(v_contenido) AS rec
+            WHERE (rec->>'valoracion')::INT BETWEEN 0 AND 3; -- Validación rango
+            
+            GET DIAGNOSTICS v_insertados = ROW_COUNT;
+            
+        ELSIF v_tipo_archivo IN ('FRV_PRIMARIA', 'FRV_SECUNDARIA') THEN
+            -- Insertar evaluaciones de primaria/secundaria
+            INSERT INTO EVALUACIONES (
+                id, escuela_id, periodo_id, alumno_id, grado, nivel_educativo,
+                materia, valoracion, observaciones, created_at
+            )
+            SELECT 
+                gen_random_uuid(),
+                v_escuela_id,
+                v_periodo_id,
+                gen_random_uuid(),
+                (rec->>'grado')::INT,
+                CASE 
+                    WHEN v_tipo_archivo = 'FRV_PRIMARIA' THEN 'PRIMARIA'
+                    ELSE 'SECUNDARIA'
+                END,
+                rec->>'materia',
+                (rec->>'valoracion')::INT,
+                rec->>'observaciones',
+                NOW()
+            FROM jsonb_array_elements(v_contenido) AS rec
+            WHERE (rec->>'valoracion')::INT BETWEEN 0 AND 3;
+            
+            GET DIAGNOSTICS v_insertados = ROW_COUNT;
+        END IF;
+        
+        v_rechazados := v_total_registros - v_insertados;
+        
+        -- Actualizar archivo a VALIDADO
+        UPDATE ARCHIVOS_FRV
+        SET estado = 'VALIDADO',
+            validado_en = NOW(),
+            registros_procesados = v_insertados,
+            registros_rechazados = v_rechazados
+        WHERE id = p_archivo_id;
+        
+        -- Registrar en bitácora
+        INSERT INTO BITACORA_DETALLADA (
+            usuario_id, accion, descripcion, modulo, resultado, fecha
+        ) VALUES (
+            p_usuario_id,
+            'PROCESAR_ARCHIVO_FRV',
+            FORMAT('Archivo %s procesado: %s insertados, %s rechazados', 
+                   p_archivo_id, v_insertados, v_rechazados),
+            'VALIDACION',
+            'EXITO',
+            NOW()
+        );
+        
+        RETURN QUERY SELECT 
+            TRUE, 
+            v_insertados, 
+            v_rechazados, 
+            FORMAT('Procesamiento exitoso: %s registros insertados', v_insertados)::TEXT,
+            v_errores;
+            
+    EXCEPTION WHEN OTHERS THEN
+        -- Rollback y actualizar archivo a ERROR
+        UPDATE ARCHIVOS_FRV
+        SET estado = 'ERROR',
+            error_mensaje = SQLERRM
+        WHERE id = p_archivo_id;
+        
+        RETURN QUERY SELECT 
+            FALSE, 
+            0, 
+            v_total_registros, 
+            FORMAT('Error en procesamiento: %s', SQLERRM)::TEXT,
+            jsonb_build_array(jsonb_build_object('error', SQLERRM));
+    END;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+#### Procedimiento: calcular_estadisticas_escuela
+
+**Propósito:** Calcular estadísticas agregadas de una escuela para un periodo específico.
+
+```sql
+CREATE OR REPLACE FUNCTION sp_calcular_estadisticas_escuela(
+    p_escuela_id UUID,
+    p_periodo_id UUID
+)
+RETURNS TABLE(
+    total_alumnos_evaluados INT,
+    promedio_general NUMERIC(4,2),
+    nivel_critico_count INT,
+    nivel_bajo_count INT,
+    nivel_medio_count INT,
+    nivel_destacado_count INT,
+    porcentaje_critico NUMERIC(5,2),
+    porcentaje_bajo NUMERIC(5,2),
+    porcentaje_medio NUMERIC(5,2),
+    porcentaje_destacado NUMERIC(5,2),
+    materias_evaluadas TEXT[],
+    grados_evaluados INT[]
+) AS $$
+DECLARE
+    v_total INT;
+BEGIN
+    -- Contar total de evaluaciones
+    SELECT COUNT(DISTINCT alumno_id) INTO v_total
+    FROM EVALUACIONES
+    WHERE escuela_id = p_escuela_id
+      AND periodo_id = p_periodo_id;
+    
+    IF v_total = 0 THEN
+        RETURN QUERY SELECT 0, 0.0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 
+                            ARRAY[]::TEXT[], ARRAY[]::INT[];
+        RETURN;
+    END IF;
+    
+    -- Calcular estadísticas
+    RETURN QUERY
+    SELECT 
+        v_total,
+        ROUND(AVG(valoracion), 2)::NUMERIC(4,2),
+        COUNT(*) FILTER (WHERE valoracion = 0)::INT,
+        COUNT(*) FILTER (WHERE valoracion = 1)::INT,
+        COUNT(*) FILTER (WHERE valoracion = 2)::INT,
+        COUNT(*) FILTER (WHERE valoracion = 3)::INT,
+        ROUND(COUNT(*) FILTER (WHERE valoracion = 0)::NUMERIC / v_total * 100, 2)::NUMERIC(5,2),
+        ROUND(COUNT(*) FILTER (WHERE valoracion = 1)::NUMERIC / v_total * 100, 2)::NUMERIC(5,2),
+        ROUND(COUNT(*) FILTER (WHERE valoracion = 2)::NUMERIC / v_total * 100, 2)::NUMERIC(5,2),
+        ROUND(COUNT(*) FILTER (WHERE valoracion = 3)::NUMERIC / v_total * 100, 2)::NUMERIC(5,2),
+        ARRAY_AGG(DISTINCT COALESCE(materia, campo_formativo)) FILTER (WHERE materia IS NOT NULL OR campo_formativo IS NOT NULL),
+        ARRAY_AGG(DISTINCT grado ORDER BY grado)
+    FROM EVALUACIONES
+    WHERE escuela_id = p_escuela_id
+      AND periodo_id = p_periodo_id;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+#### Procedimiento: limpiar_sesiones_expiradas
+
+**Propósito:** Limpiar sesiones expiradas y marcar como revocadas (job programado).
+
+```sql
+CREATE OR REPLACE FUNCTION sp_limpiar_sesiones_expiradas()
+RETURNS TABLE(
+    sesiones_limpiadas INT,
+    sesiones_revocadas INT,
+    mensaje TEXT
+) AS $$
+DECLARE
+    v_limpiadas INT := 0;
+    v_revocadas INT := 0;
+BEGIN
+    -- Marcar como revocadas las sesiones expiradas que no estaban revocadas
+    UPDATE SESIONES_USUARIO
+    SET revocado = TRUE,
+        revocado_en = NOW(),
+        motivo_revocacion = 'EXPIRACION_AUTOMATICA'
+    WHERE expires_at < NOW()
+      AND revocado = FALSE;
+    
+    GET DIAGNOSTICS v_revocadas = ROW_COUNT;
+    
+    -- Eliminar sesiones expiradas hace más de 30 días (limpieza histórica)
+    DELETE FROM SESIONES_USUARIO
+    WHERE expires_at < NOW() - INTERVAL '30 days'
+      AND revocado = TRUE;
+    
+    GET DIAGNOSTICS v_limpiadas = ROW_COUNT;
+    
+    -- Registrar en estadísticas de uso
+    INSERT INTO ESTADISTICAS_USO (
+        id, fecha, entidad_id, metrica, valor, dimensiones
+    ) VALUES (
+        gen_random_uuid(),
+        CURRENT_DATE,
+        NULL, -- Métrica global
+        'sesiones_limpiadas',
+        v_limpiadas + v_revocadas,
+        jsonb_build_object(
+            'revocadas', v_revocadas,
+            'eliminadas', v_limpiadas,
+            'fecha_proceso', NOW()
+        )
+    );
+    
+    RETURN QUERY SELECT 
+        v_limpiadas,
+        v_revocadas,
+        FORMAT('Limpieza completada: %s sesiones revocadas, %s eliminadas', 
+               v_revocadas, v_limpiadas)::TEXT;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+#### Procedimiento: generar_reporte_consolidado
+
+**Propósito:** Generar reporte consolidado de evaluaciones para múltiples escuelas de una entidad.
+
+```sql
+CREATE OR REPLACE FUNCTION sp_generar_reporte_consolidado(
+    p_entidad_id UUID,
+    p_periodo_id UUID,
+    p_nivel_educativo VARCHAR(50) DEFAULT NULL,
+    p_formato VARCHAR(10) DEFAULT 'JSON'
+)
+RETURNS TABLE(
+    reporte_id UUID,
+    total_escuelas INT,
+    total_evaluaciones INT,
+    promedio_entidad NUMERIC(4,2),
+    contenido JSONB,
+    mensaje TEXT
+) AS $$
+DECLARE
+    v_reporte_id UUID := gen_random_uuid();
+    v_total_escuelas INT;
+    v_total_evaluaciones INT;
+    v_promedio NUMERIC(4,2);
+    v_contenido JSONB;
+BEGIN
+    -- Calcular estadísticas consolidadas
+    SELECT 
+        COUNT(DISTINCT e.escuela_id),
+        COUNT(*),
+        ROUND(AVG(e.valoracion), 2)
+    INTO 
+        v_total_escuelas,
+        v_total_evaluaciones,
+        v_promedio
+    FROM EVALUACIONES e
+    JOIN ESCUELAS esc ON e.escuela_id = esc.id
+    WHERE esc.entidad_id = p_entidad_id
+      AND e.periodo_id = p_periodo_id
+      AND (p_nivel_educativo IS NULL OR e.nivel_educativo = p_nivel_educativo);
+    
+    -- Construir contenido JSON con detalle por escuela
+    SELECT jsonb_build_object(
+        'entidad_id', p_entidad_id,
+        'periodo_id', p_periodo_id,
+        'nivel_educativo', COALESCE(p_nivel_educativo, 'TODOS'),
+        'fecha_generacion', NOW(),
+        'resumen', jsonb_build_object(
+            'total_escuelas', v_total_escuelas,
+            'total_evaluaciones', v_total_evaluaciones,
+            'promedio_general', v_promedio
+        ),
+        'detalle_escuelas', (
+            SELECT jsonb_agg(
+                jsonb_build_object(
+                    'cct', esc.cct,
+                    'nombre', esc.nombre,
+                    'total_evaluaciones', COUNT(*),
+                    'promedio', ROUND(AVG(e.valoracion), 2),
+                    'distribucion', jsonb_build_object(
+                        'critico', COUNT(*) FILTER (WHERE e.valoracion = 0),
+                        'bajo', COUNT(*) FILTER (WHERE e.valoracion = 1),
+                        'medio', COUNT(*) FILTER (WHERE e.valoracion = 2),
+                        'destacado', COUNT(*) FILTER (WHERE e.valoracion = 3)
+                    )
+                )
+            )
+            FROM EVALUACIONES e
+            JOIN ESCUELAS esc ON e.escuela_id = esc.id
+            WHERE esc.entidad_id = p_entidad_id
+              AND e.periodo_id = p_periodo_id
+              AND (p_nivel_educativo IS NULL OR e.nivel_educativo = p_nivel_educativo)
+            GROUP BY esc.id, esc.cct, esc.nombre
+        )
+    ) INTO v_contenido;
+    
+    -- Crear registro de reporte generado
+    INSERT INTO REPORTES_GENERADOS (
+        id, escuela_id, periodo_id, tipo_reporte, formato, estado,
+        ruta_archivo, contenido_json, generado_en, solicitado_en
+    ) VALUES (
+        v_reporte_id,
+        NULL, -- Reporte consolidado, no es de una escuela específica
+        p_periodo_id,
+        'CONSOLIDADO_ENTIDAD',
+        p_formato,
+        'DISPONIBLE',
+        FORMAT('/reportes/consolidado_%s_%s_%s.%s', 
+               p_entidad_id, p_periodo_id, TO_CHAR(NOW(), 'YYYYMMDD'), LOWER(p_formato)),
+        v_contenido,
+        NOW(),
+        NOW()
+    );
+    
+    RETURN QUERY SELECT 
+        v_reporte_id,
+        v_total_escuelas,
+        v_total_evaluaciones,
+        v_promedio,
+        v_contenido,
+        FORMAT('Reporte consolidado generado: %s escuelas, %s evaluaciones', 
+               v_total_escuelas, v_total_evaluaciones)::TEXT;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+#### Procedimiento: sincronizar_catalogos_externos
+
+**Propósito:** Sincronizar catálogos desde fuentes externas (entidades, escuelas, niveles).
+
+```sql
+CREATE OR REPLACE FUNCTION sp_sincronizar_catalogos_externos(
+    p_catalogo VARCHAR(50),
+    p_datos JSONB,
+    p_usuario_id UUID DEFAULT NULL
+)
+RETURNS TABLE(
+    registros_nuevos INT,
+    registros_actualizados INT,
+    registros_desactivados INT,
+    mensaje TEXT,
+    errores JSONB
+) AS $$
+DECLARE
+    v_nuevos INT := 0;
+    v_actualizados INT := 0;
+    v_desactivados INT := 0;
+    v_errores JSONB := '[]'::JSONB;
+BEGIN
+    IF p_catalogo = 'ENTIDADES' THEN
+        -- Sincronizar entidades federativas
+        WITH datos_externos AS (
+            SELECT 
+                (rec->>'clave')::VARCHAR(2) AS clave,
+                (rec->>'nombre')::VARCHAR(100) AS nombre,
+                (rec->>'activo')::BOOLEAN AS activo
+            FROM jsonb_array_elements(p_datos) AS rec
+        )
+        -- Insertar nuevas
+        INSERT INTO ENTIDADES (id, clave, nombre, activo, created_at)
+        SELECT gen_random_uuid(), clave, nombre, activo, NOW()
+        FROM datos_externos
+        WHERE clave NOT IN (SELECT clave FROM ENTIDADES)
+        ON CONFLICT (clave) DO NOTHING;
+        
+        GET DIAGNOSTICS v_nuevos = ROW_COUNT;
+        
+        -- Actualizar existentes
+        WITH datos_externos AS (
+            SELECT 
+                (rec->>'clave')::VARCHAR(2) AS clave,
+                (rec->>'nombre')::VARCHAR(100) AS nombre,
+                (rec->>'activo')::BOOLEAN AS activo
+            FROM jsonb_array_elements(p_datos) AS rec
+        )
+        UPDATE ENTIDADES e
+        SET nombre = de.nombre,
+            activo = de.activo,
+            updated_at = NOW()
+        FROM datos_externos de
+        WHERE e.clave = de.clave
+          AND (e.nombre != de.nombre OR e.activo != de.activo);
+        
+        GET DIAGNOSTICS v_actualizados = ROW_COUNT;
+        
+    ELSIF p_catalogo = 'ESCUELAS' THEN
+        -- Sincronizar escuelas desde sistema externo
+        WITH datos_externos AS (
+            SELECT 
+                (rec->>'cct')::VARCHAR(10) AS cct,
+                (rec->>'nombre')::VARCHAR(200) AS nombre,
+                (rec->>'entidad_clave')::VARCHAR(2) AS entidad_clave,
+                (rec->>'nivel_educativo')::VARCHAR(50) AS nivel_educativo,
+                (rec->>'turno')::VARCHAR(20) AS turno,
+                (rec->>'total_alumnos')::INT AS total_alumnos,
+                (rec->>'activo')::BOOLEAN AS activo
+            FROM jsonb_array_elements(p_datos) AS rec
+        )
+        INSERT INTO ESCUELAS (
+            id, cct, nombre, entidad_id, nivel_educativo, turno, 
+            total_alumnos, activo, created_at
+        )
+        SELECT 
+            gen_random_uuid(),
+            de.cct,
+            de.nombre,
+            (SELECT id FROM ENTIDADES WHERE clave = de.entidad_clave),
+            de.nivel_educativo,
+            de.turno,
+            de.total_alumnos,
+            de.activo,
+            NOW()
+        FROM datos_externos de
+        WHERE de.cct NOT IN (SELECT cct FROM ESCUELAS)
+        ON CONFLICT (cct) DO NOTHING;
+        
+        GET DIAGNOSTICS v_nuevos = ROW_COUNT;
+        
+        -- Actualizar existentes
+        WITH datos_externos AS (
+            SELECT 
+                (rec->>'cct')::VARCHAR(10) AS cct,
+                (rec->>'nombre')::VARCHAR(200) AS nombre,
+                (rec->>'total_alumnos')::INT AS total_alumnos,
+                (rec->>'activo')::BOOLEAN AS activo
+            FROM jsonb_array_elements(p_datos) AS rec
+        )
+        UPDATE ESCUELAS e
+        SET nombre = de.nombre,
+            total_alumnos = de.total_alumnos,
+            activo = de.activo,
+            updated_at = NOW()
+        FROM datos_externos de
+        WHERE e.cct = de.cct;
+        
+        GET DIAGNOSTICS v_actualizados = ROW_COUNT;
+        
+    ELSE
+        RETURN QUERY SELECT 
+            0, 0, 0,
+            FORMAT('Catálogo desconocido: %s', p_catalogo)::TEXT,
+            jsonb_build_array(jsonb_build_object('error', 'CATALOGO_INVALIDO'));
+        RETURN;
+    END IF;
+    
+    -- Registrar sincronización en bitácora
+    INSERT INTO BITACORA_DETALLADA (
+        usuario_id, accion, descripcion, modulo, resultado, fecha, metadatos
+    ) VALUES (
+        p_usuario_id,
+        'SINCRONIZAR_CATALOGO',
+        FORMAT('Catálogo %s sincronizado', p_catalogo),
+        'SINCRONIZACION',
+        'EXITO',
+        NOW(),
+        jsonb_build_object(
+            'catalogo', p_catalogo,
+            'nuevos', v_nuevos,
+            'actualizados', v_actualizados
+        )
+    );
+    
+    RETURN QUERY SELECT 
+        v_nuevos,
+        v_actualizados,
+        v_desactivados,
+        FORMAT('Sincronización completada: %s nuevos, %s actualizados', 
+               v_nuevos, v_actualizados)::TEXT,
+        v_errores;
+        
+EXCEPTION WHEN OTHERS THEN
+    RETURN QUERY SELECT 
+        0, 0, 0,
+        FORMAT('Error en sincronización: %s', SQLERRM)::TEXT,
+        jsonb_build_array(jsonb_build_object('error', SQLERRM));
+END;
+$$ LANGUAGE plpgsql;
 ```
 
 ---
