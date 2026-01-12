@@ -1,0 +1,188 @@
+<section class="admin-panel">
+  <div class="admin-panel__card">
+    <h2>Panel de administrador</h2>
+   <!--  <p>Token activo para la carga de PDFs.</p> -->
+
+    <!-- <div class="admin-panel__token" *ngIf="obtenerToken(); else sinSesion">
+      <span>Token almacenado:</span>
+      <code>{{ obtenerToken() }}</code>
+    </div> -->
+
+    <ng-template #sinSesion>
+      <div class="admin-panel__token admin-panel__token--warning">
+        No hay sesión activa. Vuelve al login para obtener un token.
+      </div>
+    </ng-template>
+
+    <div class="admin-panel__upload">
+      <label class="admin-panel__upload-label" for="nivel-select">Selecciona el nivel</label>
+      <select
+        id="nivel-select"
+        class="admin-panel__upload-input"
+        [(ngModel)]="selectedNivel"
+      >
+        <option value="" disabled>Selecciona un nivel</option>
+        <option value="preescolar">Preescolar</option>
+        <option value="primaria">Primaria</option>
+        <option value="secundaria">Secundaria</option>
+      </select>
+      <p class="admin-panel__helper">
+        El listado de Excels depende del nivel seleccionado. Primero selecciona un registro y luego
+        sube el PDF correspondiente.
+      </p>
+      <p class="admin-panel__helper" *ngIf="!excelDisponibles.length">
+        Aún no hay Excels disponibles para asociar. Valida un archivo desde el módulo de carga.
+      </p>
+
+      <div class="admin-panel__excel-list" *ngIf="excelDisponibles.length">
+        <span class="admin-panel__history-title">Excels disponibles</span>
+        <div class="admin-panel__filters">
+          <label class="admin-panel__filters-field">
+            <span class="admin-panel__filters-label">Buscar</span>
+            <input
+              class="admin-panel__filters-input"
+              type="text"
+              placeholder="Nombre, CCT o correo"
+              [(ngModel)]="filtroTexto"
+              (ngModelChange)="onFiltrosActualizados()"
+            />
+          </label>
+          <label class="admin-panel__filters-field">
+            <span class="admin-panel__filters-label">Estatus</span>
+            <select
+              class="admin-panel__filters-input"
+              [(ngModel)]="filtroEstatus"
+              (ngModelChange)="onFiltrosActualizados()"
+            >
+              <option value="todos">Todos</option>
+              <option value="asignado">Asignado</option>
+              <option value="pendiente">Pendiente</option>
+            </select>
+          </label>
+          <label class="admin-panel__filters-field">
+            <span class="admin-panel__filters-label">Fecha</span>
+            <input
+              class="admin-panel__filters-input"
+              type="date"
+              [(ngModel)]="filtroFecha"
+              (ngModelChange)="onFiltrosActualizados()"
+            />
+          </label>
+        </div>
+        <table class="admin-panel__table">
+          <thead>
+            <tr>
+              <th scope="col">Seleccionar</th>
+              <th scope="col">Nombre</th>
+              <th scope="col">CCT</th>
+              <th scope="col">Correo</th>
+              <th scope="col">Estatus</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let excel of excelDisponiblesPaginados">
+              <td>
+                <label class="admin-panel__select">
+                  <input
+                    type="radio"
+                    name="excelSeleccionado"
+                    [checked]="excelSeleccionado?.key === excel.key"
+                    (change)="seleccionarExcel(excel)"
+                    aria-label="Seleccionar registro"
+                  />
+                </label>
+              </td>
+              <td>{{ excel.nombre }}</td>
+              <td>{{ excel.cct }}</td>
+              <td>{{ excel.correo }}</td>
+              <td>
+                <span
+                  class="admin-panel__badge"
+                  [class.admin-panel__badge--assigned]="excel.estatus === 'asignado'"
+                >
+                  {{ excel.estatus === 'asignado' ? 'Asignado' : 'Pendiente' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="admin-panel__pagination" *ngIf="totalPaginas > 1">
+          <button
+            class="admin-panel__pagination-button"
+            type="button"
+            [disabled]="paginaActualDerivada === 1"
+            (click)="irAPagina(paginaActualDerivada - 1)"
+          >
+            Anterior
+          </button>
+          <button
+            class="admin-panel__pagination-button"
+            type="button"
+            *ngFor="let pagina of paginasDisponibles"
+            [class.admin-panel__pagination-button--active]="pagina === paginaActualDerivada"
+            (click)="irAPagina(pagina)"
+          >
+            {{ pagina }}
+          </button>
+          <button
+            class="admin-panel__pagination-button"
+            type="button"
+            [disabled]="paginaActualDerivada === totalPaginas"
+            (click)="irAPagina(paginaActualDerivada + 1)"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+
+      <label class="admin-panel__upload-label" for="pdf-upload">Selecciona un PDF</label>
+      <p class="admin-panel__helper" *ngIf="!excelSeleccionado">
+        Selecciona un registro de Excel para habilitar la carga del PDF.
+      </p>
+      <input
+        id="pdf-upload"
+        class="admin-panel__upload-input"
+        type="file"
+        accept="application/pdf"
+        (change)="seleccionarArchivo($event)"
+      />
+      <button
+        class="admin-panel__upload-button"
+        type="button"
+        (click)="subirPdf()"
+        [disabled]="!excelSeleccionado"
+      >
+        Subir PDF
+      </button>
+
+      <div
+        class="admin-panel__status"
+        [class.admin-panel__status--idle]="uploadStatus === 'idle'"
+        [class.admin-panel__status--uploading]="uploadStatus === 'uploading'"
+        [class.admin-panel__status--success]="uploadStatus === 'success'"
+        [class.admin-panel__status--error]="uploadStatus === 'error'"
+      >
+        <span class="admin-panel__status-label">Estado de carga:</span>
+        <span class="admin-panel__status-message">
+          {{ feedbackMessage || 'Sin acciones por el momento.' }}
+        </span>
+      </div>
+
+      <div class="admin-panel__history" *ngIf="uploadHistory.length">
+        <span class="admin-panel__history-title">Historial reciente</span>
+        <ul class="admin-panel__history-list">
+          <li class="admin-panel__history-item" *ngFor="let item of uploadHistory">
+            <span class="admin-panel__history-name">{{ item.name }}</span>
+            <span class="admin-panel__history-meta">
+              {{ item.size / 1024 | number : '1.0-0' }} KB ·
+              {{ item.uploadedAt | date : 'short' }}
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- <a class="admin-panel__link" routerLink="/admin/login">Ir al login</a> -->
+    <button class="admin-panel__logout" type="button" (click)="cerrarSesion()">Cerrar sesión</button>
+  </div>
+</section>
