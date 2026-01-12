@@ -359,23 +359,23 @@ Usando métricas PSP estándar:
 
 | Área Técnica | Elementos Esperados | Elementos Documentados | % Cobertura | Estado |
 | ------------ | ------------------- | ---------------------- | ----------- | ------ |
-| **Modelo de Datos** | 50 tablas | 46 tablas completas | 92% | ⚠️ Falta 4 |
+| **Modelo de Datos** | 50 tablas | 41 tablas completas | 82% | ⚠️ Falta 9 |
 | **Índices** | 66+ índices | 66 documentados | 100% | ✅ |
-| **Triggers** | 27 triggers | 27 documentados | 100% | ✅ |
-| **Vistas** | 24 vistas | 20 documentadas | 83% | ⚠️ Falta 4 |
-| **Stored Procedures** | 15 SPs | 15 documentados | 100% | ✅ |
+| **Triggers** | 27 triggers | 16 documentados | 59% | 🔴 Falta 11 |
+| **Vistas** | 24 vistas | 9 documentadas | 38% | 🔴 Falta 15 |
+| **Stored Procedures** | 15 SPs | 10 documentados | 67% | ⚠️ Falta 5 |
 | **ENUMs** | 13 tipos | 13 documentados | 100% | ✅ |
-| **Casos de Uso** | 25 CUs | 22 documentados | 88% | ⚠️ Falta 3 |
-| **Requisitos Funcionales** | 40 RFs | 38 documentados | 95% | ⚠️ Falta 2 |
+| **Casos de Uso** | 25 CUs | 15 documentados | 60% | 🔴 Falta 10 |
+| **Requisitos Funcionales** | 40 RFs | 16 documentados | 40% | 🔴 Falta 24 |
 | **Requisitos No Funcionales** | 20 RNFs | 18 documentados | 90% | ⚠️ Falta 2 |
 | **Flujos de Proceso** | 13 flujos | 13 documentados | 100% | ✅ |
 | **Diagramas de Secuencia** | 10 DSs | 8 documentados | 80% | ⚠️ Falta 2 |
 | **Scripts de Migración** | 4 scripts | 4 documentados | 100% | ✅ |
-| **APIs Endpoints** | 30 endpoints | 25 documentados | 83% | ⚠️ Falta 5 |
+| **APIs Endpoints** | 30 endpoints | 2 documentados | 7% | 🔴 Falta 28 |
 
-**Cobertura General:** (Sum de % / 13 áreas) = **93.15%** ✅
+**Cobertura General:** (Sum de % / 13 áreas) = **67.15%** ⚠️
 
-**Evaluación PSP - Completitud Cuantitativa:** ✅ **EXCELENTE (93/100)**
+**Evaluación PSP - Completitud Cuantitativa:** ⚠️ **ACEPTABLE (67/100)** - Requiere complementación en triggers, vistas, APIs y RFs
 
 ---
 
