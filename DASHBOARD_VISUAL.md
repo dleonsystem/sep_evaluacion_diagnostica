@@ -40,24 +40,6 @@ gantt
 
 ## 🎯 KPIs FASE 1 (Portal Híbrido - Marzo 2026)
 
-```mermaid
-%%{init: {'theme':'base'}}%%
-quadrantChart
-    title Métricas de Éxito Fase 1
-    x-axis Bajo Impacto --> Alto Impacto
-    y-axis Baja Urgencia --> Alta Urgencia
-    quadrant-1 Prioridad Crítica
-    quadrant-2 Implementar Rápido
-    quadrant-3 Monitorear
-    quadrant-4 Optimizar Después
-    
-    Adopción Web 50%: [0.8, 0.9]
-    Validación 30seg: [0.9, 0.8]
-    Tickets -70%: [0.7, 0.9]
-    Uptime 99.5%: [0.9, 0.95]
-    Satisfacción 8/10: [0.6, 0.7]
-    LGPDP 86%: [0.85, 0.85]
-```
 
 ### Tabla KPIs Detallada
 
