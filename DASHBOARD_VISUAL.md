@@ -41,7 +41,6 @@ gantt
 
 ## 🎯 KPIs FASE 1 (Portal Híbrido - Marzo 2026)
 
-
 ### Tabla KPIs Detallada
 
 | KPI | Baseline (Legacy) | Target Fase 1 | Target Fase 2 | Métrica |
@@ -131,6 +130,7 @@ pie title Evaluación Global del Sistema (6.5/10)
 ## 📦 Composición del Repositorio
 
 **Actualizado con archivos reales disponibles:**
+
 - ✅ 4 Formatos FRV Excel (455 KB)
 - ✅ 18 Reportes PDF ejemplo (32 MB)
 - ✅ Plantilla de correo Word
@@ -147,6 +147,7 @@ pie title Distribución de Archivos por Tamaño (287 MB Total con nuevos archivo
 ```
 
 **Top 5 Archivos Más Grandes:**
+
 1. 📄 `res_est_f6.rpt` - 21.47 MB (Crystal Reports)
 2. 📄 `res_est_f6a.rpt` - 18.54 MB (Crystal Reports)
 3. 📄 `res_est_f2.rpt` - 17.88 MB (Crystal Reports)
