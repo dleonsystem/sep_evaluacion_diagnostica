@@ -50,6 +50,7 @@ X-Request-ID: {uuid}
 **Descripción:** Autenticación de usuario y generación de tokens.
 
 **Request:**
+
 ```json
 {
   "email": "director.school245@edu.mx",
@@ -59,6 +60,7 @@ X-Request-ID: {uuid}
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -83,6 +85,7 @@ X-Request-ID: {uuid}
 ```
 
 **Errores:**
+
 - `401 Unauthorized`: Credenciales inválidas
 - `423 Locked`: Cuenta bloqueada por intentos fallidos
 - `403 Forbidden`: Cuenta inactiva
@@ -96,6 +99,7 @@ X-Request-ID: {uuid}
 **Permisos:** `ADMINISTRADOR`
 
 **Request:**
+
 ```json
 {
   "email": "nuevo.usuario@edu.mx",
@@ -108,6 +112,7 @@ X-Request-ID: {uuid}
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "success": true,
@@ -128,6 +133,7 @@ X-Request-ID: {uuid}
 **Descripción:** Renovación de access token usando refresh token.
 
 **Request:**
+
 ```json
 {
   "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -135,6 +141,7 @@ X-Request-ID: {uuid}
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -153,6 +160,7 @@ X-Request-ID: {uuid}
 **Descripción:** Cerrar sesión y revocar tokens.
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -167,6 +175,7 @@ X-Request-ID: {uuid}
 **Descripción:** Solicitar restablecimiento de contraseña.
 
 **Request:**
+
 ```json
 {
   "email": "director.school245@edu.mx"
@@ -174,6 +183,7 @@ X-Request-ID: {uuid}
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -189,6 +199,7 @@ X-Request-ID: {uuid}
 **Descripción:** Restablecer contraseña con token enviado por email.
 
 **Request:**
+
 ```json
 {
   "token": "abc123def456ghi789",
@@ -198,6 +209,7 @@ X-Request-ID: {uuid}
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -212,6 +224,7 @@ X-Request-ID: {uuid}
 **Descripción:** Cambiar contraseña (usuario autenticado).
 
 **Request:**
+
 ```json
 {
   "password_actual": "OldPassword123!",
@@ -221,6 +234,7 @@ X-Request-ID: {uuid}
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -239,6 +253,7 @@ X-Request-ID: {uuid}
 **Permisos:** `ADMINISTRADOR`, `SUPERVISOR_ENTIDAD`
 
 **Query Parameters:**
+
 - `entidad_id` (opcional): Filtrar por entidad
 - `nivel_educativo` (opcional): PREESCOLAR, PRIMARIA, SECUNDARIA
 - `activo` (opcional): true/false
@@ -247,6 +262,7 @@ X-Request-ID: {uuid}
 - `search` (opcional): Búsqueda por CCT o nombre
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -284,6 +300,7 @@ X-Request-ID: {uuid}
 **Permisos:** `ADMINISTRADOR`, `SUPERVISOR_ENTIDAD`, `DIRECTOR_ESCUELA` (propia)
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -323,6 +340,7 @@ X-Request-ID: {uuid}
 **Permisos:** `ADMINISTRADOR`
 
 **Request:**
+
 ```json
 {
   "cct": "09DPR5678B",
@@ -338,6 +356,7 @@ X-Request-ID: {uuid}
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "success": true,
@@ -359,6 +378,7 @@ X-Request-ID: {uuid}
 **Permisos:** `ADMINISTRADOR`, `DIRECTOR_ESCUELA` (propia, campos limitados)
 
 **Request:**
+
 ```json
 {
   "nombre": "Escuela Primaria Miguel Hidalgo y Costilla",
@@ -368,6 +388,7 @@ X-Request-ID: {uuid}
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -388,6 +409,7 @@ X-Request-ID: {uuid}
 **Permisos:** `ADMINISTRADOR`
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -406,12 +428,14 @@ X-Request-ID: {uuid}
 **Permisos:** `ADMINISTRADOR`, `SUPERVISOR_ENTIDAD`
 
 **Query Parameters:**
+
 - `entidad_id` (opcional)
 - `rol` (opcional)
 - `activo` (opcional)
 - `page`, `per_page`
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -444,6 +468,7 @@ X-Request-ID: {uuid}
 **Descripción:** Obtener detalle de usuario.
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -478,6 +503,7 @@ X-Request-ID: {uuid}
 **Descripción:** Actualizar datos de usuario.
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -500,6 +526,7 @@ X-Request-ID: {uuid}
 **Descripción:** Cambiar estado de usuario (activar/desactivar/bloquear).
 
 **Request:**
+
 ```json
 {
   "accion": "BLOQUEAR",
@@ -508,6 +535,7 @@ X-Request-ID: {uuid}
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -526,7 +554,8 @@ X-Request-ID: {uuid}
 **Permisos:** `DIRECTOR_ESCUELA`, `DOCENTE`
 
 **Request (multipart/form-data):**
-```
+
+```txt
 file: [archivo.xlsx]
 escuela_id: 550e8400-e29b-41d4-a716-446655440001
 periodo_id: 550e8400-e29b-41d4-a716-446655440050
@@ -534,6 +563,7 @@ tipo_archivo: FRV_PRIMARIA
 ```
 
 **Response (202 Accepted):**
+
 ```json
 {
   "success": true,
@@ -556,9 +586,11 @@ tipo_archivo: FRV_PRIMARIA
 **Descripción:** Listar archivos FRV con filtros.
 
 **Query Parameters:**
+
 - `escuela_id`, `periodo_id`, `estado`, `page`, `per_page`
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -592,6 +624,7 @@ tipo_archivo: FRV_PRIMARIA
 **Descripción:** Obtener detalle y estado de validación de archivo.
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -621,6 +654,7 @@ tipo_archivo: FRV_PRIMARIA
 **Descripción:** Solicitar validación manual de archivo (re-validar).
 
 **Response (202 Accepted):**
+
 ```json
 {
   "success": true,
@@ -637,9 +671,11 @@ tipo_archivo: FRV_PRIMARIA
 **Descripción:** Listar reportes generados.
 
 **Query Parameters:**
+
 - `escuela_id`, `periodo_id`, `tipo_reporte`, `estado`
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -668,6 +704,7 @@ tipo_archivo: FRV_PRIMARIA
 **Descripción:** Solicitar generación de reporte.
 
 **Request:**
+
 ```json
 {
   "tipo_reporte": "INDIVIDUAL_ESCUELA",
@@ -682,6 +719,7 @@ tipo_archivo: FRV_PRIMARIA
 ```
 
 **Response (202 Accepted):**
+
 ```json
 {
   "success": true,
@@ -707,7 +745,8 @@ tipo_archivo: FRV_PRIMARIA
 **Descripción:** Descargar archivo de reporte.
 
 **Response (200 OK):**
-```
+
+```txt
 Content-Type: application/pdf
 Content-Disposition: attachment; filename="Reporte_09DPR1234A_2024.pdf"
 
@@ -723,9 +762,11 @@ Content-Disposition: attachment; filename="Reporte_09DPR1234A_2024.pdf"
 **Descripción:** Obtener evaluaciones con filtros.
 
 **Query Parameters:**
+
 - `escuela_id`, `periodo_id`, `grado`, `nivel_educativo`
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -765,6 +806,7 @@ Content-Disposition: attachment; filename="Reporte_09DPR1234A_2024.pdf"
 **Descripción:** Listar tickets de soporte.
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -793,6 +835,7 @@ Content-Disposition: attachment; filename="Reporte_09DPR1234A_2024.pdf"
 **Descripción:** Crear nuevo ticket de soporte.
 
 **Request:**
+
 ```json
 {
   "asunto": "Error al subir archivo FRV",
@@ -804,6 +847,7 @@ Content-Disposition: attachment; filename="Reporte_09DPR1234A_2024.pdf"
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "success": true,
@@ -822,6 +866,7 @@ Content-Disposition: attachment; filename="Reporte_09DPR1234A_2024.pdf"
 **Descripción:** Agregar comentario a ticket.
 
 **Request:**
+
 ```json
 {
   "comentario": "Adjunto capturas de pantalla del error"
@@ -829,6 +874,7 @@ Content-Disposition: attachment; filename="Reporte_09DPR1234A_2024.pdf"
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "success": true,
@@ -845,6 +891,7 @@ Content-Disposition: attachment; filename="Reporte_09DPR1234A_2024.pdf"
 **Descripción:** Obtener catálogo de entidades federativas.
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -866,6 +913,7 @@ Content-Disposition: attachment; filename="Reporte_09DPR1234A_2024.pdf"
 **Descripción:** Obtener catálogo de periodos de evaluación.
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -886,7 +934,7 @@ Content-Disposition: attachment; filename="Reporte_09DPR1234A_2024.pdf"
 ## Códigos de Respuesta
 
 | Código | Descripción |
-|--------|-------------|
+| ------ | ----------- |
 | 200 OK | Solicitud exitosa |
 | 201 Created | Recurso creado exitosamente |
 | 202 Accepted | Solicitud aceptada, procesamiento asíncrono |
@@ -925,5 +973,3 @@ Content-Disposition: attachment; filename="Reporte_09DPR1234A_2024.pdf"
 ```
 
 ---
-
-**Fin de la especificación de APIs**
