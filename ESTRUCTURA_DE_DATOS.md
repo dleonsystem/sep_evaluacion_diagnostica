@@ -10,6 +10,21 @@ Este documento contiene la descripción completa de la estructura de datos del s
 
 Este archivo sirve como referencia técnica para desarrolladores, analistas, auditores y cualquier persona que requiera comprender la estructura y funcionamiento de la base de datos del sistema.
 
+## Resumen de Componentes
+
+**Optimización:** 12 enero 2026 - Se eliminaron 8 tablas (21%) tras análisis de trazabilidad RF vs Tablas.
+
+| Componente | Cantidad | Notas |
+|------------|----------|-------|
+| **Tablas principales** | 30 | Eliminadas: 8 (BITACORA_DETALLADA, CACHE_QUERIES, ARCHIVOS_TEMPORALES, ESTADISTICAS_USO, TAREAS_PROGRAMADAS, RESPALDOS_ARCHIVOS, CONFIGURACIONES_USUARIO, CATALOGO_ERRORES) |
+| **Triggers** | 27 | Eliminado 1 (limpiar_archivos_temporales_expirados) |
+| **Vistas** | 22 | Eliminadas 3 (v_cache_efectividad, v_estadisticas_uso_sistema, v_tareas_programadas_estado) |
+| **Stored Procedures** | ~15 | Actualizados para usar LOG_ACTIVIDADES consolidado |
+| **Índices** | ~45 | Optimizados para consultas frecuentes |
+| **Consolidaciones** | 2 | LOG_ACTIVIDADES (incluye BITACORA_DETALLADA), USUARIOS (incluye CONFIGURACIONES_USUARIO.preferencias_notif) |
+
+
+
 ## Diagrama Entidad-Relación (ER)
 
 ```mermaid
@@ -102,19 +117,6 @@ erDiagram
 | created_at           | TIMESTAMP    | Fecha de creación                 |
 | updated_at           | TIMESTAMP    | Fecha de última actualización     |
 
-### BITACORA_DETALLADA
-
-| Campo           | Tipo         | Descripción                       |
-|-----------------|--------------|-----------------------------------|
-| id              | BIGSERIAL    | Identificador único               |
-| usuario_id      | UUID         | Relación con USUARIOS             |
-| accion          | VARCHAR(100) | Acción realizada                  |
-| descripcion     | TEXT         | Descripción detallada             |
-| modulo          | VARCHAR(100) | Módulo o componente               |
-| resultado       | VARCHAR(50)  | Resultado (OK, ERROR, etc.)       |
-| ip_address      | INET         | IP de origen                      |
-| fecha           | TIMESTAMP    | Fecha y hora                      |
-
 ### BLOQUEOS_IP
 
 | Campo                | Tipo         | Descripción                       |
@@ -132,22 +134,6 @@ erDiagram
 | created_at           | TIMESTAMP    | Fecha de creación                 |
 | updated_at           | TIMESTAMP    | Fecha de última actualización     |
 
-### CACHE_QUERIES
-
-| Campo                | Tipo         | Descripción                       |
-|----------------------|--------------|-----------------------------------|
-| id                   | VARCHAR(255) | Clave de cache (hash MD5/SHA1)    |
-| query_sql            | TEXT         | Query SQL original (opcional)     |
-| parametros           | JSONB        | Parámetros de la query            |
-| resultado            | JSONB        | Resultado cacheado                |
-| hits                 | BIGINT       | Contador de accesos               |
-| tamano_bytes         | INT          | Tamaño del resultado en bytes     |
-| expira_en            | TIMESTAMP    | Fecha de expiración               |
-| created_at           | TIMESTAMP    | Fecha de creación                 |
-| last_accessed_at     | TIMESTAMP    | Última vez accedido               |
-
-PRIMARY KEY (id)
-
 ### CAMBIOS_AUDITORIA
 
 | Campo                | Tipo         | Descripción                       |
@@ -163,16 +149,6 @@ PRIMARY KEY (id)
 | user_agent           | TEXT         | Navegador/cliente                 |
 | metadata             | JSONB        | Metadata adicional                |
 | created_at           | TIMESTAMP    | Fecha y hora del cambio           |
-
-### CATALOGO_ERRORES
-
-| Campo           | Tipo         | Descripción                       |
-|-----------------|--------------|-----------------------------------|
-| codigo          | VARCHAR(20)  | Código de error                   |
-| mensaje         | VARCHAR(255) | Mensaje corto                     |
-| descripcion     | TEXT         | Descripción detallada             |
-| modulo          | VARCHAR(100) | Módulo o componente relacionado   |
-| solucion        | TEXT         | Sugerencia de solución            |
 
 ### CAT_CICLOS_ESCOLARES
 
@@ -260,16 +236,6 @@ PRIMARY KEY (id)
 | descripcion     | VARCHAR(500) | Descripción                       |
 | nivel_esperado  | INT          | Nivel esperado (1-4)              |
 
-### CONFIGURACIONES_USUARIO
-
-| Campo           | Tipo         | Descripción                       |
-|-----------------|--------------|-----------------------------------|
-| id              | UUID         | Identificador único               |
-| usuario_id      | UUID         | Relación con USUARIOS             |
-| clave           | VARCHAR(100) | Nombre de la configuración        |
-| valor           | TEXT         | Valor de la configuración         |
-| actualizado_en  | TIMESTAMP    | Fecha de última actualización     |
-
 ### CONFIGURACIONES_SISTEMA
 
 | Campo                | Tipo         | Descripción                       |
@@ -349,24 +315,6 @@ UNIQUE (clave)
 | fecha_nacimiento| DATE         | Fecha de nacimiento               |
 | estatus         | CHAR(1)      | Estado (A=Activo, I=Inactivo)     |
 
-### ESTADISTICAS_USO
-
-| Campo                | Tipo         | Descripción                       |
-|----------------------|--------------|-----------------------------------|
-| id                   | BIGSERIAL    | Identificador único               |
-| fecha                | DATE         | Fecha del registro estadístico    |
-| metrica              | VARCHAR(100) | Nombre de la métrica              |
-| entidad              | VARCHAR(100) | Entidad medida (tabla/módulo)     |
-| valor_numerico       | BIGINT       | Valor numérico de la métrica      |
-| valor_porcentaje     | DECIMAL(5,2) | Valor en porcentaje               |
-| dimensiones          | JSONB        | Dimensiones adicionales (JSON)    |
-| usuario_id           | UUID         | Usuario asociado (FK USUARIOS)    |
-| escuela_id           | UUID         | Escuela asociada (FK ESCUELAS)    |
-| created_at           | TIMESTAMP    | Fecha de creación                 |
-
-INDEX idx_estadisticas_fecha_metrica ON ESTADISTICAS_USO(fecha, metrica)
-INDEX idx_estadisticas_entidad ON ESTADISTICAS_USO(entidad)
-
 ### EVALUACIONES
 
 | Campo              | Tipo         | Descripción                       |
@@ -439,16 +387,25 @@ INDEX idx_estadisticas_entidad ON ESTADISTICAS_USO(entidad)
 
 ### LOG_ACTIVIDADES
 
+**Consolidado** - Incluye funcionalidad de BITACORA_DETALLADA eliminada
+
 | Campo           | Tipo         | Descripción                       |
 |-----------------|--------------|-----------------------------------|
-| id_log          | INT          | Identificador de log              |
+| id_log          | BIGSERIAL    | Identificador de log              |
 | id_usuario      | UUID         | Relación con USUARIOS             |
-| fecha_hora      | DATETIME     | Fecha y hora de la actividad      |
-| accion          | VARCHAR(50)  | Tipo de acción (INSERT, UPDATE, DELETE, LOGIN) |
+| fecha_hora      | TIMESTAMP    | Fecha y hora de la actividad      |
+| accion          | VARCHAR(100) | Tipo de acción (INSERT, UPDATE, DELETE, LOGIN) |
 | tabla           | VARCHAR(50)  | Tabla afectada                    |
-| registro_id     | INT          | ID del registro afectado          |
-| detalle         | TEXT         | Detalle de la acción              |
-| ip              | VARCHAR(50)  | IP de origen                      |
+| registro_id     | VARCHAR(100) | ID del registro afectado          |
+| detalle         | JSONB        | Detalle de la acción (JSON para cambios antes/después) |
+| ip_address      | INET         | Dirección IP de origen            |
+| user_agent      | TEXT         | Navegador/cliente usado           |
+| modulo          | VARCHAR(100) | Módulo del sistema que generó el log |
+| resultado       | VARCHAR(50)  | Resultado (EXITOSO, ERROR, PARCIAL) |
+| created_at      | TIMESTAMP    | Fecha de creación del registro    |
+
+INDEX idx_log_usuario_fecha ON LOG_ACTIVIDADES(id_usuario, fecha_hora)
+INDEX idx_log_tabla_accion ON LOG_ACTIVIDADES(tabla, accion)
 
 ### MATERIAS
 
@@ -831,29 +788,6 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | created_at      | TIMESTAMP    | Fecha de creación                 |
 | updated_at      | TIMESTAMP    | Fecha de actualización            |
 
-### RESPALDOS_ARCHIVOS
-
-| Campo                | Tipo         | Descripción                       |
-|----------------------|--------------|-----------------------------------|
-| id                   | BIGSERIAL    | Identificador único               |
-| tabla_origen         | VARCHAR(100) | Tabla del archivo original        |
-| registro_origen_id   | VARCHAR(100) | ID del registro original          |
-| tipo_archivo         | VARCHAR(50)  | FRV, PDF, REPORTE, etc.           |
-| version              | INT          | Versión del respaldo              |
-| filename_original    | VARCHAR(255) | Nombre del archivo original       |
-| file_path_respaldo   | VARCHAR(500) | Ruta del archivo respaldado       |
-| file_size            | BIGINT       | Tamaño en bytes                   |
-| file_hash            | VARCHAR(64)  | Hash SHA-256 para integridad      |
-| motivo_respaldo      | VARCHAR(255) | Motivo del respaldo               |
-| usuario_id           | UUID         | Usuario que generó el respaldo    |
-| metadata             | JSONB        | Metadata adicional                |
-| comprimido           | BOOLEAN      | Si está comprimido                |
-| cifrado              | BOOLEAN      | Si está cifrado                   |
-| fecha_expiracion     | TIMESTAMP    | Fecha de expiración               |
-| restaurado           | BOOLEAN      | Si fue restaurado                 |
-| restaurado_en        | TIMESTAMP    | Fecha de restauración             |
-| created_at           | TIMESTAMP    | Fecha de creación                 |
-
 ### SEC1
 | comprimido_en   | VARCHAR(500) | Ruta del archivo .7z/.zip         |
 | created_at      | TIMESTAMP    | Fecha de creación del registro    |
@@ -1029,34 +963,6 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | created_at               | TIMESTAMP    | Fecha de creación del registro    |
 | updated_at               | TIMESTAMP    | Fecha de última actualización     |
 
-### TAREAS_PROGRAMADAS
-
-| Campo                | Tipo         | Descripción                       |
-|----------------------|--------------|-----------------------------------|
-| id                   | BIGSERIAL    | Identificador único               |
-| nombre               | VARCHAR(150) | Nombre de la tarea                |
-| tipo                 | VARCHAR(100) | Tipo de tarea (LIMPIEZA, REPORTE, SINCRONIZACION, etc.) |
-| descripcion          | TEXT         | Descripción de la tarea           |
-| estado               | ENUM         | PENDIENTE, EN_PROCESO, COMPLETADA, ERROR, CANCELADA |
-| prioridad            | INT          | Prioridad (1=alta, 5=baja)        |
-| parametros           | JSONB        | Parámetros de ejecución (JSON)    |
-| cron_expresion       | VARCHAR(100) | Expresión cron para tareas recurrentes |
-| programada_para      | TIMESTAMP    | Fecha/hora programada             |
-| iniciada_en          | TIMESTAMP    | Fecha/hora de inicio              |
-| completada_en        | TIMESTAMP    | Fecha/hora de finalización        |
-| duracion_segundos    | INT          | Duración en segundos              |
-| resultado            | JSONB        | Resultado de la ejecución         |
-| error_mensaje        | TEXT         | Mensaje de error si falló         |
-| intentos             | INT          | Número de intentos                |
-| max_intentos         | INT          | Máximo de intentos permitidos     |
-| proximo_intento_en   | TIMESTAMP    | Próximo intento programado        |
-| ejecutor             | VARCHAR(100) | Nombre del worker/proceso que ejecuta |
-| usuario_creador_id   | UUID         | Usuario que creó la tarea (FK USUARIOS) |
-| recurrente           | BOOLEAN      | Si es tarea recurrente            |
-| activa               | BOOLEAN      | Si está activa                    |
-| created_at           | TIMESTAMP    | Fecha de creación                 |
-| updated_at           | TIMESTAMP    | Fecha de última actualización     |
-
 ### TICKETS_SOPORTE
 
 | Campo           | Tipo         | Descripción                       |
@@ -1080,6 +986,8 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 
 ### USUARIOS
 
+**Consolidado** - Incluye funcionalidad de CONFIGURACIONES_USUARIO eliminada
+
 | Campo           | Tipo         | Descripción                       |
 |-----------------|--------------|-----------------------------------|
 | id              | UUID         | Identificador único               |
@@ -1092,9 +1000,21 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | ultimo_cambio_password | TIMESTAMP | Fecha del último cambio de contraseña |
 | bloqueado_hasta | TIMESTAMP    | Fecha hasta la cual está bloqueado |
 | activo          | BOOLEAN      | Indica si el usuario está activo  |
+| preferencias_notif | JSONB     | Preferencias de notificaciones (email, SMS, frecuencia, etc.) |
 | fecha_registro  | TIMESTAMP    | Fecha de registro                 |
 | created_at      | TIMESTAMP    | Fecha de creación del registro    |
 | updated_at      | TIMESTAMP    | Fecha de última actualización     |
+
+Ejemplo de `preferencias_notif`:
+```json
+{
+  "email_enabled": true,
+  "email_frecuencia": "inmediato",
+  "notif_resultados": true,
+  "notif_validaciones": true,
+  "notif_sistema": false
+}
+```
 
 ### VALORACIONES
 
@@ -3899,31 +3819,6 @@ CREATE TRIGGER trg_notificar_ticket_asignado
     EXECUTE FUNCTION fn_notificar_ticket_asignado();
 ```
 
-#### Trigger: limpiar_archivos_temporales_expirados
-
-**Propósito:** Marcar para limpieza archivos temporales que expiraron.
-
-```sql
-CREATE OR REPLACE FUNCTION fn_limpiar_archivos_temporales_expirados()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Si el archivo expiró, marcarlo para eliminación
-    IF NEW.expira_en < NOW() AND NEW.estado != 'ERROR' THEN
-        NEW.estado = 'ERROR';
-        NEW.error_mensaje = 'Archivo temporal expirado y marcado para eliminación';
-    END IF;
-    
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_limpiar_archivos_temporales
-    BEFORE UPDATE ON ARCHIVOS_TEMPORALES
-    FOR EACH ROW
-    WHEN (NEW.expira_en < NOW())
-    EXECUTE FUNCTION fn_limpiar_archivos_temporales_expirados();
-```
-
 #### Vista: v_intentos_sospechosos
 
 **Propósito:** Vista para monitoreo de seguridad con intentos fallidos agrupados.
@@ -4297,33 +4192,6 @@ WHERE COALESCE(u.ultimo_acceso, u.created_at) < NOW() - INTERVAL '30 days'
 ORDER BY dias_inactivo DESC;
 ```
 
-#### Vista: v_cache_efectividad
-
-**Propósito:** Métricas de efectividad del cache de queries.
-
-```sql
-CREATE OR REPLACE VIEW v_cache_efectividad AS
-SELECT 
-    c.query_key,
-    c.descripcion,
-    c.hits,
-    c.created_at,
-    c.expires_at,
-    EXTRACT(EPOCH FROM (c.expires_at - c.created_at)) AS ttl_seconds,
-    EXTRACT(EPOCH FROM (NOW() - c.created_at))/3600 AS horas_en_cache,
-    c.hits::FLOAT / NULLIF(EXTRACT(EPOCH FROM (NOW() - c.created_at))/3600, 0) AS hits_por_hora,
-    CASE 
-        WHEN c.hits >= 100 THEN 'MUY_EFECTIVO'
-        WHEN c.hits >= 50 THEN 'EFECTIVO'
-        WHEN c.hits >= 10 THEN 'MODERADO'
-        ELSE 'BAJO'
-    END AS nivel_efectividad,
-    c.tamano_bytes
-FROM CACHE_QUERIES c
-WHERE c.expires_at > NOW()
-ORDER BY c.hits DESC, c.created_at DESC;
-```
-
 #### Vista: v_periodos_evaluacion_activos
 
 **Propósito:** Información completa de periodos activos con estadísticas de participación.
@@ -4390,7 +4258,7 @@ ORDER BY c.categoria, c.clave;
 
 #### Vista: v_auditoria_cambios_recientes
 
-**Propósito:** Últimos cambios registrados en auditoría LGPDP.
+**Propósito:** Últimos cambios registrados en auditoría LGPDP (usa tabla CAMBIOS_AUDITORIA, no requiere cambios por eliminación de BITACORA_DETALLADA).
 
 ```sql
 CREATE OR REPLACE VIEW v_auditoria_cambios_recientes AS
@@ -4418,70 +4286,6 @@ FROM CAMBIOS_AUDITORIA ca
 JOIN USUARIOS u ON ca.usuario_id = u.id
 WHERE ca.fecha_cambio > NOW() - INTERVAL '7 days'
 ORDER BY ca.fecha_cambio DESC;
-```
-
-#### Vista: v_estadisticas_uso_sistema
-
-**Propósito:** Métricas agregadas de uso del sistema por día y entidad.
-
-```sql
-CREATE OR REPLACE VIEW v_estadisticas_uso_sistema AS
-SELECT 
-    eu.fecha,
-    eu.entidad_id,
-    e.nombre AS entidad_nombre,
-    eu.metrica,
-    eu.valor,
-    eu.dimensiones,
-    eu.created_at,
-    AVG(eu.valor) OVER (
-        PARTITION BY eu.entidad_id, eu.metrica 
-        ORDER BY eu.fecha 
-        ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
-    ) AS promedio_7_dias,
-    eu.valor - LAG(eu.valor) OVER (
-        PARTITION BY eu.entidad_id, eu.metrica 
-        ORDER BY eu.fecha
-    ) AS variacion_dia_anterior
-FROM ESTADISTICAS_USO eu
-LEFT JOIN ENTIDADES e ON eu.entidad_id = e.id
-WHERE eu.fecha > NOW() - INTERVAL '30 days'
-ORDER BY eu.fecha DESC, eu.entidad_id, eu.metrica;
-```
-
-#### Vista: v_tareas_programadas_estado
-
-**Propósito:** Estado de tareas programadas (cron jobs) con historial de ejecución.
-
-```sql
-CREATE OR REPLACE VIEW v_tareas_programadas_estado AS
-SELECT 
-    tp.id,
-    tp.nombre,
-    tp.descripcion,
-    tp.expresion_cron,
-    tp.comando,
-    tp.activo,
-    tp.prioridad,
-    tp.ultima_ejecucion,
-    tp.proxima_ejecucion,
-    tp.estado,
-    tp.intentos,
-    tp.max_intentos,
-    tp.duracion_ultima_ms,
-    tp.error_mensaje,
-    EXTRACT(EPOCH FROM (NOW() - tp.ultima_ejecucion))/3600 AS horas_desde_ultima,
-    EXTRACT(EPOCH FROM (tp.proxima_ejecucion - NOW()))/3600 AS horas_hasta_proxima,
-    CASE 
-        WHEN tp.estado = 'ERROR' AND tp.intentos >= tp.max_intentos THEN 'REQUIERE_ATENCION'
-        WHEN tp.activo = FALSE THEN 'DESHABILITADO'
-        WHEN tp.proxima_ejecucion < NOW() THEN 'ATRASADO'
-        ELSE 'OK'
-    END AS alerta
-FROM TAREAS_PROGRAMADAS tp
-WHERE tp.activo = TRUE
-   OR tp.ultima_ejecucion > NOW() - INTERVAL '7 days'
-ORDER BY tp.proxima_ejecucion ASC;
 ```
 
 #### Procedimiento: registrar_intento_login
