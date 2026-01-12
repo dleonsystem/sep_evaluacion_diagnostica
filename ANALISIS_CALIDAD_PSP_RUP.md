@@ -377,6 +377,260 @@ Usando métricas PSP estándar:
 
 **Evaluación PSP - Completitud Cuantitativa:** ⚠️ **ACEPTABLE (67/100)** - Requiere complementación en triggers, vistas, APIs y RFs
 
+#### Detalle de Elementos Faltantes Identificados
+
+##### 🔴 **Crítico - APIs Endpoints (7% cobertura)**
+
+**Documentados (2/30):**
+- POST /api/auth/login (FLUJO_DE_DATOS_COMPLETO.md línea 910)
+- POST /api/auth/change-password (FLUJO_DE_DATOS_COMPLETO.md línea 966)
+
+**Faltantes (28 endpoints):**
+1. **Autenticación:**
+   - POST /api/auth/register
+   - POST /api/auth/refresh-token
+   - POST /api/auth/logout
+   - POST /api/auth/forgot-password
+   - POST /api/auth/reset-password
+
+2. **Escuelas:**
+   - GET /api/escuelas
+   - GET /api/escuelas/:id
+   - POST /api/escuelas
+   - PUT /api/escuelas/:id
+   - DELETE /api/escuelas/:id
+
+3. **Usuarios:**
+   - GET /api/usuarios
+   - GET /api/usuarios/:id
+   - POST /api/usuarios
+   - PUT /api/usuarios/:id
+   - DELETE /api/usuarios/:id
+   - PATCH /api/usuarios/:id/estado
+
+4. **FRV (Archivos):**
+   - POST /api/frv/upload
+   - GET /api/frv
+   - GET /api/frv/:id
+   - GET /api/frv/:id/download
+   - DELETE /api/frv/:id
+
+5. **Tickets:**
+   - GET /api/tickets
+   - POST /api/tickets
+   - GET /api/tickets/:id
+   - PUT /api/tickets/:id
+   - POST /api/tickets/:id/comentarios
+
+6. **Reportes:**
+   - POST /api/reportes/generar
+   - GET /api/reportes
+   - GET /api/reportes/:id/download
+
+**Impacto:** 🔴 **CRÍTICO** - Sin especificación de APIs no se puede implementar backend
+
+##### 🔴 **Crítico - Requisitos Funcionales (40% cobertura)**
+
+**Documentados (16/40):**
+RF-01 a RF-16 en REQUERIMIENTOS_Y_CASOS_DE_USO.md
+
+**Faltantes (24 requisitos funcionales):**
+1. **Gestión de sesiones:**
+   - RF-17: Timeout de sesión por inactividad
+   - RF-18: Cierre de sesión simultáneo en múltiples dispositivos
+   - RF-19: Registro de sesiones activas
+
+2. **Validaciones de archivos:**
+   - RF-20: Validación de formato Excel (extensión)
+   - RF-21: Validación de estructura de columnas
+   - RF-22: Validación de tipos de datos
+   - RF-23: Validación de rangos de valores
+   - RF-24: Detección de duplicados
+
+3. **Procesamiento:**
+   - RF-25: Queue de procesamiento asíncrono
+   - RF-26: Reintento automático en fallos
+   - RF-27: Límite de tamaño de archivo
+   - RF-28: Compresión de archivos almacenados
+
+4. **Reportería:**
+   - RF-29: Generación de reportes PDF
+   - RF-30: Exportación a Excel
+   - RF-31: Gráficas estadísticas
+   - RF-32: Comparativos históricos
+
+5. **Notificaciones:**
+   - RF-33: Email de confirmación de carga
+   - RF-34: Email de reporte disponible
+   - RF-35: Email de ticket actualizado
+   - RF-36: Notificaciones in-app
+
+6. **Seguridad:**
+   - RF-37: Encriptación de archivos sensibles
+   - RF-38: Log de accesos
+   - RF-39: Detección de intentos de intrusión
+   - RF-40: Cumplimiento LGPDP
+
+**Impacto:** 🔴 **CRÍTICO** - Faltan RFs de seguridad, validación y procesamiento asíncrono
+
+##### 🔴 **Alto - Casos de Uso (60% cobertura)**
+
+**Documentados (15/25):**
+CU-01 a CU-16 (con inconsistencias en numeración) en REQUERIMIENTOS_Y_CASOS_DE_USO.md
+
+**Faltantes (10 casos de uso):**
+1. CU-17: Cambiar contraseña
+2. CU-18: Recuperar contraseña
+3. CU-19: Gestionar perfil de usuario
+4. CU-20: Consultar historial de cargas
+5. CU-21: Filtrar y buscar archivos
+6. CU-22: Exportar bitácora de actividades
+7. CU-23: Gestionar roles y permisos
+8. CU-24: Configurar notificaciones
+9. CU-25: Generar reporte de auditoría
+
+**Impacto:** 🔴 **ALTO** - Faltan CUs de gestión de usuarios y reportería
+
+##### 🔴 **Alto - Vistas de Base de Datos (38% cobertura)**
+
+**Documentadas (9/24):**
+1. reportes_disponibles
+2. v_resumen_evaluaciones_periodo
+3. v_hilo_comentarios_ticket
+4. v_usuarios_password_temporal
+5. v_auditoria_cambios_password
+6. v_notificaciones_pendientes
+7. v_estadisticas_notificaciones
+8. (2 vistas más sin identificar nombre específico)
+
+**Faltantes (15 vistas):**
+1. v_escuelas_activas
+2. v_usuarios_por_rol
+3. v_archivos_pendientes_validacion
+4. v_archivos_rechazados
+5. v_estadisticas_carga_por_escuela
+6. v_tickets_abiertos_por_prioridad
+7. v_tiempo_respuesta_tickets
+8. v_reportes_generados_periodo
+9. v_descargas_por_usuario
+10. v_evaluaciones_por_grado
+11. v_competencias_por_materia
+12. v_estudiantes_sin_evaluacion
+13. v_grupos_activos
+14. v_bitacora_ultimas_24h
+15. v_intentos_login_fallidos
+
+**Impacto:** 🔴 **ALTO** - Afecta consultas de reporting y dashboard
+
+##### 🔴 **Alto - Triggers (59% cobertura)**
+
+**Documentados (16/27):**
+1. auto_generar_credenciales_eia2
+2. calcular_fecha_disponibilidad
+3. registrar_descarga_reporte
+4. calcular_disponibilidad_reporte
+5. validar_rango_valoracion
+6. prevenir_duplicados_evaluacion
+7. marcar_comentario_leido_por_autor
+8. validar_ticket_abierto
+9. validar_longitud_comentario
+10. registrar_cambio_password
+11. validar_reutilizacion_password
+12. desactivar_passwords_expiradas
+13. inicializar_notificacion
+14. programar_reintento
+15-16. (2 triggers adicionales sin identificar)
+
+**Faltantes (11 triggers):**
+1. trg_actualizar_timestamp_usuario
+2. trg_actualizar_timestamp_escuela
+3. trg_actualizar_timestamp_archivo
+4. trg_validar_cct_formato
+5. trg_bloquear_usuario_intentos_fallidos
+6. trg_registrar_log_actividad
+7. trg_validar_fecha_periodo
+8. trg_actualizar_contador_descargas
+9. trg_validar_email_formato
+10. trg_archivar_ticket_resuelto
+11. trg_notificar_ticket_asignado
+
+**Impacto:** 🔴 **ALTO** - Afecta integridad referencial y automatización
+
+##### ⚠️ **Moderado - Tablas de Base de Datos (82% cobertura)**
+
+**Documentadas (41/50):**
+ARCHIVOS_FRV, BITACORA_DETALLADA, CATALOGO_ERRORES, CAT_CICLOS_ESCOLARES, CAT_ENTIDADES_FEDERATIVAS, CAT_GRADOS, CAT_NIVELES_EDUCATIVOS, CAT_ROLES_USUARIO, CAT_TURNOS, COMENTARIOS_TICKET, COMPETENCIAS, CONFIGURACIONES_USUARIO, CONSENTIMIENTOS_LGPDP, CREDENCIALES_EIA2, ESCUELAS, ESTUDIANTES, EVALUACIONES, GRUPOS, HISTORICO_PASSWORDS, INTENTOS_LOGIN, LOG_ACTIVIDADES, MATERIAS, NOTIFICACIONES_EMAIL, PERIODOS_EVALUACION, PRE3, PRI1, PRI2, PRI3, PRI4, PRI5, PRI6, REPORTES_GENERADOS, RESULTADOS_COMPETENCIAS, SEC1, SEC2, SEC3, SESIONES, SOLICITUDES_EIA2, TICKETS_SOPORTE, USUARIOS, VALORACIONES
+
+**Faltantes (9 tablas):**
+1. RESPALDOS_ARCHIVOS (histórico de versiones)
+2. CAMBIOS_AUDITORIA (log de cambios en datos críticos)
+3. BLOQUEOS_IP (prevención de ataques)
+4. CACHE_QUERIES (optimización de consultas frecuentes)
+5. CONFIGURACIONES_SISTEMA (parámetros globales)
+6. PLANTILLAS_EMAIL (templates de notificaciones)
+7. ESTADISTICAS_USO (métricas de sistema)
+8. TAREAS_PROGRAMADAS (jobs asíncronos)
+9. ARCHIVOS_TEMPORALES (uploads en progreso)
+
+**Impacto:** ⚠️ **MODERADO** - Afecta auditoría, seguridad y optimización
+
+##### ⚠️ **Moderado - Stored Procedures (67% cobertura)**
+
+**Documentados (10/15):**
+1. limpiar_reportes_expirados
+2. generar_reporte_evaluaciones_escuela
+3. marcar_comentarios_como_leidos
+4. generar_password_temporal
+5. validar_password_no_reutilizada
+6. crear_notificacion_resultado_listo
+7. registrar_intento_envio
+8-10. (3 SPs adicionales sin identificar)
+
+**Faltantes (5 stored procedures):**
+1. sp_procesar_archivo_frv (validación y carga masiva)
+2. sp_calcular_estadisticas_escuela
+3. sp_limpiar_sesiones_expiradas
+4. sp_generar_reporte_consolidado
+5. sp_sincronizar_catalogos_externos
+
+**Impacto:** ⚠️ **MODERADO** - Afecta procesamiento masivo y reportería
+
+##### ⚠️ **Bajo - Diagramas de Secuencia (80% cobertura)**
+
+**Faltantes (2 diagramas):**
+1. DS-09: Secuencia de procesamiento asíncrono de archivos
+2. DS-10: Secuencia de generación y descarga de reportes
+
+**Impacto:** ⚠️ **BAJO** - Afecta documentación de flujos complejos
+
+##### ⚠️ **Bajo - Requisitos No Funcionales (90% cobertura)**
+
+**Faltantes (2 RNFs):**
+1. RNF-19: Tiempo máximo de procesamiento de archivo (SLA)
+2. RNF-20: Política de retención de archivos (compliance)
+
+**Impacto:** ⚠️ **BAJO** - Afecta acuerdos de nivel de servicio
+
+---
+
+#### Resumen de Impacto por Criticidad
+
+| Criticidad | Áreas Afectadas | Elementos Faltantes | Prioridad |
+|------------|-----------------|---------------------|-----------|
+| 🔴 **CRÍTICO** | APIs, RFs, Vistas, Triggers | 28 + 24 + 15 + 11 = **78** | P0 - Bloqueante |
+| ⚠️ **MODERADO** | Tablas, SPs | 9 + 5 = **14** | P1 - Alta |
+| ⚠️ **BAJO** | DSs, RNFs | 2 + 2 = **4** | P2 - Media |
+| **TOTAL** | 8 áreas | **96 elementos** | |
+
+**Recomendación Acción Inmediata:**
+
+1. **Esta semana (P0):** Documentar 28 APIs endpoints en FLUJO_DE_DATOS_COMPLETO.md o crear API_SPECIFICATION.md
+2. **Siguiente semana (P0):** Completar 24 RFs faltantes en REQUERIMIENTOS_Y_CASOS_DE_USO.md  
+3. **Sprint actual (P1):** Documentar 15 vistas y 11 triggers en ESTRUCTURA_DE_DATOS.md
+4. **Sprint siguiente (P1):** Completar 10 CUs, 9 tablas y 5 SPs
+
+**Estimación de esfuerzo:** 40-60 horas de documentación técnica
+
 ---
 
 ## 3. Etapa 2: Análisis de Completitud por Disciplinas RUP
