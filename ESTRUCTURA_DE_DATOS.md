@@ -75,6 +75,25 @@ erDiagram
 | created_at           | TIMESTAMP    | Fecha de creación                 |
 | updated_at           | TIMESTAMP    | Fecha de actualización            |
 
+### ARCHIVOS_TEMPORALES
+
+| Campo                | Tipo         | Descripción                       |
+|----------------------|--------------|-----------------------------------|
+| id                   | UUID         | Identificador único               |
+| usuario_id           | UUID         | Relación con USUARIOS             |
+| filename_original    | VARCHAR(255) | Nombre original del archivo       |
+| file_path_temp       | VARCHAR(500) | Ruta temporal en filesystem       |
+| file_size            | BIGINT       | Tamaño en bytes                   |
+| mime_type            | VARCHAR(50)  | Tipo MIME                         |
+| chunk_actual         | INT          | Chunk actual (upload parcial)     |
+| chunks_totales       | INT          | Total de chunks esperados         |
+| hash_parcial         | VARCHAR(64)  | Hash SHA256 parcial               |
+| estado               | ENUM         | PENDIENTE, PROCESANDO, COMPLETADO, ERROR |
+| error_mensaje        | TEXT         | Mensaje de error si aplica        |
+| expira_en            | TIMESTAMP    | Fecha de expiración automática    |
+| created_at           | TIMESTAMP    | Fecha de creación                 |
+| updated_at           | TIMESTAMP    | Fecha de última actualización     |
+
 ### BITACORA_DETALLADA
 
 | Campo           | Tipo         | Descripción                       |
@@ -87,6 +106,55 @@ erDiagram
 | resultado       | VARCHAR(50)  | Resultado (OK, ERROR, etc.)       |
 | ip_address      | INET         | IP de origen                      |
 | fecha           | TIMESTAMP    | Fecha y hora                      |
+
+### BLOQUEOS_IP
+
+| Campo                | Tipo         | Descripción                       |
+|----------------------|--------------|-----------------------------------|
+| id                   | BIGSERIAL    | Identificador único               |
+| ip_address           | INET         | Dirección IP bloqueada            |
+| intentos_fallidos    | INT          | Contador de intentos fallidos     |
+| motivo               | VARCHAR(255) | Motivo del bloqueo                |
+| tipo_bloqueo         | ENUM         | AUTOMATICO, MANUAL, PERMANENTE    |
+| bloqueado_desde      | TIMESTAMP    | Fecha inicio del bloqueo          |
+| bloqueado_hasta      | TIMESTAMP    | Fecha fin del bloqueo (NULL si permanente) |
+| desbloqueado_por     | UUID         | Usuario que desbloqueó (FK USUARIOS) |
+| desbloqueado_en      | TIMESTAMP    | Fecha de desbloqueo               |
+| activo               | BOOLEAN      | Indica si el bloqueo está activo  |
+| created_at           | TIMESTAMP    | Fecha de creación                 |
+| updated_at           | TIMESTAMP    | Fecha de última actualización     |
+
+### CACHE_QUERIES
+
+| Campo                | Tipo         | Descripción                       |
+|----------------------|--------------|-----------------------------------|
+| id                   | VARCHAR(255) | Clave de cache (hash MD5/SHA1)    |
+| query_sql            | TEXT         | Query SQL original (opcional)     |
+| parametros           | JSONB        | Parámetros de la query            |
+| resultado            | JSONB        | Resultado cacheado                |
+| hits                 | BIGINT       | Contador de accesos               |
+| tamano_bytes         | INT          | Tamaño del resultado en bytes     |
+| expira_en            | TIMESTAMP    | Fecha de expiración               |
+| created_at           | TIMESTAMP    | Fecha de creación                 |
+| last_accessed_at     | TIMESTAMP    | Última vez accedido               |
+
+PRIMARY KEY (id)
+
+### CAMBIOS_AUDITORIA
+
+| Campo                | Tipo         | Descripción                       |
+|----------------------|--------------|-----------------------------------|
+| id                   | BIGSERIAL    | Identificador único               |
+| tabla                | VARCHAR(100) | Nombre de la tabla afectada       |
+| registro_id          | VARCHAR(100) | ID del registro modificado        |
+| operacion            | ENUM         | INSERT, UPDATE, DELETE            |
+| usuario_id           | UUID         | Relación con USUARIOS             |
+| valores_anteriores   | JSONB        | Valores antes del cambio (JSON)   |
+| valores_nuevos       | JSONB        | Valores después del cambio (JSON) |
+| ip_address           | INET         | IP de origen del cambio           |
+| user_agent           | TEXT         | Navegador/cliente                 |
+| metadata             | JSONB        | Metadata adicional                |
+| created_at           | TIMESTAMP    | Fecha y hora del cambio           |
 
 ### CATALOGO_ERRORES
 
@@ -194,6 +262,26 @@ erDiagram
 | valor           | TEXT         | Valor de la configuración         |
 | actualizado_en  | TIMESTAMP    | Fecha de última actualización     |
 
+### CONFIGURACIONES_SISTEMA
+
+| Campo                | Tipo         | Descripción                       |
+|----------------------|--------------|-----------------------------------|
+| id                   | SERIAL       | Identificador único               |
+| categoria            | VARCHAR(50)  | Categoría de configuración        |
+| clave                | VARCHAR(100) | Clave de configuración (UNIQUE)   |
+| valor                | TEXT         | Valor de la configuración         |
+| tipo_dato            | ENUM         | STRING, INTEGER, BOOLEAN, JSON    |
+| descripcion          | TEXT         | Descripción de la configuración   |
+| editable_por_usuario | BOOLEAN      | Si puede ser editada por usuarios |
+| requiere_reinicio    | BOOLEAN      | Si requiere reiniciar el sistema  |
+| valor_por_defecto    | TEXT         | Valor por defecto                 |
+| validacion_regex     | VARCHAR(255) | Expresión regular de validación   |
+| created_at           | TIMESTAMP    | Fecha de creación                 |
+| updated_at           | TIMESTAMP    | Fecha de última actualización     |
+| actualizado_por      | UUID         | Usuario que actualizó (FK USUARIOS) |
+
+UNIQUE (clave)
+
 ### CONSENTIMIENTOS_LGPDP
 
 | Campo                 | Tipo         | Descripción                       |
@@ -252,6 +340,24 @@ erDiagram
 | curp            | VARCHAR(18)  | CURP del estudiante               |
 | fecha_nacimiento| DATE         | Fecha de nacimiento               |
 | estatus         | CHAR(1)      | Estado (A=Activo, I=Inactivo)     |
+
+### ESTADISTICAS_USO
+
+| Campo                | Tipo         | Descripción                       |
+|----------------------|--------------|-----------------------------------|
+| id                   | BIGSERIAL    | Identificador único               |
+| fecha                | DATE         | Fecha del registro estadístico    |
+| metrica              | VARCHAR(100) | Nombre de la métrica              |
+| entidad              | VARCHAR(100) | Entidad medida (tabla/módulo)     |
+| valor_numerico       | BIGINT       | Valor numérico de la métrica      |
+| valor_porcentaje     | DECIMAL(5,2) | Valor en porcentaje               |
+| dimensiones          | JSONB        | Dimensiones adicionales (JSON)    |
+| usuario_id           | UUID         | Usuario asociado (FK USUARIOS)    |
+| escuela_id           | UUID         | Escuela asociada (FK ESCUELAS)    |
+| created_at           | TIMESTAMP    | Fecha de creación                 |
+
+INDEX idx_estadisticas_fecha_metrica ON ESTADISTICAS_USO(fecha, metrica)
+INDEX idx_estadisticas_entidad ON ESTADISTICAS_USO(entidad)
 
 ### EVALUACIONES
 
@@ -381,6 +487,28 @@ erDiagram
 | fecha_fin       | DATE         | Fecha de fin                      |
 | activo          | BOOLEAN      | Indica si el periodo está activo  |
 | created_at      | TIMESTAMP    | Fecha de creación                 |
+
+### PLANTILLAS_EMAIL
+
+| Campo                | Tipo         | Descripción                       |
+|----------------------|--------------|-----------------------------------|
+| id                   | SERIAL       | Identificador único               |
+| codigo               | VARCHAR(100) | Código de plantilla (UNIQUE)      |
+| nombre               | VARCHAR(150) | Nombre descriptivo de la plantilla |
+| tipo_notificacion    | ENUM         | RESULTADO_LISTO, TICKET_CREADO, RECUPERACION_PASSWORD, etc. |
+| asunto_template      | VARCHAR(255) | Template del asunto (con variables) |
+| cuerpo_html          | TEXT         | Template HTML del cuerpo          |
+| cuerpo_texto         | TEXT         | Template de texto plano           |
+| variables_disponibles| JSONB        | Array de variables disponibles    |
+| idioma               | VARCHAR(10)  | Idioma de la plantilla (es, en)   |
+| activa               | BOOLEAN      | Indica si está activa             |
+| version              | INT          | Versión de la plantilla           |
+| created_at           | TIMESTAMP    | Fecha de creación                 |
+| updated_at           | TIMESTAMP    | Fecha de última actualización     |
+| actualizado_por      | UUID         | Usuario que actualizó (FK USUARIOS) |
+
+UNIQUE (codigo, version)
+INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 
 ### PRE3
 
@@ -690,6 +818,35 @@ erDiagram
 | descargado_por  | UUID         | Relación con USUARIOS             |
 | total_descargas | INT          | Contador de descargas             |
 | disponible_hasta| TIMESTAMP    | Fecha límite de disponibilidad    |
+| comprimido      | BOOLEAN      | Si está en archivo ZIP            |
+| archivo_zip     | VARCHAR(500) | Ruta del ZIP si está comprimido   |
+| created_at      | TIMESTAMP    | Fecha de creación                 |
+| updated_at      | TIMESTAMP    | Fecha de actualización            |
+
+### RESPALDOS_ARCHIVOS
+
+| Campo                | Tipo         | Descripción                       |
+|----------------------|--------------|-----------------------------------|
+| id                   | BIGSERIAL    | Identificador único               |
+| tabla_origen         | VARCHAR(100) | Tabla del archivo original        |
+| registro_origen_id   | VARCHAR(100) | ID del registro original          |
+| tipo_archivo         | VARCHAR(50)  | FRV, PDF, REPORTE, etc.           |
+| version              | INT          | Versión del respaldo              |
+| filename_original    | VARCHAR(255) | Nombre del archivo original       |
+| file_path_respaldo   | VARCHAR(500) | Ruta del archivo respaldado       |
+| file_size            | BIGINT       | Tamaño en bytes                   |
+| file_hash            | VARCHAR(64)  | Hash SHA-256 para integridad      |
+| motivo_respaldo      | VARCHAR(255) | Motivo del respaldo               |
+| usuario_id           | UUID         | Usuario que generó el respaldo    |
+| metadata             | JSONB        | Metadata adicional                |
+| comprimido           | BOOLEAN      | Si está comprimido                |
+| cifrado              | BOOLEAN      | Si está cifrado                   |
+| fecha_expiracion     | TIMESTAMP    | Fecha de expiración               |
+| restaurado           | BOOLEAN      | Si fue restaurado                 |
+| restaurado_en        | TIMESTAMP    | Fecha de restauración             |
+| created_at           | TIMESTAMP    | Fecha de creación                 |
+
+### SEC1
 | comprimido_en   | VARCHAR(500) | Ruta del archivo .7z/.zip         |
 | created_at      | TIMESTAMP    | Fecha de creación del registro    |
 | updated_at      | TIMESTAMP    | Fecha de última actualización     |
@@ -863,6 +1020,34 @@ erDiagram
 | nivel_educativo          | VARCHAR(50)  | Nivel educativo del archivo       |
 | created_at               | TIMESTAMP    | Fecha de creación del registro    |
 | updated_at               | TIMESTAMP    | Fecha de última actualización     |
+
+### TAREAS_PROGRAMADAS
+
+| Campo                | Tipo         | Descripción                       |
+|----------------------|--------------|-----------------------------------|
+| id                   | BIGSERIAL    | Identificador único               |
+| nombre               | VARCHAR(150) | Nombre de la tarea                |
+| tipo                 | VARCHAR(100) | Tipo de tarea (LIMPIEZA, REPORTE, SINCRONIZACION, etc.) |
+| descripcion          | TEXT         | Descripción de la tarea           |
+| estado               | ENUM         | PENDIENTE, EN_PROCESO, COMPLETADA, ERROR, CANCELADA |
+| prioridad            | INT          | Prioridad (1=alta, 5=baja)        |
+| parametros           | JSONB        | Parámetros de ejecución (JSON)    |
+| cron_expresion       | VARCHAR(100) | Expresión cron para tareas recurrentes |
+| programada_para      | TIMESTAMP    | Fecha/hora programada             |
+| iniciada_en          | TIMESTAMP    | Fecha/hora de inicio              |
+| completada_en        | TIMESTAMP    | Fecha/hora de finalización        |
+| duracion_segundos    | INT          | Duración en segundos              |
+| resultado            | JSONB        | Resultado de la ejecución         |
+| error_mensaje        | TEXT         | Mensaje de error si falló         |
+| intentos             | INT          | Número de intentos                |
+| max_intentos         | INT          | Máximo de intentos permitidos     |
+| proximo_intento_en   | TIMESTAMP    | Próximo intento programado        |
+| ejecutor             | VARCHAR(100) | Nombre del worker/proceso que ejecuta |
+| usuario_creador_id   | UUID         | Usuario que creó la tarea (FK USUARIOS) |
+| recurrente           | BOOLEAN      | Si es tarea recurrente            |
+| activa               | BOOLEAN      | Si está activa                    |
+| created_at           | TIMESTAMP    | Fecha de creación                 |
+| updated_at           | TIMESTAMP    | Fecha de última actualización     |
 
 ### TICKETS_SOPORTE
 
