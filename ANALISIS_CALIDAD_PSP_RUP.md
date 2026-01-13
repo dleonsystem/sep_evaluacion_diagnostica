@@ -682,7 +682,7 @@ ARCHIVOS_FRV, BLOQUEOS_IP, CAMBIOS_AUDITORIA, CAT_CICLOS_ESCOLARES, CAT_ENTIDADE
 #### Resumen de Impacto por Criticidad
 
 | Criticidad | Áreas Afectadas | Elementos Faltantes | Prioridad |
-|------------|-----------------|---------------------|-----------|
+| ------------ | ----------------- | --------------------- | ----------- |
 | ⚠️ **MENOR** | DSs, RNFs, CUs | 2 + 2 + 10 = **14** | P2 - Baja |
 | ✅ **COMPLETADO** | Modelo Datos, APIs, RFs | **9 + 12 + 16 + 5 + 30 + 24** | RESUELTO ✅ |
 | **TOTAL** | 1 área crítica | **14 elementos** | |
@@ -774,7 +774,7 @@ ARCHIVOS_FRV, BLOQUEOS_IP, CAMBIOS_AUDITORIA, CAT_CICLOS_ESCOLARES, CAT_ENTIDADE
 **Justificación de vistas agregadas:**
 
 | Vista | Propósito | Beneficio |
-|-------|-----------|-----------|
+| ------- | ----------- | ----------- |
 | v_escuelas_por_entidad | Dashboard entidades | Visualización rápida cobertura por entidad |
 | v_archivos_pendientes_validacion | Workflow validación | Priorización de archivos por tiempo espera |
 | v_evaluaciones_estadisticas | Reporting académico | Análisis comparativo de desempeño |

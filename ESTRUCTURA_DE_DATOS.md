@@ -15,7 +15,7 @@ Este archivo sirve como referencia técnica para desarrolladores, analistas, aud
 **Optimización:** 12 enero 2026 - Se eliminaron 8 tablas (21%) tras análisis de trazabilidad RF vs Tablas.
 
 | Componente | Cantidad | Notas |
-|------------|----------|-------|
+| ------------ | ---------- | ------- |
 | **Tablas principales** | 30 | Eliminadas: 8 (BITACORA_DETALLADA, CACHE_QUERIES, ARCHIVOS_TEMPORALES, ESTADISTICAS_USO, TAREAS_PROGRAMADAS, RESPALDOS_ARCHIVOS, CONFIGURACIONES_USUARIO, CATALOGO_ERRORES) |
 | **Triggers** | 27 | Eliminado 1 (limpiar_archivos_temporales_expirados) |
 | **Vistas** | 22 | Eliminadas 3 (v_cache_efectividad, v_estadisticas_uso_sistema, v_tareas_programadas_estado) |
@@ -787,11 +787,6 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | updated_at      | TIMESTAMP    | Fecha de actualización            |
 
 ### SEC1
-| comprimido_en   | VARCHAR(500) | Ruta del archivo .7z/.zip         |
-| created_at      | TIMESTAMP    | Fecha de creación del registro    |
-| updated_at      | TIMESTAMP    | Fecha de última actualización     |
-
-### SEC1
 
 | Campo         | Tipo        | Descripción                                      |
 |---------------|-------------|--------------------------------------------------|
@@ -835,6 +830,9 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | PHYC          | CHAR(10)    | Indicador PHYC                                   |
 | ID            | CHAR(19)    | Identificador único                              |
 | ARCHIVOORI    | CHAR(22)    | Nombre de archivo original                       |
+| comprimido_en | VARCHAR(500)| Ruta del archivo .7z/.zip                        |
+| created_at    | TIMESTAMP   | Fecha de creación del registro                   |
+| updated_at    | TIMESTAMP   | Fecha de última actualización                    |
 
 ### SEC2
 
@@ -1004,6 +1002,7 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | updated_at      | TIMESTAMP    | Fecha de última actualización     |
 
 Ejemplo de `preferencias_notif`:
+
 ```json
 {
   "email_enabled": true,

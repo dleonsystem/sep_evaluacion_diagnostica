@@ -1,4 +1,5 @@
 # 📋 FLUJO OPERATIVO OFICIAL - SISTEMA SiCRER
+
 ## Versión 2.0 - Estrategia Bifásica
 
 > **Documentación basada en diagramas oficiales de la SEP**
@@ -14,6 +15,7 @@ Este documento detalla el **flujo operativo completo** del Sistema de Captura de
 ### 🚀 ESTRATEGIA DE MODERNIZACIÓN BIFÁSICA
 
 **Fase 1 (Marzo 2026):** Portal Web Híbrido
+
 - 🌐 Portal web **Angular 17** para directores (upload FRV, descarga PDFs)
 - ✅ Validación automatizada con **pandas + openpyxl** (30 seg vs 15 min manual)
 - 🎫 Sistema de tickets para errores de validación
@@ -21,6 +23,7 @@ Este documento detalla el **flujo operativo completo** del Sistema de Captura de
 - 📊 Adopción esperada: 115K-150K escuelas públicas (de ~230K según SEP 2024)
 
 **Fase 2 (Septiembre 2026):** Migración Completa
+
 - ⚡ Procesamiento nativo **Python** (FastAPI + workers Celery/RQ) que elimina SiCRER.exe
 - 📄 Generación PDF con **WeasyPrint/ReportLab** (elimina Crystal Reports)
 - 🔒 Compliance LGPDP 100% (módulo ARCO + consentimientos)
@@ -69,6 +72,7 @@ graph TB
 **Rol Principal:** Interfaz moderna para directores
 
 **Responsabilidades:**
+
 - 🔐 Autenticación JWT (CCT + contraseña)
 - 📤 Upload FRV con drag & drop (React Dropzone)
 - ✅ Validación en tiempo real (30 segundos)
@@ -77,12 +81,14 @@ graph TB
 - 📊 Dashboard con estado de cargas
 
 **Stack Tecnológico:**
+
 - Frontend: React 18 + TypeScript 5 + Vite 5
 - Backend: NestJS 10 + Prisma 5 + PostgreSQL 16
 - Storage: Filesystem nativo SSD (~550 GB/año)
 - Cache: node-cache (memoria nativa) + pg-boss (jobs en PostgreSQL)
 
 **Volumetría Fase 1:**
+
 - Escuelas objetivo: 115K-150K públicas (de ~230K totales según estadísticas SEP 2024)
 - Uploads concurrentes: 5,000 escuelas/día
 - Tamaño promedio FRV: 200 KB
@@ -100,6 +106,7 @@ graph TB
 **Rol Principal:** Coordinación central y validación de datos
 
 **Responsabilidades:**
+
 - ✅ Publicación de EIA, Rúbricas y Formatos en página web
 - ✅ Validación de información recibida de escuelas
 - ✅ Integración de valoraciones recibidas en el día
@@ -109,6 +116,7 @@ graph TB
 - ✅ Envío de resultados a cada escuela por correo electrónico
 
 **Recursos:**
+
 - 📊 Sistema Generador de Reportes
 - 🔐 Programas para validación y asignación de "Niveles de Integración del Aprendizaje"
 - 📝 Plantilla en Excel para integrar información
@@ -120,16 +128,19 @@ graph TB
 **Rol Principal:** Administración escolar y consolidación de datos
 
 **Responsabilidades:**
+
 - 📥 Descargar el Formato para el Registro de Valoraciones (FRV)
 - 📊 Capturar valoraciones de todos los grados y grupos de su escuela
 - 📧 Enviar archivo Excel del FRV a la SEP (correo: valoraciones.diagnosticas@nube.sep.gob.mx)
 
 **Recursos:**
+
 - 📄 "Ejercicios Integradores del Aprendizaje" con valoraciones
 - 📋 "Formato para el Registro de Valoraciones"
 
 **Procedimiento:**
-```
+
+```txt
 1. Descarga FRV del nivel educativo correspondiente
 2. Captura valoraciones de todos grados/grupos
 3. Envía Excel a: valoraciones.diagnosticas@nube.sep.gob.mx
@@ -140,6 +151,7 @@ graph TB
 **Rol Principal:** Aplicación de evaluaciones y valoración
 
 **Responsabilidades:**
+
 - 📚 Descarga de materiales publicados (EIA, Rúbricas)
 - ✏️ Realización de valoración de estudiantes
 - 📝 Asignación de valoración con apoyo de rúbricas
@@ -148,10 +160,12 @@ graph TB
 - 📈 Análisis de Resultados (junto con director)
 
 **Recursos:**
+
 - 📖 "Ejercicios Integradores del Aprendizaje"
 - 📏 "Rúbricas"
 
 **Tiempo:**
+
 - Sin definir (Procedimiento coordinado por DGADAE)
 
 ### 4. CORREO SEP (Sistema Automatizado)
@@ -159,15 +173,18 @@ graph TB
 **Rol Principal:** Distribución automatizada de información
 
 **Responsabilidades:**
+
 - 📨 Recibir archivos de información capturada por directivos
 - 🔄 Distribuir automáticamente correos a equipos de Validación
 
 **Recursos:**
+
 - 📧 Correo electrónico con archivo "Formato de Registro de Valoraciones"
 - 💻 1 Equipo de cómputo
 - 👤 1 Persona
 
 **Tiempo:**
+
 - Distribución inmediata
 
 ### 5. VALIDACIÓN (Equipos de Trabajo)
@@ -175,10 +192,12 @@ graph TB
 **Rol Principal:** Procesamiento paralelo de datos de escuelas
 
 **Estructura:**
+
 - **Equipo 1, Equipo 2, ... Equipo N** (múltiples equipos en paralelo)
 - Cada equipo procesa un subconjunto de escuelas
 
 **Responsabilidades:**
+
 - 📥 Descarga archivo recibido del correo del día anterior
 - 🔍 Integra información en archivo Excel
 - ✅ Valida información integrada, separa inconsistencias
@@ -189,6 +208,7 @@ graph TB
 - 🗜️ Comprime carpetas por escuela y envía al equipo de resultados
 
 **Recursos:**
+
 - 📋 Archivo con "Formato de Registro de Valoraciones"
 - 🔐 Programas para validación y asignación de "Niveles de Integración del Aprendizaje"
 - 📊 Plantilla en Excel para integrar información
@@ -196,6 +216,7 @@ graph TB
 - 👥 **10 Personas**
 
 **Tiempo:**
+
 - Grupo de actividades que toman **horas por equipo de cómputo**
 
 ### 6. REPORTEADOR (Sistema Automatizado)
@@ -203,6 +224,7 @@ graph TB
 **Rol Principal:** Generación masiva de reportes PDF
 
 **Funcionamiento:**
+
 - ⚡ De forma automática procesa archivos Excel recibidos
 - 📊 Integra en base de datos el contenido del archivo
 - 📁 Integra en base de datos general el contenido de archivos
@@ -212,6 +234,7 @@ graph TB
 - 📧 Envía archivos comprimidos con resultados
 
 **Recursos:**
+
 - 📝 Plantilla en Excel para integrar información
 - 🖥️ Sistema Generador de Reportes
 - 🔄 Programa para comprimir carpetas
@@ -220,9 +243,11 @@ graph TB
 - 👥 **10 Personas**
 
 **Tiempo:**
+
 - Promedio de **1.5 minutos por escuela**
 
 **Escalabilidad:**
+
 - Sistema diseñado para incrementar equipos según demanda
 
 ---
@@ -291,14 +316,14 @@ flowchart TD
 ### Reportes Generados por Nivel Educativo
 
 | Nivel Educativo | No. de Reportes por Escuela |
-|-----------------|------------------------------|
+| ----------------- | ------------------------------ |
 | **Preescolar** | 5 reportes |
 | **Primaria** | 30 reportes |
 | **Secundaria** | 15 reportes |
 
 **Cálculo de Carga:**
 
-```
+```txt
 ESCENARIO: Estado con 1,000 escuelas
 - Preescolar (300 escuelas): 300 × 5 = 1,500 reportes
 - Primaria (500 escuelas): 500 × 30 = 15,000 reportes
@@ -314,12 +339,14 @@ CON 10 EQUIPOS: 2.03 días de procesamiento continuo
 ### Capacidad de Procesamiento
 
 **Configuración Inicial:**
+
 - 💻 10 Equipos de cómputo
 - 👥 10 Personas operando
 - ⏱️ 1.5 minutos por escuela (promedio)
 - 📊 Capacidad: ~400 escuelas/día (10 equipos trabajando 10h)
 
 **Escalabilidad:**
+
 - ✅ Sistema diseñado para incrementar equipos según demanda
 - ✅ Procesamiento paralelo por equipos de validación
 - ✅ Automatización del "Reporteador"
@@ -493,12 +520,14 @@ graph TB
 **Descripción:** Plantilla Excel para captura de valoraciones por nivel educativo
 
 **Variantes:**
+
 - `2025_EIA_FormatoValoraciones_Preescolar.xlsx`
 - `2025_EIA_FormatoValoraciones_Primaria.xlsx`
 - `2025_EIA_FormatoValoraciones_Secundarias_Tecnicas_Generales.xlsx`
 - `2025_EIA_FormatoValoraciones_Secundarias_Telesecundarias.xlsx`
 
 **Campos Principales:**
+
 - CCT de la escuela
 - Grado y Grupo
 - Datos del estudiante (CURP, Nombre)
@@ -510,6 +539,7 @@ graph TB
 **Descripción:** Materiales de evaluación aplicados por docentes
 
 **Componentes:**
+
 - Ejercicios por campo formativo
 - Instrucciones para aplicación
 - Criterios de valoración
@@ -519,6 +549,7 @@ graph TB
 **Descripción:** Instrumentos para asignación objetiva de valoraciones
 
 **Estructura:**
+
 - Niveles de desempeño
 - Descriptores por nivel
 - Criterios de evaluación
@@ -566,6 +597,7 @@ gantt
 ### Datos Personales Manejados
 
 **Datos Sensibles (CURP de menores):**
+
 - ✅ CURP de estudiantes
 - ✅ Nombres completos
 - ✅ Resultados de evaluación académica
@@ -589,7 +621,7 @@ flowchart TD
 ### ⚠️ RIESGOS IDENTIFICADOS
 
 | Riesgo | Severidad | Punto del Flujo | Recomendación |
-|--------|-----------|-----------------|---------------|
+| -------- | ----------- | ----------------- | --------------- |
 | **Correo sin cifrar** | 🔴 CRÍTICO | Envío Director→SEP | Implementar TLS/HTTPS obligatorio |
 | **Excel sin protección** | 🔴 ALTO | Todo el flujo | Cifrar archivos con contraseña |
 | **10 personas con acceso** | 🟡 MEDIO | Validación | Implementar logs de auditoría |
@@ -603,7 +635,7 @@ flowchart TD
 ### Indicadores de Desempeño
 
 | Métrica | Objetivo | Método de Medición |
-|---------|----------|---------------------|
+| --------- | ---------- | --------------------- |
 | **Tiempo de procesamiento por escuela** | ≤ 1.5 min | Timestamp inicio-fin por escuela |
 | **Tasa de errores en FRV** | ≤ 5% | Registros rechazados / Total |
 | **Disponibilidad del sistema** | ≥ 99% | Uptime del correo y reporteador |
@@ -652,27 +684,32 @@ graph LR
 ### Mediano Plazo (3-6 meses)
 
 4. **Portal Web de Captura**
+
    - Reemplazar Excel FRV por formulario web
    - Validación en tiempo real
    - Reducir errores de captura
 
 5. **Base de Datos Centralizada**
+
    - Migrar de Excel a SQL Server
    - Eliminar duplicidad de datos
    - Consultas en tiempo real
 
 6. **Modernizar Reporteador**
+
    - Reemplazar Crystal Reports por Puppeteer + Handlebars (open source)
    - Reducir tiempo de 1.5 min a 10 segundos por escuela
 
 ### Largo Plazo (6-12 meses)
 
 7. **Arquitectura Cloud**
+
    - Azure/AWS para escalabilidad
    - Procesamiento serverless
    - Reducir de 10 equipos físicos a 0
 
 8. **Dashboard en Tiempo Real**
+
    - Directores ven resultados inmediatos
    - Sin esperar correos
    - Analytics predictivo
@@ -682,11 +719,13 @@ graph LR
 ## 📧 INFORMACIÓN DE CONTACTO
 
 **Correo Institucional para Envío de Valoraciones:**
-```
+
+```txt
 valoraciones.diagnosticas@nube.sep.gob.mx
 ```
 
 **Entidad Responsable:**
+
 - Dirección General de Administración y Análisis de Evaluación (DGADAE)
 - Secretaría de Educación Pública (SEP)
 
@@ -714,6 +753,6 @@ valoraciones.diagnosticas@nube.sep.gob.mx
 **Basado en:** Documentación oficial DGADAE/SEP  
 **Autor:** Análisis PSP/RUP Complementario
 
-> ⚠️ **NOTA IMPORTANTE:** Este documento complementa el análisis técnico principal. 
+> ⚠️ **NOTA IMPORTANTE:** Este documento complementa el análisis técnico principal.
 > La información fue extraída de diagramas oficiales proporcionados por la SEP.
 > Para el análisis completo del sistema, consultar [ANALISIS_DETALLADO_PSP_RUP.md](ANALISIS_DETALLADO_PSP_RUP.md)
