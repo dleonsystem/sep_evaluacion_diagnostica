@@ -193,9 +193,8 @@ Reemplazar el envio de valoraciones y resultados por correo electronico con una 
 ### 11.1 Stack tecnologico alineado 2025
 
 - Frontend: Angular 17 + TypeScript 5.
-- Backend: Python 3.12 + FastAPI.
+- Backend: Python 3.12 /  + FastAPI / Node GraphQL.
 - Base de datos: PostgreSQL 16.
-- Cache/Jobs: Redis 7.2.
 - Storage: Filesystem SSD.
 - Validacion Excel: pandas + openpyxl.
 
