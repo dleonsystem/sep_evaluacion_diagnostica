@@ -790,11 +790,35 @@ CREATE INDEX idx_reportes_tipo_generado ON reportes_generados(tipo_reporte, gene
 CREATE INDEX idx_tickets_estado_prioridad ON tickets_soporte(estado, prioridad);
 CREATE INDEX idx_log_usuario_fecha ON log_actividades(id_usuario, fecha_hora);
 CREATE INDEX idx_notificaciones_estado ON notificaciones_email(estado, prioridad, created_at);
-CREATE INDEX idx_notificaciones_proximo
-ON notificaciones_email(proximo_intento)
-WHERE estado = (
-	SELECT id FROM cat_estado_notificacion WHERE codigo = 'REINTENTANDO'
-);
+
+-- Crear índice parcial para reintentos utilizando el ID del catálogo
+DO $$
+DECLARE
+	v_estado SMALLINT;
+	idx_exists BOOLEAN;
+BEGIN
+	SELECT id INTO v_estado FROM cat_estado_notificacion WHERE codigo = 'REINTENTANDO';
+	IF v_estado IS NULL THEN
+		RAISE EXCEPTION 'Código REINTENTANDO no encontrado en cat_estado_notificacion';
+	END IF;
+
+	SELECT EXISTS (
+		SELECT 1
+		FROM pg_class c
+		JOIN pg_namespace n ON n.oid = c.relnamespace
+		WHERE c.relname = 'idx_notificaciones_proximo'
+		  AND n.nspname = current_schema()
+	) INTO idx_exists;
+
+	IF NOT idx_exists THEN
+		EXECUTE format(
+			'CREATE INDEX idx_notificaciones_proximo ON notificaciones_email(proximo_intento) WHERE estado = %s',
+			v_estado
+		);
+	END IF;
+END;
+$$;
+
 CREATE INDEX idx_intentos_usuario_fecha ON intentos_login(usuario_id, created_at) WHERE usuario_id IS NOT NULL;
 CREATE INDEX idx_intentos_ip_fecha ON intentos_login(ip_address, created_at);
 CREATE UNIQUE INDEX idx_historico_password_activa ON historico_passwords(usuario_id) WHERE activa;
