@@ -72,7 +72,7 @@ CREATE TABLE cat_nivel_educativo (
 
 INSERT INTO cat_nivel_educativo (codigo, descripcion, orden)
 SELECT val,
-       INITCAP(REPLACE(LOWER(val), '_', ' ')),
+       INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
        ord
 FROM unnest(enum_range(NULL::nivel_educativo_enum)) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;

@@ -44,9 +44,9 @@ CREATE TABLE cat_nivel_educativo (
 
 INSERT INTO cat_nivel_educativo (codigo, descripcion, orden)
 SELECT val AS codigo,
-	   INITCAP(REPLACE(LOWER(val), '_', ' ')) AS descripcion,
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')) AS descripcion,
 	   ord AS orden
-FROM unnest(enum_range(NULL::nivel_educativo_enum)) WITH ORDINALITY AS t(val, ord)
+FROM unnest(ARRAY['PREESCOLAR','PRIMARIA','SECUNDARIA','TELESECUNDARIA']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
 CREATE TABLE cat_estado_archivo (
@@ -59,9 +59,9 @@ CREATE TABLE cat_estado_archivo (
 
 INSERT INTO cat_estado_archivo (codigo, descripcion, orden)
 SELECT val,
-	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
 	   ord
-FROM unnest(enum_range(NULL::estado_archivo_enum)) WITH ORDINALITY AS t(val, ord)
+FROM unnest(ARRAY['CARGADO','VALIDADO','PROCESADO','ERROR']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
 CREATE TABLE cat_estado_archivo_temporal (
@@ -74,9 +74,9 @@ CREATE TABLE cat_estado_archivo_temporal (
 
 INSERT INTO cat_estado_archivo_temporal (codigo, descripcion, orden)
 SELECT val,
-	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
 	   ord
-FROM unnest(enum_range(NULL::estado_archivo_temporal_enum)) WITH ORDINALITY AS t(val, ord)
+FROM unnest(ARRAY['PENDIENTE','PROCESANDO','COMPLETADO','ERROR']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
 CREATE TABLE cat_tipo_bloqueo (
@@ -89,9 +89,9 @@ CREATE TABLE cat_tipo_bloqueo (
 
 INSERT INTO cat_tipo_bloqueo (codigo, descripcion, orden)
 SELECT val,
-	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
 	   ord
-FROM unnest(enum_range(NULL::tipo_bloqueo_enum)) WITH ORDINALITY AS t(val, ord)
+FROM unnest(ARRAY['AUTOMATICO','MANUAL','PERMANENTE']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
 CREATE TABLE cat_operacion_auditoria (
@@ -104,9 +104,9 @@ CREATE TABLE cat_operacion_auditoria (
 
 INSERT INTO cat_operacion_auditoria (codigo, descripcion, orden)
 SELECT val,
-	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
 	   ord
-FROM unnest(enum_range(NULL::operacion_auditoria_enum)) WITH ORDINALITY AS t(val, ord)
+FROM unnest(ARRAY['INSERT','UPDATE','DELETE']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
 CREATE TABLE cat_tipo_configuracion (
@@ -119,9 +119,9 @@ CREATE TABLE cat_tipo_configuracion (
 
 INSERT INTO cat_tipo_configuracion (codigo, descripcion, orden)
 SELECT val,
-	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
 	   ord
-FROM unnest(enum_range(NULL::tipo_configuracion_enum)) WITH ORDINALITY AS t(val, ord)
+FROM unnest(ARRAY['STRING','INTEGER','BOOLEAN','JSON']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
 CREATE TABLE cat_origen_cambio_password (
@@ -134,9 +134,9 @@ CREATE TABLE cat_origen_cambio_password (
 
 INSERT INTO cat_origen_cambio_password (codigo, descripcion, orden)
 SELECT val,
-	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
 	   ord
-FROM unnest(enum_range(NULL::origen_cambio_password_enum)) WITH ORDINALITY AS t(val, ord)
+FROM unnest(ARRAY['SISTEMA','USUARIO','ADMIN','RECUPERACION']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
 CREATE TABLE cat_estado_validacion_eia2 (
@@ -149,9 +149,9 @@ CREATE TABLE cat_estado_validacion_eia2 (
 
 INSERT INTO cat_estado_validacion_eia2 (codigo, descripcion, orden)
 SELECT val,
-	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
 	   ord
-FROM unnest(enum_range(NULL::estado_validacion_eia2_enum)) WITH ORDINALITY AS t(val, ord)
+FROM unnest(ARRAY['VALIDO','INVALIDO']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
 CREATE TABLE cat_tipo_reporte (
@@ -164,9 +164,9 @@ CREATE TABLE cat_tipo_reporte (
 
 INSERT INTO cat_tipo_reporte (codigo, descripcion, orden)
 SELECT val,
-	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
 	   ord
-FROM unnest(enum_range(NULL::tipo_reporte_enum)) WITH ORDINALITY AS t(val, ord)
+FROM unnest(ARRAY['ENS','HYC','LEN','SPC','F5']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
 CREATE TABLE cat_tipo_notificacion (
@@ -179,9 +179,9 @@ CREATE TABLE cat_tipo_notificacion (
 
 INSERT INTO cat_tipo_notificacion (codigo, descripcion, orden)
 SELECT val,
-	   INITCAP(REPLACE(REPLACE(LOWER(val), '_', ' '), 'eia2', 'EIA2')),
+	INITCAP(REPLACE(REPLACE(LOWER(val::TEXT), '_', ' '), 'eia2', 'EIA2')),
 	   ord
-FROM unnest(enum_range(NULL::tipo_notificacion_enum)) WITH ORDINALITY AS t(val, ord)
+FROM unnest(ARRAY['RESULTADO_LISTO','TICKET_CREADO','TICKET_ACTUALIZADO','TICKET_RESUELTO','RECUPERACION_PASSWORD','CREDENCIALES_EIA2','EVALUACION_VALIDADA']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
 CREATE TABLE cat_estado_notificacion (
@@ -194,9 +194,9 @@ CREATE TABLE cat_estado_notificacion (
 
 INSERT INTO cat_estado_notificacion (codigo, descripcion, orden)
 SELECT val,
-	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
 	   ord
-FROM unnest(enum_range(NULL::estado_notificacion_enum)) WITH ORDINALITY AS t(val, ord)
+FROM unnest(ARRAY['PENDIENTE','ENVIADO','ERROR','REINTENTANDO']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
 CREATE TABLE cat_prioridad_notificacion (
@@ -209,9 +209,9 @@ CREATE TABLE cat_prioridad_notificacion (
 
 INSERT INTO cat_prioridad_notificacion (codigo, descripcion, orden)
 SELECT val,
-	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
 	   ord
-FROM unnest(enum_range(NULL::prioridad_notificacion_enum)) WITH ORDINALITY AS t(val, ord)
+FROM unnest(ARRAY['ALTA','MEDIA','BAJA']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
 CREATE TABLE cat_referencia_tipo_notificacion (
@@ -224,9 +224,9 @@ CREATE TABLE cat_referencia_tipo_notificacion (
 
 INSERT INTO cat_referencia_tipo_notificacion (codigo, descripcion, orden)
 SELECT val,
-	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
 	   ord
-FROM unnest(enum_range(NULL::referencia_tipo_notificacion_enum)) WITH ORDINALITY AS t(val, ord)
+FROM unnest(ARRAY['TICKET','REPORTE','USUARIO','EVALUACION','CREDENCIAL']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
 CREATE TABLE cat_motivo_fallo_login (
@@ -239,9 +239,9 @@ CREATE TABLE cat_motivo_fallo_login (
 
 INSERT INTO cat_motivo_fallo_login (codigo, descripcion, orden)
 SELECT val,
-	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
 	   ord
-FROM unnest(enum_range(NULL::motivo_fallo_login_enum)) WITH ORDINALITY AS t(val, ord)
+FROM unnest(ARRAY['USUARIO_INVALIDO','PASSWORD_INCORRECTO','CUENTA_BLOQUEADA','CUENTA_INACTIVA','CUENTA_ELIMINADA','PASSWORD_EXPIRADO']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
 CREATE TABLE cat_estado_ticket (
@@ -254,9 +254,9 @@ CREATE TABLE cat_estado_ticket (
 
 INSERT INTO cat_estado_ticket (codigo, descripcion, orden)
 SELECT val,
-	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
 	   ord
-FROM unnest(enum_range(NULL::estado_ticket_enum)) WITH ORDINALITY AS t(val, ord)
+FROM unnest(ARRAY['ABIERTO','EN_PROCESO','RESUELTO','CERRADO']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
 -- =====================================================================
