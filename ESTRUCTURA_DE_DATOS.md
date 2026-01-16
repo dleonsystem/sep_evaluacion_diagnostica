@@ -23,41 +23,42 @@ Este archivo sirve como referencia técnica para desarrolladores, analistas, aud
 | **Índices** | ~45 | Optimizados para consultas frecuentes |
 | **Consolidaciones** | 2 | LOG_ACTIVIDADES (incluye BITACORA_DETALLADA), USUARIOS (incluye CONFIGURACIONES_USUARIO.preferencias_notif) |
 
-## Estrategia de Catalogación para ENUMs
+## Estrategia de Catalogación (sin ENUMs)
 
-Para habilitar configuraciones dinámicas y trazabilidad adicional sin afectar las tablas actuales, cada `ENUM` definido en el DDL cuenta ahora con un catálogo espejo con claves secuenciales (`SMALLINT GENERATED ALWAYS AS IDENTITY`). Esta solución convive con los tipos existentes y permite que futuras migraciones cambien gradualmente las columnas hacia llaves foráneas sin interrumpir la operación actual.
+Para habilitar configuraciones dinámicas y trazabilidad adicional se eliminó el uso de tipos `ENUM` en PostgreSQL. Cada conjunto discreto quedó materializado en una tabla `cat_<concepto>` con llave `SMALLINT` que ahora es referenciada por todas las columnas que antes dependían del `ENUM`.
 
 **Objetivos clave**
 
-- Mantener los tipos `ENUM` vigentes mientras se documentan sus valores en catálogos consultables.
-- Proveer IDs estables y campos adicionales (`descripcion`, `orden`, `activo`) que faciliten parametrizaciones y UI.
-- Garantizar que la carga inicial usa los mismos literales del `ENUM` mediante `enum_range`, evitando discrepancias manuales.
+- Mantener el listado oficial de valores como registros consultables con metadatos (`descripcion`, `orden`, `activo`).
+- Simplificar parametrizaciones (por ejemplo, permitir reordenar o desactivar valores) sin recompilar tipos.
+- Centralizar los defaults mediante la función `fn_catalogo_id('cat_x','CODIGO')`, reutilizada en DDL, triggers y documentación técnica.
 
 **Pasos operativos (automatizados en ddl_generated.sql)**
 
-1. Crear tablas `cat_<nombre_enum>` con la estructura estándar (`id`, `codigo`, `descripcion`, `orden`, `activo`).
-2. Insertar los valores existentes con `INSERT ... SELECT` sobre `unnest(enum_range(NULL::<enum>)) WITH ORDINALITY`, preservando el orden natural del tipo.
-3. Exponer estos catálogos para reporteo y como base de futuras migraciones a llaves foráneas. Las aplicaciones pueden consultarlos sin cambiar aún sus columnas `ENUM`.
+1. Crear tablas `cat_<concepto>` con identidad `SMALLINT` y poblarlas con `INSERT ... SELECT` sobre `unnest(ARRAY[...]) WITH ORDINALITY` para respetar el orden funcional.
+2. Definir la función `fn_catalogo_id` que resuelve el `id` por `codigo` para defaults y comparaciones seguras.
+3. Actualizar columnas, triggers e índices para que usen `SMALLINT REFERENCES cat_<concepto>(id)` en lugar de los tipos `ENUM` eliminados.
+4. Documentar en el diccionario qué campos apuntan a cada catálogo y cómo consultarlos.
 
-**Catálogos generados** (se hace referencia a su `ENUM` de origen únicamente para trazabilidad)
+**Catálogos activos y campos clave**
 
-| Catálogo | Origen ENUM |
-|----------|-------------|
-| `cat_nivel_educativo` | `nivel_educativo_enum` |
-| `cat_estado_archivo` | `estado_archivo_enum` |
-| `cat_estado_archivo_temporal` | `estado_archivo_temporal_enum` |
-| `cat_tipo_bloqueo` | `tipo_bloqueo_enum` |
-| `cat_operacion_auditoria` | `operacion_auditoria_enum` |
-| `cat_tipo_configuracion` | `tipo_configuracion_enum` |
-| `cat_origen_cambio_password` | `origen_cambio_password_enum` |
-| `cat_estado_validacion_eia2` | `estado_validacion_eia2_enum` |
-| `cat_tipo_reporte` | `tipo_reporte_enum` |
-| `cat_tipo_notificacion` | `tipo_notificacion_enum` |
-| `cat_estado_notificacion` | `estado_notificacion_enum` |
-| `cat_prioridad_notificacion` | `prioridad_notificacion_enum` |
-| `cat_referencia_tipo_notificacion` | `referencia_tipo_notificacion_enum` |
-| `cat_motivo_fallo_login` | `motivo_fallo_login_enum` |
-| `cat_estado_ticket` | `estado_ticket_enum` |
+| Catálogo | Campos que lo referencian |
+|----------|---------------------------|
+| `cat_nivel_educativo` | `CAT_GRADOS.nivel_educativo`, `MATERIAS.nivel_educativo`, `GRUPOS.nivel_educativo`, `ARCHIVOS_FRV.nivel`, `SOLICITUDES_EIA2.nivel_educativo` |
+| `cat_estado_archivo` | `ARCHIVOS_FRV.estado` |
+| `cat_estado_archivo_temporal` | `ARCHIVOS_TEMPORALES.estado` |
+| `cat_tipo_bloqueo` | `BLOQUEOS_IP.tipo_bloqueo` |
+| `cat_operacion_auditoria` | `CAMBIOS_AUDITORIA.operacion` |
+| `cat_tipo_configuracion` | `CONFIGURACIONES_SISTEMA.tipo_dato` |
+| `cat_origen_cambio_password` | `HISTORICO_PASSWORDS.cambiada_por` |
+| `cat_estado_validacion_eia2` | `SOLICITUDES_EIA2.estado_validacion` |
+| `cat_tipo_reporte` | `REPORTES_GENERADOS.tipo_reporte` |
+| `cat_tipo_notificacion` | `PLANTILLAS_EMAIL.tipo_notificacion`, `NOTIFICACIONES_EMAIL.tipo` |
+| `cat_estado_notificacion` | `NOTIFICACIONES_EMAIL.estado` |
+| `cat_prioridad_notificacion` | `NOTIFICACIONES_EMAIL.prioridad` |
+| `cat_referencia_tipo_notificacion` | `NOTIFICACIONES_EMAIL.referencia_tipo` |
+| `cat_motivo_fallo_login` | `INTENTOS_LOGIN.motivo_fallo` |
+| `cat_estado_ticket` | `TICKETS_SOPORTE.estado` |
 
 **Plantilla empleada**
 
@@ -74,11 +75,17 @@ INSERT INTO cat_nivel_educativo (codigo, descripcion, orden)
 SELECT val,
        INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
        ord
-FROM unnest(enum_range(NULL::nivel_educativo_enum)) WITH ORDINALITY AS t(val, ord)
+FROM unnest(ARRAY['PREESCOLAR','PRIMARIA','SECUNDARIA','TELESECUNDARIA']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
+
+-- Uso en tablas principales
+CREATE TABLE grupos (
+    -- ...
+    nivel_educativo SMALLINT NOT NULL REFERENCES cat_nivel_educativo(id)
+);
 ```
 
-El archivo [ddl_generated.sql](ddl_generated.sql) contiene la implementación completa de este patrón para los 15 tipos enumerados, manteniendo intactas las columnas actuales y dejando listos los catálogos para consultas y migraciones posteriores.
+El archivo [ddl_generated.sql](ddl_generated.sql) incluye toda la lógica anterior junto con la función `fn_catalogo_id`, utilizada para defaults (`fn_catalogo_id('cat_estado_notificacion','PENDIENTE')`) y comparaciones dentro de triggers.
 
 ## Diagrama Entidad-Relación (ER)
 
@@ -88,11 +95,6 @@ erDiagram
     ESCUELAS ||--o{ GRUPOS : agrupa
     ESCUELAS ||--o| CREDENCIALES_EIA2 : genera
     GRUPOS ||--o{ ESTUDIANTES : contiene
-    ESTUDIANTES ||--o{ VALORACIONES : recibe
-    VALORACIONES }o--|| MATERIAS : evalua
-    VALORACIONES }o--|| PERIODOS_EVALUACION : en
-    USUARIOS ||--o{ VALORACIONES : registra
-    EVALUACIONES ||--|| VALORACIONES : referencia
     ESCUELAS ||--|| CAT_TURNOS : turno
     ESCUELAS ||--|| CAT_ENTIDADES_FEDERATIVAS : entidad
     ESCUELAS ||--|| CAT_NIVELES_EDUCATIVOS : nivel
@@ -140,8 +142,8 @@ erDiagram
 | escuela_id           | UUID         | Relación con ESCUELAS             |
 | usuario_id           | UUID         | Relación con USUARIOS             |
 | ciclo_escolar        | VARCHAR(9)   | Ciclo escolar                     |
-| nivel                | ENUM         | Nivel educativo                   |
-| estado               | ENUM         | Estado del archivo                |
+| nivel                | SMALLINT (FK cat_nivel_educativo) | Nivel educativo                   |
+| estado               | SMALLINT (FK cat_estado_archivo)  | Estado del archivo                |
 | file_path            | VARCHAR(500) | Ruta en filesystem                |
 | filename_original    | VARCHAR(255) | Nombre original del archivo       |
 | file_size            | BIGINT       | Tamaño en bytes                   |
@@ -166,7 +168,7 @@ erDiagram
 | chunk_actual         | INT          | Chunk actual (upload parcial)     |
 | chunks_totales       | INT          | Total de chunks esperados         |
 | hash_parcial         | VARCHAR(64)  | Hash SHA256 parcial               |
-| estado               | ENUM         | PENDIENTE, PROCESANDO, COMPLETADO, ERROR |
+| estado               | SMALLINT (FK cat_estado_archivo_temporal) | PENDIENTE, PROCESANDO, COMPLETADO, ERROR |
 | error_mensaje        | TEXT         | Mensaje de error si aplica        |
 | expira_en            | TIMESTAMP    | Fecha de expiración automática    |
 | created_at           | TIMESTAMP    | Fecha de creación                 |
@@ -180,7 +182,7 @@ erDiagram
 | ip_address           | INET         | Dirección IP bloqueada            |
 | intentos_fallidos    | INT          | Contador de intentos fallidos     |
 | motivo               | VARCHAR(255) | Motivo del bloqueo                |
-| tipo_bloqueo         | ENUM         | AUTOMATICO, MANUAL, PERMANENTE    |
+| tipo_bloqueo         | SMALLINT (FK cat_tipo_bloqueo) | AUTOMATICO, MANUAL, PERMANENTE    |
 | bloqueado_desde      | TIMESTAMP    | Fecha inicio del bloqueo          |
 | bloqueado_hasta      | TIMESTAMP    | Fecha fin del bloqueo (NULL si permanente) |
 | desbloqueado_por     | UUID         | Usuario que desbloqueó (FK USUARIOS) |
@@ -196,7 +198,7 @@ erDiagram
 | id                   | BIGSERIAL    | Identificador único               |
 | tabla                | VARCHAR(100) | Nombre de la tabla afectada       |
 | registro_id          | VARCHAR(100) | ID del registro modificado        |
-| operacion            | ENUM         | INSERT, UPDATE, DELETE            |
+| operacion            | SMALLINT (FK cat_operacion_auditoria) | INSERT, UPDATE, DELETE            |
 | usuario_id           | UUID         | Relación con USUARIOS             |
 | valores_anteriores   | JSONB        | Valores antes del cambio (JSON)   |
 | valores_nuevos       | JSONB        | Valores después del cambio (JSON) |
@@ -231,7 +233,7 @@ erDiagram
 | Campo           | Tipo         | Descripción                       |
 |-----------------|--------------|-----------------------------------|
 | id_grado        | INT          | Identificador único               |
-| nivel_educativo | VARCHAR(50)  | Nivel (PREESCOLAR, PRIMARIA, etc) |
+| nivel_educativo | SMALLINT (FK cat_nivel_educativo) | Nivel canónico configurado en catálogo |
 | grado_numero    | INT          | Número del grado (1-6)            |
 | grado_nombre    | VARCHAR(20)  | Nombre del grado (Primero, etc)   |
 | orden           | INT          | Orden de visualización            |
@@ -299,7 +301,7 @@ erDiagram
 | categoria            | VARCHAR(50)  | Categoría de configuración        |
 | clave                | VARCHAR(100) | Clave de configuración (UNIQUE)   |
 | valor                | TEXT         | Valor de la configuración         |
-| tipo_dato            | ENUM         | STRING, INTEGER, BOOLEAN, JSON    |
+| tipo_dato            | SMALLINT (FK cat_tipo_configuracion) | STRING, INTEGER, BOOLEAN, JSON    |
 | descripcion          | TEXT         | Descripción de la configuración   |
 | editable_por_usuario | BOOLEAN      | Si puede ser editada por usuarios |
 | requiere_reinicio    | BOOLEAN      | Si requiere reiniciar el sistema  |
@@ -400,7 +402,7 @@ UNIQUE (clave)
 | escuela_id      | UUID         | Relación con ESCUELAS             |
 | grado_id        | INT          | Relación con CAT_GRADOS           |
 | nombre          | VARCHAR(100) | Nombre del grupo (Ej: 1°A, 2°B)   |
-| nivel_educativo | VARCHAR(50)  | Nivel educativo (PREESCOLAR, PRIMARIA, SECUNDARIA) |
+| nivel_educativo | SMALLINT (FK cat_nivel_educativo) | Nivel educativo (catalogado) |
 | grado_nombre    | VARCHAR(20)  | Nombre del grado                  |
 | grado_numero    | INT          | Número de grado                   |
 | turno           | VARCHAR(20)  | Turno (MATUTINO, VESPERTINO)      |
@@ -420,7 +422,7 @@ UNIQUE (clave)
 | generada_en     | TIMESTAMP    | Fecha de generación               |
 | expira_en       | TIMESTAMP    | Fecha de expiración (solo temporales) |
 | cambiada_en     | TIMESTAMP    | Fecha en que fue cambiada         |
-| cambiada_por    | VARCHAR(20)  | Origen del cambio (SISTEMA, USUARIO, ADMIN, RECUPERACION) |
+| cambiada_por    | SMALLINT (FK cat_origen_cambio_password) | Origen del cambio (SISTEMA, USUARIO, ADMIN, RECUPERACION) |
 | ip_origen       | VARCHAR(50)  | IP desde donde se cambió          |
 | activa          | BOOLEAN      | Indica si es la contraseña actual |
 | created_at      | TIMESTAMP    | Fecha de creación del registro    |
@@ -435,7 +437,7 @@ UNIQUE (clave)
 | ip_address      | INET         | Dirección IP de origen                           |
 | user_agent      | TEXT         | Navegador/cliente usado                          |
 | exito           | BOOLEAN      | Indica si el login fue exitoso                   |
-| motivo_fallo    | VARCHAR(100) | Razón del fallo (ver enums)                      |
+| motivo_fallo    | SMALLINT (FK cat_motivo_fallo_login) | Razón del fallo catalogada                      |
 | bloqueado_hasta | TIMESTAMP    | Fecha hasta la cual está bloqueado (si aplica)   |
 | metadata        | JSONB        | Datos adicionales (dispositivo, ubicación, etc.) |
 | created_at      | TIMESTAMP    | Fecha/hora del intento                           |
@@ -469,7 +471,7 @@ INDEX idx_log_tabla_accion ON LOG_ACTIVIDADES(tabla, accion)
 | id              | UUID         | Identificador único (UUID)        |
 | codigo          | VARCHAR(10)  | Código de materia (Ej: LEN, MAT)  |
 | nombre          | VARCHAR(100) | Nombre de la materia              |
-| nivel_educativo | VARCHAR(50)  | Nivel educativo al que aplica     |
+| nivel_educativo | SMALLINT (FK cat_nivel_educativo) | Nivel educativo al que aplica     |
 | orden           | INT          | Orden de visualización            |
 | activa          | BOOLEAN      | Indica si la materia está activa  |
 
@@ -482,16 +484,16 @@ INDEX idx_log_tabla_accion ON LOG_ACTIVIDADES(tabla, accion)
 | destinatario    | VARCHAR(100) | Email del destinatario            |
 | asunto          | VARCHAR(200) | Asunto del correo                 |
 | cuerpo          | TEXT         | Contenido HTML del correo         |
-| tipo            | ENUM         | Tipo de notificación (RESULTADO_LISTO, TICKET_CREADO, TICKET_ACTUALIZADO, TICKET_RESUELTO, RECUPERACION_PASSWORD, CREDENCIALES_EIA2, EVALUACION_VALIDADA) |
-| estado          | ENUM         | Estado del envío (PENDIENTE, ENVIADO, ERROR, REINTENTANDO) |
-| prioridad       | VARCHAR(10)  | Prioridad (ALTA, MEDIA, BAJA)     |
+| tipo            | SMALLINT (FK cat_tipo_notificacion) | Tipo de notificación (RESULTADO_LISTO, TICKET_CREADO, etc.) |
+| estado          | SMALLINT (FK cat_estado_notificacion) | Estado del envío (PENDIENTE, ENVIADO, ERROR, REINTENTANDO) |
+| prioridad       | SMALLINT (FK cat_prioridad_notificacion) | Prioridad (ALTA, MEDIA, BAJA)     |
 | intentos        | INT          | Número de intentos de envío       |
 | max_intentos    | INT          | Máximo de reintentos (default 3)  |
 | error_mensaje   | TEXT         | Mensaje de error si falla envío   |
 | enviado_en      | TIMESTAMP    | Fecha/hora de envío exitoso       |
 | proximo_intento | TIMESTAMP    | Próximo reintento programado      |
 | referencia_id   | UUID         | ID del objeto relacionado (ticket, reporte, etc.) |
-| referencia_tipo | VARCHAR(50)  | Tipo de referencia (TICKET, REPORTE, USUARIO, EVALUACION) |
+| referencia_tipo | SMALLINT (FK cat_referencia_tipo_notificacion) | Tipo de referencia (TICKET, REPORTE, USUARIO, EVALUACION) |
 | adjuntos        | JSONB        | Array de adjuntos (opcional)      |
 | created_at      | TIMESTAMP    | Fecha de creación del registro    |
 | updated_at      | TIMESTAMP    | Fecha de última actualización     |
@@ -515,7 +517,7 @@ INDEX idx_log_tabla_accion ON LOG_ACTIVIDADES(tabla, accion)
 | id                   | SERIAL       | Identificador único               |
 | codigo               | VARCHAR(100) | Código de plantilla (UNIQUE)      |
 | nombre               | VARCHAR(150) | Nombre descriptivo de la plantilla |
-| tipo_notificacion    | ENUM         | RESULTADO_LISTO, TICKET_CREADO, RECUPERACION_PASSWORD, etc. |
+| tipo_notificacion    | SMALLINT (FK cat_tipo_notificacion) | RESULTADO_LISTO, TICKET_CREADO, RECUPERACION_PASSWORD, etc. |
 | asunto_template      | VARCHAR(255) | Template del asunto (con variables) |
 | cuerpo_html          | TEXT         | Template HTML del cuerpo          |
 | cuerpo_texto         | TEXT         | Template de texto plano           |
@@ -825,7 +827,7 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | escuela_id      | UUID         | Relación con ESCUELAS             |
 | ciclo_escolar   | VARCHAR(9)   | Ciclo escolar (ej: 2024-2025)     |
 | periodo_id      | INT          | Relación con PERIODOS_EVALUACION  |
-| tipo_reporte    | ENUM         | Tipo: ENS, HYC, LEN, SPC, F5      |
+| tipo_reporte    | SMALLINT (FK cat_tipo_reporte) | Tipo: ENS, HYC, LEN, SPC, F5      |
 | grado           | VARCHAR(20)  | Grado escolar                     |
 | grupo           | VARCHAR(10)  | Grupo (A, B, C, etc.)             |
 | file_path       | VARCHAR(500) | Ruta del archivo PDF en filesystem|
@@ -1003,7 +1005,7 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | credencial_id            | UUID         | Relación con CREDENCIALES_EIA2    |
 | archivo_original         | VARCHAR(255) | Nombre del archivo original       |
 | fecha_carga              | TIMESTAMP    | Fecha y hora de carga             |
-| estado_validacion        | ENUM         | Estado: VALIDO, INVALIDO          |
+| estado_validacion        | SMALLINT (FK cat_estado_validacion_eia2) | Estado: VALIDO, INVALIDO          |
 | errores_validacion       | JSONB        | Detalle de errores de validación  |
 | archivo_path             | VARCHAR(500) | Ruta del archivo en filesystem    |
 | archivo_size             | BIGINT       | Tamaño del archivo en bytes       |
@@ -1012,7 +1014,7 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | resultado_path           | VARCHAR(500) | Liga de descarga del resultado    |
 | resultado_disponible_desde| TIMESTAMP   | Fecha desde que está disponible   |
 | numero_estudiantes       | INT          | Cantidad de estudiantes en archivo|
-| nivel_educativo          | VARCHAR(50)  | Nivel educativo del archivo       |
+| nivel_educativo          | SMALLINT (FK cat_nivel_educativo) | Nivel educativo del archivo       |
 | created_at               | TIMESTAMP    | Fecha de creación del registro    |
 | updated_at               | TIMESTAMP    | Fecha de última actualización     |
 
@@ -1027,7 +1029,7 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | archivo_frv_id  | UUID         | Relación con ARCHIVOS_FRV         |
 | asunto          | VARCHAR(200) | Asunto                            |
 | descripcion     | TEXT         | Descripción                       |
-| estado          | ENUM         | Estado del ticket                 |
+| estado          | SMALLINT (FK cat_estado_ticket) | Estado del ticket                 |
 | prioridad       | VARCHAR(10)  | Prioridad                         |
 | asignado_a      | UUID         | Usuario asignado                  |
 | asignado_en     | TIMESTAMP    | Fecha de asignación               |
@@ -1069,19 +1071,6 @@ Ejemplo de `preferencias_notif`:
   "notif_sistema": false
 }
 ```
-
-### VALORACIONES
-
-| Campo           | Tipo         | Descripción                       |
-|-----------------|--------------|-----------------------------------|
-| id              | UUID         | Identificador único               |
-| estudiante_id   | UUID         | Relación con ESTUDIANTES          |
-| materia_id      | INT          | Relación con MATERIAS             |
-| periodo_id      | INT          | Relación con PERIODOS_EVALUACION  |
-| valor           | INT          | Valoración (0-3)                  |
-| fecha           | DATETIME     | Fecha de valoración               |
-
----
 
 ### Descripción de entidades principales
 
@@ -2124,7 +2113,7 @@ INSERT INTO EVALUACIONES (
 - Los comentarios se deben ordenar cronológicamente ascendente para mostrar el hilo de conversación.
 - Cuando se cierra un ticket, no se permiten nuevos comentarios (validar estado del ticket).
 
-### Evaluaciones y Valoraciones (EVALUACIONES)
+### Evaluaciones (EVALUACIONES)
 
 - Las valoraciones deben estar en el rango **0-3** (validación estricta mediante CHECK constraint).
 - Cada estudiante debe tener **una evaluación por materia por periodo** (constraint UNIQUE en combinación estudiante_id, materia_id, periodo_id).
@@ -2156,7 +2145,7 @@ INSERT INTO EVALUACIONES (
 - El sistema **NO determina** si la carga corresponde a primera o segunda aplicación.
 - El campo `consecutivo` es UNIQUE y se genera automáticamente mediante secuencia PostgreSQL.
 - Un mismo CCT puede tener múltiples solicitudes (múltiples cargas en el tiempo).
-- El `estado_validacion` solo puede ser 'VALIDO' o 'INVALIDO' (ENUM estricto).
+- El `estado_validacion` se almacena como FK a `cat_estado_validacion_eia2` (códigos `VALIDO` / `INVALIDO`) y se recomienda resolverlo con `fn_catalogo_id` dentro de reglas de negocio.
 - Si `estado_validacion = 'INVALIDO'`, el campo `errores_validacion` (JSONB) debe contener el detalle de errores.
 - Si `estado_validacion = 'VALIDO'`, se debe crear/actualizar registro en CREDENCIALES_EIA2 si es la primera carga válida.
 - El campo `procesado_externamente` indica si el sistema externo ya procesó la solicitud.
@@ -2201,7 +2190,6 @@ INSERT INTO EVALUACIONES (
 
 - `INDEX idx_grupos_escuela_grado ON GRUPOS(escuela_id, grado_id)`
 - `INDEX idx_estudiantes_grupo ON ESTUDIANTES(grupo_id)`
-- `INDEX idx_valoraciones_estudiante ON VALORACIONES(estudiante_id, periodo_id)`
 - `INDEX idx_usuarios_rol ON USUARIOS(rol, activo)`
 - `INDEX idx_usuarios_escuela ON USUARIOS(escuela_id, activo)`
 - `INDEX idx_usuarios_bloqueado ON USUARIOS(bloqueado_hasta) WHERE bloqueado_hasta > NOW()`
@@ -2251,22 +2239,18 @@ INSERT INTO EVALUACIONES (
 
 ## 8. Triggers y procedimientos almacenados
 
-### Enums (Enumeraciones)
+### Catálogos (antiguos ENUM)
 
-Se utilizan tipos ENUM en PostgreSQL para garantizar integridad y claridad en los siguientes campos:
+Los campos discretos que antes dependían de tipos `ENUM` utilizan ahora catálogos (`cat_*`) y llaves `SMALLINT`. Para obtener el identificador asociado a un `codigo` se usa la función `fn_catalogo_id('cat_<concepto>', '<CODIGO>')`, tanto en defaults como en triggers.
 
-- **nivel**: ('PREESCOLAR', 'PRIMARIA', 'SECUNDARIA', 'TELESECUNDARIA')
-- **estado_archivo**: ('CARGADO', 'VALIDADO', 'PROCESADO', 'ERROR')
-- **estado_ticket**: ('ABIERTO', 'EN_PROCESO', 'RESUELTO', 'CERRADO')
-- **estado_validacion_eia2**: ('VALIDO', 'INVALIDO')
-- **tipo_reporte**: ('ENS', 'HYC', 'LEN', 'SPC', 'F5')
-- **tipo_adjunto_comentario**: ('PDF', 'IMAGEN', 'EXCEL', 'WORD', 'OTRO')
-- **origen_cambio_password**: ('SISTEMA', 'USUARIO', 'ADMIN', 'RECUPERACION')
-- **tipo_notificacion**: ('RESULTADO_LISTO', 'TICKET_CREADO', 'TICKET_ACTUALIZADO', 'TICKET_RESUELTO', 'RECUPERACION_PASSWORD', 'CREDENCIALES_EIA2', 'EVALUACION_VALIDADA')
-- **estado_notificacion**: ('PENDIENTE', 'ENVIADO', 'ERROR', 'REINTENTANDO')
-- **prioridad_notificacion**: ('ALTA', 'MEDIA', 'BAJA')
-- **referencia_tipo_notificacion**: ('TICKET', 'REPORTE', 'USUARIO', 'EVALUACION', 'CREDENCIAL')
-- **motivo_fallo_login**: ('USUARIO_INVALIDO', 'PASSWORD_INCORRECTO', 'CUENTA_BLOQUEADA', 'CUENTA_INACTIVA', 'CUENTA_ELIMINADA', 'PASSWORD_EXPIRADO')
+Ejemplos:
+
+- `ARCHIVOS_FRV.estado` → `cat_estado_archivo`
+- `NOTIFICACIONES_EMAIL.estado/prioridad/tipo/referencia_tipo` → catálogos homónimos
+- `SOLICITUDES_EIA2.estado_validacion` → `cat_estado_validacion_eia2`
+- `TICKETS_SOPORTE.estado` → `cat_estado_ticket`
+
+Consultar la sección “Estrategia de Catalogación (sin ENUMs)” para el listado completo.
 
 ### Triggers sugeridos
 
@@ -2279,7 +2263,7 @@ CREATE OR REPLACE FUNCTION fn_auto_generar_credenciales_eia2()
 RETURNS TRIGGER AS $$
 BEGIN
     -- Solo si la solicitud es válida y no existen credenciales para ese CCT
-    IF NEW.estado_validacion = 'VALIDO' AND 
+    IF NEW.estado_validacion = fn_catalogo_id('cat_estado_validacion_eia2','VALIDO') AND 
        NOT EXISTS (SELECT 1 FROM CREDENCIALES_EIA2 WHERE cct = NEW.cct) THEN
         
         INSERT INTO CREDENCIALES_EIA2 (
@@ -5098,15 +5082,7 @@ CREATE TEMP TABLE mapeo_materias (
 INSERT INTO mapeo_materias (codigo_antiguo, id_nuevo)
 SELECT codigo, id FROM MATERIAS;
 
--- Paso 3: Actualizar VALORACIONES
-ALTER TABLE VALORACIONES ADD COLUMN materia_id_nuevo UUID;
-
-UPDATE VALORACIONES v
-SET materia_id_nuevo = m.id_nuevo
-FROM mapeo_materias m
-WHERE v.materia_id::VARCHAR = m.codigo_antiguo;
-
--- Paso 4: Actualizar EVALUACIONES
+-- Paso 3: Actualizar EVALUACIONES
 ALTER TABLE EVALUACIONES ADD COLUMN materia_id_nuevo UUID;
 
 UPDATE EVALUACIONES e
@@ -5114,7 +5090,7 @@ SET materia_id_nuevo = m.id_nuevo
 FROM mapeo_materias m
 WHERE e.materia_id = m.codigo_antiguo::INT;
 
--- Paso 5: Actualizar COMPETENCIAS
+-- Paso 4: Actualizar COMPETENCIAS
 ALTER TABLE COMPETENCIAS ADD COLUMN id_materia_nuevo UUID;
 
 UPDATE COMPETENCIAS c
@@ -5122,32 +5098,27 @@ SET id_materia_nuevo = m.id_nuevo
 FROM mapeo_materias m
 WHERE c.id_materia = m.codigo_antiguo::INT;
 
--- Paso 6: Drop y rename
-ALTER TABLE VALORACIONES DROP COLUMN materia_id;
-ALTER TABLE VALORACIONES RENAME COLUMN materia_id_nuevo TO materia_id;
-
+-- Paso 5: Drop y rename
 ALTER TABLE EVALUACIONES DROP COLUMN materia_id;
 ALTER TABLE EVALUACIONES RENAME COLUMN materia_id_nuevo TO materia_id;
 
 ALTER TABLE COMPETENCIAS DROP COLUMN id_materia;
 ALTER TABLE COMPETENCIAS RENAME COLUMN id_materia_nuevo TO id_materia;
 
--- Paso 7: Establecer PK en MATERIAS
+-- Paso 6: Establecer PK en MATERIAS
 ALTER TABLE MATERIAS DROP CONSTRAINT IF EXISTS materias_pkey;
 ALTER TABLE MATERIAS ADD PRIMARY KEY (id);
 
--- Paso 8: Mantener codigo como UNIQUE pero no PK
+-- Paso 7: Mantener codigo como UNIQUE pero no PK
 ALTER TABLE MATERIAS ADD CONSTRAINT uq_materias_codigo UNIQUE (codigo);
 
--- Paso 9: Agregar FKs
-ALTER TABLE VALORACIONES ADD CONSTRAINT fk_valoraciones_materia 
-    FOREIGN KEY (materia_id) REFERENCES MATERIAS(id);
+-- Paso 8: Agregar FKs
 ALTER TABLE EVALUACIONES ADD CONSTRAINT fk_evaluaciones_materia 
     FOREIGN KEY (materia_id) REFERENCES MATERIAS(id);
 ALTER TABLE COMPETENCIAS ADD CONSTRAINT fk_competencias_materia 
     FOREIGN KEY (id_materia) REFERENCES MATERIAS(id);
 
--- Paso 10: Limpiar
+-- Paso 9: Limpiar
 DROP TABLE mapeo_materias;
 ```
 
@@ -5166,15 +5137,7 @@ CREATE TEMP TABLE mapeo_periodos (
 INSERT INTO mapeo_periodos (id_antiguo, id_nuevo)
 SELECT id_periodo, id FROM PERIODOS_EVALUACION;
 
--- Paso 3: Actualizar VALORACIONES
-ALTER TABLE VALORACIONES ADD COLUMN periodo_id_nuevo UUID;
-
-UPDATE VALORACIONES v
-SET periodo_id_nuevo = m.id_nuevo
-FROM mapeo_periodos m
-WHERE v.periodo_id = m.id_antiguo;
-
--- Paso 4: Actualizar EVALUACIONES
+-- Paso 3: Actualizar EVALUACIONES
 ALTER TABLE EVALUACIONES ADD COLUMN periodo_id_nuevo UUID;
 
 UPDATE EVALUACIONES e
@@ -5182,7 +5145,7 @@ SET periodo_id_nuevo = m.id_nuevo
 FROM mapeo_periodos m
 WHERE e.periodo_id = m.id_antiguo;
 
--- Paso 5: Actualizar REPORTES_GENERADOS
+-- Paso 4: Actualizar REPORTES_GENERADOS
 ALTER TABLE REPORTES_GENERADOS ADD COLUMN periodo_id_nuevo UUID;
 
 UPDATE REPORTES_GENERADOS r
@@ -5190,10 +5153,7 @@ SET periodo_id_nuevo = m.id_nuevo
 FROM mapeo_periodos m
 WHERE r.periodo_id = m.id_antiguo;
 
--- Paso 6: Drop y rename
-ALTER TABLE VALORACIONES DROP COLUMN periodo_id;
-ALTER TABLE VALORACIONES RENAME COLUMN periodo_id_nuevo TO periodo_id;
-
+-- Paso 5: Drop y rename
 ALTER TABLE EVALUACIONES DROP COLUMN periodo_id;
 ALTER TABLE EVALUACIONES RENAME COLUMN periodo_id_nuevo TO periodo_id;
 
@@ -5207,15 +5167,13 @@ ALTER TABLE PERIODOS_EVALUACION RENAME COLUMN id TO id;
 -- Paso 7: Establecer PK
 ALTER TABLE PERIODOS_EVALUACION ADD PRIMARY KEY (id);
 
--- Paso 8: Agregar FKs
-ALTER TABLE VALORACIONES ADD CONSTRAINT fk_valoraciones_periodo 
-    FOREIGN KEY (periodo_id) REFERENCES PERIODOS_EVALUACION(id);
+-- Paso 6: Agregar FKs
 ALTER TABLE EVALUACIONES ADD CONSTRAINT fk_evaluaciones_periodo 
     FOREIGN KEY (periodo_id) REFERENCES PERIODOS_EVALUACION(id);
 ALTER TABLE REPORTES_GENERADOS ADD CONSTRAINT fk_reportes_periodo 
     FOREIGN KEY (periodo_id) REFERENCES PERIODOS_EVALUACION(id);
 
--- Paso 9: Limpiar
+-- Paso 7: Limpiar
 DROP TABLE mapeo_periodos;
 ```
 

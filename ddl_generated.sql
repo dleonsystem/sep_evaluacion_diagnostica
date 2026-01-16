@@ -10,28 +10,9 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 SET search_path TO public;
 
--- =====================================================================
--- ENUMERATED TYPES
--- =====================================================================
-
-CREATE TYPE nivel_educativo_enum AS ENUM ('PREESCOLAR','PRIMARIA','SECUNDARIA','TELESECUNDARIA');
-CREATE TYPE estado_archivo_enum AS ENUM ('CARGADO','VALIDADO','PROCESADO','ERROR');
-CREATE TYPE estado_archivo_temporal_enum AS ENUM ('PENDIENTE','PROCESANDO','COMPLETADO','ERROR');
-CREATE TYPE tipo_bloqueo_enum AS ENUM ('AUTOMATICO','MANUAL','PERMANENTE');
-CREATE TYPE operacion_auditoria_enum AS ENUM ('INSERT','UPDATE','DELETE');
-CREATE TYPE tipo_configuracion_enum AS ENUM ('STRING','INTEGER','BOOLEAN','JSON');
-CREATE TYPE origen_cambio_password_enum AS ENUM ('SISTEMA','USUARIO','ADMIN','RECUPERACION');
-CREATE TYPE estado_validacion_eia2_enum AS ENUM ('VALIDO','INVALIDO');
-CREATE TYPE tipo_reporte_enum AS ENUM ('ENS','HYC','LEN','SPC','F5');
-CREATE TYPE tipo_notificacion_enum AS ENUM ('RESULTADO_LISTO','TICKET_CREADO','TICKET_ACTUALIZADO','TICKET_RESUELTO','RECUPERACION_PASSWORD','CREDENCIALES_EIA2','EVALUACION_VALIDADA');
-CREATE TYPE estado_notificacion_enum AS ENUM ('PENDIENTE','ENVIADO','ERROR','REINTENTANDO');
-CREATE TYPE prioridad_notificacion_enum AS ENUM ('ALTA','MEDIA','BAJA');
-CREATE TYPE referencia_tipo_notificacion_enum AS ENUM ('TICKET','REPORTE','USUARIO','EVALUACION','CREDENCIAL');
-CREATE TYPE motivo_fallo_login_enum AS ENUM ('USUARIO_INVALIDO','PASSWORD_INCORRECTO','CUENTA_BLOQUEADA','CUENTA_INACTIVA','CUENTA_ELIMINADA','PASSWORD_EXPIRADO');
-CREATE TYPE estado_ticket_enum AS ENUM ('ABIERTO','EN_PROCESO','RESUELTO','CERRADO');
 
 -- =====================================================================
--- ENUM CATALOG MIRRORS
+-- ENUM CATALOG MIRRORS (ENUM types replaced by catalog FKs)
 -- =====================================================================
 
 CREATE TABLE cat_nivel_educativo (
@@ -259,6 +240,25 @@ SELECT val,
 FROM unnest(ARRAY['ABIERTO','EN_PROCESO','RESUELTO','CERRADO']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
+-- Helper para obtener IDs de catálogos por código canónico
+CREATE OR REPLACE FUNCTION fn_catalogo_id(p_catalogo TEXT, p_codigo TEXT)
+RETURNS SMALLINT
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+	v_id SMALLINT;
+BEGIN
+	EXECUTE format('SELECT id FROM %I WHERE codigo = $1', p_catalogo)
+	INTO v_id
+	USING p_codigo;
+	IF v_id IS NULL THEN
+		RAISE EXCEPTION 'Código % no encontrado en catálogo %', p_codigo, p_catalogo;
+	END IF;
+	RETURN v_id;
+END;
+$$;
+
 -- =====================================================================
 -- SEQUENCES
 -- =====================================================================
@@ -304,7 +304,7 @@ CREATE TABLE cat_turnos (
 
 CREATE TABLE cat_grados (
 	id_grado        INT PRIMARY KEY,
-	nivel_educativo nivel_educativo_enum NOT NULL,
+	nivel_educativo SMALLINT NOT NULL REFERENCES cat_nivel_educativo(id),
 	grado_numero    INT NOT NULL,
 	grado_nombre    VARCHAR(20) NOT NULL,
 	orden           INT,
@@ -324,7 +324,7 @@ CREATE TABLE materias (
 	id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 	codigo            VARCHAR(10) NOT NULL UNIQUE,
 	nombre            VARCHAR(100) NOT NULL,
-	nivel_educativo   nivel_educativo_enum NOT NULL,
+	nivel_educativo   SMALLINT NOT NULL REFERENCES cat_nivel_educativo(id),
 	orden             INT,
 	activa            BOOLEAN NOT NULL DEFAULT TRUE
 );
@@ -369,7 +369,7 @@ CREATE TABLE grupos (
 	escuela_id      UUID NOT NULL REFERENCES escuelas(id) ON DELETE CASCADE,
 	grado_id        INT NOT NULL REFERENCES cat_grados(id_grado),
 	nombre          VARCHAR(100) NOT NULL,
-	nivel_educativo nivel_educativo_enum NOT NULL,
+	nivel_educativo SMALLINT NOT NULL REFERENCES cat_nivel_educativo(id),
 	grado_nombre    VARCHAR(20),
 	grado_numero    INT,
 	turno           VARCHAR(20),
@@ -416,7 +416,7 @@ CREATE TABLE historico_passwords (
 	generada_en   TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	expira_en     TIMESTAMP WITHOUT TIME ZONE,
 	cambiada_en   TIMESTAMP WITHOUT TIME ZONE,
-	cambiada_por  origen_cambio_password_enum NOT NULL DEFAULT 'SISTEMA',
+	cambiada_por  SMALLINT NOT NULL DEFAULT fn_catalogo_id('cat_origen_cambio_password','SISTEMA') REFERENCES cat_origen_cambio_password(id),
 	ip_origen     VARCHAR(50),
 	activa        BOOLEAN NOT NULL DEFAULT TRUE
 );
@@ -426,7 +426,7 @@ CREATE TABLE bloqueos_ip (
 	ip_address       INET NOT NULL,
 	intentos_fallidos INT NOT NULL DEFAULT 0,
 	motivo           VARCHAR(255),
-	tipo_bloqueo     tipo_bloqueo_enum NOT NULL DEFAULT 'AUTOMATICO',
+	tipo_bloqueo     SMALLINT NOT NULL DEFAULT fn_catalogo_id('cat_tipo_bloqueo','AUTOMATICO') REFERENCES cat_tipo_bloqueo(id),
 	bloqueado_desde  TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	bloqueado_hasta  TIMESTAMP WITHOUT TIME ZONE,
 	desbloqueado_por UUID REFERENCES usuarios(id),
@@ -440,7 +440,7 @@ CREATE TABLE cambios_auditoria (
 	id                BIGSERIAL PRIMARY KEY,
 	tabla             VARCHAR(100) NOT NULL,
 	registro_id       VARCHAR(100) NOT NULL,
-	operacion         operacion_auditoria_enum NOT NULL,
+	operacion         SMALLINT NOT NULL REFERENCES cat_operacion_auditoria(id),
 	usuario_id        UUID REFERENCES usuarios(id),
 	valores_anteriores JSONB,
 	valores_nuevos    JSONB,
@@ -470,7 +470,7 @@ CREATE TABLE configuraciones_sistema (
 	categoria            VARCHAR(50) NOT NULL,
 	clave                VARCHAR(100) NOT NULL UNIQUE,
 	valor                TEXT NOT NULL,
-	tipo_dato            tipo_configuracion_enum NOT NULL,
+	tipo_dato            SMALLINT NOT NULL REFERENCES cat_tipo_configuracion(id),
 	descripcion          TEXT,
 	editable_por_usuario BOOLEAN NOT NULL DEFAULT FALSE,
 	requiere_reinicio    BOOLEAN NOT NULL DEFAULT FALSE,
@@ -510,8 +510,8 @@ CREATE TABLE archivos_frv (
 	escuela_id           UUID NOT NULL REFERENCES escuelas(id) ON DELETE CASCADE,
 	usuario_id           UUID REFERENCES usuarios(id),
 	ciclo_escolar        VARCHAR(9) NOT NULL,
-	nivel                nivel_educativo_enum NOT NULL,
-	estado               estado_archivo_enum NOT NULL,
+	nivel                SMALLINT NOT NULL REFERENCES cat_nivel_educativo(id),
+	estado               SMALLINT NOT NULL REFERENCES cat_estado_archivo(id),
 	file_path            VARCHAR(500) NOT NULL,
 	filename_original    VARCHAR(255) NOT NULL,
 	file_size            BIGINT NOT NULL,
@@ -534,7 +534,7 @@ CREATE TABLE archivos_temporales (
 	chunk_actual      INT,
 	chunks_totales    INT,
 	hash_parcial      VARCHAR(64),
-	estado            estado_archivo_temporal_enum NOT NULL DEFAULT 'PENDIENTE',
+	estado            SMALLINT NOT NULL DEFAULT fn_catalogo_id('cat_estado_archivo_temporal','PENDIENTE') REFERENCES cat_estado_archivo_temporal(id),
 	error_mensaje     TEXT,
 	expira_en         TIMESTAMP WITHOUT TIME ZONE,
 	created_at        TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
@@ -561,7 +561,7 @@ CREATE TABLE solicitudes_eia2 (
 	credencial_id            UUID REFERENCES credenciales_eia2(id),
 	archivo_original         VARCHAR(255) NOT NULL,
 	fecha_carga              TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-	estado_validacion        estado_validacion_eia2_enum NOT NULL,
+	estado_validacion        SMALLINT NOT NULL REFERENCES cat_estado_validacion_eia2(id),
 	errores_validacion       JSONB,
 	archivo_path             VARCHAR(500) NOT NULL,
 	archivo_size             BIGINT NOT NULL,
@@ -570,7 +570,7 @@ CREATE TABLE solicitudes_eia2 (
 	resultado_path           VARCHAR(500),
 	resultado_disponible_desde TIMESTAMP WITHOUT TIME ZONE,
 	numero_estudiantes       INT,
-	nivel_educativo          nivel_educativo_enum,
+	nivel_educativo          SMALLINT REFERENCES cat_nivel_educativo(id),
 	created_at               TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at               TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	UNIQUE (consecutivo)
@@ -581,7 +581,7 @@ CREATE TABLE reportes_generados (
 	escuela_id       UUID NOT NULL REFERENCES escuelas(id) ON DELETE CASCADE,
 	ciclo_escolar    VARCHAR(9) NOT NULL,
 	periodo_id       UUID NOT NULL REFERENCES periodos_evaluacion(id),
-	tipo_reporte     tipo_reporte_enum NOT NULL,
+	tipo_reporte     SMALLINT NOT NULL REFERENCES cat_tipo_reporte(id),
 	grado            VARCHAR(20),
 	grupo            VARCHAR(10),
 	file_path        VARCHAR(500) NOT NULL,
@@ -604,7 +604,7 @@ CREATE TABLE plantillas_email (
 	id                   SERIAL PRIMARY KEY,
 	codigo               VARCHAR(100) NOT NULL,
 	nombre               VARCHAR(150) NOT NULL,
-	tipo_notificacion    tipo_notificacion_enum NOT NULL,
+	tipo_notificacion    SMALLINT NOT NULL REFERENCES cat_tipo_notificacion(id),
 	asunto_template      VARCHAR(255) NOT NULL,
 	cuerpo_html          TEXT NOT NULL,
 	cuerpo_texto         TEXT,
@@ -624,16 +624,16 @@ CREATE TABLE notificaciones_email (
 	destinatario     VARCHAR(100) NOT NULL,
 	asunto           VARCHAR(200) NOT NULL,
 	cuerpo           TEXT NOT NULL,
-	tipo             tipo_notificacion_enum NOT NULL,
-	estado           estado_notificacion_enum NOT NULL DEFAULT 'PENDIENTE',
-	prioridad        prioridad_notificacion_enum NOT NULL DEFAULT 'MEDIA',
+	tipo             SMALLINT NOT NULL REFERENCES cat_tipo_notificacion(id),
+	estado           SMALLINT NOT NULL DEFAULT fn_catalogo_id('cat_estado_notificacion','PENDIENTE') REFERENCES cat_estado_notificacion(id),
+	prioridad        SMALLINT NOT NULL DEFAULT fn_catalogo_id('cat_prioridad_notificacion','MEDIA') REFERENCES cat_prioridad_notificacion(id),
 	intentos         INT NOT NULL DEFAULT 0,
 	max_intentos     INT NOT NULL DEFAULT 3,
 	error_mensaje    TEXT,
 	enviado_en       TIMESTAMP WITHOUT TIME ZONE,
 	proximo_intento  TIMESTAMP WITHOUT TIME ZONE,
 	referencia_id    UUID,
-	referencia_tipo  referencia_tipo_notificacion_enum,
+	referencia_tipo  SMALLINT REFERENCES cat_referencia_tipo_notificacion(id),
 	adjuntos         JSONB NOT NULL DEFAULT '[]'::JSONB,
 	created_at       TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at       TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
@@ -647,7 +647,7 @@ CREATE TABLE tickets_soporte (
 	archivo_frv_id UUID REFERENCES archivos_frv(id),
 	asunto         VARCHAR(200) NOT NULL,
 	descripcion    TEXT NOT NULL,
-	estado         estado_ticket_enum NOT NULL DEFAULT 'ABIERTO',
+	estado         SMALLINT NOT NULL DEFAULT fn_catalogo_id('cat_estado_ticket','ABIERTO') REFERENCES cat_estado_ticket(id),
 	prioridad      VARCHAR(10) NOT NULL,
 	asignado_a     UUID REFERENCES usuarios(id),
 	asignado_en    TIMESTAMP WITHOUT TIME ZONE,
@@ -690,21 +690,10 @@ CREATE TABLE intentos_login (
 	ip_address      INET,
 	user_agent      TEXT,
 	exito           BOOLEAN NOT NULL,
-	motivo_fallo    motivo_fallo_login_enum,
+	motivo_fallo    SMALLINT REFERENCES cat_motivo_fallo_login(id),
 	bloqueado_hasta TIMESTAMP WITHOUT TIME ZONE,
 	metadata        JSONB,
 	created_at      TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE valoraciones (
-	id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-	estudiante_id UUID NOT NULL REFERENCES estudiantes(id) ON DELETE CASCADE,
-	materia_id    UUID NOT NULL REFERENCES materias(id),
-	periodo_id    UUID NOT NULL REFERENCES periodos_evaluacion(id),
-	valor         INT NOT NULL,
-	fecha         TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-	CONSTRAINT chk_valoraciones_val CHECK (valor BETWEEN 0 AND 3),
-	CONSTRAINT uq_valoraciones UNIQUE (estudiante_id, materia_id, periodo_id)
 );
 
 CREATE TABLE evaluaciones (
@@ -793,7 +782,6 @@ CREATE UNIQUE INDEX idx_materias_codigo ON materias(codigo);
 CREATE UNIQUE INDEX idx_solicitudes_eia2_consecutivo ON solicitudes_eia2(consecutivo);
 CREATE INDEX idx_grupos_escuela_grado ON grupos(escuela_id, grado_id);
 CREATE INDEX idx_estudiantes_grupo ON estudiantes(grupo_id);
-CREATE INDEX idx_valoraciones_estudiante ON valoraciones(estudiante_id, periodo_id);
 CREATE INDEX idx_evaluaciones_periodo ON evaluaciones(periodo_id, validado);
 CREATE INDEX idx_evaluaciones_archivo ON evaluaciones(archivo_frv_id);
 CREATE INDEX idx_archivos_frv_escuela_ciclo ON archivos_frv(escuela_id, ciclo_escolar);
@@ -802,7 +790,11 @@ CREATE INDEX idx_reportes_tipo_generado ON reportes_generados(tipo_reporte, gene
 CREATE INDEX idx_tickets_estado_prioridad ON tickets_soporte(estado, prioridad);
 CREATE INDEX idx_log_usuario_fecha ON log_actividades(id_usuario, fecha_hora);
 CREATE INDEX idx_notificaciones_estado ON notificaciones_email(estado, prioridad, created_at);
-CREATE INDEX idx_notificaciones_proximo ON notificaciones_email(proximo_intento) WHERE estado = 'REINTENTANDO';
+CREATE INDEX idx_notificaciones_proximo
+ON notificaciones_email(proximo_intento)
+WHERE estado = (
+	SELECT id FROM cat_estado_notificacion WHERE codigo = 'REINTENTANDO'
+);
 CREATE INDEX idx_intentos_usuario_fecha ON intentos_login(usuario_id, created_at) WHERE usuario_id IS NOT NULL;
 CREATE INDEX idx_intentos_ip_fecha ON intentos_login(ip_address, created_at);
 CREATE UNIQUE INDEX idx_historico_password_activa ON historico_passwords(usuario_id) WHERE activa;
@@ -861,11 +853,14 @@ CREATE TRIGGER trg_validar_valoracion_evaluacion
 
 CREATE OR REPLACE FUNCTION fn_inicializar_notificacion()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE
+	v_estado_default CONSTANT SMALLINT := fn_catalogo_id('cat_estado_notificacion','PENDIENTE');
+	v_prioridad_default CONSTANT SMALLINT := fn_catalogo_id('cat_prioridad_notificacion','MEDIA');
 BEGIN
 	NEW.intentos := COALESCE(NEW.intentos, 0);
 	NEW.max_intentos := COALESCE(NEW.max_intentos, 3);
-	NEW.prioridad := COALESCE(NEW.prioridad, 'MEDIA');
-	NEW.estado := COALESCE(NEW.estado, 'PENDIENTE');
+	NEW.prioridad := COALESCE(NEW.prioridad, v_prioridad_default);
+	NEW.estado := COALESCE(NEW.estado, v_estado_default);
 	NEW.created_at := NOW();
 	NEW.updated_at := NOW();
 	IF NEW.usuario_id IS NULL THEN
@@ -882,8 +877,11 @@ CREATE OR REPLACE FUNCTION fn_programar_reintento()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
 	v_delay INTERVAL;
+	v_estado_reintentando CONSTANT SMALLINT := fn_catalogo_id('cat_estado_notificacion','REINTENTANDO');
+	v_estado_enviado CONSTANT SMALLINT := fn_catalogo_id('cat_estado_notificacion','ENVIADO');
+	v_estado_error CONSTANT SMALLINT := fn_catalogo_id('cat_estado_notificacion','ERROR');
 BEGIN
-	IF NEW.estado = 'REINTENTANDO' AND OLD.estado <> 'REINTENTANDO' THEN
+	IF NEW.estado = v_estado_reintentando AND OLD.estado <> v_estado_reintentando THEN
 		v_delay := CASE NEW.intentos
 			WHEN 1 THEN INTERVAL '1 minute'
 			WHEN 2 THEN INTERVAL '5 minutes'
@@ -892,8 +890,8 @@ BEGIN
 		END;
 		NEW.proximo_intento := NOW() + v_delay;
 	END IF;
-	IF NEW.intentos >= NEW.max_intentos AND NEW.estado <> 'ENVIADO' THEN
-		NEW.estado := 'ERROR';
+	IF NEW.intentos >= NEW.max_intentos AND NEW.estado <> v_estado_enviado THEN
+		NEW.estado := v_estado_error;
 		NEW.error_mensaje := COALESCE(NEW.error_mensaje, '') || ' | Max retries exceeded.';
 	END IF;
 	NEW.updated_at := NOW();
@@ -927,10 +925,11 @@ CREATE TRIGGER trg_marcar_comentario_leido_autor
 CREATE OR REPLACE FUNCTION fn_validar_ticket_abierto()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
-	v_estado estado_ticket_enum;
+	v_estado SMALLINT;
+	v_estado_cerrado CONSTANT SMALLINT := fn_catalogo_id('cat_estado_ticket','CERRADO');
 BEGIN
 	SELECT estado INTO v_estado FROM tickets_soporte WHERE id = NEW.ticket_id;
-	IF v_estado = 'CERRADO' THEN
+	IF v_estado = v_estado_cerrado THEN
 		RAISE EXCEPTION 'No se pueden agregar comentarios a un ticket cerrado.';
 	END IF;
 	RETURN NEW;
@@ -942,6 +941,8 @@ CREATE TRIGGER trg_validar_ticket_abierto
 
 CREATE OR REPLACE FUNCTION fn_registrar_cambio_password()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE
+	v_origen_recuperacion CONSTANT SMALLINT := fn_catalogo_id('cat_origen_cambio_password','RECUPERACION');
 BEGIN
 	UPDATE historico_passwords
 	SET activa = FALSE,
@@ -950,10 +951,11 @@ BEGIN
 	  AND activa
 	  AND id <> NEW.id;
 	IF NEW.es_temporal AND NEW.expira_en IS NULL THEN
-		NEW.expira_en := CASE NEW.cambiada_por
-			WHEN 'RECUPERACION' THEN NEW.generada_en + INTERVAL '6 hours'
-			ELSE NEW.generada_en + INTERVAL '72 hours'
-		END;
+		IF NEW.cambiada_por = v_origen_recuperacion THEN
+			NEW.expira_en := NEW.generada_en + INTERVAL '6 hours';
+		ELSE
+			NEW.expira_en := NEW.generada_en + INTERVAL '72 hours';
+		END IF;
 	END IF;
 	RETURN NEW;
 END;$$;
@@ -988,6 +990,7 @@ CREATE OR REPLACE FUNCTION fn_verificar_bloqueo_usuario()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
 	v_fallidos INT;
+	v_motivo_bloqueo CONSTANT SMALLINT := fn_catalogo_id('cat_motivo_fallo_login','CUENTA_BLOQUEADA');
 BEGIN
 	IF NEW.exito = FALSE AND NEW.usuario_id IS NOT NULL THEN
 		SELECT COUNT(*) INTO v_fallidos
@@ -1000,7 +1003,7 @@ BEGIN
 			SET bloqueado_hasta = NOW() + INTERVAL '30 minutes'
 			WHERE id = NEW.usuario_id;
 			NEW.bloqueado_hasta := NOW() + INTERVAL '30 minutes';
-			NEW.motivo_fallo := 'CUENTA_BLOQUEADA';
+			NEW.motivo_fallo := v_motivo_bloqueo;
 		END IF;
 	END IF;
 	RETURN NEW;
