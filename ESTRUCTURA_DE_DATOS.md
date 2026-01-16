@@ -23,6 +23,63 @@ Este archivo sirve como referencia técnica para desarrolladores, analistas, aud
 | **Índices** | ~45 | Optimizados para consultas frecuentes |
 | **Consolidaciones** | 2 | LOG_ACTIVIDADES (incluye BITACORA_DETALLADA), USUARIOS (incluye CONFIGURACIONES_USUARIO.preferencias_notif) |
 
+## Estrategia de Catalogación para ENUMs
+
+Para habilitar configuraciones dinámicas y trazabilidad adicional sin afectar las tablas actuales, cada `ENUM` definido en el DDL cuenta ahora con un catálogo espejo con claves secuenciales (`SMALLINT GENERATED ALWAYS AS IDENTITY`). Esta solución convive con los tipos existentes y permite que futuras migraciones cambien gradualmente las columnas hacia llaves foráneas sin interrumpir la operación actual.
+
+**Objetivos clave**
+
+- Mantener los tipos `ENUM` vigentes mientras se documentan sus valores en catálogos consultables.
+- Proveer IDs estables y campos adicionales (`descripcion`, `orden`, `activo`) que faciliten parametrizaciones y UI.
+- Garantizar que la carga inicial usa los mismos literales del `ENUM` mediante `enum_range`, evitando discrepancias manuales.
+
+**Pasos operativos (automatizados en ddl_generated.sql)**
+
+1. Crear tablas `cat_<nombre_enum>` con la estructura estándar (`id`, `codigo`, `descripcion`, `orden`, `activo`).
+2. Insertar los valores existentes con `INSERT ... SELECT` sobre `unnest(enum_range(NULL::<enum>)) WITH ORDINALITY`, preservando el orden natural del tipo.
+3. Exponer estos catálogos para reporteo y como base de futuras migraciones a llaves foráneas. Las aplicaciones pueden consultarlos sin cambiar aún sus columnas `ENUM`.
+
+**Catálogos generados** (se hace referencia a su `ENUM` de origen únicamente para trazabilidad)
+
+| Catálogo | Origen ENUM |
+|----------|-------------|
+| `cat_nivel_educativo` | `nivel_educativo_enum` |
+| `cat_estado_archivo` | `estado_archivo_enum` |
+| `cat_estado_archivo_temporal` | `estado_archivo_temporal_enum` |
+| `cat_tipo_bloqueo` | `tipo_bloqueo_enum` |
+| `cat_operacion_auditoria` | `operacion_auditoria_enum` |
+| `cat_tipo_configuracion` | `tipo_configuracion_enum` |
+| `cat_origen_cambio_password` | `origen_cambio_password_enum` |
+| `cat_estado_validacion_eia2` | `estado_validacion_eia2_enum` |
+| `cat_tipo_reporte` | `tipo_reporte_enum` |
+| `cat_tipo_notificacion` | `tipo_notificacion_enum` |
+| `cat_estado_notificacion` | `estado_notificacion_enum` |
+| `cat_prioridad_notificacion` | `prioridad_notificacion_enum` |
+| `cat_referencia_tipo_notificacion` | `referencia_tipo_notificacion_enum` |
+| `cat_motivo_fallo_login` | `motivo_fallo_login_enum` |
+| `cat_estado_ticket` | `estado_ticket_enum` |
+
+**Plantilla empleada**
+
+```sql
+CREATE TABLE cat_nivel_educativo (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_nivel_educativo (codigo, descripcion, orden)
+SELECT val,
+       INITCAP(REPLACE(LOWER(val), '_', ' ')),
+       ord
+FROM unnest(enum_range(NULL::nivel_educativo_enum)) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+```
+
+El archivo [ddl_generated.sql](ddl_generated.sql) contiene la implementación completa de este patrón para los 15 tipos enumerados, manteniendo intactas las columnas actuales y dejando listos los catálogos para consultas y migraciones posteriores.
+
 ## Diagrama Entidad-Relación (ER)
 
 ```mermaid

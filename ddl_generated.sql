@@ -31,6 +31,235 @@ CREATE TYPE motivo_fallo_login_enum AS ENUM ('USUARIO_INVALIDO','PASSWORD_INCORR
 CREATE TYPE estado_ticket_enum AS ENUM ('ABIERTO','EN_PROCESO','RESUELTO','CERRADO');
 
 -- =====================================================================
+-- ENUM CATALOG MIRRORS
+-- =====================================================================
+
+CREATE TABLE cat_nivel_educativo (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_nivel_educativo (codigo, descripcion, orden)
+SELECT val AS codigo,
+	   INITCAP(REPLACE(LOWER(val), '_', ' ')) AS descripcion,
+	   ord AS orden
+FROM unnest(enum_range(NULL::nivel_educativo_enum)) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+CREATE TABLE cat_estado_archivo (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_estado_archivo (codigo, descripcion, orden)
+SELECT val,
+	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	   ord
+FROM unnest(enum_range(NULL::estado_archivo_enum)) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+CREATE TABLE cat_estado_archivo_temporal (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_estado_archivo_temporal (codigo, descripcion, orden)
+SELECT val,
+	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	   ord
+FROM unnest(enum_range(NULL::estado_archivo_temporal_enum)) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+CREATE TABLE cat_tipo_bloqueo (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_tipo_bloqueo (codigo, descripcion, orden)
+SELECT val,
+	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	   ord
+FROM unnest(enum_range(NULL::tipo_bloqueo_enum)) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+CREATE TABLE cat_operacion_auditoria (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_operacion_auditoria (codigo, descripcion, orden)
+SELECT val,
+	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	   ord
+FROM unnest(enum_range(NULL::operacion_auditoria_enum)) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+CREATE TABLE cat_tipo_configuracion (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_tipo_configuracion (codigo, descripcion, orden)
+SELECT val,
+	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	   ord
+FROM unnest(enum_range(NULL::tipo_configuracion_enum)) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+CREATE TABLE cat_origen_cambio_password (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_origen_cambio_password (codigo, descripcion, orden)
+SELECT val,
+	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	   ord
+FROM unnest(enum_range(NULL::origen_cambio_password_enum)) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+CREATE TABLE cat_estado_validacion_eia2 (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_estado_validacion_eia2 (codigo, descripcion, orden)
+SELECT val,
+	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	   ord
+FROM unnest(enum_range(NULL::estado_validacion_eia2_enum)) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+CREATE TABLE cat_tipo_reporte (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_tipo_reporte (codigo, descripcion, orden)
+SELECT val,
+	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	   ord
+FROM unnest(enum_range(NULL::tipo_reporte_enum)) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+CREATE TABLE cat_tipo_notificacion (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_tipo_notificacion (codigo, descripcion, orden)
+SELECT val,
+	   INITCAP(REPLACE(REPLACE(LOWER(val), '_', ' '), 'eia2', 'EIA2')),
+	   ord
+FROM unnest(enum_range(NULL::tipo_notificacion_enum)) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+CREATE TABLE cat_estado_notificacion (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_estado_notificacion (codigo, descripcion, orden)
+SELECT val,
+	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	   ord
+FROM unnest(enum_range(NULL::estado_notificacion_enum)) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+CREATE TABLE cat_prioridad_notificacion (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_prioridad_notificacion (codigo, descripcion, orden)
+SELECT val,
+	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	   ord
+FROM unnest(enum_range(NULL::prioridad_notificacion_enum)) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+CREATE TABLE cat_referencia_tipo_notificacion (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_referencia_tipo_notificacion (codigo, descripcion, orden)
+SELECT val,
+	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	   ord
+FROM unnest(enum_range(NULL::referencia_tipo_notificacion_enum)) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+CREATE TABLE cat_motivo_fallo_login (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_motivo_fallo_login (codigo, descripcion, orden)
+SELECT val,
+	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	   ord
+FROM unnest(enum_range(NULL::motivo_fallo_login_enum)) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+CREATE TABLE cat_estado_ticket (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_estado_ticket (codigo, descripcion, orden)
+SELECT val,
+	   INITCAP(REPLACE(LOWER(val), '_', ' ')),
+	   ord
+FROM unnest(enum_range(NULL::estado_ticket_enum)) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+-- =====================================================================
 -- SEQUENCES
 -- =====================================================================
 
