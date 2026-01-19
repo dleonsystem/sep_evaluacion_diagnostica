@@ -1,21 +1,23 @@
 # DIAGRAMA DE ARQUITECTURA Y COMPONENTES DE LOS SISTEMAS WEB<br>EN DESARROLLO, DETALLANDO LA ESTRUCTURA LÓGICA Y TECNOLÓGICA<br>INCLUYENDO MÓDULOS DE ANGULAR, SERVICIOS API Y CONEXIONES<br>GRAPHQL
 
+**Proyecto:** Evaluación Diagnóstica (plataforma web)
+
 **Periodo reportado:** diciembre y primera semana de enero.
 
 ---
 
 ## 1. Resumen ejecutivo del periodo
 
-Durante el periodo reportado se consolidó la visión arquitectónica del sistema web, se detallaron los componentes funcionales y se definieron las capas tecnológicas que soportan la recepción, validación y distribución de archivos. El frontend se planteó como una SPA en Angular 19 con integración a una API GraphQL (a cargo de un equipo externo), manteniendo un esquema de servicios simulados para continuar el avance mientras el backend se implementa. Asimismo, se documentaron los módulos clave de la aplicación y el flujo de integración con servicios de validación, generación de PDFs y persistencia en PostgreSQL + filesystem.
+En el periodo reportado se consolidó la arquitectura del sistema web de Evaluación Diagnóstica, definiendo sus capas principales, componentes funcionales y tecnologías clave. El frontend se plantea como SPA en Angular 19 (signals), integrado a un backend GraphQL (a cargo de un equipo externo), mientras que se mantiene una estrategia de servicios simulados para continuar el desarrollo sin bloquear avances. Se documentaron los módulos funcionales esenciales, el flujo de validación y descarga de resultados, y la infraestructura de persistencia basada en PostgreSQL + filesystem.
 
 ---
 
 ## 2. Alcance de la arquitectura (diciembre – primera semana de enero)
 
 - Definición de arquitectura de tres capas (presentación, lógica de negocio y datos/archivos).
-- Identificación de componentes funcionales: recepción anónima, reenvío autenticado, validación, credenciales/PDFs y descargas.
-- Estandarización de servicios de integración en frontend con contratos alineados a GraphQL.
-- Identificación de tecnologías clave: Angular 19 (signals), GraphQL, Redis + workers, PostgreSQL y filesystem SSD.
+- Identificación de componentes funcionales: recepción de archivos, validación, autenticación, credenciales y descargas.
+- Estándares de integración del frontend alineados a operaciones GraphQL.
+- Selección tecnológica: Angular 19 (signals), GraphQL, Redis + workers, PostgreSQL y filesystem SSD.
 
 ---
 
@@ -24,7 +26,7 @@ Durante el periodo reportado se consolidó la visión arquitectónica del sistem
 ```mermaid
 flowchart LR
     U[Escuela
-    Carga anónima] --> B[Browser
+    Carga de archivos] --> B[Browser
     Angular 19]
     D[Escuela autenticada
     Descargas] --> B
@@ -41,8 +43,8 @@ flowchart LR
 ```
 
 **Notas clave:**
-- La comunicación entre el frontend y la API se realizará vía operaciones GraphQL (queries/mutations).
-- Los workers procesan validaciones y generación de PDFs de manera asíncrona.
+- El frontend consume operaciones GraphQL (queries/mutations) para validar cargas, autenticar y listar resultados.
+- Los workers ejecutan validaciones y generan PDFs de manera asíncrona.
 - La persistencia combina base de datos relacional y repositorios de archivos en filesystem.
 
 ---
@@ -52,7 +54,7 @@ flowchart LR
 ```mermaid
 flowchart TB
     subgraph Frontend[SPA Angular 19]
-        R1[Módulo de recepción anónima]
+        R1[Módulo de recepción de archivos]
         R2[Módulo de reenvío autenticado]
         R3[Módulo de descargas autenticadas]
         R4[Módulo de autenticación]
@@ -94,9 +96,9 @@ flowchart TB
 
 | Capa | Responsabilidad | Tecnologías/Componentes | Estado (dic–ene) |
 | --- | --- | --- | --- |
-| Presentación | SPA, flujos de carga y descargas, navegación | Angular 19 (signals), guía gráfica gob.mx v3 | Definición y estructura modular documentada |
-| Lógica de negocio | Orquestación de validaciones, credenciales, PDFs y ligas | API GraphQL, Workers (Redis + colas) | Contratos y operaciones definidos; integración pendiente con backend externo |
-| Datos/Archivos | Persistencia de solicitudes, credenciales y repositorios | PostgreSQL, filesystem SSD | Modelado conceptual documentado |
+| Presentación | SPA, flujos de carga y descargas, navegación | Angular 19 (signals), guía gráfica gob.mx v3 | Estructura modular definida y documentada |
+| Lógica de negocio | Orquestación de validaciones, credenciales, PDFs y ligas | API GraphQL, Workers (Redis + colas) | Contratos de operaciones definidos; integración en espera de backend externo |
+| Datos/Archivos | Persistencia de solicitudes, credenciales y repositorios | PostgreSQL, filesystem SSD | Modelo conceptual documentado |
 
 ---
 
@@ -104,8 +106,8 @@ flowchart TB
 
 Los módulos listados corresponden a la estructura definida para el avance del frontend en este periodo:
 
-1. **Recepción anónima**
-   - Carga inicial de archivo .xlsx sin autenticación.
+1. **Recepción de archivos**
+   - Carga inicial de archivos .xlsx.
    - Mensajes de validación en línea.
 2. **Reenvío autenticado**
    - Requiere login si ya existen credenciales para CCT/correo.
@@ -127,16 +129,16 @@ Los módulos listados corresponden a la estructura definida para el avance del f
 
 ### 7.2 Operaciones GraphQL previstas (ejemplo de contratos)
 
-- **Mutation: `uploadFile`**
+- **Mutation: `uploadDiagnosticFile`**
   - Entrada: metadatos de escuela + archivo .xlsx.
   - Salida: estado de validación y referencia de PDF.
 - **Mutation: `authenticate`**
   - Entrada: CCT + contraseña.
   - Salida: token de sesión.
-- **Query: `downloadLinks`**
+- **Query: `diagnosticResults`**
   - Entrada: CCT autenticado.
   - Salida: lista de versiones y ligas de descarga.
-- **Mutation: `resubmitFile`**
+- **Mutation: `resubmitDiagnosticFile`**
   - Entrada: archivo y credenciales válidas.
   - Salida: estado de validación y nueva referencia.
 
