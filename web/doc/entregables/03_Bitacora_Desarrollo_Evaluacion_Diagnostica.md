@@ -98,9 +98,9 @@ Durante el periodo reportado se ejecutaron ajustes funcionales y de usabilidad e
 - Actualizaciones de documentación de soporte y de arquitectura.
 
 **Evidencia de commits (extracto):**
-- `00afe3c` — Add level metadata to admin excel list.
-- `bc08aee` — Add excel association status to admin panel.
-- `a24ce88` — Add results column with PDF download status.
+- `00afe3c` (2026-01-07) — Agregar metadatos de nivel al listado administrativo de Excel.
+- `bc08aee` (2026-01-06) — Agregar estado de asociación de Excel en el panel administrativo.
+- `a24ce88` (2026-01-06) — Agregar columna de resultados con estado de descarga de PDF.
 
 **Pull Requests asociados (extracto):**
 - PR #113 y #115: columna de resultados y estado de asociación.
@@ -117,7 +117,7 @@ Durante el periodo reportado se ejecutaron ajustes funcionales y de usabilidad e
 - `942cd70`, `0705626`, `8a88519` — generación y estilo de PDFs.
 - `0576bbe`, `87bc569` — flujo de upload de PDFs y selector de Excel.
 - `54d344e`, `0a18f2a` — filtros y paginación en panel administrativo.
-- `00afe3c`, `bc08aee`, `a24ce88` — metadatos y estados en panel de administración.
+- `00afe3c` (2026-01-07), `bc08aee` (2026-01-06), `a24ce88` (2026-01-06) — metadatos y estados en panel de administración.
 
 **Versiones/Integraciones (PRs relevantes):**
 - PR #90–#96: validación y tipado de reglas y plantillas.
