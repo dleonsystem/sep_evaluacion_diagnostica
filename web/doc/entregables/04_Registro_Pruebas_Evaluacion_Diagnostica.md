@@ -104,6 +104,8 @@ sequenceDiagram
 - JSON de respuestas simuladas (queries/mutations) utilizado en servicios mock.
 - Diagrama de flujo de pruebas (UI → servicios simulados → respuesta). 
 
+**Ubicación de archivos mock en repositorio:** `web/doc/entregables/evidencias_pruebas/`.
+
 **Ejemplo de respuesta simulada (JSON):**
 
 ```json
