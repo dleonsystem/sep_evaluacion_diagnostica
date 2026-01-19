@@ -39,6 +39,32 @@ Documentar la ejecución de pruebas funcionales del frontend y la validación de
 
 ---
 
+## 4.1 Diagramas de apoyo para evidencias
+
+**Flujo de prueba funcional (frontend con servicios simulados):**
+
+```mermaid
+flowchart LR
+  UI[UI Angular] --> Mock[Servicios simulados]
+  Mock --> Resp[Respuesta mock JSON]
+  Resp --> UI
+```
+
+**Secuencia de validación de carga (simulada):**
+
+```mermaid
+sequenceDiagram
+  participant U as Usuario
+  participant UI as Angular UI
+  participant Mock as Servicio Simulado
+  U->>UI: Sube archivo .xlsx
+  UI->>Mock: uploadDiagnosticFile (mock)
+  Mock-->>UI: Respuesta OK/Error
+  UI-->>U: PDF simulado / mensaje
+```
+
+---
+
 ## 5. Matriz de pruebas funcionales (extracto)
 
 | ID | Módulo/Flujo | Caso de prueba | Datos de entrada | Resultado esperado | Resultado obtenido | Estado | Evidencia |
@@ -77,6 +103,21 @@ Documentar la ejecución de pruebas funcionales del frontend y la validación de
 - Capturas de pantalla por cada caso de prueba (PF-01 a PF-07).
 - JSON de respuestas simuladas (queries/mutations) utilizado en servicios mock.
 - Diagrama de flujo de pruebas (UI → servicios simulados → respuesta). 
+
+**Ejemplo de respuesta simulada (JSON):**
+
+```json
+{
+  "data": {
+    "uploadDiagnosticFile": {
+      "status": "OK",
+      "message": "Validación correcta",
+      "pdfUrl": "/mock/confirmacion.pdf",
+      "hash": "abc123"
+    }
+  }
+}
+```
 
 ---
 
