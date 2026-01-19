@@ -1,0 +1,235 @@
+/**
+ * GraphQL Server Entry Point
+ *
+ * @module index
+ * @description Punto de entrada del servidor GraphQL Apollo
+ * @version 1.0.0
+ * @author SEP - Evaluación Diagnóstica
+ * @standard PSP (Personal Software Process)
+ * @rup Elaboration Phase - Architectural Baseline
+ * @cmmi CMMI Level 3 - Integrated Project Management
+ */
+
+import 'reflect-metadata';
+import { ApolloServer } from '@apollo/server';
+import { expressMiddleware } from '@apollo/server/express4';
+import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
+import express from 'express';
+import http from 'node:http';
+import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import dotenv from 'dotenv';
+import { typeDefs } from './schema/typeDefs.js';
+import { resolvers } from './schema/resolvers.js';
+import { testConnection, closePool } from './config/database.js';
+import { logger, logPSPTime } from './utils/logger.js';
+
+// Cargar variables de entorno
+dotenv.config();
+
+/**
+ * Configuración del servidor
+ * @psp Configuration Management
+ */
+const PORT = process.env.PORT || 4000;
+const HOST = process.env.HOST || 'localhost';
+const GRAPHQL_PATH = process.env.GRAPHQL_PATH || '/graphql';
+
+/**
+ * Configura middlewares de Express
+ * @psp Configuration Management
+ */
+function configureMiddlewares(app: express.Application) {
+  app.use(
+    helmet({
+      contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+      crossOriginEmbedderPolicy: false,
+    })
+  );
+  app.use(compression());
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+}
+
+/**
+ * Crea servidor Apollo GraphQL
+ * @psp Process Script - Apollo Configuration
+ */
+function createApolloServer(httpServer: http.Server) {
+  return new ApolloServer({
+    typeDefs,
+    resolvers,
+    plugins: [
+      ApolloServerPluginDrainHttpServer({ httpServer }),
+      {
+        async requestDidStart() {
+          return {
+            async didEncounterErrors(requestContext: any) {
+              logger.error('GraphQL Error', {
+                errors: requestContext.errors,
+                operation: requestContext.operation?.operation,
+                variables: requestContext.request.variables,
+              });
+            },
+          };
+        },
+      },
+    ],
+    introspection: process.env.GRAPHQL_INTROSPECTION === 'true',
+    includeStacktraceInErrorResponses: process.env.NODE_ENV !== 'production',
+  });
+}
+
+/**
+ * Configura rutas de Express
+ * @psp Configuration Management
+ */
+function configureRoutes(app: express.Application) {
+  app.get('/health', (_req, res) => {
+    void (async () => {
+      try {
+        const dbConnected = await testConnection();
+        res.json({
+          status: 'OK',
+          timestamp: new Date().toISOString(),
+          database: dbConnected ? 'connected' : 'disconnected',
+          uptime: process.uptime(),
+        });
+      } catch (error) {
+        logger.error('Health check error:', error);
+        res.status(503).json({
+          status: 'ERROR',
+          timestamp: new Date().toISOString(),
+          database: 'disconnected',
+        });
+      }
+    })();
+  });
+
+  app.get('/', (_req, res) => {
+    res.json({
+      message: 'Servidor GraphQL - Sistema de Evaluación Integral de Aprendizaje (EIA)',
+      version: '1.0.0',
+      graphql: `http://${HOST}:${PORT}${GRAPHQL_PATH}`,
+      health: `http://${HOST}:${PORT}/health`,
+      standards: {
+        psp: 'Personal Software Process',
+        rup: 'Rational Unified Process',
+        cmmi: 'CMMI Level 3',
+      },
+    });
+  });
+}
+
+/**
+ * Función principal para iniciar el servidor
+ * @psp Process Script - Startup Sequence
+ * @rup Iteration Planning - Bootstrap Phase
+ */
+async function startServer() {
+  const startTime = Date.now();
+
+  try {
+    logger.info('=== Iniciando servidor GraphQL EIA ===');
+
+    // 1. Verificar conexión a base de datos
+    logger.info('Verificando conexión a PostgreSQL...');
+    const dbConnected = await testConnection();
+    if (dbConnected) {
+      logger.info('✓ Conexión a PostgreSQL establecida');
+    } else {
+      logger.warn('⚠️  PostgreSQL no disponible - ejecutando en modo sin BD');
+      logger.warn('   Para habilitar BD, configura PostgreSQL y actualiza .env');
+    }
+
+    // 2. Crear aplicación Express
+    const app = express();
+    const httpServer = http.createServer(app);
+
+    // 3. Configurar middlewares de seguridad
+    configureMiddlewares(app);
+
+    // 4. Crear servidor Apollo GraphQL
+    const server = createApolloServer(httpServer);
+
+    // 5. Iniciar servidor Apollo
+    await server.start();
+    logger.info('✓ Servidor Apollo GraphQL iniciado');
+
+    // 6. Configurar middleware de GraphQL
+    app.use(
+      GRAPHQL_PATH,
+      cors<cors.CorsRequest>({
+        origin: process.env.CORS_ORIGIN || '*',
+        credentials: true,
+      }),
+      expressMiddleware(server, {
+        context: async ({ req }) => ({
+          user: req.headers.authorization ? { id: 'test-user' } : null,
+        }),
+      })
+    );
+
+    // 7. Configurar rutas
+    configureRoutes(app);
+
+    // 8. Iniciar servidor HTTP
+    await new Promise<void>((resolve) => {
+      httpServer.listen(PORT, () => {
+        resolve();
+      });
+    });
+
+    const elapsedTime = Date.now() - startTime;
+
+    logger.info('=================================================');
+    logger.info(`🚀 Servidor GraphQL listo en http://${HOST}:${PORT}${GRAPHQL_PATH}`);
+    logger.info(`📊 Health check disponible en http://${HOST}:${PORT}/health`);
+    logger.info(`⏱️  Tiempo de inicio: ${elapsedTime}ms`);
+    logger.info(`🌍 Entorno: ${process.env.NODE_ENV || 'development'}`);
+    logger.info('=================================================');
+
+    // PSP Time Logging
+    logPSPTime('Server Startup', elapsedTime);
+  } catch (error) {
+    logger.error('Error fatal al iniciar servidor:', error);
+    process.exit(1);
+  }
+}
+
+/**
+ * Manejo de señales de terminación
+ * @psp Resource Management - Graceful Shutdown
+ */
+async function gracefulShutdown(signal: string) {
+  logger.info(`Señal ${signal} recibida, cerrando servidor...`);
+
+  try {
+    await closePool();
+    logger.info('✓ Pool de base de datos cerrado');
+
+    logger.info('Servidor detenido correctamente');
+    process.exit(0);
+  } catch (error) {
+    logger.error('Error durante el cierre:', error);
+    process.exit(1);
+  }
+}
+
+// Registrar manejadores de señales
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Manejo de errores no capturados
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+// Iniciar servidor
+await startServer();

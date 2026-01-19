@@ -1,0 +1,52 @@
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "files.exclude": {
+    "node_modules": true,
+    "dist": true,
+    ".git": true
+  },
+  "search.exclude": {
+    "node_modules": true,
+    "dist": true,
+    "coverage": true
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[graphql]": {
+    "editor.defaultFormatter": "GraphQL.vscode-graphql"
+  },
+  "eslint.validate": [
+    "javascript",
+    "typescript"
+  ],
+  "github.copilot.enable": {
+    "*": true,
+    "typescript": true,
+    "graphql": true
+  },
+  "cSpell.words": [
+    "graphql",
+    "postgresql",
+    "CMMI",
+    "typedefs",
+    "resolvers",
+    "dataloader"
+  ],
+  "aiCollaboration.mode": "enhanced",
+  "aiCollaboration.documentationAutoUpdate": true,
+  "aiCollaboration.codeReviewAssistant": true
+}

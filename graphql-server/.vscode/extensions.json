@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "graphql.vscode-graphql",
+    "github.copilot",
+    "github.copilot-chat",
+    "ms-vscode.vscode-typescript-next",
+    "firsttris.vscode-jest-runner",
+    "cweijan.vscode-postgresql-client2",
+    "humao.rest-client",
+    "streetsidesoftware.code-spell-checker",
+    "ms-azuretools.vscode-docker"
+  ]
+}
