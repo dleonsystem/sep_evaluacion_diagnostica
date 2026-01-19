@@ -29,122 +29,106 @@ Este archivo sirve como referencia técnica para desarrolladores, analistas, aud
 erDiagram
     ESCUELAS ||--o{ USUARIOS : tiene
     ESCUELAS ||--o{ GRUPOS : agrupa
-    ESCUELAS ||--o| CREDENCIALES_EIA2 : genera
-    GRUPOS ||--o{ ESTUDIANTES : contiene
-    ESTUDIANTES ||--o{ VALORACIONES : recibe
-    VALORACIONES }o--|| MATERIAS : evalua
-    VALORACIONES }o--|| PERIODOS_EVALUACION : en
-    USUARIOS ||--o{ VALORACIONES : registra
-    EVALUACIONES ||--|| VALORACIONES : referencia
-    ESCUELAS ||--|| CAT_TURNOS : turno
-    ESCUELAS ||--|| CAT_ENTIDADES_FEDERATIVAS : entidad
-    ESCUELAS ||--|| CAT_NIVELES_EDUCATIVOS : nivel
-    ESCUELAS ||--|| CAT_CICLOS_ESCOLARES : ciclo
-    GRUPOS ||--|| CAT_GRADOS : grado
-    GRUPOS ||--|| ESCUELAS : escuela
-    EVALUACIONES ||--|| ESTUDIANTES : estudiante
-    EVALUACIONES ||--|| MATERIAS : materia
-    EVALUACIONES ||--|| PERIODOS_EVALUACION : periodo
-    MATERIAS ||--o{ COMPETENCIAS : define
-    COMPETENCIAS ||--o{ RESULTADOS_COMPETENCIAS : mide
-    EVALUACIONES ||--o{ RESULTADOS_COMPETENCIAS : genera
-    USUARIOS ||--o{ LOG_ACTIVIDADES : registra
-    USUARIOS ||--|| CAT_ROLES_USUARIO : rol
-    CREDENCIALES_EIA2 ||--o{ SOLICITUDES_EIA2 : autentica
-    ESCUELAS ||--o{ REPORTES_GENERADOS : recibe
-    PERIODOS_EVALUACION ||--o{ REPORTES_GENERADOS : periodo
-    USUARIOS ||--o{ REPORTES_GENERADOS : descarga
-    TICKETS_SOPORTE ||--o{ COMENTARIOS_TICKET : contiene
-    USUARIOS ||--o{ COMENTARIOS_TICKET : escribe
-    USUARIOS ||--o{ HISTORICO_PASSWORDS : mantiene
-    USUARIOS ||--o{ NOTIFICACIONES_EMAIL : recibe
-    TICKETS_SOPORTE ||--o{ NOTIFICACIONES_EMAIL : genera
-    REPORTES_GENERADOS ||--o{ NOTIFICACIONES_EMAIL : notifica
-    USUARIOS ||--o{ INTENTOS_LOGIN : registra
-    USUARIOS ||--o{ SESIONES : mantiene
-    USUARIOS ||--o{ BLOQUEOS_IP : genera
-    USUARIOS ||--o{ CONSENTIMIENTOS_LGPDP : otorga
-    USUARIOS ||--o{ CAMBIOS_AUDITORIA : ejecuta
-    PLANTILLAS_EMAIL ||--o{ NOTIFICACIONES_EMAIL : usa
-```
+    ### PRE3
 
-## Diccionario de Datos (30 tablas principales, orden alfabético)
+    **Familia de staging FRV:** Las once tablas `pre3`, `pri1`–`pri6` y `sec1`–`sec3` almacenan sin transformar los registros provenientes de los DBF entregados por SiCRER (por ejemplo `MACROS Evaluacion Diagnostica/Bd_muestra/pre3.dbf`). Antes se declaraban mediante `LIKE pre3`, pero ahora todas las tablas quedaron definidas explícitamente en el DDL para eliminar dependencias implícitas y permitir reconstrucciones limpias en cualquier entorno.
 
-<!-- INICIO DICCIONARIO ORDENADO -->
-<!-- TABLAS OPTIMIZADAS: Eliminadas 8 tablas (BITACORA_DETALLADA, CACHE_QUERIES, ARCHIVOS_TEMPORALES, 
-     ESTADISTICAS_USO, TAREAS_PROGRAMADAS, RESPALDOS_ARCHIVOS, CONFIGURACIONES_USUARIO, CATALOGO_ERRORES)
-     según análisis de trazabilidad RF vs Tablas (12 enero 2026) -->
+    **Esquema de columnas compartido** (aplica a pre3, pri*, sec*):
 
-### ARCHIVOS_FRV
+    | Campo        | Tipo         | Descripción                                      |
+    |--------------|--------------|--------------------------------------------------|
+    | cct          | VARCHAR(30)  | Clave de Centro de Trabajo tal como viene en el DBF |
+    | turno        | VARCHAR(30)  | Turno reportado en el archivo                    |
+    | nom_cct      | VARCHAR(80)  | Nombre del plantel                               |
+    | nivel        | VARCHAR(20)  | Nivel educativo reportado                        |
+    | fase         | VARCHAR(20)  | Fase / aplicación del instrumento                |
+    | grado        | VARCHAR(20)  | Grado escolar sin normalizar                     |
+    | correo1      | VARCHAR(100) | Correo principal capturado                       |
+    | correo2      | VARCHAR(100) | Correo alterno capturado                         |
+    | matricula_   | VARCHAR(30)  | Matrícula del alumno                             |
+    | nlista       | VARCHAR(20)  | Número de lista                                  |
+    | estudiante   | VARCHAR(100) | Nombre completo                                  |
+    | genero       | VARCHAR(10)  | Indicador de género                              |
+    | grupo        | VARCHAR(10)  | Grupo reportado                                  |
+    | eia1_c1_a1   | VARCHAR(10)  | Resultado EIA1 competencia 1 área 1              |
+    | eia1_c1_a2   | VARCHAR(10)  | Resultado EIA1 competencia 1 área 2              |
+    | eia1_c2_a1   | VARCHAR(10)  | Resultado EIA1 competencia 2 área 1              |
+    | eia1_c2_a2   | VARCHAR(10)  | Resultado EIA1 competencia 2 área 2              |
+    | eia1_c3_a1   | VARCHAR(10)  | Resultado EIA1 competencia 3 área 1              |
+    | eia1_c3_a2   | VARCHAR(10)  | Resultado EIA1 competencia 3 área 2              |
+    | eia2_c1_a1   | VARCHAR(10)  | Resultado EIA2 competencia 1 área 1              |
+    | eia2_c2_a1   | VARCHAR(10)  | Resultado EIA2 competencia 2 área 1              |
+    | eia2_c3_a1   | VARCHAR(10)  | Resultado EIA2 competencia 3 área 1              |
+    | eia2_c4_a1   | VARCHAR(10)  | Resultado EIA2 competencia 4 área 1              |
+    | eia2_c4_a2   | VARCHAR(10)  | Resultado EIA2 competencia 4 área 2              |
+    | plen         | VARCHAR(10)  | Indicador de plenitud                            |
+    | pspc         | VARCHAR(10)  | Indicador PSPC                                   |
+    | pens         | VARCHAR(10)  | Indicador PENS                                   |
+    | phyc         | VARCHAR(10)  | Indicador PHYC                                   |
+    | id           | VARCHAR(30)  | Identificador del registro en el DBF (PRIMARY KEY) |
+    | archivoori   | VARCHAR(50)  | Nombre del archivo de origen (sin ruta)          |
 
-| Campo                | Tipo         | Descripción                       |
-|----------------------|--------------|-----------------------------------|
-| id                   | UUID         | Identificador único               |
-| escuela_id           | UUID         | Relación con ESCUELAS             |
-| usuario_id           | UUID         | Relación con USUARIOS             |
-| ciclo_escolar        | VARCHAR(9)   | Ciclo escolar                     |
-| nivel                | ENUM         | Nivel educativo                   |
-| estado               | ENUM         | Estado del archivo                |
-| file_path            | VARCHAR(500) | Ruta en filesystem                |
-| filename_original    | VARCHAR(255) | Nombre original del archivo       |
-| file_size            | BIGINT       | Tamaño en bytes                   |
-| mime_type            | VARCHAR(50)  | Tipo MIME                         |
-| validacion_resultado | JSONB        | Resultado de validación           |
-| validado_en          | TIMESTAMP    | Fecha de validación               |
-| procesado_en         | TIMESTAMP    | Fecha de procesamiento            |
-| total_estudiantes    | INT          | Total de estudiantes              |
-| created_at           | TIMESTAMP    | Fecha de creación                 |
-| updated_at           | TIMESTAMP    | Fecha de actualización            |
+    **Notas operativas**
 
-### ARCHIVOS_TEMPORALES
+    - `id` previene duplicados durante la importación masiva y se indexa como clave primaria en cada tabla.
+    - Las tablas se pueblan mediante `COPY`/`ogr2ogr`, se validan y, tras mover la información al modelo normalizado (`ARCHIVOS_FRV` + `EVALUACIONES`), se vacían para liberar espacio.
+    - Los anchos de `VARCHAR` reproducen el tamaño máximo observado en los DBF para evitar truncamientos.
 
-| Campo                | Tipo         | Descripción                       |
-|----------------------|--------------|-----------------------------------|
-| id                   | UUID         | Identificador único               |
-| usuario_id           | UUID         | Relación con USUARIOS             |
-| filename_original    | VARCHAR(255) | Nombre original del archivo       |
-| file_path_temp       | VARCHAR(500) | Ruta temporal en filesystem       |
-| file_size            | BIGINT       | Tamaño en bytes                   |
-| mime_type            | VARCHAR(50)  | Tipo MIME                         |
-| chunk_actual         | INT          | Chunk actual (upload parcial)     |
-| chunks_totales       | INT          | Total de chunks esperados         |
-| hash_parcial         | VARCHAR(64)  | Hash SHA256 parcial               |
-| estado               | ENUM         | PENDIENTE, PROCESANDO, COMPLETADO, ERROR |
-| error_mensaje        | TEXT         | Mensaje de error si aplica        |
-| expira_en            | TIMESTAMP    | Fecha de expiración automática    |
-| created_at           | TIMESTAMP    | Fecha de creación                 |
-| updated_at           | TIMESTAMP    | Fecha de última actualización     |
+    ### PRI1
 
-### BLOQUEOS_IP
+    - **Rol:** staging de la muestra Primaria 1er grado (`MACROS Evaluacion Diagnostica/Bd_muestra/pri1.dbf`).
+    - **Esquema:** igual al descrito en [PRE3](#pre3).
+    - **Notas:** alimenta las métricas de primaria inmediatamente después de la carga de preescolar.
 
-| Campo                | Tipo         | Descripción                       |
-|----------------------|--------------|-----------------------------------|
-| id                   | BIGSERIAL    | Identificador único               |
-| ip_address           | INET         | Dirección IP bloqueada            |
-| intentos_fallidos    | INT          | Contador de intentos fallidos     |
-| motivo               | VARCHAR(255) | Motivo del bloqueo                |
-| tipo_bloqueo         | ENUM         | AUTOMATICO, MANUAL, PERMANENTE    |
-| bloqueado_desde      | TIMESTAMP    | Fecha inicio del bloqueo          |
-| bloqueado_hasta      | TIMESTAMP    | Fecha fin del bloqueo (NULL si permanente) |
-| desbloqueado_por     | UUID         | Usuario que desbloqueó (FK USUARIOS) |
-| desbloqueado_en      | TIMESTAMP    | Fecha de desbloqueo               |
-| activo               | BOOLEAN      | Indica si el bloqueo está activo  |
-| created_at           | TIMESTAMP    | Fecha de creación                 |
-| updated_at           | TIMESTAMP    | Fecha de última actualización     |
+    ### PRI2
 
-### CAMBIOS_AUDITORIA
+    - **Rol:** staging para Primaria 2º grado (`MACROS Evaluacion Diagnostica/Bd_muestra/pri2.dbf`).
+    - **Esquema:** idéntico al bloque compartido.
+    - **Notas:** sólo cambian los valores de `grado` y los resultados capturados; la estructura es común.
 
-| Campo                | Tipo         | Descripción                       |
-|----------------------|--------------|-----------------------------------|
-| id                   | BIGSERIAL    | Identificador único               |
-| tabla                | VARCHAR(100) | Nombre de la tabla afectada       |
-| registro_id          | VARCHAR(100) | ID del registro modificado        |
-| operacion            | ENUM         | INSERT, UPDATE, DELETE            |
-| usuario_id           | UUID         | Relación con USUARIOS             |
-| valores_anteriores   | JSONB        | Valores antes del cambio (JSON)   |
-| valores_nuevos       | JSONB        | Valores después del cambio (JSON) |
-| ip_address           | INET         | IP de origen del cambio           |
-| user_agent           | TEXT         | Navegador/cliente                 |
+    ### PRI3
+
+    - **Rol:** staging para Primaria 3º grado (`MACROS Evaluacion Diagnostica/Bd_muestra/pri3.dbf`).
+    - **Esquema:** reutiliza las mismas columnas `VARCHAR` del bloque compartido.
+    - **Notas:** contempla columnas de EIA1 y EIA2 aunque algunas lleguen vacías; el DDL explícito evita dependencias de `LIKE`.
+
+    ### PRI4
+
+    - **Rol:** staging para Primaria 4º grado (`MACROS Evaluacion Diagnostica/Bd_muestra/pri4.dbf`).
+    - **Esquema:** igual que el bloque compartido.
+    - **Notas:** se trunca al concluir el pipeline de normalización.
+
+    ### PRI5
+
+    - **Rol:** staging para Primaria 5º grado (`MACROS Evaluacion Diagnostica/Bd_muestra/pri5.dbf`).
+    - **Esquema:** igual al bloque compartido.
+    - **Notas:** mantiene la PK en `id` para controlar reimportaciones.
+
+    ### PRI6
+
+    - **Rol:** staging para Primaria 6º grado (`MACROS Evaluacion Diagnostica/Bd_muestra/pri6.dbf`).
+    - **Esquema:** igual al bloque compartido.
+    - **Notas:** último archivo de primaria previo a las cargas de secundaria.
+
+    ### SEC1
+
+    - **Rol:** staging para Secundaria 1er grado (`MACROS Evaluacion Diagnostica/Bd_muestra/sec1.dbf`).
+    - **Esquema:** igual al bloque compartido.
+    - **Notas:** aunque el DBF contiene campos auxiliares, se normaliza a la estructura común para simplificar el `COPY`.
+
+    ### SEC2
+
+    - **Rol:** staging para Secundaria 2º grado (`MACROS Evaluacion Diagnostica/Bd_muestra/sec2.dbf`).
+    - **Esquema:** igual al bloque compartido.
+    - **Notas:** comparte indicadores `plen/pspc/pens/phyc` para la validación de integridad.
+
+    ### SEC3
+
+    - **Rol:** staging para Secundaria 3º grado (`MACROS Evaluacion Diagnostica/Bd_muestra/sec3.dbf`).
+    - **Esquema:** igual al bloque compartido.
+    - **Notas:** última tabla de staging antes de consolidar secundaria.
+
+    ### RESULTADOS_COMPETENCIAS
 | metadata             | JSONB        | Metadata adicional                |
 | created_at           | TIMESTAMP    | Fecha y hora del cambio           |
 
@@ -850,143 +834,6 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | archivo_zip     | VARCHAR(500) | Ruta del ZIP si está comprimido   |
 | created_at      | TIMESTAMP    | Fecha de creación                 |
 | updated_at      | TIMESTAMP    | Fecha de actualización            |
-
-### SEC1
-
-| Campo         | Tipo        | Descripción                                      |
-|---------------|-------------|--------------------------------------------------|
-| CCT           | CHAR(21)    | Clave de Centro de Trabajo                       |
-| TURNO         | CHAR(22)    | Turno escolar                                    |
-| NOM_CCT       | CHAR(48)    | Nombre del Centro de Trabajo                     |
-| NIVEL         | CHAR(10)    | Nivel educativo                                  |
-| FASE          | CHAR(7)     | Fase de la evaluación                            |
-| GRADO         | CHAR(11)    | Grado escolar                                    |
-| CORREO1       | CHAR(21)    | Correo electrónico principal                     |
-| CORREO2       | CHAR(9)     | Correo electrónico alternativo                   |
-| MATRICULA_    | CHAR(22)    | Matrícula del estudiante                         |
-| NLISTA        | CHAR(14)    | Número de lista                                  |
-| ESTUDIANTE    | CHAR(59)    | Nombre completo del estudiante                   |
-| GENERO        | CHAR(10)    | Género                                           |
-| GRUPO         | CHAR(10)    | Grupo escolar                                    |
-| EIA1_C1_A1    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
-| EIA1_C1_A2    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 2            |
-| EIA1_C1_A3    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 3            |
-| EIA1_C2_A1    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
-| EIA1_C2_A2    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
-| EIA1_C3_A1    | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
-| EIA1_C4_A1    | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
-| EIA1_C4_B1    | CHAR(10)    | Resultado EIA1, Competencia 4, Bloque 1          |
-| EIA1_C5_A1    | CHAR(10)    | Resultado EIA1, Competencia 5, Área 1            |
-| EIA1_C5_B1    | CHAR(10)    | Resultado EIA1, Competencia 5, Bloque 1          |
-| EIA1_C5_C1    | CHAR(10)    | Resultado EIA1, Competencia 5, Componente 1      |
-| EIA2_C1_A1    | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
-| EIA2_C1_A2    | CHAR(10)    | Resultado EIA2, Competencia 1, Área 2            |
-| EIA2_C2_A1    | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
-| EIA2_C2_A2    | CHAR(10)    | Resultado EIA2, Competencia 2, Área 2            |
-| EIA2_C2_B1    | CHAR(10)    | Resultado EIA2, Competencia 2, Bloque 1          |
-| EIA2_C2_B2    | CHAR(10)    | Resultado EIA2, Competencia 2, Bloque 2          |
-| EIA2_C3_A1    | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
-| EIA2_C3_B1    | CHAR(10)    | Resultado EIA2, Competencia 3, Bloque 1          |
-| EIA2_C3_C1    | CHAR(10)    | Resultado EIA2, Competencia 3, Componente 1      |
-| EIA2_C4_A1    | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
-| PLEN          | CHAR(10)    | Indicador de plenitud                            |
-| PSPC          | CHAR(10)    | Indicador PSPC                                   |
-| PENS          | CHAR(10)    | Indicador PENS                                   |
-| PHYC          | CHAR(10)    | Indicador PHYC                                   |
-| ID            | CHAR(19)    | Identificador único                              |
-| ARCHIVOORI    | CHAR(22)    | Nombre de archivo original                       |
-| comprimido_en | VARCHAR(500)| Ruta del archivo .7z/.zip                        |
-| created_at    | TIMESTAMP   | Fecha de creación del registro                   |
-| updated_at    | TIMESTAMP   | Fecha de última actualización                    |
-
-### SEC2
-
-| Campo         | Tipo        | Descripción                                      |
-|---------------|-------------|--------------------------------------------------|
-| CCT           | CHAR(21)    | Clave de Centro de Trabajo                       |
-| TURNO         | CHAR(22)    | Turno escolar                                    |
-| NOM_CCT       | CHAR(48)    | Nombre del Centro de Trabajo                     |
-| NIVEL         | CHAR(10)    | Nivel educativo                                  |
-| FASE          | CHAR(7)     | Fase de la evaluación                            |
-| GRADO         | CHAR(11)    | Grado escolar                                    |
-| CORREO1       | CHAR(21)    | Correo electrónico principal                     |
-| CORREO2       | CHAR(9)     | Correo electrónico alternativo                   |
-| MATRICULA_    | CHAR(22)    | Matrícula del estudiante                         |
-| NLISTA        | CHAR(14)    | Número de lista                                  |
-| ESTUDIANTE    | CHAR(59)    | Nombre completo del estudiante                   |
-| GENERO        | CHAR(10)    | Género                                           |
-| GRUPO         | CHAR(10)    | Grupo escolar                                    |
-| EIA1_C1_A1    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
-| EIA1_C1_A2    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 2            |
-| EIA1_C1_A3    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 3            |
-| EIA1_C2_A1    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
-| EIA1_C2_A2    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
-| EIA1_C3_A1    | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
-| EIA1_C4_A1    | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
-| EIA1_C4_B1    | CHAR(10)    | Resultado EIA1, Competencia 4, Bloque 1          |
-| EIA1_C5_A1    | CHAR(10)    | Resultado EIA1, Competencia 5, Área 1            |
-| EIA1_C5_B1    | CHAR(10)    | Resultado EIA1, Competencia 5, Bloque 1          |
-| EIA1_C5_C1    | CHAR(10)    | Resultado EIA1, Competencia 5, Componente 1      |
-| EIA2_C1_A1    | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
-| EIA2_C1_A2    | CHAR(10)    | Resultado EIA2, Competencia 1, Área 2            |
-| EIA2_C2_A1    | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
-| EIA2_C2_A2    | CHAR(10)    | Resultado EIA2, Competencia 2, Área 2            |
-| EIA2_C2_B1    | CHAR(10)    | Resultado EIA2, Competencia 2, Bloque 1          |
-| EIA2_C2_B2    | CHAR(10)    | Resultado EIA2, Competencia 2, Bloque 2          |
-| EIA2_C3_A1    | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
-| EIA2_C3_B1    | CHAR(10)    | Resultado EIA2, Competencia 3, Bloque 1          |
-| EIA2_C3_C1    | CHAR(10)    | Resultado EIA2, Competencia 3, Componente 1      |
-| EIA2_C4_A1    | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
-| PLEN          | CHAR(10)    | Indicador de plenitud                            |
-| PSPC          | CHAR(10)    | Indicador PSPC                                   |
-| PENS          | CHAR(10)    | Indicador PENS                                   |
-| PHYC          | CHAR(10)    | Indicador PHYC                                   |
-| ID            | CHAR(19)    | Identificador único                              |
-| ARCHIVOORI    | CHAR(22)    | Nombre de archivo original                       |
-
-### SEC3
-
-| Campo         | Tipo        | Descripción                                      |
-|---------------|-------------|--------------------------------------------------|
-| CCT           | CHAR(21)    | Clave de Centro de Trabajo                       |
-| TURNO         | CHAR(22)    | Turno escolar                                    |
-| NOM_CCT       | CHAR(48)    | Nombre del Centro de Trabajo                     |
-| NIVEL         | CHAR(10)    | Nivel educativo                                  |
-| FASE          | CHAR(7)     | Fase de la evaluación                            |
-| GRADO         | CHAR(11)    | Grado escolar                                    |
-| CORREO1       | CHAR(21)    | Correo electrónico principal                     |
-| CORREO2       | CHAR(9)     | Correo electrónico alternativo                   |
-| MATRICULA_    | CHAR(22)    | Matrícula del estudiante                         |
-| NLISTA        | CHAR(14)    | Número de lista                                  |
-| ESTUDIANTE    | CHAR(59)    | Nombre completo del estudiante                   |
-| GENERO        | CHAR(10)    | Género                                           |
-| GRUPO         | CHAR(10)    | Grupo escolar                                    |
-| EIA1_C1_A1    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
-| EIA1_C1_A2    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 2            |
-| EIA1_C1_A3    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 3            |
-| EIA1_C2_A1    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
-| EIA1_C2_A2    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
-| EIA1_C2_B1    | CHAR(10)    | Resultado EIA1, Competencia 2, Bloque 1          |
-| EIA1_C3_A1    | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
-| EIA1_C3_A2    | CHAR(10)    | Resultado EIA1, Competencia 3, Área 2            |
-| EIA1_C4_A1    | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
-| EIA1_C4_A2    | CHAR(10)    | Resultado EIA1, Competencia 4, Área 2            |
-| EIA2_C1_A1    | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
-| EIA2_C1_A2    | CHAR(10)    | Resultado EIA2, Competencia 1, Área 2            |
-| EIA2_C1_A3    | CHAR(10)    | Resultado EIA2, Competencia 1, Área 3            |
-| EIA2_C2_A1    | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
-| EIA2_C2_A2    | CHAR(10)    | Resultado EIA2, Competencia 2, Área 2            |
-| EIA2_C3_A1    | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
-| EIA2_C3_A2    | CHAR(10)    | Resultado EIA2, Competencia 3, Área 2            |
-| EIA2_C3_A3    | CHAR(10)    | Resultado EIA2, Competencia 3, Área 3            |
-| EIA2_C4_A1    | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
-| EIA2_C4_A2    | CHAR(10)    | Resultado EIA2, Competencia 4, Área 2            |
-| PLEN          | CHAR(10)    | Indicador de plenitud                            |
-| PSPC          | CHAR(10)    | Indicador PSPC                                   |
-| PENS          | CHAR(10)    | Indicador PENS                                   |
-| PHYC          | CHAR(10)    | Indicador PHYC                                   |
-| ID            | CHAR(19)    | Identificador único                              |
-| ARCHIVOORI    | CHAR(22)    | Nombre de archivo original                       |
 
 ### SESIONES
 
