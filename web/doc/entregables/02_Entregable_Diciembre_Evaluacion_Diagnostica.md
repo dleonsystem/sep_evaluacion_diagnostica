@@ -92,6 +92,40 @@ flowchart TB
 
 ---
 
+### 4.1 Descripción detallada de componentes e interacciones
+
+**Frontend (SPA Angular 19)**
+
+- **Módulo de recepción de archivos (R1)**: pantalla principal para la carga inicial de archivos .xlsx. Valida precondiciones del flujo (por ejemplo, si el envío es anónimo o requiere autenticación) y muestra el estado “Validando tu archivo...”. Consume operaciones GraphQL a través de `S1` para iniciar el proceso de validación. 
+- **Módulo de reenvío autenticado (R2)**: habilita la carga de nuevas versiones cuando ya existen credenciales. Depende del módulo de autenticación para verificar sesión activa y consume las operaciones de reenvío/validación. 
+- **Módulo de descargas autenticadas (R3)**: consulta y muestra la lista de versiones y ligas de descarga asociadas al CCT autenticado. Se alimenta de consultas GraphQL y presenta estados de carga y errores. 
+- **Módulo de autenticación (R4)**: gestiona login y tokens de sesión. Centraliza el manejo de credenciales y provee estado de sesión a los demás módulos. 
+- **Panel técnico (R5)**: visualiza indicadores básicos de operación (estado de workers, logs y espacio en disco) para soporte interno. 
+- **Servicios de integración GraphQL (S1)**: capa de acceso a datos. Abstrae la comunicación con el backend, centraliza la ejecución de queries/mutations y normaliza respuestas/errores para los módulos de UI. 
+
+**Backend (API GraphQL + Workers)**
+
+- **API GraphQL (GQL)**: punto único de entrada para operaciones de negocio. Orquesta validaciones, autenticación y publicación de resultados. Implementa las reglas de negocio de carga, validación y control de reenvíos. 
+- **Motor de validación (VAL)**: ejecuta verificaciones de estructura y contenido, calcula hashes y determina si un archivo es válido o duplicado. 
+- **Generador de PDFs (PDF)**: produce PDFs de confirmación/errores. Se dispara desde el flujo de validación con la información necesaria para notificar al usuario. 
+- **Gestión de credenciales (AUTH)**: administra la creación/validación de credenciales y sesiones, asegurando que el reenvío sea autenticado cuando corresponda. 
+
+**Persistencia**
+
+- **PostgreSQL (DB)**: almacena solicitudes, credenciales, sesiones y metadatos de validación. 
+- **Repositorio de recepción (FS1)**: almacena archivos recibidos y validados. 
+- **Repositorio de resultados (FS2)**: almacena ligas/archivos de resultados generados por el sistema externo. 
+
+**Flujo general**
+
+1. El usuario carga un archivo desde `R1` o `R2`. 
+2. `S1` ejecuta la mutation correspondiente en `GQL`. 
+3. `GQL` coordina la validación (`VAL`), generación de PDF (`PDF`) y actualización de credenciales (`AUTH`). 
+4. Los metadatos se guardan en `DB` y los archivos en `FS1`; los resultados externos se exponen desde `FS2`. 
+5. `R3` consulta resultados mediante GraphQL y presenta la lista de ligas disponibles. 
+
+---
+
 ## 5. Estructura lógica y tecnológica
 
 | Capa | Responsabilidad | Tecnologías/Componentes | Estado (dic–ene) |
