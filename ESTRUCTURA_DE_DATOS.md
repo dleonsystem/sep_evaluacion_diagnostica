@@ -23,70 +23,6 @@ Este archivo sirve como referencia técnica para desarrolladores, analistas, aud
 | **Índices** | ~45 | Optimizados para consultas frecuentes |
 | **Consolidaciones** | 2 | LOG_ACTIVIDADES (incluye BITACORA_DETALLADA), USUARIOS (incluye CONFIGURACIONES_USUARIO.preferencias_notif) |
 
-## Estrategia de Catalogación (sin ENUMs)
-
-Para habilitar configuraciones dinámicas y trazabilidad adicional se eliminó el uso de tipos `ENUM` en PostgreSQL. Cada conjunto discreto quedó materializado en una tabla `cat_<concepto>` con llave `SMALLINT` que ahora es referenciada por todas las columnas que antes dependían del `ENUM`.
-
-**Objetivos clave**
-
-- Mantener el listado oficial de valores como registros consultables con metadatos (`descripcion`, `orden`, `activo`).
-- Simplificar parametrizaciones (por ejemplo, permitir reordenar o desactivar valores) sin recompilar tipos.
-- Centralizar los defaults mediante la función `fn_catalogo_id('cat_x','CODIGO')`, reutilizada en DDL, triggers y documentación técnica.
-
-**Pasos operativos (automatizados en ddl_generated.sql)**
-
-1. Crear tablas `cat_<concepto>` con identidad `SMALLINT` y poblarlas con `INSERT ... SELECT` sobre `unnest(ARRAY[...]) WITH ORDINALITY` para respetar el orden funcional.
-2. Definir la función `fn_catalogo_id` que resuelve el `id` por `codigo` para defaults y comparaciones seguras.
-3. Actualizar columnas, triggers e índices para que usen `SMALLINT REFERENCES cat_<concepto>(id)` en lugar de los tipos `ENUM` eliminados.
-4. Documentar en el diccionario qué campos apuntan a cada catálogo y cómo consultarlos.
-
-**Catálogos activos y campos clave**
-
-| Catálogo | Campos que lo referencian |
-|----------|---------------------------|
-| `cat_nivel_educativo` | `CAT_GRADOS.nivel_educativo`, `MATERIAS.nivel_educativo`, `GRUPOS.nivel_educativo`, `ARCHIVOS_FRV.nivel`, `SOLICITUDES_EIA2.nivel_educativo` |
-| `cat_estado_archivo` | `ARCHIVOS_FRV.estado` |
-| `cat_estado_archivo_temporal` | `ARCHIVOS_TEMPORALES.estado` |
-| `cat_tipo_bloqueo` | `BLOQUEOS_IP.tipo_bloqueo` |
-| `cat_operacion_auditoria` | `CAMBIOS_AUDITORIA.operacion` |
-| `cat_tipo_configuracion` | `CONFIGURACIONES_SISTEMA.tipo_dato` |
-| `cat_origen_cambio_password` | `HISTORICO_PASSWORDS.cambiada_por` |
-| `cat_estado_validacion_eia2` | `SOLICITUDES_EIA2.estado_validacion` |
-| `cat_tipo_reporte` | `REPORTES_GENERADOS.tipo_reporte` |
-| `cat_tipo_notificacion` | `PLANTILLAS_EMAIL.tipo_notificacion`, `NOTIFICACIONES_EMAIL.tipo` |
-| `cat_estado_notificacion` | `NOTIFICACIONES_EMAIL.estado` |
-| `cat_prioridad_notificacion` | `NOTIFICACIONES_EMAIL.prioridad` |
-| `cat_referencia_tipo_notificacion` | `NOTIFICACIONES_EMAIL.referencia_tipo` |
-| `cat_motivo_fallo_login` | `INTENTOS_LOGIN.motivo_fallo` |
-| `cat_estado_ticket` | `TICKETS_SOPORTE.estado` |
-
-**Plantilla empleada**
-
-```sql
-CREATE TABLE cat_nivel_educativo (
-    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    codigo VARCHAR(50) NOT NULL UNIQUE,
-    descripcion VARCHAR(200),
-    orden SMALLINT NOT NULL,
-    activo BOOLEAN NOT NULL DEFAULT TRUE
-);
-
-INSERT INTO cat_nivel_educativo (codigo, descripcion, orden)
-SELECT val,
-       INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
-       ord
-FROM unnest(ARRAY['PREESCOLAR','PRIMARIA','SECUNDARIA','TELESECUNDARIA']::TEXT[]) WITH ORDINALITY AS t(val, ord)
-ON CONFLICT (codigo) DO NOTHING;
-
--- Uso en tablas principales
-CREATE TABLE grupos (
-    -- ...
-    nivel_educativo SMALLINT NOT NULL REFERENCES cat_nivel_educativo(id)
-);
-```
-
-El archivo [ddl_generated.sql](ddl_generated.sql) incluye toda la lógica anterior junto con la función `fn_catalogo_id`, utilizada para defaults (`fn_catalogo_id('cat_estado_notificacion','PENDIENTE')`) y comparaciones dentro de triggers.
-
 ## Diagrama Entidad-Relación (ER)
 
 ```mermaid
@@ -95,6 +31,11 @@ erDiagram
     ESCUELAS ||--o{ GRUPOS : agrupa
     ESCUELAS ||--o| CREDENCIALES_EIA2 : genera
     GRUPOS ||--o{ ESTUDIANTES : contiene
+    ESTUDIANTES ||--o{ VALORACIONES : recibe
+    VALORACIONES }o--|| MATERIAS : evalua
+    VALORACIONES }o--|| PERIODOS_EVALUACION : en
+    USUARIOS ||--o{ VALORACIONES : registra
+    EVALUACIONES ||--|| VALORACIONES : referencia
     ESCUELAS ||--|| CAT_TURNOS : turno
     ESCUELAS ||--|| CAT_ENTIDADES_FEDERATIVAS : entidad
     ESCUELAS ||--|| CAT_NIVELES_EDUCATIVOS : nivel
@@ -103,6 +44,141 @@ erDiagram
     GRUPOS ||--|| ESCUELAS : escuela
     EVALUACIONES ||--|| ESTUDIANTES : estudiante
     EVALUACIONES ||--|| MATERIAS : materia
+    EVALUACIONES ||--|| PERIODOS_EVALUACION : periodo
+    MATERIAS ||--o{ COMPETENCIAS : define
+    COMPETENCIAS ||--o{ RESULTADOS_COMPETENCIAS : mide
+    EVALUACIONES ||--o{ RESULTADOS_COMPETENCIAS : genera
+    USUARIOS ||--o{ LOG_ACTIVIDADES : registra
+    USUARIOS ||--|| CAT_ROLES_USUARIO : rol
+    CREDENCIALES_EIA2 ||--o{ SOLICITUDES_EIA2 : autentica
+    ESCUELAS ||--o{ REPORTES_GENERADOS : recibe
+    PERIODOS_EVALUACION ||--o{ REPORTES_GENERADOS : periodo
+    USUARIOS ||--o{ REPORTES_GENERADOS : descarga
+    TICKETS_SOPORTE ||--o{ COMENTARIOS_TICKET : contiene
+    USUARIOS ||--o{ COMENTARIOS_TICKET : escribe
+    USUARIOS ||--o{ HISTORICO_PASSWORDS : mantiene
+    USUARIOS ||--o{ NOTIFICACIONES_EMAIL : recibe
+    TICKETS_SOPORTE ||--o{ NOTIFICACIONES_EMAIL : genera
+    REPORTES_GENERADOS ||--o{ NOTIFICACIONES_EMAIL : notifica
+    USUARIOS ||--o{ INTENTOS_LOGIN : registra
+    USUARIOS ||--o{ SESIONES : mantiene
+    USUARIOS ||--o{ BLOQUEOS_IP : genera
+    USUARIOS ||--o{ CONSENTIMIENTOS_LGPDP : otorga
+    USUARIOS ||--o{ CAMBIOS_AUDITORIA : ejecuta
+    PLANTILLAS_EMAIL ||--o{ NOTIFICACIONES_EMAIL : usa
+```
+
+## Diccionario de Datos (30 tablas principales, orden alfabético)
+
+<!-- INICIO DICCIONARIO ORDENADO -->
+<!-- TABLAS OPTIMIZADAS: Eliminadas 8 tablas (BITACORA_DETALLADA, CACHE_QUERIES, ARCHIVOS_TEMPORALES, 
+     ESTADISTICAS_USO, TAREAS_PROGRAMADAS, RESPALDOS_ARCHIVOS, CONFIGURACIONES_USUARIO, CATALOGO_ERRORES)
+     según análisis de trazabilidad RF vs Tablas (12 enero 2026) -->
+
+### ARCHIVOS_FRV
+
+| Campo                | Tipo         | Descripción                       |
+|----------------------|--------------|-----------------------------------|
+| id                   | UUID         | Identificador único               |
+| escuela_id           | UUID         | Relación con ESCUELAS             |
+| usuario_id           | UUID         | Relación con USUARIOS             |
+| ciclo_escolar        | VARCHAR(9)   | Ciclo escolar                     |
+| nivel                | ENUM         | Nivel educativo                   |
+| estado               | ENUM         | Estado del archivo                |
+| file_path            | VARCHAR(500) | Ruta en filesystem                |
+| filename_original    | VARCHAR(255) | Nombre original del archivo       |
+| file_size            | BIGINT       | Tamaño en bytes                   |
+| mime_type            | VARCHAR(50)  | Tipo MIME                         |
+| validacion_resultado | JSONB        | Resultado de validación           |
+| validado_en          | TIMESTAMP    | Fecha de validación               |
+| procesado_en         | TIMESTAMP    | Fecha de procesamiento            |
+| total_estudiantes    | INT          | Total de estudiantes              |
+| created_at           | TIMESTAMP    | Fecha de creación                 |
+| updated_at           | TIMESTAMP    | Fecha de actualización            |
+
+### ARCHIVOS_TEMPORALES
+
+| Campo                | Tipo         | Descripción                       |
+|----------------------|--------------|-----------------------------------|
+| id                   | UUID         | Identificador único               |
+| usuario_id           | UUID         | Relación con USUARIOS             |
+| filename_original    | VARCHAR(255) | Nombre original del archivo       |
+| file_path_temp       | VARCHAR(500) | Ruta temporal en filesystem       |
+| file_size            | BIGINT       | Tamaño en bytes                   |
+| mime_type            | VARCHAR(50)  | Tipo MIME                         |
+| chunk_actual         | INT          | Chunk actual (upload parcial)     |
+| chunks_totales       | INT          | Total de chunks esperados         |
+| hash_parcial         | VARCHAR(64)  | Hash SHA256 parcial               |
+| estado               | ENUM         | PENDIENTE, PROCESANDO, COMPLETADO, ERROR |
+| error_mensaje        | TEXT         | Mensaje de error si aplica        |
+| expira_en            | TIMESTAMP    | Fecha de expiración automática    |
+| created_at           | TIMESTAMP    | Fecha de creación                 |
+| updated_at           | TIMESTAMP    | Fecha de última actualización     |
+
+### BLOQUEOS_IP
+
+| Campo                | Tipo         | Descripción                       |
+|----------------------|--------------|-----------------------------------|
+| id                   | BIGSERIAL    | Identificador único               |
+| ip_address           | INET         | Dirección IP bloqueada            |
+| intentos_fallidos    | INT          | Contador de intentos fallidos     |
+| motivo               | VARCHAR(255) | Motivo del bloqueo                |
+| tipo_bloqueo         | ENUM         | AUTOMATICO, MANUAL, PERMANENTE    |
+| bloqueado_desde      | TIMESTAMP    | Fecha inicio del bloqueo          |
+| bloqueado_hasta      | TIMESTAMP    | Fecha fin del bloqueo (NULL si permanente) |
+| desbloqueado_por     | UUID         | Usuario que desbloqueó (FK USUARIOS) |
+| desbloqueado_en      | TIMESTAMP    | Fecha de desbloqueo               |
+| activo               | BOOLEAN      | Indica si el bloqueo está activo  |
+| created_at           | TIMESTAMP    | Fecha de creación                 |
+| updated_at           | TIMESTAMP    | Fecha de última actualización     |
+
+### CAMBIOS_AUDITORIA
+
+| Campo                | Tipo         | Descripción                       |
+|----------------------|--------------|-----------------------------------|
+| id                   | BIGSERIAL    | Identificador único               |
+| tabla                | VARCHAR(100) | Nombre de la tabla afectada       |
+| registro_id          | VARCHAR(100) | ID del registro modificado        |
+| operacion            | ENUM         | INSERT, UPDATE, DELETE            |
+| usuario_id           | UUID         | Relación con USUARIOS             |
+| valores_anteriores   | JSONB        | Valores antes del cambio (JSON)   |
+| valores_nuevos       | JSONB        | Valores después del cambio (JSON) |
+| ip_address           | INET         | IP de origen del cambio           |
+| user_agent           | TEXT         | Navegador/cliente                 |
+| metadata             | JSONB        | Metadata adicional                |
+| created_at           | TIMESTAMP    | Fecha y hora del cambio           |
+
+### CAT_CICLOS_ESCOLARES
+
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id_ciclo        | INT          | Identificador único del ciclo     |
+| nombre          | VARCHAR(20)  | Nombre del ciclo (ej: 2024-2025)  |
+| fecha_inicio    | DATE         | Fecha de inicio del ciclo         |
+| fecha_fin       | DATE         | Fecha de fin del ciclo            |
+| activo          | BOOLEAN      | Indica si es el ciclo activo      |
+| created_at      | TIMESTAMP    | Fecha de creación                 |
+
+### CAT_ENTIDADES_FEDERATIVAS
+
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id_entidad      | INT          | Identificador único (clave INEGI) |
+| nombre          | VARCHAR(100) | Nombre de la entidad federativa   |
+| abreviatura     | VARCHAR(10)  | Abreviatura (ej: CDMX, JAL)       |
+| codigo_sep      | VARCHAR(5)   | Código SEP                        |
+| region          | VARCHAR(50)  | Región geográfica                 |
+
+### CAT_GRADOS
+
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id_grado        | INT          | Identificador único               |
+| nivel_educativo | VARCHAR(50)  | Nivel (PREESCOLAR, PRIMARIA, etc) |
+| grado_numero    | INT          | Número del grado (1-6)            |
+| grado_nombre    | VARCHAR(20)  | Nombre del grado (Primero, etc)   |
+| orden           | INT          | Orden de visualización            |
+
 ### CAT_NIVELES_EDUCATIVOS
 
 | Campo           | Tipo         | Descripción                       |
@@ -132,6 +208,38 @@ erDiagram
 | nombre          | VARCHAR(50)  | Nombre del turno                  |
 | codigo          | VARCHAR(10)  | Código (MAT, VESP, NOCT, CONT)    |
 | descripcion     | VARCHAR(100) | Descripción del turno             |
+
+### CAT_NIVELES_INTEGRACION
+
+**Catálogo oficial de Niveles de Integración del Aprendizaje (NIA) - Marco SEP 2025**
+
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id_nia          | SERIAL       | Identificador único del NIA       |
+| clave           | VARCHAR(2)   | Clave oficial (ED, EP, ES, SO)    |
+| nombre          | VARCHAR(50)  | Nombre del nivel                  |
+| descripcion     | TEXT         | Descripción detallada pedagógica  |
+| rango_min       | INT          | Valoración mínima (0-3)           |
+| rango_max       | INT          | Valoración máxima (0-3)           |
+| color_hex       | VARCHAR(7)   | Color para visualización          |
+| orden_visual    | INT          | Orden para gráficas (1-4)         |
+| vigente         | BOOLEAN      | Indica si el nivel está activo    |
+| created_at      | TIMESTAMP    | Fecha de creación                 |
+| updated_at      | TIMESTAMP    | Fecha de última actualización     |
+
+### CAT_CAMPOS_FORMATIVOS
+
+**Catálogo de Campos Formativos según Plan de Estudios SEP**
+
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id              | SERIAL       | Identificador único               |
+| clave           | VARCHAR(10)  | Clave oficial (ENS, HYC, LEN, SPC, F5)|
+| nombre          | VARCHAR(100) | Nombre completo del campo         |
+| descripcion     | TEXT         | Descripción detallada             |
+| orden_visual    | INT          | Orden para visualización          |
+| vigente         | BOOLEAN      | Indica si está activo             |
+| created_at      | TIMESTAMP    | Fecha de creación                 |
 
 ### COMENTARIOS_TICKET
 
@@ -166,7 +274,7 @@ erDiagram
 | categoria            | VARCHAR(50)  | Categoría de configuración        |
 | clave                | VARCHAR(100) | Clave de configuración (UNIQUE)   |
 | valor                | TEXT         | Valor de la configuración         |
-| tipo_dato            | SMALLINT (FK cat_tipo_configuracion) | STRING, INTEGER, BOOLEAN, JSON    |
+| tipo_dato            | ENUM         | STRING, INTEGER, BOOLEAN, JSON    |
 | descripcion          | TEXT         | Descripción de la configuración   |
 | editable_por_usuario | BOOLEAN      | Si puede ser editada por usuarios |
 | requiere_reinicio    | BOOLEAN      | Si requiere reiniciar el sistema  |
@@ -239,6 +347,8 @@ UNIQUE (clave)
 
 ### EVALUACIONES
 
+**Registro de valoraciones individuales por materia y periodo**
+
 | Campo              | Tipo         | Descripción                       |
 |--------------------|--------------|-----------------------------------|
 | id                 | UUID         | Identificador único               |
@@ -247,8 +357,6 @@ UNIQUE (clave)
 | periodo_id         | INT          | Relación con PERIODOS_EVALUACION  |
 | archivo_frv_id     | UUID         | Relación con ARCHIVOS_FRV (origen)|
 | valoracion         | INT          | Valoración asignada (0-3)         |
-| nivel_integracion  | VARCHAR(20)  | Nivel calculado por sistema       |
-| competencia_alcanzada| BOOLEAN   | Si alcanzó competencia esperada   |
 | observaciones      | TEXT         | Observaciones del docente         |
 | registrado_por     | UUID         | Relación con USUARIOS             |
 | fecha_evaluacion   | TIMESTAMP    | Fecha de aplicación               |
@@ -259,6 +367,10 @@ UNIQUE (clave)
 | created_at         | TIMESTAMP    | Fecha de creación del registro    |
 | updated_at         | TIMESTAMP    | Fecha de última actualización     |
 
+**Nota:** Los campos `nivel_integracion` y `competencia_alcanzada` fueron eliminados (19-ene-2026). 
+Los Niveles de Integración del Aprendizaje (NIA) ahora se calculan y almacenan en la tabla 
+especializada `NIVELES_INTEGRACION_ESTUDIANTE` con granularidad por Campo Formativo.
+
 ### GRUPOS
 
 | Campo           | Tipo         | Descripción                       |
@@ -267,7 +379,7 @@ UNIQUE (clave)
 | escuela_id      | UUID         | Relación con ESCUELAS             |
 | grado_id        | INT          | Relación con CAT_GRADOS           |
 | nombre          | VARCHAR(100) | Nombre del grupo (Ej: 1°A, 2°B)   |
-| nivel_educativo | SMALLINT (FK cat_nivel_educativo) | Nivel educativo (catalogado) |
+| nivel_educativo | VARCHAR(50)  | Nivel educativo (PREESCOLAR, PRIMARIA, SECUNDARIA) |
 | grado_nombre    | VARCHAR(20)  | Nombre del grado                  |
 | grado_numero    | INT          | Número de grado                   |
 | turno           | VARCHAR(20)  | Turno (MATUTINO, VESPERTINO)      |
@@ -287,7 +399,7 @@ UNIQUE (clave)
 | generada_en     | TIMESTAMP    | Fecha de generación               |
 | expira_en       | TIMESTAMP    | Fecha de expiración (solo temporales) |
 | cambiada_en     | TIMESTAMP    | Fecha en que fue cambiada         |
-| cambiada_por    | SMALLINT (FK cat_origen_cambio_password) | Origen del cambio (SISTEMA, USUARIO, ADMIN, RECUPERACION) |
+| cambiada_por    | VARCHAR(20)  | Origen del cambio (SISTEMA, USUARIO, ADMIN, RECUPERACION) |
 | ip_origen       | VARCHAR(50)  | IP desde donde se cambió          |
 | activa          | BOOLEAN      | Indica si es la contraseña actual |
 | created_at      | TIMESTAMP    | Fecha de creación del registro    |
@@ -302,7 +414,7 @@ UNIQUE (clave)
 | ip_address      | INET         | Dirección IP de origen                           |
 | user_agent      | TEXT         | Navegador/cliente usado                          |
 | exito           | BOOLEAN      | Indica si el login fue exitoso                   |
-| motivo_fallo    | SMALLINT (FK cat_motivo_fallo_login) | Razón del fallo catalogada                      |
+| motivo_fallo    | VARCHAR(100) | Razón del fallo (ver enums)                      |
 | bloqueado_hasta | TIMESTAMP    | Fecha hasta la cual está bloqueado (si aplica)   |
 | metadata        | JSONB        | Datos adicionales (dispositivo, ubicación, etc.) |
 | created_at      | TIMESTAMP    | Fecha/hora del intento                           |
@@ -336,9 +448,38 @@ INDEX idx_log_tabla_accion ON LOG_ACTIVIDADES(tabla, accion)
 | id              | UUID         | Identificador único (UUID)        |
 | codigo          | VARCHAR(10)  | Código de materia (Ej: LEN, MAT)  |
 | nombre          | VARCHAR(100) | Nombre de la materia              |
-| nivel_educativo | SMALLINT (FK cat_nivel_educativo) | Nivel educativo al que aplica     |
+| campo_formativo | VARCHAR(10)  | FK a CAT_CAMPOS_FORMATIVOS.clave  |
+| nivel_educativo | VARCHAR(50)  | Nivel educativo al que aplica     |
 | orden           | INT          | Orden de visualización            |
 | activa          | BOOLEAN      | Indica si la materia está activa  |
+
+### NIVELES_INTEGRACION_ESTUDIANTE
+
+**Tabla especializada para Niveles de Integración del Aprendizaje (NIA)**
+
+| Campo                | Tipo         | Descripción                       |
+|----------------------|--------------|-----------------------------------|
+| id                   | UUID         | Identificador único               |
+| id_estudiante        | UUID         | FK a ESTUDIANTES(id)              |
+| id_campo_formativo   | INT          | FK a CAT_CAMPOS_FORMATIVOS(id)    |
+| id_periodo           | INT          | FK a PERIODOS_EVALUACION(id)      |
+| id_nia               | INT          | FK a CAT_NIVELES_INTEGRACION(id_nia)|
+| valoracion_promedio  | NUMERIC(4,2) | Promedio de valoraciones (0-3)    |
+| total_materias       | INT          | Total de materias del campo       |
+| materias_evaluadas   | INT          | Materias efectivamente evaluadas  |
+| calculado_en         | TIMESTAMP    | Fecha/hora de cálculo             |
+| calculado_por        | VARCHAR(50)  | Origen (SISTEMA, MANUAL, AJUSTE)  |
+| observaciones        | TEXT         | Observaciones adicionales         |
+| validado             | BOOLEAN      | Si fue validado por DGADAE        |
+| validado_por         | UUID         | FK a USUARIOS(id)                 |
+| validado_en          | TIMESTAMP    | Fecha de validación               |
+| created_at           | TIMESTAMP    | Fecha de creación del registro    |
+| updated_at           | TIMESTAMP    | Fecha de última actualización     |
+
+**Constraint único:** `UNIQUE (id_estudiante, id_campo_formativo, id_periodo)`  
+**Nota:** Esta tabla reemplaza los campos eliminados `nivel_integracion` y `competencia_alcanzada` 
+de EVALUACIONES. Permite modelar correctamente que cada estudiante tiene 4 NIAs (uno por campo 
+formativo: ENS, HYC, LEN, SPC) en cada periodo de evaluación.
 
 ### NOTIFICACIONES_EMAIL
 
@@ -349,16 +490,16 @@ INDEX idx_log_tabla_accion ON LOG_ACTIVIDADES(tabla, accion)
 | destinatario    | VARCHAR(100) | Email del destinatario            |
 | asunto          | VARCHAR(200) | Asunto del correo                 |
 | cuerpo          | TEXT         | Contenido HTML del correo         |
-| tipo            | SMALLINT (FK cat_tipo_notificacion) | Tipo de notificación (RESULTADO_LISTO, TICKET_CREADO, etc.) |
-| estado          | SMALLINT (FK cat_estado_notificacion) | Estado del envío (PENDIENTE, ENVIADO, ERROR, REINTENTANDO) |
-| prioridad       | SMALLINT (FK cat_prioridad_notificacion) | Prioridad (ALTA, MEDIA, BAJA)     |
+| tipo            | ENUM         | Tipo de notificación (RESULTADO_LISTO, TICKET_CREADO, TICKET_ACTUALIZADO, TICKET_RESUELTO, RECUPERACION_PASSWORD, CREDENCIALES_EIA2, EVALUACION_VALIDADA) |
+| estado          | ENUM         | Estado del envío (PENDIENTE, ENVIADO, ERROR, REINTENTANDO) |
+| prioridad       | VARCHAR(10)  | Prioridad (ALTA, MEDIA, BAJA)     |
 | intentos        | INT          | Número de intentos de envío       |
 | max_intentos    | INT          | Máximo de reintentos (default 3)  |
 | error_mensaje   | TEXT         | Mensaje de error si falla envío   |
 | enviado_en      | TIMESTAMP    | Fecha/hora de envío exitoso       |
 | proximo_intento | TIMESTAMP    | Próximo reintento programado      |
 | referencia_id   | UUID         | ID del objeto relacionado (ticket, reporte, etc.) |
-| referencia_tipo | SMALLINT (FK cat_referencia_tipo_notificacion) | Tipo de referencia (TICKET, REPORTE, USUARIO, EVALUACION) |
+| referencia_tipo | VARCHAR(50)  | Tipo de referencia (TICKET, REPORTE, USUARIO, EVALUACION) |
 | adjuntos        | JSONB        | Array de adjuntos (opcional)      |
 | created_at      | TIMESTAMP    | Fecha de creación del registro    |
 | updated_at      | TIMESTAMP    | Fecha de última actualización     |
@@ -382,7 +523,7 @@ INDEX idx_log_tabla_accion ON LOG_ACTIVIDADES(tabla, accion)
 | id                   | SERIAL       | Identificador único               |
 | codigo               | VARCHAR(100) | Código de plantilla (UNIQUE)      |
 | nombre               | VARCHAR(150) | Nombre descriptivo de la plantilla |
-| tipo_notificacion    | SMALLINT (FK cat_tipo_notificacion) | RESULTADO_LISTO, TICKET_CREADO, RECUPERACION_PASSWORD, etc. |
+| tipo_notificacion    | ENUM         | RESULTADO_LISTO, TICKET_CREADO, RECUPERACION_PASSWORD, etc. |
 | asunto_template      | VARCHAR(255) | Template del asunto (con variables) |
 | cuerpo_html          | TEXT         | Template HTML del cuerpo          |
 | cuerpo_texto         | TEXT         | Template de texto plano           |
@@ -399,120 +540,281 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 
 ### PRE3
 
-**Familia de staging FRV:** Las once tablas `pre3`, `pri1`–`pri6` y `sec1`–`sec3` almacenan las filas sin transformar de los archivos DBF entregados por la plataforma SiCRER. En el DDL original se definían mediante `LIKE pre3`, pero ahora todas las tablas quedaron declaradas explícitamente para eliminar dependencias implícitas y asegurar que cada entorno pueda recrearlas sin archivos previos. El archivo de referencia para esta tabla es `MACROS Evaluacion Diagnostica/Bd_muestra/pre3.dbf`.
-
-**Estructura de columnas compartida** (aplica para las once tablas):
-
-| Campo        | Tipo         | Descripción                                      |
-|--------------|--------------|--------------------------------------------------|
-| cct          | VARCHAR(30)  | Clave de Centro de Trabajo (tal como viene en el DBF) |
-| turno        | VARCHAR(30)  | Turno reportado en el archivo                   |
-| nom_cct      | VARCHAR(80)  | Nombre del plantel                              |
-| nivel        | VARCHAR(20)  | Nivel educativo declarado en el archivo         |
-| fase         | VARCHAR(20)  | Fase / aplicación del instrumento               |
-| grado        | VARCHAR(20)  | Grado escolar sin normalizar                    |
-| correo1      | VARCHAR(100) | Correo principal capturado                      |
-| correo2      | VARCHAR(100) | Correo alterno capturado                        |
-| matricula_   | VARCHAR(30)  | Matrícula del alumno                            |
-| nlista       | VARCHAR(20)  | Número de lista                                 |
-| estudiante   | VARCHAR(100) | Nombre completo                                 |
-| genero       | VARCHAR(10)  | Indicador de género                             |
-| grupo        | VARCHAR(10)  | Grupo reportado                                 |
-| eia1_c1_a1   | VARCHAR(10)  | Resultado EIA1 competencia 1 área 1             |
-| eia1_c1_a2   | VARCHAR(10)  | Resultado EIA1 competencia 1 área 2             |
-| eia1_c2_a1   | VARCHAR(10)  | Resultado EIA1 competencia 2 área 1             |
-| eia1_c2_a2   | VARCHAR(10)  | Resultado EIA1 competencia 2 área 2             |
-| eia1_c3_a1   | VARCHAR(10)  | Resultado EIA1 competencia 3 área 1             |
-| eia1_c3_a2   | VARCHAR(10)  | Resultado EIA1 competencia 3 área 2             |
-| eia2_c1_a1   | VARCHAR(10)  | Resultado EIA2 competencia 1 área 1             |
-| eia2_c2_a1   | VARCHAR(10)  | Resultado EIA2 competencia 2 área 1             |
-| eia2_c3_a1   | VARCHAR(10)  | Resultado EIA2 competencia 3 área 1             |
-| eia2_c4_a1   | VARCHAR(10)  | Resultado EIA2 competencia 4 área 1             |
-| eia2_c4_a2   | VARCHAR(10)  | Resultado EIA2 competencia 4 área 2             |
-| plen         | VARCHAR(10)  | Indicador de plenitud                           |
-| pspc         | VARCHAR(10)  | Indicador PSPC                                  |
-| pens         | VARCHAR(10)  | Indicador PENS                                  |
-| phyc         | VARCHAR(10)  | Indicador PHYC                                  |
-| id           | VARCHAR(30)  | Identificador del registro en el DBF (PK)       |
-| archivoori   | VARCHAR(50)  | Nombre del archivo de origen (sin ruta)         |
-
-**Notas operativas**
-
-- `id` es la clave primaria y se utiliza para evitar duplicados durante la importación masiva.
-- Estas tablas sólo existen como staging: se cargan desde los DBF (`COPY FROM PROGRAM`/`ogr2ogr`), se validan y, tras persistir en el modelo normalizado (`ARCHIVOS_FRV` + `EVALUACIONES`), se vacían para liberar espacio.
-- El tamaño de cada `VARCHAR` replica el ancho máximo observado en los archivos fuente y simplifica la ingesta sin truncamientos.
+| Campo         | Tipo        | Descripción                                      |
+|---------------|-------------|--------------------------------------------------|
+| CCT           | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO         | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT       | CHAR(31)    | Nombre del Centro de Trabajo                     |
+| NIVEL         | CHAR(10)    | Nivel educativo                                  |
+| FASE          | CHAR(7)     | Fase de la evaluación                            |
+| GRADO         | CHAR(11)    | Grado escolar                                    |
+| CORREO1       | CHAR(32)    | Correo electrónico principal                     |
+| CORREO2       | CHAR(32)    | Correo electrónico alternativo                   |
+| MATRICULA_    | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA        | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE    | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO        | CHAR(10)    | Género                                           |
+| GRUPO         | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C1_A2    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 2            |
+| EIA1_C2_A1    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_A2    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
+| EIA1_C3_A1    | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C3_A2    | CHAR(10)    | Resultado EIA1, Competencia 3, Área 2            |
+| EIA2_C1_A1    | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C2_A1    | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1    | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C4_A1    | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| EIA2_C4_A2    | CHAR(10)    | Resultado EIA2, Competencia 4, Área 2            |
+| PLEN          | CHAR(10)    | Indicador de plenitud                            |
+| PSPC          | CHAR(10)    | Indicador PSPC                                   |
+| PENS          | CHAR(10)    | Indicador PENS                                   |
+| PHYC          | CHAR(10)    | Indicador PHYC                                   |
+| ID            | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI    | CHAR(24)    | Nombre de archivo original                       |
 
 ### PRI1
 
-**Rol:** staging para los DBF de Primaria 1er grado (`MACROS Evaluacion Diagnostica/Bd_muestra/pri1.dbf`).
-
-**Esquema de columnas:** reutiliza el descrito en [PRE3](#pre3).
-
-**Notas:** se procesa inmediatamente después de `pre3` y alimenta los catálogos/estadísticas de Primaria.
+| Campo         | Tipo        | Descripción                                      |
+|---------------|-------------|--------------------------------------------------|
+| CCT           | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO         | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT       | CHAR(29)    | Nombre del Centro de Trabajo                     |
+| NIVEL         | CHAR(10)    | Nivel educativo                                  |
+| FASE          | CHAR(7)     | Fase de la evaluación                            |
+| GRADO         | CHAR(11)    | Grado escolar                                    |
+| CORREO1       | CHAR(26)    | Correo electrónico principal                     |
+| CORREO2       | CHAR(29)    | Correo electrónico alternativo                   |
+| MATRICULA_    | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA        | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE    | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO        | CHAR(10)    | Género                                           |
+| GRUPO         | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C2_A1    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_A2    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
+| EIA1_C3_A1    | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C4_A1    | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA2_C1_A1    | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C2_A1    | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1    | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_A2    | CHAR(10)    | Resultado EIA2, Competencia 3, Área 2            |
+| EIA2_C4_A1    | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| PLEN          | CHAR(10)    | Indicador de plenitud                            |
+| PSPC          | CHAR(10)    | Indicador PSPC                                   |
+| PENS          | CHAR(10)    | Indicador PENS                                   |
+| PHYC          | CHAR(10)    | Indicador PHYC                                   |
+| ID            | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI    | CHAR(23)    | Nombre de archivo original                       |
 
 ### PRI2
 
-**Rol:** staging para Primaria 2º grado (`MACROS Evaluacion Diagnostica/Bd_muestra/pri2.dbf`).
-
-**Esquema:** idéntico a [PRE3](#pre3).
-
-**Notas:** comparte misma lógica de validación y se diferencia sólo por el `nivel/grado` reportado.
+| Campo         | Tipo        | Descripción                                      |
+|---------------|-------------|--------------------------------------------------|
+| CCT           | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO         | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT       | CHAR(29)    | Nombre del Centro de Trabajo                     |
+| NIVEL         | CHAR(10)    | Nivel educativo                                  |
+| FASE          | CHAR(7)     | Fase de la evaluación                            |
+| GRADO         | CHAR(11)    | Grado escolar                                    |
+| CORREO1       | CHAR(26)    | Correo electrónico principal                     |
+| CORREO2       | CHAR(29)    | Correo electrónico alternativo                   |
+| MATRICULA_    | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA        | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE    | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO        | CHAR(10)    | Género                                           |
+| GRUPO         | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C2_A1    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_A2    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
+| EIA1_C3_A1    | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C4_A1    | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA2_C1_A1    | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C2_A1    | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1    | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_A2    | CHAR(10)    | Resultado EIA2, Competencia 3, Área 2            |
+| EIA2_C4_A1    | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| PLEN          | CHAR(10)    | Indicador de plenitud                            |
+| PSPC          | CHAR(10)    | Indicador PSPC                                   |
+| PENS          | CHAR(10)    | Indicador PENS                                   |
+| PHYC          | CHAR(10)    | Indicador PHYC                                   |
+| ID            | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI    | CHAR(23)    | Nombre de archivo original                       |
 
 ### PRI3
 
-**Rol:** staging para Primaria 3º grado (`MACROS Evaluacion Diagnostica/Bd_muestra/pri3.dbf`).
-
-**Esquema:** igual que [PRE3](#pre3).
-
-**Notas:** mantiene las columnas de EIA1/EIA2 aun cuando ciertos campos puedan no venir poblados; el `DDL` explícito evita dependencias de `LIKE`.
+| Campo         | Tipo        | Descripción                                      |
+|---------------|-------------|--------------------------------------------------|
+| CCT           | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO         | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT       | CHAR(29)    | Nombre del Centro de Trabajo                     |
+|  NIVEL        | CHAR(10)    | Nivel educativo                                  |
+| FASE          | CHAR(7)     | Fase de la evaluación                            |
+| GRADO         | CHAR(11)    | Grado escolar                                    |
+| CORREO1       | CHAR(26)    | Correo electrónico principal                     |
+| CORREO2       | CHAR(29)    | Correo electrónico alternativo                   |
+| MATRICULA_    | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA        | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE    | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO        | CHAR(10)    | Género                                           |
+| GRUPO         | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C1_A2    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 2            |
+| EIA1_C1_B1    | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 1          |
+| EIA1_C1_B2    | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 2          |
+| EIA1_C1_B3    | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 3          |
+| EIA1_C2_A1    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_A2    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
+| EIA1_C2_A3    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 3            |
+| EIA1_C2_B1    | CHAR(10)    | Resultado EIA1, Competencia 2, Bloque 1          |
+| EIA1_C3_A1    | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C3_B1    | CHAR(10)    | Resultado EIA1, Competencia 3, Bloque 1          |
+| EIA1_C4_A1    | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA1_C4_A2    | CHAR(10)    | Resultado EIA1, Competencia 4, Área 2            |
+| EIA1_C4_A3    | CHAR(10)    | Resultado EIA1, Competencia 4, Área 3            |
+| EIA2_C1_A1    | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C1_B1    | CHAR(10)    | Resultado EIA2, Competencia 1, Bloque 1          |
+| EIA2_C2_A1    | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1    | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_B1    | CHAR(10)    | Resultado EIA2, Competencia 3, Bloque 1          |
+| EIA2_C3_C1    | CHAR(10)    | Resultado EIA2, Competencia 3, Componente 1      |
+| EIA2_C3_C2    | CHAR(10)    | Resultado EIA2, Competencia 3, Componente 2      |
+| EIA2_C4_A1    | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| EIA2_C4_B1    | CHAR(10)    | Resultado EIA2, Competencia 4, Bloque 1          |
+| EIA2_C5_A1    | CHAR(10)    | Resultado EIA2, Competencia 5, Área 1            |
+| EIA2_C5_A2    | CHAR(10)    | Resultado EIA2, Competencia 5, Área 2            |
+| EIA2_C5_A3    | CHAR(10)    | Resultado EIA2, Competencia 5, Área 3            |
+| PLEN          | CHAR(10)    | Indicador de plenitud                            |
+| PSPC          | CHAR(10)    | Indicador PSPC                                   |
+| PENS          | CHAR(10)    | Indicador PENS                                   |
+| PHYC          | CHAR(10)    | Indicador PHYC                                   |
+| ID            | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI    | CHAR(23)    | Nombre de archivo original                       |
 
 ### PRI4
 
-**Rol:** staging para Primaria 4º grado (`MACROS Evaluacion Diagnostica/Bd_muestra/pri4.dbf`).
-
-**Esquema:** igual que [PRE3](#pre3).
-
-**Notas:** su contenido se diferencia únicamente en `grado` y los valores de resultados.
+| Campo         | Tipo        | Descripción                                      |
+|---------------|-------------|--------------------------------------------------|
+| CCT           | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO         | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT       | CHAR(29)    | Nombre del Centro de Trabajo                     |
+| NIVEL         | CHAR(10)    | Nivel educativo                                  |
+| FASE          | CHAR(7)     | Fase de la evaluación                            |
+| GRADO         | CHAR(11)    | Grado escolar                                    |
+| CORREO1       | CHAR(24)    | Correo electrónico principal                     |
+| CORREO2       | CHAR(29)    | Correo electrónico alternativo                   |
+| MATRICULA_    | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA        | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE    | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO        | CHAR(10)    | Género                                           |
+| GRUPO         | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C1_A2    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 2            |
+| EIA1_C1_B1    | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 1          |
+| EIA1_C1_B2    | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 2          |
+| EIA1_C1_B3    | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 3          |
+| EIA1_C2_A1    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_A2    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 2            |
+| EIA1_C2_A3    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 3            |
+| EIA1_C2_B1    | CHAR(10)    | Resultado EIA1, Competencia 2, Bloque 1          |
+| EIA1_C3_A1    | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C3_B1    | CHAR(10)    | Resultado EIA1, Competencia 3, Bloque 1          |
+| EIA1_C4_A1    | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA1_C4_A2    | CHAR(10)    | Resultado EIA1, Competencia 4, Área 2            |
+| EIA1_C4_A3    | CHAR(10)    | Resultado EIA1, Competencia 4, Área 3            |
+| EIA2_C1_A1    | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C1_B1    | CHAR(10)    | Resultado EIA2, Competencia 1, Bloque 1          |
+| EIA2_C2_A1    | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1    | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_B1    | CHAR(10)    | Resultado EIA2, Competencia 3, Bloque 1          |
+| EIA2_C3_C1    | CHAR(10)    | Resultado EIA2, Competencia 3, Componente 1      |
+| EIA2_C3_C2    | CHAR(10)    | Resultado EIA2, Competencia 3, Componente 2      |
+| EIA2_C4_A1    | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| EIA2_C4_B1    | CHAR(10)    | Resultado EIA2, Competencia 4, Bloque 1          |
+| EIA2_C5_A1    | CHAR(10)    | Resultado EIA2, Competencia 5, Área 1            |
+| EIA2_C5_A2    | CHAR(10)    | Resultado EIA2, Competencia 5, Área 2            |
+| EIA2_C5_A3    | CHAR(10)    | Resultado EIA2, Competencia 5, Área 3            |
+| PLEN          | CHAR(10)    | Indicador de plenitud                            |
+| PSPC          | CHAR(10)    | Indicador PSPC                                   |
+| PENS          | CHAR(10)    | Indicador PENS                                   |
+| PHYC          | CHAR(10)    | Indicador PHYC                                   |
+| ID            | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI    | CHAR(23)    | Nombre de archivo original                       |
 
 ### PRI5
 
-**Rol:** staging para Primaria 5º grado (`MACROS Evaluacion Diagnostica/Bd_muestra/pri5.dbf`).
-
-**Esquema:** igual que [PRE3](#pre3).
-
-**Notas:** mantiene la clave primaria sobre `id` y se trunca al término del pipeline.
+| Campo         | Tipo        | Descripción                                      |
+|---------------|-------------|--------------------------------------------------|
+| CCT           | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO         | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT       | CHAR(29)    | Nombre del Centro de Trabajo                     |
+| NIVEL         | CHAR(10)    | Nivel educativo                                  |
+| FASE          | CHAR(7)     | Fase de la evaluación                            |
+| GRADO         | CHAR(11)    | Grado escolar                                    |
+| CORREO1       | CHAR(24)    | Correo electrónico principal                     |
+| CORREO2       | CHAR(29)    | Correo electrónico alternativo                   |
+| MATRICULA_    | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA        | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE    | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO        | CHAR(10)    | Género                                           |
+| GRUPO         | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C1_B1    | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 1          |
+| EIA1_C1_B2    | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 2          |
+| EIA1_C2_A1    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_B1    | CHAR(10)    | Resultado EIA1, Competencia 2, Bloque 1          |
+| EIA1_C3_A1    | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C3_B1    | CHAR(10)    | Resultado EIA1, Competencia 3, Bloque 1          |
+| EIA1_C4_A1    | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA2_C1_A1    | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C1_B1    | CHAR(10)    | Resultado EIA2, Competencia 1, Bloque 1          |
+| EIA2_C2_A1    | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1    | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C3_B1    | CHAR(10)    | Resultado EIA2, Competencia 3, Bloque 1          |
+| EIA2_C4_A1    | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| PLEN          | CHAR(10)    | Indicador de plenitud                            |
+| PSPC          | CHAR(10)    | Indicador PSPC                                   |
+| PENS          | CHAR(10)    | Indicador PENS                                   |
+| PHYC          | CHAR(10)    | Indicador PHYC                                   |
+| ID            | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI    | CHAR(23)    | Nombre de archivo original                       |
 
 ### PRI6
 
-**Rol:** staging para Primaria 6º grado (`MACROS Evaluacion Diagnostica/Bd_muestra/pri6.dbf`).
-
-**Esquema:** igual que [PRE3](#pre3).
-
-**Notas:** último archivo de la serie de primaria antes de pasar a secundaria.
-
-### SEC1
-
-**Rol:** staging para Secundaria 1er grado (`MACROS Evaluacion Diagnostica/Bd_muestra/sec1.dbf`).
-
-**Esquema:** idéntico a [PRE3](#pre3).
-
-**Notas:** aunque el DBF original incluye casillas adicionales (p.ej. comprimido_en), todos los valores se mapean a las columnas estándar para facilitar el `COPY`.
-
-### SEC2
-
-**Rol:** staging para Secundaria 2º grado (`MACROS Evaluacion Diagnostica/Bd_muestra/sec2.dbf`).
-
-**Esquema:** igual que [PRE3](#pre3).
-
-**Notas:** comparte el mismo conjunto de indicadores `plen/pspc/pens/phyc`.
-
-### SEC3
-
-**Rol:** staging para Secundaria 3º grado (`MACROS Evaluacion Diagnostica/Bd_muestra/sec3.dbf`).
-
-**Esquema:** igual que [PRE3](#pre3).
-
-**Notas:** última tabla de staging antes de consolidar resultados de secundaria.
+| Campo         | Tipo        | Descripción                                      |
+|---------------|-------------|--------------------------------------------------|
+| CCT           | CHAR(21)    | Clave de Centro de Trabajo                       |
+| TURNO         | CHAR(22)    | Turno escolar                                    |
+| NOM_CCT       | CHAR(29)    | Nombre del Centro de Trabajo                     |
+| NIVEL         | CHAR(10)    | Nivel educativo                                  |
+| FASE          | CHAR(7)     | Fase de la evaluación                            |
+| GRADO         | CHAR(11)    | Grado escolar                                    |
+| CORREO1       | CHAR(26)    | Correo electrónico principal                     |
+| CORREO2       | CHAR(29)    | Correo electrónico alternativo                   |
+| MATRICULA_    | CHAR(22)    | Matrícula del estudiante                         |
+| NLISTA        | CHAR(14)    | Número de lista                                  |
+| ESTUDIANTE    | CHAR(59)    | Nombre completo del estudiante                   |
+| GENERO        | CHAR(10)    | Género                                           |
+| GRUPO         | CHAR(10)    | Grupo escolar                                    |
+| EIA1_C1_A1    | CHAR(10)    | Resultado EIA1, Competencia 1, Área 1            |
+| EIA1_C1_B1    | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 1          |
+| EIA1_C1_B2    | CHAR(10)    | Resultado EIA1, Competencia 1, Bloque 2          |
+| EIA1_C2_A1    | CHAR(10)    | Resultado EIA1, Competencia 2, Área 1            |
+| EIA1_C2_B1    | CHAR(10)    | Resultado EIA1, Competencia 2, Bloque 1          |
+| EIA1_C3_A1    | CHAR(10)    | Resultado EIA1, Competencia 3, Área 1            |
+| EIA1_C3_B1    | CHAR(10)    | Resultado EIA1, Competencia 3, Bloque 1          |
+| EIA1_C4_A1    | CHAR(10)    | Resultado EIA1, Competencia 4, Área 1            |
+| EIA2_C1_A1    | CHAR(10)    | Resultado EIA2, Competencia 1, Área 1            |
+| EIA2_C1_B1    | CHAR(10)    | Resultado EIA2, Competencia 1, Bloque 1          |
+| EIA2_C2_A1    | CHAR(10)    | Resultado EIA2, Competencia 2, Área 1            |
+| EIA2_C3_A1    | CHAR(10)    | Resultado EIA2, Competencia 3, Área 1            |
+| EIA2_C4_A1    | CHAR(10)    | Resultado EIA2, Competencia 4, Área 1            |
+| PLEN          | CHAR(10)    | Indicador de plenitud                            |
+| PSPC          | CHAR(10)    | Indicador PSPC                                   |
+| PENS          | CHAR(10)    | Indicador PENS                                   |
+| PHYC          | CHAR(10)    | Indicador PHYC                                   |
+| ID            | CHAR(19)    | Identificador único                              |
+| ARCHIVOORI    | CHAR(23)    | Nombre de archivo original                       |
 
 ### RESULTADOS_COMPETENCIAS
 
@@ -531,7 +833,7 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | escuela_id      | UUID         | Relación con ESCUELAS             |
 | ciclo_escolar   | VARCHAR(9)   | Ciclo escolar (ej: 2024-2025)     |
 | periodo_id      | INT          | Relación con PERIODOS_EVALUACION  |
-| tipo_reporte    | SMALLINT (FK cat_tipo_reporte) | Tipo: ENS, HYC, LEN, SPC, F5      |
+| tipo_reporte    | ENUM         | Tipo: ENS, HYC, LEN, SPC, F5      |
 | grado           | VARCHAR(20)  | Grado escolar                     |
 | grupo           | VARCHAR(10)  | Grupo (A, B, C, etc.)             |
 | file_path       | VARCHAR(500) | Ruta del archivo PDF en filesystem|
@@ -709,7 +1011,7 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | credencial_id            | UUID         | Relación con CREDENCIALES_EIA2    |
 | archivo_original         | VARCHAR(255) | Nombre del archivo original       |
 | fecha_carga              | TIMESTAMP    | Fecha y hora de carga             |
-| estado_validacion        | SMALLINT (FK cat_estado_validacion_eia2) | Estado: VALIDO, INVALIDO          |
+| estado_validacion        | ENUM         | Estado: VALIDO, INVALIDO          |
 | errores_validacion       | JSONB        | Detalle de errores de validación  |
 | archivo_path             | VARCHAR(500) | Ruta del archivo en filesystem    |
 | archivo_size             | BIGINT       | Tamaño del archivo en bytes       |
@@ -718,7 +1020,7 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | resultado_path           | VARCHAR(500) | Liga de descarga del resultado    |
 | resultado_disponible_desde| TIMESTAMP   | Fecha desde que está disponible   |
 | numero_estudiantes       | INT          | Cantidad de estudiantes en archivo|
-| nivel_educativo          | SMALLINT (FK cat_nivel_educativo) | Nivel educativo del archivo       |
+| nivel_educativo          | VARCHAR(50)  | Nivel educativo del archivo       |
 | created_at               | TIMESTAMP    | Fecha de creación del registro    |
 | updated_at               | TIMESTAMP    | Fecha de última actualización     |
 
@@ -733,7 +1035,7 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | archivo_frv_id  | UUID         | Relación con ARCHIVOS_FRV         |
 | asunto          | VARCHAR(200) | Asunto                            |
 | descripcion     | TEXT         | Descripción                       |
-| estado          | SMALLINT (FK cat_estado_ticket) | Estado del ticket                 |
+| estado          | ENUM         | Estado del ticket                 |
 | prioridad       | VARCHAR(10)  | Prioridad                         |
 | asignado_a      | UUID         | Usuario asignado                  |
 | asignado_en     | TIMESTAMP    | Fecha de asignación               |
@@ -776,13 +1078,26 @@ Ejemplo de `preferencias_notif`:
 }
 ```
 
+### VALORACIONES
+
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id              | UUID         | Identificador único               |
+| estudiante_id   | UUID         | Relación con ESTUDIANTES          |
+| materia_id      | INT          | Relación con MATERIAS             |
+| periodo_id      | INT          | Relación con PERIODOS_EVALUACION  |
+| valor           | INT          | Valoración (0-3)                  |
+| fecha           | DATETIME     | Fecha de valoración               |
+
+---
+
 ### Descripción de entidades principales
 
  **COMPETENCIAS**: Competencias evaluadas por materia.
  **RESULTADOS_COMPETENCIAS**: Logros por competencia en cada evaluación.
  **LOG_ACTIVIDADES**: Bitácora de actividades y auditoría.
  **EVALUACIONES**: Tabla normalizada de valoraciones de estudiantes por materia y periodo. Almacena valoraciones (0-3), nivel de integración calculado, observaciones del docente y trazabilidad completa (quién registró, quién validó). Vincula con ARCHIVOS_FRV para rastrear el origen de los datos. Soporta validación por equipo DGADAE.
- **CREDENCIALES_EIA2**: Gestión de credenciales para acceso a resultados de la plataforma EIA 2ª aplicación. Se generan automáticamente en la primera carga válida y no se regeneran. Usuario = CCT, Contraseña = correo validado (hasheada con bcrypt/argon2).
+ **CREDENCIALES_EIA2**: Gestión de credenciales para acceso a resultados de la plataforma EIA 2ª aplicación. Se generan automáticamente en la primera carga válida del usuario (identificado por correo electrónico) y no se regeneran en cargas posteriores. **Usuario = correo electrónico validado** (reutilizable para múltiples CCT: supervisores, directores con varios planteles), **Contraseña = cadena aleatoria de 12 caracteres** (hasheada con bcrypt salt rounds ≥12 o argon2id). Un usuario puede gestionar solicitudes de múltiples CCT bajo un solo conjunto de credenciales.
  **SOLICITUDES_EIA2**: Registro histórico de todas las cargas de archivos EIA 2ª aplicación. Cada carga se registra como solicitud independiente con número consecutivo, sin importar si es primera o segunda aplicación. Almacena estado de validación, errores, rutas de archivos y ligas de descarga de resultados procesados externamente.
  **REPORTES_GENERADOS**: Gestión completa de reportes PDF generados por el sistema (escuela y grupo). Incluye 5 tipos: ENS, HYC, LEN, SPC y F5. Trackea generación, descargas, integridad (SHA256), disponibilidad temporal (2 ciclos escolares) y archivos comprimidos. Soporta auditoría de descargas con contador y registro de usuario.
  **CAT_TURNOS**: Catálogo de turnos escolares (Matutino, Vespertino, Nocturno, Continuo).
@@ -1817,7 +2132,7 @@ INSERT INTO EVALUACIONES (
 - Los comentarios se deben ordenar cronológicamente ascendente para mostrar el hilo de conversación.
 - Cuando se cierra un ticket, no se permiten nuevos comentarios (validar estado del ticket).
 
-### Evaluaciones (EVALUACIONES)
+### Evaluaciones y Valoraciones (EVALUACIONES)
 
 - Las valoraciones deben estar en el rango **0-3** (validación estricta mediante CHECK constraint).
 - Cada estudiante debe tener **una evaluación por materia por periodo** (constraint UNIQUE en combinación estudiante_id, materia_id, periodo_id).
@@ -1849,7 +2164,7 @@ INSERT INTO EVALUACIONES (
 - El sistema **NO determina** si la carga corresponde a primera o segunda aplicación.
 - El campo `consecutivo` es UNIQUE y se genera automáticamente mediante secuencia PostgreSQL.
 - Un mismo CCT puede tener múltiples solicitudes (múltiples cargas en el tiempo).
-- El `estado_validacion` se almacena como FK a `cat_estado_validacion_eia2` (códigos `VALIDO` / `INVALIDO`) y se recomienda resolverlo con `fn_catalogo_id` dentro de reglas de negocio.
+- El `estado_validacion` solo puede ser 'VALIDO' o 'INVALIDO' (ENUM estricto).
 - Si `estado_validacion = 'INVALIDO'`, el campo `errores_validacion` (JSONB) debe contener el detalle de errores.
 - Si `estado_validacion = 'VALIDO'`, se debe crear/actualizar registro en CREDENCIALES_EIA2 si es la primera carga válida.
 - El campo `procesado_externamente` indica si el sistema externo ya procesó la solicitud.
@@ -1894,6 +2209,7 @@ INSERT INTO EVALUACIONES (
 
 - `INDEX idx_grupos_escuela_grado ON GRUPOS(escuela_id, grado_id)`
 - `INDEX idx_estudiantes_grupo ON ESTUDIANTES(grupo_id)`
+- `INDEX idx_valoraciones_estudiante ON VALORACIONES(estudiante_id, periodo_id)`
 - `INDEX idx_usuarios_rol ON USUARIOS(rol, activo)`
 - `INDEX idx_usuarios_escuela ON USUARIOS(escuela_id, activo)`
 - `INDEX idx_usuarios_bloqueado ON USUARIOS(bloqueado_hasta) WHERE bloqueado_hasta > NOW()`
@@ -1920,22 +2236,12 @@ INSERT INTO EVALUACIONES (
 - `UNIQUE INDEX idx_historico_passwords_activa ON HISTORICO_PASSWORDS(usuario_id, activa) WHERE activa = TRUE`
 - `INDEX idx_historico_passwords_temporales ON HISTORICO_PASSWORDS(es_temporal, expira_en) WHERE es_temporal = TRUE AND activa = TRUE`
 - `INDEX idx_historico_passwords_expiradas ON HISTORICO_PASSWORDS(expira_en) WHERE expira_en < NOW() AND activa = TRUE`
-- `INDEX idx_notificaciones_estado ON NOTIFICACIONES_EMAIL(estado, prioridad, created_at ASC)`
+- `INDEX idx_notificaciones_estado ON NOTIFICACIONES_EMAIL(estado, prioridad, created_at ASC) WHERE estado IN ('PENDIENTE', 'REINTENTANDO')`
 - `INDEX idx_notificaciones_destinatario ON NOTIFICACIONES_EMAIL(destinatario, created_at DESC)`
 - `INDEX idx_notificaciones_tipo ON NOTIFICACIONES_EMAIL(tipo, estado, created_at DESC)`
 - `INDEX idx_notificaciones_referencia ON NOTIFICACIONES_EMAIL(referencia_tipo, referencia_id)`
-- Índice parcial `idx_notificaciones_proximo` sobre `proximo_intento` (ver nota)
+- `INDEX idx_notificaciones_proximo_intento ON NOTIFICACIONES_EMAIL(proximo_intento) WHERE estado = 'REINTENTANDO' AND proximo_intento <= NOW()`
 - `INDEX idx_notificaciones_usuario ON NOTIFICACIONES_EMAIL(usuario_id, created_at DESC)`
-
-**Índice parcial para reintentos (`idx_notificaciones_proximo`)**
-
-El índice sobre `proximo_intento` se genera con un bloque `DO` que:
-
-1. Obtiene el `id` del catálogo `CAT_ESTADO_NOTIFICACION` cuyo `codigo = 'REINTENTANDO'`.
-2. Verifica si ya existe `idx_notificaciones_proximo` en el esquema actual.
-3. Ejecuta `CREATE INDEX idx_notificaciones_proximo ON NOTIFICACIONES_EMAIL(proximo_intento) WHERE estado = <ID>` sólo si no existe.
-
-Este enfoque evita hardcodear valores de catálogo y mantiene sincronizado el predicado con la tabla de estados, garantizando que el planificador pueda priorizar los correos en reintento ordenados por `proximo_intento`. Consulta la implementación exacta en [ddl_generated.sql](ddl_generated.sql#L1064-L1107).
 - `INDEX idx_intentos_usuario_fecha ON INTENTOS_LOGIN(usuario_id, created_at DESC) WHERE usuario_id IS NOT NULL`
 - `INDEX idx_intentos_email_fecha ON INTENTOS_LOGIN(email, created_at DESC)`
 - `INDEX idx_intentos_ip_fecha ON INTENTOS_LOGIN(ip_address, created_at DESC)`
@@ -1953,18 +2259,22 @@ Este enfoque evita hardcodear valores de catálogo y mantiene sincronizado el pr
 
 ## 8. Triggers y procedimientos almacenados
 
-### Catálogos (antiguos ENUM)
+### Enums (Enumeraciones)
 
-Los campos discretos que antes dependían de tipos `ENUM` utilizan ahora catálogos (`cat_*`) y llaves `SMALLINT`. Para obtener el identificador asociado a un `codigo` se usa la función `fn_catalogo_id('cat_<concepto>', '<CODIGO>')`, tanto en defaults como en triggers.
+Se utilizan tipos ENUM en PostgreSQL para garantizar integridad y claridad en los siguientes campos:
 
-Ejemplos:
-
-- `ARCHIVOS_FRV.estado` → `cat_estado_archivo`
-- `NOTIFICACIONES_EMAIL.estado/prioridad/tipo/referencia_tipo` → catálogos homónimos
-- `SOLICITUDES_EIA2.estado_validacion` → `cat_estado_validacion_eia2`
-- `TICKETS_SOPORTE.estado` → `cat_estado_ticket`
-
-Consultar la sección “Estrategia de Catalogación (sin ENUMs)” para el listado completo.
+- **nivel**: ('PREESCOLAR', 'PRIMARIA', 'SECUNDARIA', 'TELESECUNDARIA')
+- **estado_archivo**: ('CARGADO', 'VALIDADO', 'PROCESADO', 'ERROR')
+- **estado_ticket**: ('ABIERTO', 'EN_PROCESO', 'RESUELTO', 'CERRADO')
+- **estado_validacion_eia2**: ('VALIDO', 'INVALIDO')
+- **tipo_reporte**: ('ENS', 'HYC', 'LEN', 'SPC', 'F5')
+- **tipo_adjunto_comentario**: ('PDF', 'IMAGEN', 'EXCEL', 'WORD', 'OTRO')
+- **origen_cambio_password**: ('SISTEMA', 'USUARIO', 'ADMIN', 'RECUPERACION')
+- **tipo_notificacion**: ('RESULTADO_LISTO', 'TICKET_CREADO', 'TICKET_ACTUALIZADO', 'TICKET_RESUELTO', 'RECUPERACION_PASSWORD', 'CREDENCIALES_EIA2', 'EVALUACION_VALIDADA')
+- **estado_notificacion**: ('PENDIENTE', 'ENVIADO', 'ERROR', 'REINTENTANDO')
+- **prioridad_notificacion**: ('ALTA', 'MEDIA', 'BAJA')
+- **referencia_tipo_notificacion**: ('TICKET', 'REPORTE', 'USUARIO', 'EVALUACION', 'CREDENCIAL')
+- **motivo_fallo_login**: ('USUARIO_INVALIDO', 'PASSWORD_INCORRECTO', 'CUENTA_BLOQUEADA', 'CUENTA_INACTIVA', 'CUENTA_ELIMINADA', 'PASSWORD_EXPIRADO')
 
 ### Triggers sugeridos
 
@@ -1977,7 +2287,7 @@ CREATE OR REPLACE FUNCTION fn_auto_generar_credenciales_eia2()
 RETURNS TRIGGER AS $$
 BEGIN
     -- Solo si la solicitud es válida y no existen credenciales para ese CCT
-    IF NEW.estado_validacion = fn_catalogo_id('cat_estado_validacion_eia2','VALIDO') AND 
+    IF NEW.estado_validacion = 'VALIDO' AND 
        NOT EXISTS (SELECT 1 FROM CREDENCIALES_EIA2 WHERE cct = NEW.cct) THEN
         
         INSERT INTO CREDENCIALES_EIA2 (
@@ -4796,7 +5106,15 @@ CREATE TEMP TABLE mapeo_materias (
 INSERT INTO mapeo_materias (codigo_antiguo, id_nuevo)
 SELECT codigo, id FROM MATERIAS;
 
--- Paso 3: Actualizar EVALUACIONES
+-- Paso 3: Actualizar VALORACIONES
+ALTER TABLE VALORACIONES ADD COLUMN materia_id_nuevo UUID;
+
+UPDATE VALORACIONES v
+SET materia_id_nuevo = m.id_nuevo
+FROM mapeo_materias m
+WHERE v.materia_id::VARCHAR = m.codigo_antiguo;
+
+-- Paso 4: Actualizar EVALUACIONES
 ALTER TABLE EVALUACIONES ADD COLUMN materia_id_nuevo UUID;
 
 UPDATE EVALUACIONES e
@@ -4804,7 +5122,7 @@ SET materia_id_nuevo = m.id_nuevo
 FROM mapeo_materias m
 WHERE e.materia_id = m.codigo_antiguo::INT;
 
--- Paso 4: Actualizar COMPETENCIAS
+-- Paso 5: Actualizar COMPETENCIAS
 ALTER TABLE COMPETENCIAS ADD COLUMN id_materia_nuevo UUID;
 
 UPDATE COMPETENCIAS c
@@ -4812,27 +5130,32 @@ SET id_materia_nuevo = m.id_nuevo
 FROM mapeo_materias m
 WHERE c.id_materia = m.codigo_antiguo::INT;
 
--- Paso 5: Drop y rename
+-- Paso 6: Drop y rename
+ALTER TABLE VALORACIONES DROP COLUMN materia_id;
+ALTER TABLE VALORACIONES RENAME COLUMN materia_id_nuevo TO materia_id;
+
 ALTER TABLE EVALUACIONES DROP COLUMN materia_id;
 ALTER TABLE EVALUACIONES RENAME COLUMN materia_id_nuevo TO materia_id;
 
 ALTER TABLE COMPETENCIAS DROP COLUMN id_materia;
 ALTER TABLE COMPETENCIAS RENAME COLUMN id_materia_nuevo TO id_materia;
 
--- Paso 6: Establecer PK en MATERIAS
+-- Paso 7: Establecer PK en MATERIAS
 ALTER TABLE MATERIAS DROP CONSTRAINT IF EXISTS materias_pkey;
 ALTER TABLE MATERIAS ADD PRIMARY KEY (id);
 
--- Paso 7: Mantener codigo como UNIQUE pero no PK
+-- Paso 8: Mantener codigo como UNIQUE pero no PK
 ALTER TABLE MATERIAS ADD CONSTRAINT uq_materias_codigo UNIQUE (codigo);
 
--- Paso 8: Agregar FKs
+-- Paso 9: Agregar FKs
+ALTER TABLE VALORACIONES ADD CONSTRAINT fk_valoraciones_materia 
+    FOREIGN KEY (materia_id) REFERENCES MATERIAS(id);
 ALTER TABLE EVALUACIONES ADD CONSTRAINT fk_evaluaciones_materia 
     FOREIGN KEY (materia_id) REFERENCES MATERIAS(id);
 ALTER TABLE COMPETENCIAS ADD CONSTRAINT fk_competencias_materia 
     FOREIGN KEY (id_materia) REFERENCES MATERIAS(id);
 
--- Paso 9: Limpiar
+-- Paso 10: Limpiar
 DROP TABLE mapeo_materias;
 ```
 
@@ -4851,7 +5174,15 @@ CREATE TEMP TABLE mapeo_periodos (
 INSERT INTO mapeo_periodos (id_antiguo, id_nuevo)
 SELECT id_periodo, id FROM PERIODOS_EVALUACION;
 
--- Paso 3: Actualizar EVALUACIONES
+-- Paso 3: Actualizar VALORACIONES
+ALTER TABLE VALORACIONES ADD COLUMN periodo_id_nuevo UUID;
+
+UPDATE VALORACIONES v
+SET periodo_id_nuevo = m.id_nuevo
+FROM mapeo_periodos m
+WHERE v.periodo_id = m.id_antiguo;
+
+-- Paso 4: Actualizar EVALUACIONES
 ALTER TABLE EVALUACIONES ADD COLUMN periodo_id_nuevo UUID;
 
 UPDATE EVALUACIONES e
@@ -4859,7 +5190,7 @@ SET periodo_id_nuevo = m.id_nuevo
 FROM mapeo_periodos m
 WHERE e.periodo_id = m.id_antiguo;
 
--- Paso 4: Actualizar REPORTES_GENERADOS
+-- Paso 5: Actualizar REPORTES_GENERADOS
 ALTER TABLE REPORTES_GENERADOS ADD COLUMN periodo_id_nuevo UUID;
 
 UPDATE REPORTES_GENERADOS r
@@ -4867,7 +5198,10 @@ SET periodo_id_nuevo = m.id_nuevo
 FROM mapeo_periodos m
 WHERE r.periodo_id = m.id_antiguo;
 
--- Paso 5: Drop y rename
+-- Paso 6: Drop y rename
+ALTER TABLE VALORACIONES DROP COLUMN periodo_id;
+ALTER TABLE VALORACIONES RENAME COLUMN periodo_id_nuevo TO periodo_id;
+
 ALTER TABLE EVALUACIONES DROP COLUMN periodo_id;
 ALTER TABLE EVALUACIONES RENAME COLUMN periodo_id_nuevo TO periodo_id;
 
@@ -4881,13 +5215,15 @@ ALTER TABLE PERIODOS_EVALUACION RENAME COLUMN id TO id;
 -- Paso 7: Establecer PK
 ALTER TABLE PERIODOS_EVALUACION ADD PRIMARY KEY (id);
 
--- Paso 6: Agregar FKs
+-- Paso 8: Agregar FKs
+ALTER TABLE VALORACIONES ADD CONSTRAINT fk_valoraciones_periodo 
+    FOREIGN KEY (periodo_id) REFERENCES PERIODOS_EVALUACION(id);
 ALTER TABLE EVALUACIONES ADD CONSTRAINT fk_evaluaciones_periodo 
     FOREIGN KEY (periodo_id) REFERENCES PERIODOS_EVALUACION(id);
 ALTER TABLE REPORTES_GENERADOS ADD CONSTRAINT fk_reportes_periodo 
     FOREIGN KEY (periodo_id) REFERENCES PERIODOS_EVALUACION(id);
 
--- Paso 7: Limpiar
+-- Paso 9: Limpiar
 DROP TABLE mapeo_periodos;
 ```
 
