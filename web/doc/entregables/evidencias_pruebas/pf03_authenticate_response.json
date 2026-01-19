@@ -1,0 +1,9 @@
+{
+  "data": {
+    "authenticate": {
+      "status": "OK",
+      "token": "mock-token-123",
+      "expiresIn": 3600
+    }
+  }
+}

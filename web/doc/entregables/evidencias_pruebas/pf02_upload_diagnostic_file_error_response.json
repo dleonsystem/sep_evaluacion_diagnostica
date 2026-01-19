@@ -1,0 +1,14 @@
+{
+  "data": {
+    "uploadDiagnosticFile": {
+      "status": "ERROR",
+      "message": "Archivo inválido",
+      "pdfUrl": "/mock/errores.pdf",
+      "hash": "def456",
+      "errors": [
+        "Faltan columnas obligatorias",
+        "Formato de hoja incorrecto"
+      ]
+    }
+  }
+}
