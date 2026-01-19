@@ -209,6 +209,38 @@ erDiagram
 | codigo          | VARCHAR(10)  | Código (MAT, VESP, NOCT, CONT)    |
 | descripcion     | VARCHAR(100) | Descripción del turno             |
 
+### CAT_NIVELES_INTEGRACION
+
+**Catálogo oficial de Niveles de Integración del Aprendizaje (NIA) - Marco SEP 2025**
+
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id_nia          | SERIAL       | Identificador único del NIA       |
+| clave           | VARCHAR(2)   | Clave oficial (ED, EP, ES, SO)    |
+| nombre          | VARCHAR(50)  | Nombre del nivel                  |
+| descripcion     | TEXT         | Descripción detallada pedagógica  |
+| rango_min       | INT          | Valoración mínima (0-3)           |
+| rango_max       | INT          | Valoración máxima (0-3)           |
+| color_hex       | VARCHAR(7)   | Color para visualización          |
+| orden_visual    | INT          | Orden para gráficas (1-4)         |
+| vigente         | BOOLEAN      | Indica si el nivel está activo    |
+| created_at      | TIMESTAMP    | Fecha de creación                 |
+| updated_at      | TIMESTAMP    | Fecha de última actualización     |
+
+### CAT_CAMPOS_FORMATIVOS
+
+**Catálogo de Campos Formativos según Plan de Estudios SEP**
+
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id              | SERIAL       | Identificador único               |
+| clave           | VARCHAR(10)  | Clave oficial (ENS, HYC, LEN, SPC, F5)|
+| nombre          | VARCHAR(100) | Nombre completo del campo         |
+| descripcion     | TEXT         | Descripción detallada             |
+| orden_visual    | INT          | Orden para visualización          |
+| vigente         | BOOLEAN      | Indica si está activo             |
+| created_at      | TIMESTAMP    | Fecha de creación                 |
+
 ### COMENTARIOS_TICKET
 
 | Campo              | Tipo         | Descripción                                       |
@@ -315,6 +347,8 @@ UNIQUE (clave)
 
 ### EVALUACIONES
 
+**Registro de valoraciones individuales por materia y periodo**
+
 | Campo              | Tipo         | Descripción                       |
 |--------------------|--------------|-----------------------------------|
 | id                 | UUID         | Identificador único               |
@@ -323,8 +357,6 @@ UNIQUE (clave)
 | periodo_id         | INT          | Relación con PERIODOS_EVALUACION  |
 | archivo_frv_id     | UUID         | Relación con ARCHIVOS_FRV (origen)|
 | valoracion         | INT          | Valoración asignada (0-3)         |
-| nivel_integracion  | VARCHAR(20)  | Nivel calculado por sistema       |
-| competencia_alcanzada| BOOLEAN   | Si alcanzó competencia esperada   |
 | observaciones      | TEXT         | Observaciones del docente         |
 | registrado_por     | UUID         | Relación con USUARIOS             |
 | fecha_evaluacion   | TIMESTAMP    | Fecha de aplicación               |
@@ -334,6 +366,10 @@ UNIQUE (clave)
 | validado_en        | TIMESTAMP    | Fecha de validación               |
 | created_at         | TIMESTAMP    | Fecha de creación del registro    |
 | updated_at         | TIMESTAMP    | Fecha de última actualización     |
+
+**Nota:** Los campos `nivel_integracion` y `competencia_alcanzada` fueron eliminados (19-ene-2026). 
+Los Niveles de Integración del Aprendizaje (NIA) ahora se calculan y almacenan en la tabla 
+especializada `NIVELES_INTEGRACION_ESTUDIANTE` con granularidad por Campo Formativo.
 
 ### GRUPOS
 
@@ -412,9 +448,38 @@ INDEX idx_log_tabla_accion ON LOG_ACTIVIDADES(tabla, accion)
 | id              | UUID         | Identificador único (UUID)        |
 | codigo          | VARCHAR(10)  | Código de materia (Ej: LEN, MAT)  |
 | nombre          | VARCHAR(100) | Nombre de la materia              |
+| campo_formativo | VARCHAR(10)  | FK a CAT_CAMPOS_FORMATIVOS.clave  |
 | nivel_educativo | VARCHAR(50)  | Nivel educativo al que aplica     |
 | orden           | INT          | Orden de visualización            |
 | activa          | BOOLEAN      | Indica si la materia está activa  |
+
+### NIVELES_INTEGRACION_ESTUDIANTE
+
+**Tabla especializada para Niveles de Integración del Aprendizaje (NIA)**
+
+| Campo                | Tipo         | Descripción                       |
+|----------------------|--------------|-----------------------------------|
+| id                   | UUID         | Identificador único               |
+| id_estudiante        | UUID         | FK a ESTUDIANTES(id)              |
+| id_campo_formativo   | INT          | FK a CAT_CAMPOS_FORMATIVOS(id)    |
+| id_periodo           | INT          | FK a PERIODOS_EVALUACION(id)      |
+| id_nia               | INT          | FK a CAT_NIVELES_INTEGRACION(id_nia)|
+| valoracion_promedio  | NUMERIC(4,2) | Promedio de valoraciones (0-3)    |
+| total_materias       | INT          | Total de materias del campo       |
+| materias_evaluadas   | INT          | Materias efectivamente evaluadas  |
+| calculado_en         | TIMESTAMP    | Fecha/hora de cálculo             |
+| calculado_por        | VARCHAR(50)  | Origen (SISTEMA, MANUAL, AJUSTE)  |
+| observaciones        | TEXT         | Observaciones adicionales         |
+| validado             | BOOLEAN      | Si fue validado por DGADAE        |
+| validado_por         | UUID         | FK a USUARIOS(id)                 |
+| validado_en          | TIMESTAMP    | Fecha de validación               |
+| created_at           | TIMESTAMP    | Fecha de creación del registro    |
+| updated_at           | TIMESTAMP    | Fecha de última actualización     |
+
+**Constraint único:** `UNIQUE (id_estudiante, id_campo_formativo, id_periodo)`  
+**Nota:** Esta tabla reemplaza los campos eliminados `nivel_integracion` y `competencia_alcanzada` 
+de EVALUACIONES. Permite modelar correctamente que cada estudiante tiene 4 NIAs (uno por campo 
+formativo: ENS, HYC, LEN, SPC) en cada periodo de evaluación.
 
 ### NOTIFICACIONES_EMAIL
 
@@ -1032,7 +1097,7 @@ Ejemplo de `preferencias_notif`:
  **RESULTADOS_COMPETENCIAS**: Logros por competencia en cada evaluación.
  **LOG_ACTIVIDADES**: Bitácora de actividades y auditoría.
  **EVALUACIONES**: Tabla normalizada de valoraciones de estudiantes por materia y periodo. Almacena valoraciones (0-3), nivel de integración calculado, observaciones del docente y trazabilidad completa (quién registró, quién validó). Vincula con ARCHIVOS_FRV para rastrear el origen de los datos. Soporta validación por equipo DGADAE.
- **CREDENCIALES_EIA2**: Gestión de credenciales para acceso a resultados de la plataforma EIA 2ª aplicación. Se generan automáticamente en la primera carga válida y no se regeneran. Usuario = CCT, Contraseña = correo validado (hasheada con bcrypt/argon2).
+ **CREDENCIALES_EIA2**: Gestión de credenciales para acceso a resultados de la plataforma EIA 2ª aplicación. Se generan automáticamente en la primera carga válida del usuario (identificado por correo electrónico) y no se regeneran en cargas posteriores. **Usuario = correo electrónico validado** (reutilizable para múltiples CCT: supervisores, directores con varios planteles), **Contraseña = cadena aleatoria de 12 caracteres** (hasheada con bcrypt salt rounds ≥12 o argon2id). Un usuario puede gestionar solicitudes de múltiples CCT bajo un solo conjunto de credenciales.
  **SOLICITUDES_EIA2**: Registro histórico de todas las cargas de archivos EIA 2ª aplicación. Cada carga se registra como solicitud independiente con número consecutivo, sin importar si es primera o segunda aplicación. Almacena estado de validación, errores, rutas de archivos y ligas de descarga de resultados procesados externamente.
  **REPORTES_GENERADOS**: Gestión completa de reportes PDF generados por el sistema (escuela y grupo). Incluye 5 tipos: ENS, HYC, LEN, SPC y F5. Trackea generación, descargas, integridad (SHA256), disponibilidad temporal (2 ciclos escolares) y archivos comprimidos. Soporta auditoría de descargas con contador y registro de usuario.
  **CAT_TURNOS**: Catálogo de turnos escolares (Matutino, Vespertino, Nocturno, Continuo).

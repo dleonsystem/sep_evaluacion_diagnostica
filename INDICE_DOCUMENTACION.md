@@ -1,9 +1,39 @@
 # 📚 ÍNDICE GENERAL DE DOCUMENTACIÓN
 ## Sistema SiCRER - Evaluación Diagnóstica SEP
 
-**Versión:** 1.0  
-**Fecha:** 21 de Noviembre de 2025  
-**Autor:** Ingeniero de Software Certificado PSP
+**Versión:** 1.1 - Actualización Post-Correcciones Cliente  
+**Fecha:** 19 de enero de 2026  
+**Autor:** Ingeniero de Software Certificado PSP  
+**Estado:** Fase 1 de correcciones completada (47% aplicadas)
+
+---
+
+## 🆕 DOCUMENTACIÓN RECIENTE - CORRECCIONES CLIENTE (19 enero 2026)
+
+### ⚠️ IMPORTANTE: Observaciones Oficiales DGTIC/DGADAE
+
+El área solicitante (DGTIC/DGADAE) identificó **contradicciones críticas** en reglas de negocio, modelo de datos y conceptos institucionales. Se aplicaron correcciones en Fase 1 (7/15 problemas), Fase 2 en proceso.
+
+**DOCUMENTOS DE CORRECCIÓN - LECTURA OBLIGATORIA:**
+
+1. **[RESUMEN_CORRECCIONES_CLIENTE.md](RESUMEN_CORRECCIONES_CLIENTE.md)** ⭐ NUEVO 19-ene-2026
+   - ⏱️ Tiempo de lectura: 25 minutos
+   - 📊 Contiene: 15 problemas identificados, 7 corregidos, 8 pendientes
+   - 🎯 Objetivo: Entender cambios críticos en reglas de negocio y modelo de datos
+   - ✅ Fase 1: Cargas múltiples, modelo usuario-CCT 1:N, contraseñas aleatorias, modelo NIA
+   - ⏳ Fase 2: Normalización ENUMs, catálogos oficiales EIA 2025/CCT SIGED
+
+2. **[CORRECCIONES_MODELO_NIA.md](CORRECCIONES_MODELO_NIA.md)** ⭐ NUEVO 19-ene-2026
+   - ⏱️ Tiempo de lectura: 30 minutos
+   - 📊 Contiene: Rediseño completo del modelo de Niveles de Integración del Aprendizaje
+   - 🎯 Objetivo: Documentación técnica del nuevo modelo NIA (4 niveles x 4 campos formativos)
+   - 🔧 Nuevas tablas: CAT_NIVELES_INTEGRACION, CAT_CAMPOS_FORMATIVOS, NIVELES_INTEGRACION_ESTUDIANTE
+   - ❌ Eliminados: campos `nivel_integracion` y `competencia_alcanzada` de EVALUACIONES
+
+3. **[BITACORA_CAMBIOS.md](BITACORA_CAMBIOS.md)** ⭐ ACTUALIZADO 19-ene-2026
+   - ⏱️ Tiempo de lectura: 10 minutos
+   - 📊 Contiene: Registro cronológico completo con entrada 2026-01-19
+   - 🎯 Objetivo: Trazabilidad de observaciones del cliente e impacto
 
 ---
 

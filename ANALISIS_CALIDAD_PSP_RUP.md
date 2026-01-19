@@ -13,16 +13,18 @@
 
 ### Calificación Global
 
-| Métrica | Inicial (9 ene) | Post-Corrección (12 ene) | Post-Optimización (12 ene) | Variación Total | Tendencia |
-| ------- | ---------------- | ------------------------ | -------------------------- | --------------- | --------- |
-| **Score Global** | **70.8/100** | **74.2/100** | **82.5/100** | **+11.7** | ⬆️⬆️ EXCELENTE |
-| Calidad (Defectos) | 92/100 | 96/100 | **98/100** | **+6** | ⬆️ |
-| Requisitos | 71/100 | 79/100 | **95/100** | **+24** | ⬆️⬆️⬆️ |
-| Análisis y Diseño | 82/100 | 87/100 | **94/100** | **+12** | ⬆️⬆️ |
-| Gestión de Proyecto | 33/100 | 48/100 | **52/100** | **+19** | ⬆️⬆️ |
-| Defect Density | 0.024 def/pág | 0.012 def/pág | **0.006 def/pág** | **-75%** | ⬆️⬆️ SOBRESALIENTE |
+| Métrica | Inicial (9 ene) | Post-Corrección (12 ene) | Post-Optimización (12 ene) | **Post-Correcciones Cliente (19 ene)** | Variación Total | Tendencia |
+| ------- | ---------------- | ------------------------ | -------------------------- | --------------------------------------- | --------------- | --------- |
+| **Score Global** | **70.8/100** | **74.2/100** | **82.5/100** | **79.8/100** | **+9.0** | ⬆️⬆️ EXCELENTE |
+| Calidad (Defectos) | 92/100 | 96/100 | **98/100** | **95/100** | **+3** | ⬆️ |
+| Requisitos | 71/100 | 79/100 | **95/100** | **92/100** | **+21** | ⬆️⬆️⬆️ |
+| Análisis y Diseño | 82/100 | 87/100 | **94/100** | **88/100** | **+6** | ⬆️⬆️ |
+| Gestión de Proyecto | 33/100 | 48/100 | **52/100** | **56/100** | **+23** | ⬆️⬆️ |
+| Defect Density | 0.024 def/pág | 0.012 def/pág | **0.006 def/pág** | **0.008 def/pág** | **-67%** | ⬆️⬆️ SOBRESALIENTE |
 
-**Estado:** ✅ **BUENO - APTO PARA CONSTRUCCIÓN** (Transición Elaboración → Construcción completada)
+**Estado:** ⚠️ **BUENO CON CORRECCIONES EN PROCESO** (Fase 1 de 2 completada)  
+
+**Nota importante (19 ene 2026):** El score global disminuyó temporalmente de 82.5 a 79.8 debido a la identificación de contradicciones críticas en reglas de negocio detectadas por el cliente (DGTIC/DGADAE). Se aplicaron correcciones mayores que requieren actualización de múltiples documentos. Fase 1 completada (47% correcciones), Fase 2 en proceso (normalización BD + catálogos oficiales).
 
 ### Correcciones y Optimizaciones Aplicadas (3 días, 12 horas)
 
@@ -60,6 +62,31 @@
 **Documentación Total Agregada:** ~1,250 líneas, 18 secciones nuevas, 2 diagramas Mermaid complejos  
 **Reducción Complejidad BD:** -35% queries, -30% joins, -21% tablas
 
+#### Fase 4: Correcciones por Observaciones del Cliente DGTIC/DGADAE (19 enero 2026)
+
+**Origen:** Revisión oficial de área solicitante sobre contradicciones en reglas de negocio
+
+| Corrección | Impacto | Documentos Afectados | Estado | Esfuerzo |
+| ---------- | ------- | -------------------- | ------ | -------- |
+| **Reglas de Negocio - Cargas múltiples** | Permite N cargas por CCT/periodo | RF-24.1, RF-24.3, SOLICITUDES_EIA2 | ✅ COMPLETADO | 1h |
+| **Modelo Usuario-CCT (1:N)** | Usuario ≠ CCT, relación 1:N | RF-14, RF-16, CREDENCIALES_EIA2 | ✅ COMPLETADO | 2h |
+| **Contraseñas aleatorias** | Elimina "contraseña = correo" | RF-16.4, RF-18, CREDENCIALES_EIA2 | ✅ COMPLETADO | 1h |
+| **Rediseño modelo NIA** | 3 tablas nuevas, eliminación 2 campos | EVALUACIONES, CAT_*, NIVELES_INTEGRACION_ESTUDIANTE | ✅ COMPLETADO | 4h |
+| **Normalización ENUMs → FK** | Reemplazo de 15+ ENUMs por catálogos | 15+ tablas, triggers, vistas | ⏳ EN PROCESO | 8h est. |
+| **Catálogos oficiales EIA 2025** | Integración catálogos DGTIC | CAT_*, seeds, validaciones | ⏳ PENDIENTE | 4h est. |
+
+**Documentos creados:**
+- `CORRECCIONES_MODELO_NIA.md` - Documento técnico completo del nuevo modelo
+- `RESUMEN_CORRECCIONES_CLIENTE.md` - Resumen ejecutivo de todas las correcciones
+
+**Impacto en score:**
+- ⚠️ Score temporal: 79.8/100 (reducción de 2.7 puntos por identificación de defectos críticos)
+- ✅ Score proyectado post-Fase 2: 84-86/100 (aumento de 4-6 puntos al completar normalización)
+- 📊 Defectos nuevos identificados: 7 (3 críticos de reglas de negocio, 4 de modelo de datos)
+- 📊 Defectos corregidos: 7/15 (47% en Fase 1)
+
+**Próxima entrega:** Fase 2 - Normalización completa + Catálogos oficiales (16h estimadas)
+
 ### Falsos Positivos Identificados (5)
 
 - ❌ D001: Índices NOTIFICACIONES_EMAIL ya documentados (líneas 2064-2069)
@@ -79,14 +106,20 @@
 - ✅ Habilitan pruebas de usabilidad en paralelo
 - **Impacto:** GAP-005 resuelto, Score Requisitos +8 puntos (71% → 79%)
 
-### Próximos Pasos Críticos Post-Optimización
+### Próximos Pasos Críticos Post-Correcciones Cliente
 
-1. ✅ **COMPLETADO:** Optimización BD (30 tablas, 100% trazabilidad) - 3h
-2. ✅ **COMPLETADO:** Casos de uso completos (24 CU, 100% RFs) - 1.5h
-3. 🔴 **GAP-001:** Crear documentación de pruebas (40h) - PRIORIDAD P0
-4. 🔴 **GAP-002:** Implementar frontend Angular 17 (200h) - PRIORIDAD P0
-5. 🟡 **GAP-003:** Refactorizar backend Python + FastAPI (120h) - PRIORIDAD P1
-6. 🟢 **NUEVO:** Validar migraciones PostgreSQL con modelo optimizado (8h) - PRIORIDAD P2
+**Fase 2 - Correcciones Cliente (Prioridad P0):**
+1. 🔴 **Normalización Base de Datos** (8h) - Eliminar ENUMs, crear catálogos, actualizar FK
+2. 🔴 **Integración Catálogos Oficiales** (4h) - EIA 2025 + CCT SIGED
+3. 🔴 **Actualización Triggers/SPs** (2h) - Eliminar referencias a campos obsoletos
+4. 🔴 **Actualización Casos de Uso** (2h) - CU-16, CU-17, CU-18 con nuevos flujos
+
+**Post-Fase 2 (Prioridad P1):**
+5. ✅ **COMPLETADO:** Optimización BD (30 tablas, 100% trazabilidad) - 3h
+6. ✅ **COMPLETADO:** Casos de uso completos (24 CU, 100% RFs) - 1.5h
+7. 🟡 **GAP-001:** Crear documentación de pruebas (40h) - PRIORIDAD P1
+8. 🟡 **GAP-002:** Implementar frontend Angular 17 (200h) - PRIORIDAD P1
+9. 🟢 **GAP-003:** Refactorizar backend Python + FastAPI (120h) - PRIORIDAD P2
 
 ---
 

@@ -175,14 +175,16 @@
 - **RF-13.5** El sistema debe permitir búsqueda por CCT, nombre o ubicación
 
 ### RF-14: Gestión de Usuarios ✨ FASE 1
-- **RF-14.1** El sistema debe permitir CRUD de usuarios directores
-- **RF-14.2** El sistema debe vincular usuario ↔ CCT (relación 1:1 o 1:N)
-- **RF-14.3** El sistema debe soportar roles:
-  - Director: Acceso solo a su(s) escuela(s)
+- **RF-14.1** El sistema debe permitir CRUD de usuarios directores y supervisores
+- **RF-14.2** El sistema debe vincular usuario ↔ CCT mediante relación **1:N** (un usuario puede gestionar múltiples CCT: supervisor de zona, director con varios planteles)
+- **RF-14.3** El sistema debe implementar tabla intermedia USUARIO_CCT para gestión granular de permisos por plantel
+- **RF-14.4** El sistema debe soportar roles:
+  - Director: Acceso a su(s) escuela(s) asignadas
+  - Supervisor: Acceso a múltiples escuelas de su zona
   - Operador: Gestión de tickets y validaciones
   - Administrador: Acceso completo al sistema
-- **RF-14.4** El sistema debe permitir reset de contraseña por administrador
-- **RF-14.5** El sistema debe generar contraseña temporal en creación
+- **RF-14.5** El sistema debe permitir reset de contraseña por administrador
+- **RF-14.6** El sistema debe generar contraseña temporal aleatoria en creación de usuario
 - **RF-14.6** El sistema debe forzar cambio de contraseña en primer login
 - **RF-14.7** El sistema debe enviar credenciales por email seguro
 - **RF-14.8** El sistema debe implementar gestión granular de permisos por módulo:
@@ -234,9 +236,10 @@
 - **RF-16.2** La validación automática debe ejecutarse en orden para confirmar coincidencia entre el correo ingresado y el del Excel (solo en la primera carga ligada a ese correo), CCT, nivel, campos y columnas obligatorias por hoja, valores válidos (0-3), número y nombre de hojas, estructura general y consistencia interna; si alguno falla, el archivo se rechaza.
   - **Checklist mínimo de validación (9 puntos):** correo ingresado vs. Excel (primera carga), CCT, nivel, campo obligatorio por hoja, columnas obligatorias, valores válidos (0-3), estructura general de archivo, número de hojas, consistencia interna.
 - **RF-16.3** Si el archivo es válido, el sistema debe mostrar el mensaje "Tu archivo ha sido validado correctamente. Generamos una contraseña aleatoria y podrás consultar tus resultados a partir del día: [hoy + 4 días]".
-- **RF-16.4** En la primera carga válida se deben generar credenciales de consulta con **usuario = correo validado** (reutilizable para múltiples CCT) y **contraseña = cadena aleatoria**; no se regeneran en cargas posteriores.
+- **RF-16.4** En la primera carga válida del usuario (identificado por correo) se deben generar credenciales de consulta con **usuario = correo validado** y **contraseña = cadena aleatoria de 12 caracteres** (mayúsculas, minúsculas, números, símbolos); estas credenciales son reutilizables para todas las cargas del usuario (incluso de diferentes CCT) y no se regeneran en cargas posteriores.
 - **RF-16.5** El sistema debe generar y descargar automáticamente un PDF de confirmación con mensaje de éxito, fecha futura de consulta, usuario (correo), contraseña aleatoria y marca de tiempo; si es inválido o falla la coincidencia de correo, debe descargar PDF de errores.
-- **RF-16.6** Cada carga válida debe registrarse como solicitud independiente con consecutivo y almacenarse en un repositorio de archivos recibidos.
+- **RF-16.6** Cada carga válida debe registrarse como solicitud independiente con consecutivo único y almacenarse en un repositorio de archivos recibidos.
+- **RF-16.11** El sistema debe asociar todas las solicitudes (cargas) al usuario propietario (correo) independientemente del CCT, permitiendo consulta consolidada de resultados de múltiples escuelas bajo un solo login.
 - **RF-16.7** El sistema no determinará si el envío corresponde a primera o segunda aplicación ni comparará/mezclará archivos; solo registrará solicitudes.
 - **RF-16.8** La generación de resultados, comparativos y paquetes ZIP corresponde a un sistema externo; el portal solo debe mostrar las ligas de descarga depositadas externamente.
 - **RF-16.9** El módulo de descarga debe permitir autenticación por correo y contraseña para listar todas las versiones disponibles con número consecutivo y liga de descarga.
@@ -250,11 +253,13 @@
 - **RF-17.5** El sistema debe enviar notificación de email cuando se detecte inicio de sesión desde nueva ubicación o dispositivo.
 
 ### RF-18: Gestión de Contraseñas
-- **RF-18.1** El sistema debe forzar cambio de contraseña temporal en primer acceso.
-- **RF-18.2** El sistema debe validar fortaleza de contraseña: mínimo 8 caracteres, mayúsculas, minúsculas, números y símbolos.
-- **RF-18.3** El sistema debe prevenir reutilización de últimas 5 contraseñas.
-- **RF-18.4** El sistema debe expirar contraseñas cada 90 días para roles administrativos.
-- **RF-18.5** El sistema debe permitir recuperación de contraseña mediante token enviado por email con vigencia de 2 horas.
+- **RF-18.1** En la primera carga válida, el sistema debe generar una contraseña temporal aleatoria (12 caracteres: mayúsculas, minúsculas, números, símbolos) y forzar cambio en el primer acceso al módulo de descarga.
+- **RF-18.2** El sistema debe validar fortaleza de contraseña nueva: mínimo 8 caracteres, al menos 1 mayúscula, 1 minúscula, 1 número y 1 símbolo.
+- **RF-18.3** El sistema debe prevenir reutilización de últimas 5 contraseñas mediante comparación de hashes.
+- **RF-18.4** El sistema debe expirar contraseñas cada 90 días para roles administrativos (DGADAE, Soporte).
+- **RF-18.5** El sistema debe permitir recuperación de contraseña mediante token único enviado por email con vigencia de 2 horas.
+- **RF-18.6** El sistema debe almacenar contraseñas usando bcrypt con salt rounds ≥12 o argon2id.
+- **RF-18.7** El sistema debe enviar notificación por email con la contraseña temporal generada y PDF descargable de confirmación.
 
 ### RF-19: Validación Avanzada de Archivos FRV
 - **RF-19.1** El sistema debe validar unicidad de CURP dentro del mismo archivo.
@@ -296,8 +301,9 @@
 - **RF-23.5** El sistema debe mantener histórico de cambios en configuraciones con usuario y timestamp.
 
 ### RF-24: Validaciones de Negocio
-- **RF-24.1** El sistema debe validar que escuela no suba más de 1 archivo FRV por periodo de evaluación.
+- **RF-24.1** El sistema debe permitir múltiples cargas por CCT y periodo, registrando cada una como solicitud independiente con consecutivo único (sin sobreescritura).
 - **RF-24.2** El sistema debe validar que valoración (0-3) sea coherente con observaciones registradas.
+- **RF-24.3** El sistema debe mantener historial completo de todas las cargas (válidas e inválidas) con timestamp y estado.
 - **RF-24.3** El sistema debe validar que número de alumnos en archivo no exceda capacidad declarada de escuela.
 - **RF-24.4** El sistema debe prevenir eliminación de periodo de evaluación con datos asociados.
 - **RF-24.5** El sistema debe validar que fecha de carga de archivo esté dentro del periodo activo.
