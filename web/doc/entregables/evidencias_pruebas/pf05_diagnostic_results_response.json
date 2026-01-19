@@ -1,0 +1,16 @@
+{
+  "data": {
+    "diagnosticResults": [
+      {
+        "version": "1",
+        "downloadUrl": "/mock/resultados_v1.zip",
+        "generatedAt": "2026-01-05"
+      },
+      {
+        "version": "2",
+        "downloadUrl": "/mock/resultados_v2.zip",
+        "generatedAt": "2026-01-07"
+      }
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "data": {
+    "uploadDiagnosticFile": {
+      "status": "OK",
+      "message": "Validación correcta",
+      "pdfUrl": "/mock/confirmacion.pdf",
+      "hash": "abc123",
+      "errors": []
+    }
+  }
+}

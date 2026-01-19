@@ -14,8 +14,8 @@
 - **SPA (Single Page Application):** Aplicación web de una sola página; el shell se carga una vez y las vistas cambian en el cliente sin recargar todo el documento. En este proyecto se implementa con Angular 19 y signals.
 - **Angular 19 (signals):** Framework para el frontend; habilita el modelo reactivo con signals.
 - **Guía gráfica gob.mx v3:** Estándar de diseño y estilos de la Administración Pública; se incluye desde CDN (`main.css`, `gobmx.js`, `main.js`) en `index.html`.
-- **FastAPI:** Framework de backend en Python 3.12 utilizado para la API.
+- **GraphQL:** Lenguaje de consulta y runtime de API utilizado para el backend.
 - **PostgreSQL:** Base de datos que guarda solicitudes, credenciales y bitácoras.
 - **Redis + RQ/Celery:** Infraestructura de workers para validaciones y generación de PDFs.
-- **Servicios simulados (frontend):** Implementaciones Angular que devuelven datos de prueba/localStorage con el mismo contrato HTTP que ofrecerá FastAPI, permitiendo cambiar a endpoints reales sin reescribir componentes.
-- **Equipo backend externo:** Grupo responsable de construir la API FastAPI; el frontend se prepara para integrarse cuando los endpoints estén disponibles.
+- **Servicios simulados (frontend):** Implementaciones Angular que devuelven datos de prueba/localStorage con el mismo contrato de operaciones que ofrecerá GraphQL, permitiendo cambiar a endpoints reales sin reescribir componentes.
+- **Equipo backend externo:** Grupo responsable de construir la API GraphQL; el frontend se prepara para integrarse cuando los endpoints estén disponibles.
