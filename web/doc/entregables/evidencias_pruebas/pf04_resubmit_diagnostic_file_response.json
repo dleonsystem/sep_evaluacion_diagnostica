@@ -1,0 +1,10 @@
+{
+  "data": {
+    "resubmitDiagnosticFile": {
+      "status": "OK",
+      "message": "Reenvío aceptado",
+      "pdfUrl": "/mock/confirmacion_reenvio.pdf",
+      "hash": "ghi789"
+    }
+  }
+}
