@@ -33,6 +33,16 @@ La aplicación se organiza como una **Single Page Application (SPA)** con módul
 
 Cada módulo consume servicios Angular que, por el momento, devuelven datos simulados (mocks) con la forma de respuesta prevista para GraphQL.
 
+**Diagrama de arquitectura funcional (frontend):**
+
+```mermaid
+flowchart TB
+  UI[UI Angular SPA] --> Svc[Servicios simulados]
+  Svc --> LS[localStorage]
+  Svc --> Mock[Respuestas mock GraphQL]
+  UI --> Router[Router + Guards]
+```
+
 ---
 
 ## 4. Módulos funcionales
@@ -51,6 +61,19 @@ Cada módulo consume servicios Angular que, por el momento, devuelven datos simu
 - Mensajes de error en UI.
 - Visualización de estado de validación.
 
+**Diagrama de flujo de carga masiva:**
+
+```mermaid
+sequenceDiagram
+  participant U as Usuario
+  participant UI as Carga Masiva
+  participant Svc as Servicio Simulado
+  U->>UI: Selecciona archivo .xlsx
+  UI->>Svc: uploadDiagnosticFile (mock)
+  Svc-->>UI: OK/Error + PDF simulado
+  UI-->>U: Mensaje + descarga
+```
+
 ---
 
 ### 4.2 Autenticación
@@ -66,6 +89,20 @@ Cada módulo consume servicios Angular que, por el momento, devuelven datos simu
 - Manejo de sesión en localStorage.
 - Protección de rutas.
 
+**Diagrama de autenticación:**
+
+```mermaid
+sequenceDiagram
+  participant U as Usuario
+  participant UI as Login
+  participant Svc as Servicio Simulado
+  participant LS as localStorage
+  U->>UI: CCT + correo
+  UI->>Svc: authenticate (mock)
+  Svc-->>UI: Token OK/Error
+  UI->>LS: Guarda sesión
+```
+
 ---
 
 ### 4.3 Reenvío autenticado
@@ -77,6 +114,19 @@ Cada módulo consume servicios Angular que, por el momento, devuelven datos simu
 2. Se valida con el servicio simulado.
 3. Se genera confirmación o error.
 
+**Diagrama de reenvío autenticado:**
+
+```mermaid
+sequenceDiagram
+  participant U as Usuario
+  participant UI as Reenvío
+  participant Svc as Servicio Simulado
+  U->>UI: Selecciona archivo
+  UI->>Svc: resubmitDiagnosticFile (mock)
+  Svc-->>UI: OK/Error + PDF
+  UI-->>U: Mensaje
+```
+
 ---
 
 ### 4.4 Descargas de resultados
@@ -87,6 +137,19 @@ Cada módulo consume servicios Angular que, por el momento, devuelven datos simu
 1. Usuario autenticado accede al listado.
 2. El sistema muestra versiones disponibles (simulado).
 3. El usuario descarga la versión requerida.
+
+**Diagrama de descargas:**
+
+```mermaid
+sequenceDiagram
+  participant U as Usuario
+  participant UI as Descargas
+  participant Svc as Servicio Simulado
+  U->>UI: Solicita listado
+  UI->>Svc: diagnosticResults (mock)
+  Svc-->>UI: Lista de versiones
+  UI-->>U: Descarga
+```
 
 ---
 
@@ -101,6 +164,17 @@ Cada módulo consume servicios Angular que, por el momento, devuelven datos simu
 - Columna de resultados y estado de descarga.
 - Estado de asociación de Excel.
 
+**Diagrama de panel administrativo:**
+
+```mermaid
+flowchart LR
+  AdminUI[Panel Administrativo] --> Filters[Filtros]
+  AdminUI --> Pager[Paginación]
+  AdminUI --> Results[Columna Resultados]
+  AdminUI --> Assoc[Estado Asociación]
+  AdminUI --> Svc[Servicio Simulado]
+```
+
 ---
 
 ## 5. Estructura técnica (frontend)
@@ -111,6 +185,16 @@ Cada módulo consume servicios Angular que, por el momento, devuelven datos simu
 - **Login:** formulario de autenticación.
 - **Descargas:** tabla/listado de resultados.
 - **Panel administrativo:** vista con filtros, paginación y acciones.
+
+**Mapa de componentes (alto nivel):**
+
+```mermaid
+flowchart TB
+  App[AppComponent] --> Carga[CargaMasivaComponent]
+  App --> Login[LoginComponent]
+  App --> Descargas[DescargasComponent]
+  App --> Admin[AdminPanelComponent]
+```
 
 ### 5.2 Servicios (simulados)
 
@@ -125,12 +209,30 @@ Los servicios Angular actúan como capa de integración. En esta etapa:
 - `diagnosticResults`
 - `resubmitDiagnosticFile`
 
+**Diagrama de integración de servicios:**
+
+```mermaid
+flowchart LR
+  Components[Componentes UI] --> Services[Servicios Angular]
+  Services --> Mock[Mock Responses]
+  Services --> LS[localStorage]
+```
+
 ---
 
 ## 6. Almacenamiento local y estado
 
 - **localStorage:** se utiliza para simular sesión, credenciales, archivos subidos y estados de validación.
 - **State management:** el estado básico se gestiona en servicios con signals (Angular 19).
+
+**Diagrama de estado local:**
+
+```mermaid
+flowchart LR
+  UI[UI] --> State[Servicios + Signals]
+  State --> LS[localStorage]
+  LS --> UI
+```
 
 ---
 
@@ -143,17 +245,36 @@ Los servicios Angular actúan como capa de integración. En esta etapa:
 3. Servicio simulado responde con OK/Error.
 4. Generación de PDF simulado.
 
+```mermaid
+flowchart LR
+  A[Selecciona archivo] --> B[Valida formato]
+  B --> C[Servicio mock]
+  C --> D[PDF simulado]
+```
+
 ### 7.2 Flujo de autenticación
 
 1. Ingreso de credenciales.
 2. Validación simulada.
 3. Persistencia de sesión.
 
+```mermaid
+flowchart LR
+  A[Credenciales] --> B[authenticate mock]
+  B --> C[Guarda sesión]
+```
+
 ### 7.3 Flujo de descargas
 
 1. Consulta de lista de resultados.
 2. Selección de versión.
 3. Descarga de archivo (mock).
+
+```mermaid
+flowchart LR
+  A[Solicita listado] --> B[Respuesta mock]
+  B --> C[Descarga]
+```
 
 ---
 
