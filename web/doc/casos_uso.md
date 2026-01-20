@@ -75,7 +75,7 @@ flowchart LR
    - Actores: Escuela (autenticada), Sistema externo de resultados
    - Descripción: Muestra consecutivos y ligas depositadas por el sistema externo para la escuela autenticada.
 
-**Nota de implementación temporal:** mientras el backend FastAPI es construido por otro equipo, los casos de uso CU-01 a CU-07 se ejecutarán en el frontend con servicios simulados y datos de prueba/localStorage que imitan las respuestas esperadas. Cuando los endpoints estén disponibles, se cambiará la fuente de datos sin modificar los flujos de usuario.
+**Nota de implementación temporal:** mientras el backend GraphQL es construido por otro equipo, los casos de uso CU-01 a CU-07 se ejecutarán en el frontend con servicios simulados y datos de prueba/localStorage que imitan las respuestas esperadas. Cuando las operaciones estén disponibles, se cambiará la fuente de datos sin modificar los flujos de usuario.
 
 ---
 
