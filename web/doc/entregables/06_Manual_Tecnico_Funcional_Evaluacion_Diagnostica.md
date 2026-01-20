@@ -295,7 +295,39 @@ flowchart LR
 
 ---
 
-## 10. Anexos sugeridos
+## 10. Guías de instalación y despliegue (Angular)
+
+### 10.1 Requisitos previos
+
+- Node.js 22.x (o versión compatible con Angular 19).
+- npm (incluido con Node.js).
+- Angular CLI 19.2.x (instalación global opcional).
+
+### 10.2 Instalación local
+
+1. Instalar dependencias del frontend:
+   - `npm install`
+2. Ejecutar el servidor de desarrollo:
+   - `npm run start` (o `ng serve`)
+3. Acceder a la aplicación:
+   - `http://localhost:4200/`
+
+### 10.3 Construcción para producción
+
+1. Generar build optimizado:
+   - `npm run build`
+2. Artefactos generados:
+   - Directorio `dist/` (listo para despliegue en servidor web).
+
+### 10.4 Despliegue (referencia)
+
+- Publicar el contenido de `dist/` en un servidor estático (Nginx/Apache) o CDN.
+- Configurar redirección a `index.html` para rutas SPA.
+- Verificar que los assets de la guía gráfica gob.mx v3 estén disponibles (CDN cargado en `index.html`).
+
+---
+
+## 11. Anexos sugeridos
 
 - Capturas de la pantalla de carga masiva y estado de validación.
 - Capturas del panel administrativo con filtros y paginación.
