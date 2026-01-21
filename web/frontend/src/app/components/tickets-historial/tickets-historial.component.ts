@@ -37,14 +37,15 @@ export class TicketsHistorialComponent implements OnInit {
       return;
     }
 
-    this.correoActivo = this.authService.obtenerCredenciales()?.correo ?? null;
+    this.correoActivo = this.normalizarCorreo(this.authService.obtenerCredenciales()?.correo ?? null);
     this.cargarTickets();
   }
 
   cargarTickets(): void {
     const data = localStorage.getItem('tickets-soporte');
     const tickets = data ? (JSON.parse(data) as TicketSoporte[]) : [];
-    this.tickets = tickets.filter((ticket) => ticket.correo === this.correoActivo);
+    const correoActivo = this.normalizarCorreo(this.correoActivo);
+    this.tickets = tickets.filter((ticket) => this.normalizarCorreo(ticket.correo) === correoActivo);
 
     if (!this.tickets.length) {
       this.mensajeInfo = 'Aún no has enviado tickets de soporte.';
@@ -74,5 +75,12 @@ export class TicketsHistorialComponent implements OnInit {
       dateStyle: 'medium',
       timeStyle: 'short'
     }).format(parsed);
+  }
+
+  private normalizarCorreo(correo: string | null): string | null {
+    if (!correo) {
+      return null;
+    }
+    return correo.trim().toLowerCase();
   }
 }

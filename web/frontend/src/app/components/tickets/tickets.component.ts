@@ -62,7 +62,7 @@ export class TicketsComponent implements OnInit {
       return;
     }
 
-    this.correoActivo = this.authService.obtenerCredenciales()?.correo ?? null;
+    this.correoActivo = this.normalizarCorreo(this.authService.obtenerCredenciales()?.correo ?? null);
   }
 
   get mostrarMotivoOtro(): boolean {
@@ -154,6 +154,7 @@ export class TicketsComponent implements OnInit {
     this.motivoOtroControl.reset('');
     this.descripcionControl.reset('');
     this.evidencias = [];
+    void this.router.navigate(['/tickets-historial']);
   }
 
   private esExtensionPermitida(nombre: string): boolean {
@@ -173,5 +174,12 @@ export class TicketsComponent implements OnInit {
     } catch {
       return [];
     }
+  }
+
+  private normalizarCorreo(correo: string | null): string | null {
+    if (!correo) {
+      return null;
+    }
+    return correo.trim().toLowerCase();
   }
 }
