@@ -5,6 +5,9 @@
     <p class="tickets__descripcion">
       Comparte tu problema para que podamos ayudarte a validar y subir tus archivos.
     </p>
+    <p class="tickets__sesion" *ngIf="correoActivo">
+      Sesión activa: <strong>{{ correoActivo }}</strong>
+    </p>
   </header>
 
   <form class="tickets__formulario" (ngSubmit)="enviarTicket()">
@@ -75,4 +78,22 @@
 
     <button class="tickets__boton" type="submit">Enviar ticket</button>
   </form>
+
+  <section class="tickets__historial" *ngIf="ticketsCreados.length">
+    <h2>Tickets creados</h2>
+    <div class="tickets__historial-card" *ngFor="let ticket of ticketsCreados">
+      <div>
+        <p class="tickets__historial-folio">Folio: <strong>{{ ticket.folio }}</strong></p>
+        <p class="tickets__historial-motivo">
+          {{ ticket.motivo }}
+          <span *ngIf="ticket.motivoDetalle">({{ ticket.motivoDetalle }})</span>
+        </p>
+        <p class="tickets__historial-descripcion">{{ ticket.descripcion }}</p>
+      </div>
+      <div class="tickets__historial-meta">
+        <span>Evidencias: {{ ticket.evidencias.length }}</span>
+        <span>Estatus: {{ ticket.estatus }}</span>
+      </div>
+    </div>
+  </section>
 </section>

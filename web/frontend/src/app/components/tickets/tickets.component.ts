@@ -52,6 +52,7 @@ export class TicketsComponent implements OnInit {
   mensajeError: string | null = null;
   mensajeExito: string | null = null;
   correoActivo: string | null = null;
+  ticketsCreados: TicketSoporte[] = [];
 
   constructor(
     private readonly authService: AuthService,
@@ -68,6 +69,7 @@ export class TicketsComponent implements OnInit {
     const credenciales = this.estadoCredencialesService.obtener() ?? this.authService.obtenerCredenciales();
     const correoSesion = this.authService.obtenerCorreoSesion();
     this.correoActivo = this.normalizarCorreo(credenciales?.correo ?? correoSesion ?? null);
+    this.cargarTickets();
   }
 
   get mostrarMotivoOtro(): boolean {
@@ -153,6 +155,7 @@ export class TicketsComponent implements OnInit {
 
     tickets.push(nuevoTicket);
     localStorage.setItem('tickets-soporte', JSON.stringify(tickets));
+    this.ticketsCreados = this.filtrarTicketsPorCorreo(tickets);
 
     this.mensajeExito =
       'Tu ticket se registró correctamente. En breve te contactaremos por correo.';
@@ -160,7 +163,6 @@ export class TicketsComponent implements OnInit {
     this.motivoOtroControl.reset('');
     this.descripcionControl.reset('');
     this.evidencias = [];
-    void this.router.navigate(['/tickets-historial']);
   }
 
   private esExtensionPermitida(nombre: string): boolean {
@@ -180,6 +182,18 @@ export class TicketsComponent implements OnInit {
     } catch {
       return [];
     }
+  }
+
+  private cargarTickets(): void {
+    const tickets = this.obtenerTickets();
+    this.ticketsCreados = this.filtrarTicketsPorCorreo(tickets);
+  }
+
+  private filtrarTicketsPorCorreo(tickets: TicketSoporte[]): TicketSoporte[] {
+    if (!this.correoActivo) {
+      return [];
+    }
+    return tickets.filter((ticket) => this.normalizarCorreo(ticket.correo) === this.correoActivo);
   }
 
   private generarFolio(): string {
