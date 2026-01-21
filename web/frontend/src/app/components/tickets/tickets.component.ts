@@ -80,6 +80,10 @@ export class TicketsComponent implements OnInit {
     return this.evidencias.length < this.maxEvidencias;
   }
 
+  get ticketsStorageJson(): string {
+    return localStorage.getItem('tickets-soporte') ?? '[]';
+  }
+
   onArchivoSeleccionado(event: Event): void {
     const input = event.target as HTMLInputElement;
     const archivo = input.files?.[0];

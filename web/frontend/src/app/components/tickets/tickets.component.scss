@@ -195,6 +195,26 @@
   flex-wrap: wrap;
 }
 
+.tickets__debug {
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 1rem;
+  background: #f8fafc;
+}
+
+.tickets__debug h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.tickets__debug pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #1f2937;
+  font-size: 0.85rem;
+}
+
 @media (max-width: 720px) {
   .tickets__formulario {
     padding: 1.2rem;
