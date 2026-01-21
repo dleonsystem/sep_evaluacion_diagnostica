@@ -13,6 +13,7 @@ interface TicketSoporte {
   descripcion: string;
   fecha: string;
   estatus: 'pendiente' | 'en-proceso' | 'respondido';
+  respuestas: Array<{ mensaje: string; fecha: string; autor: 'admin' }>;
   evidencias: Array<{ nombre: string; tamano: number; tipo: string }>;
 }
 
@@ -82,6 +83,14 @@ export class TicketsHistorialComponent implements OnInit {
       dateStyle: 'medium',
       timeStyle: 'short'
     }).format(parsed);
+  }
+
+  obtenerUltimaRespuesta(ticket: TicketSoporte): { mensaje: string; fecha: string } | null {
+    if (!ticket.respuestas?.length) {
+      return null;
+    }
+    const respuesta = ticket.respuestas[ticket.respuestas.length - 1];
+    return { mensaje: respuesta.mensaje, fecha: respuesta.fecha };
   }
 
   private normalizarCorreo(correo: string | null): string | null {
