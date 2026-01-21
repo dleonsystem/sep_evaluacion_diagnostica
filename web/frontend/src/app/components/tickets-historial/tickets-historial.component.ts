@@ -28,6 +28,7 @@ export class TicketsHistorialComponent implements OnInit {
   tickets: TicketSoporte[] = [];
   mensajeInfo: string | null = null;
   correoActivo: string | null = null;
+  ticketExpandidoId: string | null = null;
 
   constructor(
     private readonly authService: AuthService,
@@ -91,6 +92,14 @@ export class TicketsHistorialComponent implements OnInit {
     }
     const respuesta = ticket.respuestas[ticket.respuestas.length - 1];
     return { mensaje: respuesta.mensaje, fecha: respuesta.fecha };
+  }
+
+  toggleDetalleRespuesta(ticketId: string): void {
+    this.ticketExpandidoId = this.ticketExpandidoId === ticketId ? null : ticketId;
+  }
+
+  esTicketExpandido(ticketId: string): boolean {
+    return this.ticketExpandidoId === ticketId;
   }
 
   private normalizarCorreo(correo: string | null): string | null {
