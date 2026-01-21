@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
 
 interface EvidenciaArchivo {
   id: string;
@@ -11,6 +12,7 @@ interface EvidenciaArchivo {
 
 interface TicketSoporte {
   id: string;
+  folio: string;
   correo: string;
   motivo: string;
   motivoDetalle: string;
@@ -53,16 +55,18 @@ export class TicketsComponent implements OnInit {
 
   constructor(
     private readonly authService: AuthService,
+    private readonly estadoCredencialesService: EstadoCredencialesService,
     private readonly router: Router
   ) {}
 
   ngOnInit(): void {
-    if (this.authService.requiereLoginParaNuevaCarga()) {
+    if (!this.authService.estaAutenticado()) {
       void this.router.navigate(['/login'], { queryParams: { redirect: '/tickets' } });
       return;
     }
 
-    this.correoActivo = this.normalizarCorreo(this.authService.obtenerCredenciales()?.correo ?? null);
+    const credenciales = this.estadoCredencialesService.obtener() ?? this.authService.obtenerCredenciales();
+    this.correoActivo = this.normalizarCorreo(credenciales?.correo ?? null);
   }
 
   get mostrarMotivoOtro(): boolean {
@@ -124,7 +128,7 @@ export class TicketsComponent implements OnInit {
       return;
     }
 
-    if (!this.correoActivo) {
+    if (!this.authService.estaAutenticado() || !this.correoActivo) {
       this.mensajeError = 'Inicia sesión para registrar un ticket.';
       return;
     }
@@ -132,6 +136,7 @@ export class TicketsComponent implements OnInit {
     const tickets = this.obtenerTickets();
     const nuevoTicket: TicketSoporte = {
       id: crypto.randomUUID(),
+      folio: this.generarFolio(),
       correo: this.correoActivo,
       motivo: this.motivoControl.value,
       motivoDetalle: this.mostrarMotivoOtro ? this.motivoOtroControl.value.trim() : '',
@@ -174,6 +179,17 @@ export class TicketsComponent implements OnInit {
     } catch {
       return [];
     }
+  }
+
+  private generarFolio(): string {
+    const key = 'tickets-folio-counter';
+    const actual = Number(localStorage.getItem(key) ?? '0') + 1;
+    localStorage.setItem(key, String(actual));
+    const ahora = new Date();
+    const fecha = `${ahora.getFullYear()}${String(ahora.getMonth() + 1).padStart(2, '0')}${String(
+      ahora.getDate()
+    ).padStart(2, '0')}`;
+    return `TCK-${fecha}-${String(actual).padStart(4, '0')}`;
   }
 
   private normalizarCorreo(correo: string | null): string | null {

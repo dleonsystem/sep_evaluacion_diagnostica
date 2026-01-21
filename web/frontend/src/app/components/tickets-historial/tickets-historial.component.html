@@ -13,6 +13,7 @@
     <table>
       <thead>
         <tr>
+          <th>Folio</th>
           <th>Motivo</th>
           <th>Descripción</th>
           <th>Fecha</th>
@@ -22,6 +23,7 @@
       </thead>
       <tbody>
         <tr *ngFor="let ticket of tickets">
+          <td data-label="Folio">{{ ticket.folio }}</td>
           <td data-label="Motivo">
             {{ ticket.motivo }}
             <span *ngIf="ticket.motivoDetalle">({{ ticket.motivoDetalle }})</span>

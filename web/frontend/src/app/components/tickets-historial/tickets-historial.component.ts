@@ -2,9 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
 
 interface TicketSoporte {
   id: string;
+  folio: string;
   correo: string;
   motivo: string;
   motivoDetalle: string;
@@ -28,16 +30,18 @@ export class TicketsHistorialComponent implements OnInit {
 
   constructor(
     private readonly authService: AuthService,
+    private readonly estadoCredencialesService: EstadoCredencialesService,
     private readonly router: Router
   ) {}
 
   ngOnInit(): void {
-    if (this.authService.requiereLoginParaNuevaCarga()) {
+    if (!this.authService.estaAutenticado()) {
       void this.router.navigate(['/login'], { queryParams: { redirect: '/tickets-historial' } });
       return;
     }
 
-    this.correoActivo = this.normalizarCorreo(this.authService.obtenerCredenciales()?.correo ?? null);
+    const credenciales = this.estadoCredencialesService.obtener() ?? this.authService.obtenerCredenciales();
+    this.correoActivo = this.normalizarCorreo(credenciales?.correo ?? null);
     this.cargarTickets();
   }
 
