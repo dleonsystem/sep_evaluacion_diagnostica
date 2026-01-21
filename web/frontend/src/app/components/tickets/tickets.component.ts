@@ -66,6 +66,8 @@ export class TicketsComponent implements OnInit {
       return;
     }
 
+    this.inicializarStorageTickets();
+
     const credenciales = this.estadoCredencialesService.obtener() ?? this.authService.obtenerCredenciales();
     const correoSesion = this.authService.obtenerCorreoSesion();
     this.correoActivo = this.normalizarCorreo(credenciales?.correo ?? correoSesion ?? null);
@@ -107,7 +109,7 @@ export class TicketsComponent implements OnInit {
 
     this.evidencias = [
       ...this.evidencias,
-      { id: crypto.randomUUID(), archivo }
+      { id: this.generarId(), archivo }
     ];
   }
 
@@ -143,7 +145,7 @@ export class TicketsComponent implements OnInit {
 
     const tickets = this.obtenerTickets();
     const nuevoTicket: TicketSoporte = {
-      id: crypto.randomUUID(),
+      id: this.generarId(),
       folio: this.generarFolio(),
       correo: this.correoActivo,
       motivo: this.motivoControl.value,
@@ -175,6 +177,23 @@ export class TicketsComponent implements OnInit {
     return this.extensionesPermitidas.some((extension) => nombreLower.endsWith(extension));
   }
 
+  private inicializarStorageTickets(): void {
+    const data = localStorage.getItem('tickets-soporte');
+    if (!data) {
+      localStorage.setItem('tickets-soporte', '[]');
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(data);
+      if (!Array.isArray(parsed)) {
+        localStorage.setItem('tickets-soporte', '[]');
+      }
+    } catch {
+      localStorage.setItem('tickets-soporte', '[]');
+    }
+  }
+
   private obtenerTickets(): TicketSoporte[] {
     const data = localStorage.getItem('tickets-soporte');
     if (!data) {
@@ -199,6 +218,16 @@ export class TicketsComponent implements OnInit {
       return [];
     }
     return tickets.filter((ticket) => this.normalizarCorreo(ticket.correo) === this.correoActivo);
+  }
+
+  private generarId(): string {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+      return crypto.randomUUID();
+    }
+
+    const ahora = Date.now();
+    const aleatorio = Math.random().toString(16).slice(2);
+    return `id-${ahora}-${aleatorio}`;
   }
 
   private generarFolio(): string {
