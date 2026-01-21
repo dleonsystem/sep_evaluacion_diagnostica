@@ -74,19 +74,64 @@
   font-size: 0.85rem;
 }
 
+.tickets-historial__badge-button {
+  border: none;
+  cursor: pointer;
+  background: transparent;
+}
+
 .tickets-historial__badge--pendiente {
-  background: #fef9c3;
-  color: #854d0e;
+  background: #ddc9a3;
+  color: #611232;
 }
 
 .tickets-historial__badge--proceso {
-  background: #e0f2fe;
-  color: #0369a1;
+  background: #bc955c;
+  color: #ffffff;
 }
 
 .tickets-historial__badge--respondido {
-  background: #dcfce7;
-  color: #166534;
+  background: #13322e;
+  color: #ffffff;
+}
+
+.tickets-historial__detalle td {
+  padding: 0;
+  border-bottom: none;
+}
+
+.tickets-historial__detalle-contenido {
+  margin: 0 1rem 1rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #ddc9a3;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tickets-historial__detalle-contenido h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #611232;
+}
+
+.tickets-historial__detalle-respuesta {
+  background: #ddc9a3;
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+
+.tickets-historial__detalle-respuesta p {
+  margin: 0 0 0.35rem;
+  font-weight: 600;
+  color: #13322e;
+}
+
+.tickets-historial__detalle-respuesta small,
+.tickets-historial__detalle-contenido p {
+  color: #611232;
 }
 
 .tickets-historial__link {
