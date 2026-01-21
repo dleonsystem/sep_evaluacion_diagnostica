@@ -94,6 +94,11 @@
         <span>Evidencias: {{ ticket.evidencias.length }}</span>
         <span>Estatus: {{ ticket.estatus }}</span>
       </div>
+      <ul class="tickets__historial-evidencias" *ngIf="ticket.evidencias.length">
+        <li *ngFor="let evidencia of ticket.evidencias">
+          {{ evidencia.nombre }}
+        </li>
+      </ul>
     </div>
   </section>
 
