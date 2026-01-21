@@ -92,6 +92,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   credencialesMostradas: CredencialesMostradas | null = null;
   credencialesAsociadas = false;
   contrasenaAsociada: string | null = null;
+  guardandoTodo = false;
   trackByArchivo = (_: number, item: ResultadoArchivo): string =>
     `${item.archivo.name}-${item.archivo.lastModified.getTime()}`;
 
@@ -99,6 +100,18 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
   get hayErrores(): boolean {
     return this.resultados.some((resultado) => resultado.estado === 'error');
+  }
+
+  get mostrarCargaMasiva(): boolean {
+    return this.resultados.length > 2;
+  }
+
+  get resultadosValidosSinGuardar(): ResultadoArchivo[] {
+    return this.resultados.filter((resultado) => resultado.estado === 'exito' && !resultado.guardado);
+  }
+
+  get puedeCargarTodo(): boolean {
+    return this.correoControl.valid && this.resultadosValidosSinGuardar.length > 0 && !this.guardandoTodo;
   }
 
   constructor(
@@ -353,6 +366,37 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       });
     } finally {
       resultado.guardando = false;
+    }
+  }
+
+  async guardarTodo(): Promise<void> {
+    if (!this.correoControl.valid) {
+      this.correoControl.markAllAsTouched();
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Correo requerido',
+        text: 'Agrega un correo electrónico válido antes de guardar tus archivos.'
+      });
+      return;
+    }
+
+    if (!this.resultadosValidosSinGuardar.length) {
+      await Swal.fire({
+        icon: 'info',
+        title: 'Sin archivos listos',
+        text: 'No hay archivos validados correctamente para guardar.'
+      });
+      return;
+    }
+
+    this.guardandoTodo = true;
+
+    try {
+      for (const resultado of this.resultadosValidosSinGuardar) {
+        await this.guardarArchivo(resultado);
+      }
+    } finally {
+      this.guardandoTodo = false;
     }
   }
 
