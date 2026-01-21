@@ -195,6 +195,18 @@
   flex-wrap: wrap;
 }
 
+.tickets__historial-evidencias {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #374151;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.tickets__historial-evidencias li {
+  list-style: disc;
+}
+
 .tickets__debug {
   border: 1px dashed #cbd5e1;
   border-radius: 12px;
