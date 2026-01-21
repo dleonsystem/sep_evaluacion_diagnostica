@@ -99,6 +99,13 @@
           {{ evidencia.nombre }}
         </li>
       </ul>
+      <div class="tickets__historial-respuestas" *ngIf="ticket.respuestas?.length">
+        <h3>Respuesta del administrador</h3>
+        <div class="tickets__historial-respuesta" *ngFor="let respuesta of ticket.respuestas">
+          <p>{{ respuesta.mensaje }}</p>
+          <span>{{ respuesta.fecha | date: 'medium' }}</span>
+        </div>
+      </div>
     </div>
   </section>
 

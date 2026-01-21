@@ -26,10 +26,17 @@ export class AdminPanelComponent implements OnInit {
   filtroTexto = '';
   filtroEstatus: 'todos' | 'asignado' | 'pendiente' = 'todos';
   filtroFecha = '';
+  ticketsSoporte: TicketSoporte[] = [];
+  ticketSeleccionadoId: string | null = null;
+  respuestaAdmin = '';
+  estatusTicketSeleccionado: TicketSoporte['estatus'] = 'pendiente';
+  filtroTicketTexto = '';
+  filtroTicketEstatus: 'todos' | TicketSoporte['estatus'] = 'todos';
   paginaActual = 1;
   tamanioPagina = 10;
   private readonly uploadHistoryKey = 'adminPanelResultadosHistory';
   private readonly archivosStoragePrefix = 'archivos-resultados';
+  private readonly ticketsStorageKey = 'tickets-soporte';
 
   constructor(
     private readonly adminAuthService: AdminAuthService,
@@ -40,6 +47,7 @@ export class AdminPanelComponent implements OnInit {
   ngOnInit(): void {
     this.uploadHistory = this.loadUploadHistory();
     this.cargarExcelDisponibles();
+    this.cargarTicketsSoporte();
   }
 
   seleccionarArchivo(event: Event): void {
@@ -166,6 +174,77 @@ export class AdminPanelComponent implements OnInit {
     void this.router.navigate(['/admin/login']);
   }
 
+  get ticketsSoporteFiltrados(): TicketSoporte[] {
+    const texto = this.filtroTicketTexto.trim().toLowerCase();
+    const estatus = this.filtroTicketEstatus;
+    return this.ticketsSoporte.filter((ticket) => {
+      const coincideTexto =
+        !texto ||
+        ticket.folio.toLowerCase().includes(texto) ||
+        ticket.correo.toLowerCase().includes(texto) ||
+        ticket.motivo.toLowerCase().includes(texto);
+      const coincideEstatus = estatus === 'todos' || ticket.estatus === estatus;
+      return coincideTexto && coincideEstatus;
+    });
+  }
+
+  seleccionarTicket(ticket: TicketSoporte): void {
+    this.ticketSeleccionadoId = ticket.id;
+    this.estatusTicketSeleccionado = ticket.estatus;
+    this.respuestaAdmin = '';
+  }
+
+  guardarRespuesta(): void {
+    if (!this.ticketSeleccionadoId) {
+      return;
+    }
+
+    const mensaje = this.respuestaAdmin.trim();
+    const tickets = this.obtenerTicketsSoporte();
+    const actualizados = tickets.map((ticket) => {
+      if (ticket.id !== this.ticketSeleccionadoId) {
+        return ticket;
+      }
+      const respuestas = ticket.respuestas ?? [];
+      const nuevasRespuestas =
+        mensaje.length > 0
+          ? [
+              ...respuestas,
+              { mensaje, fecha: new Date().toISOString(), autor: 'admin' as const }
+            ]
+          : respuestas;
+
+      return {
+        ...ticket,
+        estatus: this.estatusTicketSeleccionado,
+        respuestas: nuevasRespuestas
+      };
+    });
+
+    localStorage.setItem(this.ticketsStorageKey, JSON.stringify(actualizados));
+    this.respuestaAdmin = '';
+    this.cargarTicketsSoporte();
+  }
+
+  obtenerUltimaRespuesta(ticket: TicketSoporte): { mensaje: string; fecha: string } | null {
+    if (!ticket.respuestas?.length) {
+      return null;
+    }
+    const respuesta = ticket.respuestas[ticket.respuestas.length - 1];
+    return { mensaje: respuesta.mensaje, fecha: respuesta.fecha };
+  }
+
+  formatearFecha(fecha: string): string {
+    const parsed = new Date(fecha);
+    if (Number.isNaN(parsed.getTime())) {
+      return '—';
+    }
+    return new Intl.DateTimeFormat('es-MX', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(parsed);
+  }
+
   get excelDisponiblesFiltrados(): ExcelDisponible[] {
     return this.aplicarFiltros(this.excelDisponibles);
   }
@@ -218,6 +297,30 @@ export class AdminPanelComponent implements OnInit {
     }
 
     return [];
+  }
+
+  private cargarTicketsSoporte(): void {
+    this.ticketsSoporte = this.obtenerTicketsSoporte();
+  }
+
+  private obtenerTicketsSoporte(): TicketSoporte[] {
+    const stored = localStorage.getItem(this.ticketsStorageKey);
+    if (!stored) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+      return parsed.map((ticket) => ({
+        ...ticket,
+        respuestas: Array.isArray(ticket.respuestas) ? ticket.respuestas : []
+      }));
+    } catch {
+      return [];
+    }
   }
 
   private saveUploadHistory(): void {
@@ -442,4 +545,17 @@ interface ExcelDisponible {
   estatus: 'asignado' | 'pendiente';
   fecha: string;
   nivel: string;
+}
+
+interface TicketSoporte {
+  id: string;
+  folio: string;
+  correo: string;
+  motivo: string;
+  motivoDetalle: string;
+  descripcion: string;
+  fecha: string;
+  estatus: 'pendiente' | 'en-proceso' | 'respondido';
+  respuestas: Array<{ mensaje: string; fecha: string; autor: 'admin' }>;
+  evidencias: Array<{ nombre: string; tamano: number; tipo: string }>;
 }

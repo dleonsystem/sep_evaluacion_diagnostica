@@ -276,6 +276,159 @@
   color: #98989a;
 }
 
+.admin-panel__tickets {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.admin-panel__tickets h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #13322e;
+}
+
+.admin-panel__tickets-filters {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.admin-panel__tickets-filters label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: #13322e;
+}
+
+.admin-panel__tickets-filters input,
+.admin-panel__tickets-filters select,
+.admin-panel__ticket-actions select,
+.admin-panel__ticket-actions textarea {
+  border-radius: 10px;
+  border: 1px solid #cbd5f5;
+  padding: 0.6rem 0.75rem;
+  font-size: 1rem;
+}
+
+.admin-panel__tickets-empty {
+  margin: 0;
+  color: #64748b;
+}
+
+.admin-panel__tickets-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(220px, 1fr) minmax(280px, 1.6fr);
+}
+
+.admin-panel__tickets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-panel__ticket-card {
+  text-align: left;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.admin-panel__ticket-card--active {
+  border-color: #0f766e;
+  box-shadow: 0 10px 20px rgba(15, 118, 110, 0.15);
+}
+
+.admin-panel__ticket-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-weight: 700;
+  color: #13322e;
+}
+
+.admin-panel__ticket-status {
+  text-transform: capitalize;
+  font-size: 0.9rem;
+  color: #0f766e;
+}
+
+.admin-panel__ticket-detail {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-panel__ticket-detail h4 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #13322e;
+}
+
+.admin-panel__ticket-evidencias ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.admin-panel__ticket-respuestas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-panel__ticket-respuesta {
+  background: #ecfeff;
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+}
+
+.admin-panel__ticket-respuesta p {
+  margin: 0 0 0.35rem;
+  font-weight: 600;
+}
+
+.admin-panel__ticket-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-panel__ticket-actions label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: #13322e;
+}
+
+.admin-panel__ticket-actions textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.admin-panel__ticket-save {
+  align-self: flex-start;
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  border: none;
+  background: #0f766e;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .admin-panel__logout {
   align-self: flex-start;
   padding: 0.75rem 1.5rem;
@@ -320,6 +473,10 @@
   .admin-panel__history-title,
   .admin-panel__history-meta {
     font-size: 0.95rem;
+  }
+
+  .admin-panel__tickets-grid {
+    grid-template-columns: 1fr;
   }
 
   .admin-panel__table {

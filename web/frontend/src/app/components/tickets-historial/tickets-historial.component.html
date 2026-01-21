@@ -16,6 +16,7 @@
           <th>Folio</th>
           <th>Motivo</th>
           <th>Descripción</th>
+          <th>Respuesta</th>
           <th>Fecha</th>
           <th>Evidencias</th>
           <th>Estatus</th>
@@ -29,6 +30,13 @@
             <span *ngIf="ticket.motivoDetalle">({{ ticket.motivoDetalle }})</span>
           </td>
           <td data-label="Descripción">{{ ticket.descripcion }}</td>
+          <td data-label="Respuesta">
+            <ng-container *ngIf="obtenerUltimaRespuesta(ticket) as respuesta; else sinRespuesta">
+              <p>{{ respuesta.mensaje }}</p>
+              <small>{{ formatearFecha(respuesta.fecha) }}</small>
+            </ng-container>
+            <ng-template #sinRespuesta>Sin respuesta</ng-template>
+          </td>
           <td data-label="Fecha">{{ formatearFecha(ticket.fecha) }}</td>
           <td data-label="Evidencias">{{ ticket.evidencias.length }}</td>
           <td data-label="Estatus">

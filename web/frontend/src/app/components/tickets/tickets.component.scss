@@ -207,6 +207,37 @@
   list-style: disc;
 }
 
+.tickets__historial-respuestas {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tickets__historial-respuestas h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #0f766e;
+}
+
+.tickets__historial-respuesta {
+  background: #f0fdfa;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  color: #0f172a;
+}
+
+.tickets__historial-respuesta p {
+  margin: 0 0 0.35rem;
+  font-weight: 600;
+}
+
+.tickets__historial-respuesta span {
+  font-size: 0.85rem;
+  color: #475569;
+}
+
 .tickets__debug {
   border: 1px dashed #cbd5e1;
   border-radius: 12px;
