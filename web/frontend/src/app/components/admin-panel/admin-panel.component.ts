@@ -14,7 +14,9 @@ import Swal from 'sweetalert2';
   styleUrl: './admin-panel.component.scss',
 })
 export class AdminPanelComponent implements OnInit {
-  selectedFile: File | null = null;
+  readonly maxArchivos = 10;
+  readonly extensionesPermitidas = ['.pdf', '.xlsx', '.jpg', '.jpeg', '.doc', '.docx'];
+  selectedFiles: File[] = [];
   selectedNivel = '';
   uploadStatus: 'idle' | 'uploading' | 'success' | 'error' = 'idle';
   feedbackMessage = '';
@@ -26,8 +28,8 @@ export class AdminPanelComponent implements OnInit {
   filtroFecha = '';
   paginaActual = 1;
   tamanioPagina = 10;
-  private readonly uploadHistoryKey = 'adminPanelPdfHistory';
-  private readonly pdfStoragePrefix = 'pdf-resultados';
+  private readonly uploadHistoryKey = 'adminPanelResultadosHistory';
+  private readonly archivosStoragePrefix = 'archivos-resultados';
 
   constructor(
     private readonly adminAuthService: AdminAuthService,
@@ -42,94 +44,112 @@ export class AdminPanelComponent implements OnInit {
 
   seleccionarArchivo(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.selectedFile = input.files?.[0] ?? null;
-    if (!this.selectedFile) {
+    const archivos = input.files ? Array.from(input.files) : [];
+    const validacionCantidad = this.validarCantidadArchivos(archivos);
+
+    if (!validacionCantidad.esValida) {
       this.uploadStatus = 'idle';
-      this.feedbackMessage = 'Selecciona un archivo PDF para comenzar.';
+      this.feedbackMessage = validacionCantidad.mensaje;
+      this.selectedFiles = [];
+      input.value = '';
       return;
     }
 
+    const validacionTipos = this.validarTiposArchivos(archivos);
+    if (!validacionTipos.esValida) {
+      this.uploadStatus = 'error';
+      this.feedbackMessage = validacionTipos.mensaje;
+      this.selectedFiles = [];
+      input.value = '';
+      return;
+    }
+
+    this.selectedFiles = archivos;
     this.uploadStatus = 'idle';
-    this.feedbackMessage = `Archivo seleccionado: ${this.selectedFile.name}`;
+    this.feedbackMessage =
+      archivos.length === 1
+        ? `Archivo seleccionado: ${archivos[0].name}`
+        : `Archivos seleccionados: ${archivos.length}`;
   }
 
-  async subirPdf(): Promise<void> {
+  async subirArchivos(): Promise<void> {
     if (!this.excelSeleccionado) {
       this.uploadStatus = 'error';
-      this.feedbackMessage = 'Selecciona un registro de Excel antes de subir el PDF.';
+      this.feedbackMessage = 'Selecciona un registro de Excel antes de subir los archivos.';
       return;
     }
 
-    if (!this.selectedFile) {
+    if (!this.selectedFiles.length) {
       this.uploadStatus = 'error';
       this.feedbackMessage = 'No se ha seleccionado ningún archivo.';
       return;
     }
 
-    const isPdf =
-      this.selectedFile.type === 'application/pdf' ||
-      this.selectedFile.name.toLowerCase().endsWith('.pdf');
-
-    if (!isPdf) {
+    const validacionTipos = this.validarTiposArchivos(this.selectedFiles);
+    if (!validacionTipos.esValida) {
       this.uploadStatus = 'error';
-      this.feedbackMessage = 'El archivo seleccionado no es un PDF válido.';
+      this.feedbackMessage = validacionTipos.mensaje;
+      return;
+    }
+
+    const existingFiles = this.obtenerArchivosParaExcel(this.excelSeleccionado.key);
+    if (existingFiles.length + this.selectedFiles.length > this.maxArchivos) {
+      this.uploadStatus = 'error';
+      this.feedbackMessage = `Solo puedes cargar hasta ${this.maxArchivos} archivos por registro.`;
       return;
     }
 
     this.uploadStatus = 'uploading';
-    this.feedbackMessage = 'Cargando archivo...';
+    this.feedbackMessage = 'Cargando archivos...';
 
-    const fileToUpload = this.selectedFile;
     const excelKey = this.excelSeleccionado.key;
     const excelSeleccionado = this.excelSeleccionado;
 
-    if (this.existePdfParaExcel(excelKey)) {
+    if (existingFiles.length) {
       const confirmacion = await Swal.fire({
-        title: '¿Reemplazar PDF existente?',
-        text: `Ya hay un PDF asignado a ${excelSeleccionado?.nombre ?? 'este Excel'} (${
+        title: '¿Agregar más archivos?',
+        text: `Ya hay archivos asignados a ${excelSeleccionado?.nombre ?? 'este Excel'} (${
           excelSeleccionado?.cct ?? 'CCT no registrada'
         }, ${excelSeleccionado?.correo ?? 'correo no registrado'}).`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Sí, reemplazar',
+        confirmButtonText: 'Sí, agregar',
         cancelButtonText: 'Cancelar'
       });
 
       if (!confirmacion.isConfirmed) {
         this.uploadStatus = 'idle';
-        this.feedbackMessage = 'Carga cancelada. Se mantuvo el PDF anterior.';
+        this.feedbackMessage = 'Carga cancelada. Se mantuvieron los archivos previos.';
         return;
       }
     }
 
-    this.readPdfAsBase64(fileToUpload)
-      .then((pdfBase64) => {
-        const metadata = {
-          excelKey,
-          pdfName: fileToUpload.name,
-          pdfBase64,
-          fecha: new Date().toISOString(),
-        };
+    try {
+      const nuevosArchivos = await this.convertirArchivosBase64(this.selectedFiles);
+      const metadata = {
+        excelKey,
+        archivos: [...existingFiles, ...nuevosArchivos],
+        fecha: new Date().toISOString()
+      };
 
-        localStorage.setItem(this.obtenerPdfStorageKey(excelKey), JSON.stringify(metadata));
+      localStorage.setItem(this.obtenerArchivosStorageKey(excelKey), JSON.stringify(metadata));
+
+      const historyEntries = nuevosArchivos.map((archivo) => ({
+        name: archivo.name,
+        size: archivo.size,
+        uploadedAt: metadata.fecha
+      }));
+
+      this.uploadHistory = [...historyEntries, ...this.uploadHistory].slice(0, 5);
+      this.saveUploadHistory();
+      this.actualizarEstadoExcel(excelKey);
 
         this.uploadStatus = 'success';
-        this.feedbackMessage = 'PDF cargado correctamente.';
-
-        const historyEntry = {
-          name: fileToUpload.name,
-          size: fileToUpload.size,
-          uploadedAt: metadata.fecha,
-        };
-
-        this.uploadHistory = [historyEntry, ...this.uploadHistory].slice(0, 5);
-        this.saveUploadHistory();
-        this.actualizarEstadoExcel(excelKey);
-      })
-      .catch(() => {
-        this.uploadStatus = 'error';
-        this.feedbackMessage = 'No se pudo leer el PDF. Intenta nuevamente.';
-      });
+        this.feedbackMessage = 'Archivos cargados correctamente.';
+      } catch (error) {
+      this.uploadStatus = 'error';
+      this.feedbackMessage = 'No se pudieron leer los archivos. Intenta nuevamente.';
+    }
   }
 
   obtenerToken(): string | null {
@@ -138,7 +158,7 @@ export class AdminPanelComponent implements OnInit {
 
   cerrarSesion(): void {
     this.adminAuthService.cerrarSesion();
-    this.selectedFile = null;
+    this.selectedFiles = [];
     this.excelSeleccionado = null;
     this.selectedNivel = '';
     this.uploadStatus = 'idle';
@@ -210,7 +230,7 @@ export class AdminPanelComponent implements OnInit {
       const key = this.obtenerClaveExcel(registro);
       const nivel = this.obtenerNivelRegistro(registro);
       const fecha = registro.fechaGuardado || new Date().toISOString();
-      const estatus = registro.estatus ?? (this.existePdfParaExcel(key) ? 'asignado' : 'pendiente');
+      const estatus = registro.estatus ?? (this.existeArchivosParaExcel(key) ? 'asignado' : 'pendiente');
       return {
         key,
         nombre: registro.nombre,
@@ -277,12 +297,48 @@ export class AdminPanelComponent implements OnInit {
     return this.paginaActual;
   }
 
-  private existePdfParaExcel(excelKey: string): boolean {
-    return !!localStorage.getItem(this.obtenerPdfStorageKey(excelKey));
+  private existeArchivosParaExcel(excelKey: string): boolean {
+    return this.obtenerArchivosParaExcel(excelKey).length > 0;
   }
 
-  private obtenerPdfStorageKey(excelKey: string): string {
-    return `${this.pdfStoragePrefix}:${excelKey}`;
+  private obtenerArchivosStorageKey(excelKey: string): string {
+    return `${this.archivosStoragePrefix}:${excelKey}`;
+  }
+
+  private obtenerArchivosParaExcel(
+    excelKey: string
+  ): Array<{ name: string; size: number; type: string; base64: string }> {
+    const stored = localStorage.getItem(this.obtenerArchivosStorageKey(excelKey));
+    if (!stored) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(stored) as {
+        archivos?: Array<{ name: string; size: number; type: string; base64: string }>;
+        pdfName?: string;
+        pdfBase64?: string;
+      };
+
+      if (Array.isArray(parsed.archivos)) {
+        return parsed.archivos;
+      }
+
+      if (parsed.pdfBase64 && parsed.pdfName) {
+        return [
+          {
+            name: parsed.pdfName,
+            size: 0,
+            type: 'application/pdf',
+            base64: parsed.pdfBase64
+          }
+        ];
+      }
+
+      return [];
+    } catch (error) {
+      return [];
+    }
   }
 
   private obtenerClaveExcel(registro: RegistroArchivo): string {
@@ -314,7 +370,7 @@ export class AdminPanelComponent implements OnInit {
     return 'preescolar';
   }
 
-  private readPdfAsBase64(file: File): Promise<string> {
+  private readArchivoAsBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
@@ -327,6 +383,54 @@ export class AdminPanelComponent implements OnInit {
       reader.onerror = () => reject(new Error('Error al leer archivo'));
       reader.readAsDataURL(file);
     });
+  }
+
+  private async convertirArchivosBase64(
+    archivos: File[]
+  ): Promise<Array<{ name: string; size: number; type: string; base64: string }>> {
+    const resultados = [];
+    for (const archivo of archivos) {
+      const base64 = await this.readArchivoAsBase64(archivo);
+      resultados.push({
+        name: archivo.name,
+        size: archivo.size,
+        type: archivo.type,
+        base64
+      });
+    }
+    return resultados;
+  }
+
+  private validarCantidadArchivos(archivos: File[]): { esValida: boolean; mensaje: string } {
+    if (!archivos.length) {
+      return { esValida: false, mensaje: 'Selecciona hasta 10 archivos para comenzar.' };
+    }
+
+    if (archivos.length > this.maxArchivos) {
+      return {
+        esValida: false,
+        mensaje: `Solo puedes seleccionar hasta ${this.maxArchivos} archivos por carga.`
+      };
+    }
+
+    return { esValida: true, mensaje: '' };
+  }
+
+  private validarTiposArchivos(archivos: File[]): { esValida: boolean; mensaje: string } {
+    const archivosInvalidos = archivos.filter((archivo) => {
+      const nombre = archivo.name.toLowerCase();
+      return !this.extensionesPermitidas.some((extension) => nombre.endsWith(extension));
+    });
+
+    if (!archivosInvalidos.length) {
+      return { esValida: true, mensaje: '' };
+    }
+
+    const nombres = archivosInvalidos.map((archivo) => archivo.name).join(', ');
+    return {
+      esValida: false,
+      mensaje: `Tipo de archivo no permitido: ${nombres}. Solo PDF, XLSX, JPG o Word.`
+    };
   }
 }
 

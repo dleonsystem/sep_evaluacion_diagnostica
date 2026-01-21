@@ -37,7 +37,7 @@ La plataforma cubre únicamente el flujo de recepción–validación–descarga 
 ### 2.1 Perspectiva del producto
 
 ## 2.1 Perspectiva del producto
-Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend FastAPI en Python 3.12** y **almacenamiento PostgreSQL + Filesystem**. No realiza cálculos educativos; actúa como **pasarela de validación y distribución de archivos**. El backend Python será implementado por otro equipo; el frontend entregará pantallas funcionales con servicios Angular que hoy responden con datos de prueba/localStorage, pero conservan las mismas firmas HTTP para conmutar a FastAPI sin reescritura. La lógica de negocio debe **bloquear reenvíos anónimos** si ya existe una credencial previa para el mismo CCT/correo, solicitar autenticación antes de permitir la nueva carga y **registrar la huella (hash) de cada archivo** para distinguir versiones aunque el nombre sea idéntico.
+Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend GraphQL** (carpeta `graphql-server`) y **almacenamiento PostgreSQL + Filesystem**. No realiza cálculos educativos; actúa como **pasarela de validación y distribución de archivos**. El backend GraphQL será implementado por otro equipo; el frontend entregará pantallas funcionales con servicios Angular que hoy responden con datos de prueba/localStorage, pero conservan las mismas firmas HTTP para conmutar a la API GraphQL sin reescritura. La lógica de negocio debe **bloquear reenvíos anónimos** si ya existe una credencial previa para el mismo CCT/correo, solicitar autenticación antes de permitir la nueva carga y **registrar la huella (hash) de cada archivo** para distinguir versiones aunque el nombre sea idéntico.
 
 ### 2.2 Interfaces del sistema
 
@@ -52,14 +52,14 @@ Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend F
 - Uso de la **guía gráfica gob.mx v3** incluida desde CDN en `index.html`, con scripts auxiliares (`jquery.min.js`, `gobmx.js`, `main.js`) ya cargados.
 
 ### 2.2.2 Interfaces de hardware
-- Servidor de aplicaciones para FastAPI.
+- Servidor de aplicaciones para GraphQL.
 - Servidor de base de datos PostgreSQL.
 - Almacenamiento de archivos en disco SSD (mínimo 1 TB para recepción/resultados).
 
 ### 2.2.3 Interfaces de software
-- Librerías de manipulación de Excel (pandas + openpyxl o equivalente en el stack Python).
-- Conectores de base de datos para PostgreSQL.
-- Integración de cola de trabajos (Redis/RQ o Celery) para validaciones y generación de PDFs.
+- Librerías de manipulación de Excel (equivalentes en el stack del backend GraphQL).
+- Conectores de base de datos para PostgreSQL en el runtime del servidor GraphQL.
+- Integración de cola de trabajos (Redis o equivalente) para validaciones y generación de PDFs.
 - CDN de la guía gráfica gob.mx v3 referenciada en `index.html` (hoja de estilos principal y scripts `gobmx.js`/`main.js`).
 
 ---
@@ -118,7 +118,7 @@ Si la estructura o los valores no cumplen, el archivo se **rechaza** y se entreg
 - RF-09: Habilitar autenticación (CCT + contraseña) para reenviar archivos y consultar las ligas de descarga.
 - RF-10: Mostrar **todas las versiones** de resultados que el sistema externo haya depositado, con consecutivo y liga.
 - RF-11: Mantener repositorios separados para archivos recibidos y resultados publicados.
-- RF-12: Implementar servicios frontend tipificados hacia FastAPI que, mientras no exista backend disponible, devuelvan datos simulados/localStorage usando el mismo contrato esperado de los endpoints.
+- RF-12: Implementar servicios frontend tipificados hacia GraphQL que, mientras no exista backend disponible, devuelvan datos simulados/localStorage usando el mismo contrato esperado de las operaciones.
 
 ---
 
@@ -140,7 +140,7 @@ Si la estructura o los valores no cumplen, el archivo se **rechaza** y se entreg
 ## 6.4 Escalabilidad y mantenibilidad
 - Capacidad de agregar nuevos niveles o estructuras sin rediseñar el sistema.
 - Arquitectura desacoplada (frontend, API y workers de validación/PDF) para escalar horizontalmente.
-- Capa de servicios frontend conmutables (modo simulado vs. API FastAPI) documentada para minimizar retrabajo cuando el backend quede disponible.
+- Capa de servicios frontend conmutables (modo simulado vs. API GraphQL) documentada para minimizar retrabajo cuando el backend quede disponible.
 
 ---
 
