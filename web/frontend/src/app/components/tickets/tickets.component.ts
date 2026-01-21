@@ -1,10 +1,23 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 interface EvidenciaArchivo {
   id: string;
   archivo: File;
+}
+
+interface TicketSoporte {
+  id: string;
+  correo: string;
+  motivo: string;
+  motivoDetalle: string;
+  descripcion: string;
+  fecha: string;
+  estatus: 'pendiente' | 'en-proceso' | 'respondido';
+  evidencias: Array<{ nombre: string; tamano: number; tipo: string }>;
 }
 
 @Component({
@@ -14,7 +27,7 @@ interface EvidenciaArchivo {
   templateUrl: './tickets.component.html',
   styleUrl: './tickets.component.scss'
 })
-export class TicketsComponent {
+export class TicketsComponent implements OnInit {
   readonly motivos = [
     'Tengo problemas para subir mi evaluación',
     'Necesito apoyo con mis credenciales',
@@ -36,6 +49,21 @@ export class TicketsComponent {
   evidencias: EvidenciaArchivo[] = [];
   mensajeError: string | null = null;
   mensajeExito: string | null = null;
+  correoActivo: string | null = null;
+
+  constructor(
+    private readonly authService: AuthService,
+    private readonly router: Router
+  ) {}
+
+  ngOnInit(): void {
+    if (this.authService.requiereLoginParaNuevaCarga()) {
+      void this.router.navigate(['/login'], { queryParams: { redirect: '/tickets' } });
+      return;
+    }
+
+    this.correoActivo = this.authService.obtenerCredenciales()?.correo ?? null;
+  }
 
   get mostrarMotivoOtro(): boolean {
     return this.motivoControl.value === 'Otra';
@@ -96,6 +124,30 @@ export class TicketsComponent {
       return;
     }
 
+    if (!this.correoActivo) {
+      this.mensajeError = 'Inicia sesión para registrar un ticket.';
+      return;
+    }
+
+    const tickets = this.obtenerTickets();
+    const nuevoTicket: TicketSoporte = {
+      id: crypto.randomUUID(),
+      correo: this.correoActivo,
+      motivo: this.motivoControl.value,
+      motivoDetalle: this.mostrarMotivoOtro ? this.motivoOtroControl.value.trim() : '',
+      descripcion: this.descripcionControl.value.trim(),
+      fecha: new Date().toISOString(),
+      estatus: 'pendiente',
+      evidencias: this.evidencias.map((item) => ({
+        nombre: item.archivo.name,
+        tamano: item.archivo.size,
+        tipo: item.archivo.type
+      }))
+    };
+
+    tickets.push(nuevoTicket);
+    localStorage.setItem('tickets-soporte', JSON.stringify(tickets));
+
     this.mensajeExito =
       'Tu ticket se registró correctamente. En breve te contactaremos por correo.';
     this.motivoControl.reset('');
@@ -107,5 +159,19 @@ export class TicketsComponent {
   private esExtensionPermitida(nombre: string): boolean {
     const nombreLower = nombre.toLowerCase();
     return this.extensionesPermitidas.some((extension) => nombreLower.endsWith(extension));
+  }
+
+  private obtenerTickets(): TicketSoporte[] {
+    const data = localStorage.getItem('tickets-soporte');
+    if (!data) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(data);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
   }
 }
