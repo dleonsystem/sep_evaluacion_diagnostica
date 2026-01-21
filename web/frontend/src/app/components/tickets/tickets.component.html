@@ -1,0 +1,104 @@
+<section class="tickets">
+  <header class="tickets__encabezado">
+    <p class="tickets__eyebrow">Mesa de ayuda</p>
+    <h1 class="tickets__titulo">Crear ticket de soporte</h1>
+    <p class="tickets__descripcion">
+      Comparte tu problema para que podamos ayudarte a validar y subir tus archivos.
+    </p>
+    <p class="tickets__sesion" *ngIf="correoActivo">
+      Sesión activa: <strong>{{ correoActivo }}</strong>
+    </p>
+  </header>
+
+  <form class="tickets__formulario" (ngSubmit)="enviarTicket($event)">
+    <label class="tickets__campo">
+      <span>Motivo del ticket</span>
+      <select [formControl]="motivoControl">
+        <option value="" disabled>Selecciona una opción</option>
+        <option *ngFor="let motivo of motivos" [value]="motivo">{{ motivo }}</option>
+      </select>
+      <small class="tickets__error" *ngIf="motivoControl.invalid && motivoControl.touched">
+        Selecciona un motivo.
+      </small>
+    </label>
+
+    <label class="tickets__campo" *ngIf="mostrarMotivoOtro">
+      <span>Describe el motivo</span>
+      <input
+        type="text"
+        [formControl]="motivoOtroControl"
+        placeholder="Escribe el motivo específico"
+        maxlength="200"
+      />
+      <small class="tickets__error" *ngIf="motivoOtroControl.invalid && motivoOtroControl.touched">
+        Ingresa un motivo válido.
+      </small>
+    </label>
+
+    <label class="tickets__campo">
+      <span>Describe tu problema</span>
+      <textarea
+        [formControl]="descripcionControl"
+        rows="6"
+        placeholder="Incluye detalles como fecha, nivel, CCT o mensajes de error."
+        maxlength="1500"
+      ></textarea>
+      <small class="tickets__error" *ngIf="descripcionControl.invalid && descripcionControl.touched">
+        Este campo es obligatorio.
+      </small>
+    </label>
+
+    <div class="tickets__campo">
+      <span>Evidencias (máximo {{ maxEvidencias }})</span>
+      <div class="tickets__evidencias">
+        <label class="tickets__evidencias-boton">
+          Agregar evidencia
+          <input
+            type="file"
+            accept=".pdf,.xlsx,.xls,.doc,.docx,.jpg,.jpeg,.png"
+            (change)="onArchivoSeleccionado($event)"
+            [disabled]="!puedeAgregarEvidencias"
+          />
+        </label>
+        <p class="tickets__evidencias-ayuda">
+          Sube archivos uno por uno (PDF, Excel, Word o imágenes).
+        </p>
+      </div>
+
+      <ul class="tickets__evidencias-lista" *ngIf="evidencias.length">
+        <li *ngFor="let evidencia of evidencias">
+          <span>{{ evidencia.archivo.name }}</span>
+          <button type="button" (click)="quitarEvidencia(evidencia.id)">Quitar</button>
+        </li>
+      </ul>
+    </div>
+
+    <p class="tickets__mensaje tickets__mensaje--error" *ngIf="mensajeError">{{ mensajeError }}</p>
+    <p class="tickets__mensaje tickets__mensaje--exito" *ngIf="mensajeExito">{{ mensajeExito }}</p>
+
+    <button class="tickets__boton" type="submit">Enviar ticket</button>
+  </form>
+
+  <section class="tickets__historial" *ngIf="ticketsCreados.length">
+    <h2>Tickets creados</h2>
+    <div class="tickets__historial-card" *ngFor="let ticket of ticketsCreados">
+      <div>
+        <p class="tickets__historial-folio">Folio: <strong>{{ ticket.folio }}</strong></p>
+        <p class="tickets__historial-motivo">
+          {{ ticket.motivo }}
+          <span *ngIf="ticket.motivoDetalle">({{ ticket.motivoDetalle }})</span>
+        </p>
+        <p class="tickets__historial-descripcion">{{ ticket.descripcion }}</p>
+      </div>
+      <div class="tickets__historial-meta">
+        <span>Evidencias: {{ ticket.evidencias.length }}</span>
+        <span>Estatus: {{ ticket.estatus }}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="tickets__debug">
+    <h2>LocalStorage: tickets-soporte</h2>
+    <pre>{{ ticketsStorageJson }}</pre>
+  </section>
+</section>
