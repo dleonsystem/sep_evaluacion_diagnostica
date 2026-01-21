@@ -10,7 +10,7 @@
     </p>
   </header>
 
-  <form class="tickets__formulario" (ngSubmit)="enviarTicket($event)">
+  <form class="tickets__formulario" (submit)="enviarTicket($event)">
     <label class="tickets__campo">
       <span>Motivo del ticket</span>
       <select [formControl]="motivoControl">
@@ -93,6 +93,18 @@
       <div class="tickets__historial-meta">
         <span>Evidencias: {{ ticket.evidencias.length }}</span>
         <span>Estatus: {{ ticket.estatus }}</span>
+      </div>
+      <ul class="tickets__historial-evidencias" *ngIf="ticket.evidencias.length">
+        <li *ngFor="let evidencia of ticket.evidencias">
+          {{ evidencia.nombre }}
+        </li>
+      </ul>
+      <div class="tickets__historial-respuestas" *ngIf="ticket.respuestas?.length">
+        <h3>Respuesta del administrador</h3>
+        <div class="tickets__historial-respuesta" *ngFor="let respuesta of ticket.respuestas">
+          <p>{{ respuesta.mensaje }}</p>
+          <span>{{ respuesta.fecha | date: 'medium' }}</span>
+        </div>
       </div>
     </div>
   </section>

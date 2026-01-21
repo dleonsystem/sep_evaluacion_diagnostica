@@ -19,6 +19,7 @@ interface TicketSoporte {
   descripcion: string;
   fecha: string;
   estatus: 'pendiente' | 'en-proceso' | 'respondido';
+  respuestas: Array<{ mensaje: string; fecha: string; autor: 'admin' }>;
   evidencias: Array<{ nombre: string; tamano: number; tipo: string }>;
 }
 
@@ -153,6 +154,7 @@ export class TicketsComponent implements OnInit {
       descripcion: this.descripcionControl.value.trim(),
       fecha: new Date().toISOString(),
       estatus: 'pendiente',
+      respuestas: [],
       evidencias: this.evidencias.map((item) => ({
         nombre: item.archivo.name,
         tamano: item.archivo.size,

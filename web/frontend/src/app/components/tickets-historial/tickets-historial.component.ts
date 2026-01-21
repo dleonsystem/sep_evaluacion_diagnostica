@@ -13,6 +13,7 @@ interface TicketSoporte {
   descripcion: string;
   fecha: string;
   estatus: 'pendiente' | 'en-proceso' | 'respondido';
+  respuestas: Array<{ mensaje: string; fecha: string; autor: 'admin' }>;
   evidencias: Array<{ nombre: string; tamano: number; tipo: string }>;
 }
 
@@ -27,6 +28,7 @@ export class TicketsHistorialComponent implements OnInit {
   tickets: TicketSoporte[] = [];
   mensajeInfo: string | null = null;
   correoActivo: string | null = null;
+  ticketExpandidoId: string | null = null;
 
   constructor(
     private readonly authService: AuthService,
@@ -82,6 +84,22 @@ export class TicketsHistorialComponent implements OnInit {
       dateStyle: 'medium',
       timeStyle: 'short'
     }).format(parsed);
+  }
+
+  obtenerUltimaRespuesta(ticket: TicketSoporte): { mensaje: string; fecha: string } | null {
+    if (!ticket.respuestas?.length) {
+      return null;
+    }
+    const respuesta = ticket.respuestas[ticket.respuestas.length - 1];
+    return { mensaje: respuesta.mensaje, fecha: respuesta.fecha };
+  }
+
+  toggleDetalleRespuesta(ticketId: string): void {
+    this.ticketExpandidoId = this.ticketExpandidoId === ticketId ? null : ticketId;
+  }
+
+  esTicketExpandido(ticketId: string): boolean {
+    return this.ticketExpandidoId === ticketId;
   }
 
   private normalizarCorreo(correo: string | null): string | null {
