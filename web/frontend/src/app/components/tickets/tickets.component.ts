@@ -66,7 +66,8 @@ export class TicketsComponent implements OnInit {
     }
 
     const credenciales = this.estadoCredencialesService.obtener() ?? this.authService.obtenerCredenciales();
-    this.correoActivo = this.normalizarCorreo(credenciales?.correo ?? null);
+    const correoSesion = this.authService.obtenerCorreoSesion();
+    this.correoActivo = this.normalizarCorreo(credenciales?.correo ?? correoSesion ?? null);
   }
 
   get mostrarMotivoOtro(): boolean {

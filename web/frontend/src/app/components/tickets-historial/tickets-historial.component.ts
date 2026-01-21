@@ -41,7 +41,8 @@ export class TicketsHistorialComponent implements OnInit {
     }
 
     const credenciales = this.estadoCredencialesService.obtener() ?? this.authService.obtenerCredenciales();
-    this.correoActivo = this.normalizarCorreo(credenciales?.correo ?? null);
+    const correoSesion = this.authService.obtenerCorreoSesion();
+    this.correoActivo = this.normalizarCorreo(credenciales?.correo ?? correoSesion ?? null);
     this.cargarTickets();
   }
 
@@ -49,7 +50,9 @@ export class TicketsHistorialComponent implements OnInit {
     const data = localStorage.getItem('tickets-soporte');
     const tickets = data ? (JSON.parse(data) as TicketSoporte[]) : [];
     const correoActivo = this.normalizarCorreo(this.correoActivo);
-    this.tickets = tickets.filter((ticket) => this.normalizarCorreo(ticket.correo) === correoActivo);
+    this.tickets = correoActivo
+      ? tickets.filter((ticket) => this.normalizarCorreo(ticket.correo) === correoActivo)
+      : tickets;
 
     if (!this.tickets.length) {
       this.mensajeInfo = 'Aún no has enviado tickets de soporte.';
