@@ -22,8 +22,10 @@ export class ArchivosGuardadosComponent implements OnInit {
   mensajeError: string | null = null;
   correoActivo: string | null = null;
   filtroTexto = '';
+  private readonly resultadosStoragePrefix = 'archivos-resultados';
   private readonly pdfStoragePrefix = 'pdf-resultados';
-  private resultadosPdf: Record<string, PdfMetadataConStorage> = {};
+  private resultadosArchivos: Record<string, ResultadoArchivosConStorage> = {};
+  filasExpandidas = new Set<string>();
 
   constructor(
     private readonly archivoStorageService: ArchivoStorageService,
@@ -44,7 +46,8 @@ export class ArchivosGuardadosComponent implements OnInit {
   cargarRegistros(): void {
     this.mensajeError = null;
     this.registros = this.archivoStorageService.obtenerRegistros(this.correoActivo);
-    this.cargarResultadosPdf();
+    this.cargarResultadosArchivos();
+    this.filasExpandidas.clear();
 
     if (this.registros.length === 0) {
       this.mensajeInfo = 'Aún no has cargado archivos en este navegador.';
@@ -113,56 +116,50 @@ export class ArchivosGuardadosComponent implements OnInit {
     }
   }
 
-  descargarResultados(storageKey: string): void {
-    const data = localStorage.getItem(storageKey);
-    if (!data) {
+  descargarResultados(archivo: ResultadoArchivo): void {
+    const base64 = archivo.base64 ?? '';
+    const [header, base64Data] = base64.split(',');
+    if (!base64Data) {
       return;
     }
 
-    try {
-      const parsed = JSON.parse(data) as PdfMetadata;
-      if (!parsed?.pdfBase64) {
-        return;
-      }
+    const mimeMatch = header?.match(/data:(.*?);base64/);
+    const mimeType = mimeMatch?.[1] ?? archivo.type ?? 'application/octet-stream';
+    const byteString = atob(base64Data);
+    const bytes = new Uint8Array(byteString.length);
+    for (let i = 0; i < byteString.length; i += 1) {
+      bytes[i] = byteString.charCodeAt(i);
+    }
 
-      const [header, base64Data] = parsed.pdfBase64.split(',');
-      if (!base64Data) {
-        return;
-      }
+    const blob = new Blob([bytes], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = archivo.name ?? 'resultado';
+    enlace.style.display = 'none';
 
-      const mimeMatch = header?.match(/data:(.*?);base64/);
-      const mimeType = mimeMatch?.[1] ?? 'application/pdf';
-      const byteString = atob(base64Data);
-      const bytes = new Uint8Array(byteString.length);
-      for (let i = 0; i < byteString.length; i += 1) {
-        bytes[i] = byteString.charCodeAt(i);
-      }
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
+    URL.revokeObjectURL(url);
+    this.registrarDescarga(enlace.download);
+  }
 
-      const blob = new Blob([bytes], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const enlace = document.createElement('a');
-      enlace.href = url;
-      enlace.download = parsed.pdfName ?? 'resultados.pdf';
-      enlace.style.display = 'none';
+  obtenerResultadosPorRegistro(registro: RegistroArchivo): ResultadoArchivosConStorage | null {
+    const storageKey = this.obtenerResultadosStorageKey(registro);
+    return this.resultadosArchivos[storageKey] ?? null;
+  }
 
-      document.body.appendChild(enlace);
-      enlace.click();
-      document.body.removeChild(enlace);
-      URL.revokeObjectURL(url);
-      this.registrarDescarga(enlace.download);
-    } catch (error) {
+  toggleResultados(storageKey: string): void {
+    if (this.filasExpandidas.has(storageKey)) {
+      this.filasExpandidas.delete(storageKey);
       return;
     }
+    this.filasExpandidas.add(storageKey);
   }
 
-  obtenerPdfPorRegistro(registro: RegistroArchivo): PdfMetadataConStorage | null {
-    const storageKey = this.obtenerPdfStorageKey(registro);
-    return this.resultadosPdf[storageKey] ?? null;
-  }
-
-  obtenerEtiquetaPdf(resultado: PdfMetadataConStorage): string {
-    const nombre = resultado.pdfName?.trim();
-    return nombre ? nombre : 'PDF asignado';
+  estaFilaExpandida(storageKey: string): boolean {
+    return this.filasExpandidas.has(storageKey);
   }
 
   obtenerEtiquetaNivel(nivel?: string): string {
@@ -214,19 +211,45 @@ export class ArchivosGuardadosComponent implements OnInit {
     return `${valor.toFixed(valor >= 10 ? 1 : 2)} ${unidades[indice]}`;
   }
 
-  private cargarResultadosPdf(): void {
-    this.resultadosPdf = {};
+  private cargarResultadosArchivos(): void {
+    this.resultadosArchivos = {};
     this.registros.forEach((registro) => {
-      const storageKey = this.obtenerPdfStorageKey(registro);
-      const data = localStorage.getItem(storageKey);
-      if (!data) {
+      const resultadosKey = this.obtenerResultadosStorageKey(registro);
+      const dataResultados = localStorage.getItem(resultadosKey);
+      if (dataResultados) {
+        try {
+          const parsed = JSON.parse(dataResultados) as ResultadoArchivos;
+          if (Array.isArray(parsed.archivos) && parsed.archivos.length) {
+            this.resultadosArchivos[resultadosKey] = { ...parsed, storageKey: resultadosKey };
+            return;
+          }
+        } catch (error) {
+          return;
+        }
+      }
+
+      const pdfKey = this.obtenerPdfStorageKey(registro);
+      const dataPdf = localStorage.getItem(pdfKey);
+      if (!dataPdf) {
         return;
       }
 
       try {
-        const parsed = JSON.parse(data) as PdfMetadata;
+        const parsed = JSON.parse(dataPdf) as PdfMetadata;
         if (parsed?.pdfBase64) {
-          this.resultadosPdf[storageKey] = { ...parsed, storageKey };
+          this.resultadosArchivos[resultadosKey] = {
+            excelKey: parsed.excelKey,
+            fecha: parsed.fecha,
+            archivos: [
+              {
+                name: parsed.pdfName,
+                size: 0,
+                type: 'application/pdf',
+                base64: parsed.pdfBase64
+              }
+            ],
+            storageKey: resultadosKey
+          };
         }
       } catch (error) {
         return;
@@ -234,13 +257,21 @@ export class ArchivosGuardadosComponent implements OnInit {
     });
   }
 
+  private obtenerResultadosStorageKey(registro: RegistroArchivo): string {
+    return `${this.resultadosStoragePrefix}:${this.obtenerClaveRegistro(registro)}`;
+  }
+
   private obtenerPdfStorageKey(registro: RegistroArchivo): string {
-    const claveEstable =
+    return `${this.pdfStoragePrefix}:${this.obtenerClaveRegistro(registro)}`;
+  }
+
+  private obtenerClaveRegistro(registro: RegistroArchivo): string {
+    return (
       registro.claveEstable ??
       `${(registro.cct ?? '').trim()}|${(registro.correo ?? '').trim().toLowerCase()}|${
         registro.nombre
-      }|${registro.fechaGuardado}`;
-    return `${this.pdfStoragePrefix}:${claveEstable}`;
+      }|${registro.fechaGuardado}`
+    );
   }
 
   private registrarDescarga(nombre: string): void {
@@ -259,6 +290,19 @@ interface PdfMetadata {
   fecha: string;
 }
 
-interface PdfMetadataConStorage extends PdfMetadata {
+interface ResultadoArchivo {
+  name: string;
+  size: number;
+  type: string;
+  base64: string;
+}
+
+interface ResultadoArchivos {
+  excelKey: string;
+  archivos: ResultadoArchivo[];
+  fecha: string;
+}
+
+interface ResultadoArchivosConStorage extends ResultadoArchivos {
   storageKey: string;
 }
