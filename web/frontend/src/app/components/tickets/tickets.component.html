@@ -10,7 +10,7 @@
     </p>
   </header>
 
-  <form class="tickets__formulario" (ngSubmit)="enviarTicket($event)">
+  <form class="tickets__formulario" (submit)="enviarTicket($event)">
     <label class="tickets__campo">
       <span>Motivo del ticket</span>
       <select [formControl]="motivoControl">
