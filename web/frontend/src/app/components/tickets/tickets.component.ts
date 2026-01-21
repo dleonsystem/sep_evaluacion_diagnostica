@@ -111,7 +111,8 @@ export class TicketsComponent implements OnInit {
     this.evidencias = this.evidencias.filter((item) => item.id !== id);
   }
 
-  enviarTicket(): void {
+  enviarTicket(event?: Event): void {
+    event?.preventDefault();
     this.mensajeError = null;
     this.mensajeExito = null;
 
