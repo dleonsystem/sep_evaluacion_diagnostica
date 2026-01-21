@@ -1,0 +1,48 @@
+<section class="tickets-historial">
+  <header class="tickets-historial__encabezado">
+    <p class="tickets-historial__eyebrow">Soporte</p>
+    <h1 class="tickets-historial__titulo">Mis tickets</h1>
+    <p class="tickets-historial__descripcion">
+      Consulta el estado de los tickets que has enviado y su seguimiento.
+    </p>
+  </header>
+
+  <p class="tickets-historial__mensaje" *ngIf="mensajeInfo">{{ mensajeInfo }}</p>
+
+  <div class="tickets-historial__tabla" *ngIf="tickets.length">
+    <table>
+      <thead>
+        <tr>
+          <th>Motivo</th>
+          <th>Descripción</th>
+          <th>Fecha</th>
+          <th>Evidencias</th>
+          <th>Estatus</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let ticket of tickets">
+          <td data-label="Motivo">
+            {{ ticket.motivo }}
+            <span *ngIf="ticket.motivoDetalle">({{ ticket.motivoDetalle }})</span>
+          </td>
+          <td data-label="Descripción">{{ ticket.descripcion }}</td>
+          <td data-label="Fecha">{{ formatearFecha(ticket.fecha) }}</td>
+          <td data-label="Evidencias">{{ ticket.evidencias.length }}</td>
+          <td data-label="Estatus">
+            <span
+              class="tickets-historial__badge"
+              [class.tickets-historial__badge--pendiente]="ticket.estatus === 'pendiente'"
+              [class.tickets-historial__badge--proceso]="ticket.estatus === 'en-proceso'"
+              [class.tickets-historial__badge--respondido]="ticket.estatus === 'respondido'"
+            >
+              {{ obtenerEtiquetaEstatus(ticket.estatus) }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <a routerLink="/tickets" class="tickets-historial__link">Crear un nuevo ticket</a>
+</section>
