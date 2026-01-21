@@ -1,0 +1,121 @@
+.tickets-historial {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  color: #1f2937;
+}
+
+.tickets-historial__encabezado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.tickets-historial__eyebrow {
+  color: #0f766e;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+.tickets-historial__titulo {
+  margin: 0;
+  font-size: clamp(1.8rem, 2vw, 2.2rem);
+}
+
+.tickets-historial__descripcion {
+  margin: 0;
+  color: #4b5563;
+}
+
+.tickets-historial__mensaje {
+  margin: 0;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.tickets-historial__tabla {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.tickets-historial table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tickets-historial th,
+.tickets-historial td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.tickets-historial th {
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tickets-historial__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.tickets-historial__badge--pendiente {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.tickets-historial__badge--proceso {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.tickets-historial__badge--respondido {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.tickets-historial__link {
+  align-self: flex-start;
+  color: #9d2449;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tickets-historial__link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 720px) {
+  .tickets-historial table,
+  .tickets-historial thead,
+  .tickets-historial tbody,
+  .tickets-historial th,
+  .tickets-historial td,
+  .tickets-historial tr {
+    display: block;
+    width: 100%;
+  }
+
+  .tickets-historial thead {
+    display: none;
+  }
+
+  .tickets-historial td {
+    padding: 0.75rem 1rem;
+  }
+}
