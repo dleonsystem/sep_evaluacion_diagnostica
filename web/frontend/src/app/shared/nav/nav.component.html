@@ -27,12 +27,6 @@
         </li>
 
         <ng-container *ngIf="isUsuarioAutenticado; else usuarioInvitado">
-          <li class="nav-item">
-            <a class="nav-link subnav-link" [routerLink]="['/tickets']">
-              <i class="bi bi-life-preserver mr-1" aria-hidden="true"></i>
-              <strong>Soporte</strong>
-            </a>
-          </li>
           <li class="nav-item d-none d-md-block">
             <span class="nav-link subnav-link subnav-separator">|</span>
           </li>
@@ -52,6 +46,10 @@
               <a class="dropdown-item" [routerLink]="['/archivos-preescolar']">
                 <i class="bi bi-folder2-open mr-2" aria-hidden="true"></i>
                 Archivos guardados
+              </a>
+              <a class="dropdown-item" [routerLink]="['/tickets']">
+                <i class="bi bi-life-preserver mr-2" aria-hidden="true"></i>
+                Soporte
               </a>
               <a class="dropdown-item" [routerLink]="['/tickets-historial']">
                 <i class="bi bi-card-list mr-2" aria-hidden="true"></i>
