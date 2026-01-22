@@ -10,6 +10,7 @@ export interface CredencialesGuardadas {
 export class AuthService {
   private readonly credencialesKey = 'credenciales-preescolar';
   private readonly sesionKey = 'sesion-preescolar-activa';
+  private readonly sesionCorreoKey = 'sesion-preescolar-correo';
 
   obtenerCredenciales(): CredencialesGuardadas | null {
     const guardadas = localStorage.getItem(this.credencialesKey);
@@ -77,10 +78,12 @@ export class AuthService {
     }
 
     this.marcarSesionActiva();
+    localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
   }
 
   cerrarSesion(): void {
     localStorage.removeItem(this.sesionKey);
+    localStorage.removeItem(this.sesionCorreoKey);
   }
 
   estaAutenticado(): boolean {
@@ -89,6 +92,11 @@ export class AuthService {
 
   requiereLoginParaNuevaCarga(): boolean {
     return !!this.obtenerCredenciales() && !this.estaAutenticado();
+  }
+
+  obtenerCorreoSesion(): string | null {
+    const correo = localStorage.getItem(this.sesionCorreoKey);
+    return correo ? this.normalizarCorreo(correo) : null;
   }
 
   private marcarSesionActiva(): void {

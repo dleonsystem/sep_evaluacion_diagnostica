@@ -28,7 +28,7 @@
       </select>
       <p class="admin-panel__helper">
         El listado de Excels depende del nivel seleccionado. Primero selecciona un registro y luego
-        sube el PDF correspondiente.
+        sube los archivos correspondientes.
       </p>
       <p class="admin-panel__helper" *ngIf="!excelDisponibles.length">
         Aún no hay Excels disponibles para asociar. Valida un archivo desde el módulo de carga.
@@ -135,24 +135,28 @@
         </div>
       </div>
 
-      <label class="admin-panel__upload-label" for="pdf-upload">Selecciona un PDF</label>
+      <label class="admin-panel__upload-label" for="pdf-upload">Selecciona archivos de resultados</label>
       <p class="admin-panel__helper" *ngIf="!excelSeleccionado">
-        Selecciona un registro de Excel para habilitar la carga del PDF.
+        Selecciona un registro de Excel para habilitar la carga de archivos.
       </p>
       <input
         id="pdf-upload"
         class="admin-panel__upload-input"
         type="file"
-        accept="application/pdf"
+        accept=".pdf,.xlsx,.jpg,.jpeg,.doc,.docx"
+        multiple
         (change)="seleccionarArchivo($event)"
       />
+      <p class="admin-panel__helper">
+        Formatos permitidos: PDF, XLSX, JPG, Word. Máximo {{ maxArchivos }} archivos.
+      </p>
       <button
         class="admin-panel__upload-button"
         type="button"
-        (click)="subirPdf()"
-        [disabled]="!excelSeleccionado"
+        (click)="subirArchivos()"
+        [disabled]="!excelSeleccionado || !selectedFiles.length"
       >
-        Subir PDF
+        Subir archivos
       </button>
 
       <div
@@ -181,6 +185,112 @@
         </ul>
       </div>
     </div>
+
+    <section class="admin-panel__tickets">
+      <h3>Tickets de soporte</h3>
+      <div class="admin-panel__tickets-filters">
+        <label>
+          <span>Buscar</span>
+          <input
+            type="text"
+            [(ngModel)]="filtroTicketTexto"
+            placeholder="Folio, correo o motivo"
+          />
+        </label>
+        <label>
+          <span>Estatus</span>
+          <select [(ngModel)]="filtroTicketEstatus">
+            <option value="todos">Todos</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="en-proceso">En proceso</option>
+            <option value="respondido">Respondido</option>
+          </select>
+        </label>
+      </div>
+
+      <p class="admin-panel__tickets-empty" *ngIf="!ticketsSoporteFiltrados.length">
+        No hay tickets registrados aún.
+      </p>
+
+      <div class="admin-panel__tickets-grid" *ngIf="ticketsSoporteFiltrados.length">
+        <div class="admin-panel__tickets-list">
+          <button
+            class="admin-panel__ticket-card"
+            type="button"
+            *ngFor="let ticket of ticketsSoporteFiltrados"
+            (click)="seleccionarTicket(ticket)"
+            [class.admin-panel__ticket-card--active]="ticket.id === ticketSeleccionadoId"
+          >
+            <div class="admin-panel__ticket-header">
+              <strong>{{ ticket.folio }}</strong>
+              <span class="admin-panel__ticket-status">{{ ticket.estatus }}</span>
+            </div>
+            <p>{{ ticket.motivo }}</p>
+            <small>{{ ticket.correo }}</small>
+            <small>{{ formatearFecha(ticket.fecha) }}</small>
+            <small *ngIf="obtenerUltimaRespuesta(ticket) as respuesta">
+              Última respuesta: {{ formatearFecha(respuesta.fecha) }}
+            </small>
+          </button>
+        </div>
+
+        <div class="admin-panel__ticket-detail" *ngIf="ticketSeleccionadoId as ticketId">
+          <ng-container *ngFor="let ticket of ticketsSoporte">
+            <ng-container *ngIf="ticket.id === ticketId">
+              <h4>Detalle del ticket</h4>
+              <p><strong>Folio:</strong> {{ ticket.folio }}</p>
+              <p><strong>Correo:</strong> {{ ticket.correo }}</p>
+              <p><strong>Motivo:</strong> {{ ticket.motivo }}</p>
+              <p *ngIf="ticket.motivoDetalle">
+                <strong>Motivo detalle:</strong> {{ ticket.motivoDetalle }}
+              </p>
+              <p><strong>Descripción:</strong> {{ ticket.descripcion }}</p>
+              <p><strong>Fecha:</strong> {{ formatearFecha(ticket.fecha) }}</p>
+
+              <div class="admin-panel__ticket-evidencias" *ngIf="ticket.evidencias.length">
+                <strong>Evidencias:</strong>
+                <ul>
+                  <li *ngFor="let evidencia of ticket.evidencias">{{ evidencia.nombre }}</li>
+                </ul>
+              </div>
+
+              <div class="admin-panel__ticket-respuestas" *ngIf="ticket.respuestas?.length">
+                <strong>Respuestas previas:</strong>
+                <div
+                  class="admin-panel__ticket-respuesta"
+                  *ngFor="let respuesta of ticket.respuestas"
+                >
+                  <p>{{ respuesta.mensaje }}</p>
+                  <small>{{ formatearFecha(respuesta.fecha) }}</small>
+                </div>
+              </div>
+
+              <div class="admin-panel__ticket-actions">
+                <label>
+                  <span>Estatus</span>
+                  <select [(ngModel)]="estatusTicketSeleccionado">
+                    <option value="pendiente">Pendiente</option>
+                    <option value="en-proceso">En proceso</option>
+                    <option value="respondido">Respondido</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Respuesta al usuario</span>
+                  <textarea
+                    rows="4"
+                    [(ngModel)]="respuestaAdmin"
+                    placeholder="Escribe la respuesta del administrador"
+                  ></textarea>
+                </label>
+                <button class="admin-panel__ticket-save" type="button" (click)="guardarRespuesta()">
+                  Guardar respuesta
+                </button>
+              </div>
+            </ng-container>
+          </ng-container>
+        </div>
+      </div>
+    </section>
 
     <!-- <a class="admin-panel__link" routerLink="/admin/login">Ir al login</a> -->
     <button class="admin-panel__logout" type="button" (click)="cerrarSesion()">Cerrar sesión</button>
