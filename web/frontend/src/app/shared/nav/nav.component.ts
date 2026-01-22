@@ -28,6 +28,7 @@ export class NavComponent implements OnInit, AfterViewInit, OnDestroy {
   isUsuarioAutenticado = false;
   isAdminAutenticado = false;
   correoUsuario: string | null = null;
+  correoAdmin: string | null = null;
 
   private routerSubscription: Subscription | null = null;
   private readonly isBrowser: boolean;
@@ -116,7 +117,9 @@ export class NavComponent implements OnInit, AfterViewInit, OnDestroy {
     const targetElement = event.target as HTMLElement;
 
     const userMenuClick =
-      targetElement.closest('#userDropdown') || targetElement.closest('.dropdown-menu');
+      targetElement.closest('#userDropdown') ||
+      targetElement.closest('#adminDropdown') ||
+      targetElement.closest('.dropdown-menu');
 
     const mainMenuClick =
       targetElement.closest('.navbar-nav') || targetElement.closest('.navbar-toggler');
@@ -139,6 +142,7 @@ export class NavComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isUsuarioAutenticado = this.authService.estaAutenticado();
     this.isAdminAutenticado = this.adminAuthService.estaAutenticado();
     this.correoUsuario = this.authService.obtenerCorreoSesion();
+    this.correoAdmin = this.adminAuthService.obtenerCorreoSesion();
   }
 
   private actualizarOffsetHeader(): void {
