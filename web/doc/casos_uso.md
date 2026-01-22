@@ -9,6 +9,7 @@ flowchart LR
         B[Escuela autenticada]
         C[Sistema externo de resultados]
         D[Operador técnico SEP]
+        E[Administrador SEP]
     end
 
     subgraph Sistema[Plataforma EIA]
@@ -20,6 +21,12 @@ flowchart LR
         CU6[CU-06 Detectar reenvío y requerir login]
         CU7[CU-07 Autenticarse para reenvío/descargas]
         CU8[CU-08 Listar versiones y ligas de descarga]
+        CU9[CU-09 Consultar archivos guardados]
+        CU10[CU-10 Seguimiento de solicitudes y descargas]
+        CU11[CU-11 Crear ticket de soporte]
+        CU12[CU-12 Consultar historial de tickets]
+        CU13[CU-13 Administrar carga de resultados]
+        CU14[CU-14 Gestionar tickets y respuestas]
     end
 
     A --> CU1
@@ -32,11 +39,18 @@ flowchart LR
     B --> CU6
     B --> CU7
     B --> CU8
+    B --> CU9
+    B --> CU10
+    B --> CU11
+    B --> CU12
 
     C --> CU8
 
     D --> CU2
     D --> CU5
+
+    E --> CU13
+    E --> CU14
 ```
 
 ---
@@ -75,7 +89,31 @@ flowchart LR
    - Actores: Escuela (autenticada), Sistema externo de resultados
    - Descripción: Muestra consecutivos y ligas depositadas por el sistema externo para la escuela autenticada.
 
-**Nota de implementación temporal:** mientras el backend GraphQL es construido por otro equipo, los casos de uso CU-01 a CU-07 se ejecutarán en el frontend con servicios simulados y datos de prueba/localStorage que imitan las respuestas esperadas. Cuando las operaciones estén disponibles, se cambiará la fuente de datos sin modificar los flujos de usuario.
+9. **CU-09 Consultar archivos guardados**
+   - Actor: Escuela (autenticada)
+   - Descripción: Lista archivos validados en el navegador, con búsqueda por nombre/CCT, acciones de descarga y eliminación, y acceso a resultados asociados.
+
+10. **CU-10 Seguimiento de solicitudes y descargas**
+   - Actor: Escuela (autenticada)
+   - Descripción: Provee filtros por CCT/fecha y panel de estado para validar solicitudes y descargas recientes, incluyendo reintentos simulados.
+
+11. **CU-11 Crear ticket de soporte**
+   - Actor: Escuela (autenticada)
+   - Descripción: Permite enviar un ticket con motivo, descripción y evidencias (PDF, Excel, Word o imágenes) desde la mesa de ayuda.
+
+12. **CU-12 Consultar historial de tickets**
+   - Actor: Escuela (autenticada)
+   - Descripción: Muestra el historial de tickets con estatus, evidencias y respuestas del administrador.
+
+13. **CU-13 Administrar carga de resultados**
+   - Actor: Administrador SEP
+   - Descripción: Selecciona un Excel validado, filtra por estatus/fecha y carga archivos de resultados (PDF/XLSX/etc.) asociados a la solicitud.
+
+14. **CU-14 Gestionar tickets y respuestas**
+   - Actor: Administrador SEP
+   - Descripción: Consulta tickets, aplica filtros, actualiza estatus y envía respuestas al usuario.
+
+**Nota de implementación temporal:** mientras el backend GraphQL es construido por otro equipo, los casos de uso CU-01 a CU-14 se ejecutarán en el frontend con servicios simulados y datos de prueba/localStorage que imitan las respuestas esperadas. Cuando las operaciones estén disponibles, se cambiará la fuente de datos sin modificar los flujos de usuario.
 
 ---
 
