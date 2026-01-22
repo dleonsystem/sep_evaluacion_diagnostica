@@ -96,7 +96,7 @@
           </li>
         </ng-container>
         <ng-template #adminInvitado>
-          <li class="nav-item">
+          <li class="nav-item" *ngIf="!isUsuarioAutenticado">
             <a class="nav-link subnav-link" href="javascript:void(0)" (click)="iniciarSesionAdmin()">
               <i class="bi bi-shield-check mr-1" aria-hidden="true"></i>
               <strong>Admin login</strong>
