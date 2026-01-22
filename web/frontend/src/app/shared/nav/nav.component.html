@@ -20,12 +20,6 @@
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link subnav-link" [routerLink]="['/archivos-preescolar']">
-            <i class="bi bi-folder2-open mr-1" aria-hidden="true"></i>
-            <strong>Archivos guardados</strong>
-          </a>
-        </li>
-        <li class="nav-item">
           <a class="nav-link subnav-link" [routerLink]="['/descargas']">
             <i class="bi bi-download mr-1" aria-hidden="true"></i>
             <strong>Descargas</strong>
@@ -37,12 +31,6 @@
             <a class="nav-link subnav-link" [routerLink]="['/tickets']">
               <i class="bi bi-life-preserver mr-1" aria-hidden="true"></i>
               <strong>Soporte</strong>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link subnav-link" [routerLink]="['/tickets-historial']">
-              <i class="bi bi-card-list mr-1" aria-hidden="true"></i>
-              <strong>Mis tickets</strong>
             </a>
           </li>
           <li class="nav-item d-none d-md-block">
@@ -61,6 +49,15 @@
               <strong>{{ getNombreUsuario() }}</strong>
             </a>
             <div class="dropdown-menu" [class.show]="userMenuOpen">
+              <a class="dropdown-item" [routerLink]="['/archivos-preescolar']">
+                <i class="bi bi-folder2-open mr-2" aria-hidden="true"></i>
+                Archivos guardados
+              </a>
+              <a class="dropdown-item" [routerLink]="['/tickets-historial']">
+                <i class="bi bi-card-list mr-2" aria-hidden="true"></i>
+                Mis tickets
+              </a>
+              <div class="dropdown-divider"></div>
               <a class="dropdown-item" href="javascript:void(0)" (click)="cerrarSesion()">
                 <i class="bi bi-box-arrow-right mr-2" aria-hidden="true"></i>
                 Cerrar sesión

@@ -1,4 +1,3 @@
 .app-content {
-  padding-top: 45px;
-
+  padding-top: calc(var(--gov-header-height, 78px) + 72px);
 }
