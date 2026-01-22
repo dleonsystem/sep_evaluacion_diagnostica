@@ -137,8 +137,11 @@ $sep-gray-700: #4a4a4a;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 0;
   min-width: 180px;
+  max-width: min(90vw, 260px);
   z-index: 1040;
   margin-top: 0;
+  right: 0;
+  left: auto;
 }
 
 .dropdown-item {
