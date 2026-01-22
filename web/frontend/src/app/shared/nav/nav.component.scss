@@ -36,7 +36,7 @@ $sep-gray-700: #4a4a4a;
   margin-bottom: 0 !important;
   margin-top: 0 !important;
   position: fixed !important;
-  top: var(--gov-header-height, 0px) !important;
+  top: var(--gov-header-height, 78px) !important;
   left: 0;
   right: 0;
   width: 100%;
@@ -176,7 +176,7 @@ $sep-gray-700: #4a4a4a;
 @media (max-width: 1199.98px) {
   .navbar {
     position: fixed !important;
-    top: var(--gov-header-height, 0px) !important;
+    top: var(--gov-header-height, 78px) !important;
     left: 0;
     right: 0;
     padding: 0.5rem 0 !important;
@@ -233,7 +233,7 @@ $sep-gray-700: #4a4a4a;
   .navbar {
     height: auto;
     position: fixed !important;
-    top: var(--gov-header-height, 0px) !important;
+    top: var(--gov-header-height, 78px) !important;
   }
 
   .navbar > .container-fluid {
@@ -270,7 +270,7 @@ $sep-gray-700: #4a4a4a;
 @media (min-width: 1717px) {
   .navbar {
     position: fixed !important;
-    top: var(--gov-header-height, 0px) !important;
+    top: var(--gov-header-height, 78px) !important;
   }
 
   .navbar-collapse {

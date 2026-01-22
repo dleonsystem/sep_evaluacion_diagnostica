@@ -146,10 +146,14 @@ export class NavComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const header = this.document.querySelector<HTMLElement>(
-      '.navbar-gobmx, .gobmx-navbar, #navbar-top, .gob-header, .gov-header'
-    );
-    const height = header?.getBoundingClientRect().height ?? 0;
+    const candidatos = Array.from(
+      this.document.querySelectorAll<HTMLElement>(
+        '.navbar-gobmx, .gobmx-navbar, #navbar-top, .gob-header, .gov-header, header nav.navbar'
+      )
+    ).filter((element) => !element.closest('app-root'));
+
+    const header = candidatos[0];
+    const height = header?.getBoundingClientRect().height ?? 78;
     this.document.documentElement.style.setProperty('--gov-header-height', `${height}px`);
   }
 
