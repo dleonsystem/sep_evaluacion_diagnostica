@@ -1,46 +1,10 @@
 <div class="descargas">
   <header class="encabezado">
     <h1>Descarga de versiones</h1>
-    <p>Ingresa con el correo y contraseña generada para acceder a las ligas de descarga.</p>
+    <p>Consulta las versiones disponibles para descarga.</p>
   </header>
 
   <section class="tarjeta">
-    <div *ngIf="!autenticado" class="formulario">
-      <form [formGroup]="accesoForm" (ngSubmit)="iniciarSesion()">
-        <div class="campo">
-          <label for="correo">Correo electrónico</label>
-          <input
-            id="correo"
-            type="email"
-            formControlName="correo"
-            placeholder="usuario@dominio.com"
-            [class.error]="accesoForm.controls.correo.invalid && accesoForm.controls.correo.touched"
-          />
-          <small *ngIf="accesoForm.controls.correo.invalid && accesoForm.controls.correo.touched">
-            Ingresa un correo válido.
-          </small>
-        </div>
-
-        <div class="campo">
-          <label for="contrasena">Contraseña generada</label>
-          <input
-            id="contrasena"
-            type="password"
-            formControlName="contrasena"
-            placeholder="Ej. Abc123456789"
-            [class.error]="accesoForm.controls.contrasena.invalid && accesoForm.controls.contrasena.touched"
-          />
-          <small *ngIf="accesoForm.controls.contrasena.invalid && accesoForm.controls.contrasena.touched">
-            La contraseña es obligatoria.
-          </small>
-        </div>
-
-        <button type="submit" [disabled]="autenticando" class="btn primario">
-          {{ autenticando ? 'Validando...' : 'Ingresar' }}
-        </button>
-      </form>
-    </div>
-
     <div *ngIf="autenticado" class="contenido">
       <app-seguimiento-descargas></app-seguimiento-descargas>
 
