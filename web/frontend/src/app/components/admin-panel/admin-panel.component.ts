@@ -84,6 +84,12 @@ export class AdminPanelComponent implements OnInit {
     if (!this.excelSeleccionado) {
       this.uploadStatus = 'error';
       this.feedbackMessage = 'Selecciona un registro de Excel antes de subir los archivos.';
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Registro requerido',
+        text: 'Selecciona un registro de Excel antes de subir los archivos.',
+        confirmButtonText: 'Entendido'
+      });
       return;
     }
 

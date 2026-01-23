@@ -19,16 +19,6 @@
             <strong>Carga masiva</strong>
           </a>
         </li>
-        <li class="nav-item">
-          <a
-            class="nav-link subnav-link"
-            [routerLink]="['/descargas']"
-            *ngIf="!isUsuarioAutenticado"
-          >
-            <i class="bi bi-download mr-1" aria-hidden="true"></i>
-            <strong>Descargas</strong>
-          </a>
-        </li>
 
         <ng-container *ngIf="isUsuarioAutenticado; else usuarioInvitado">
           <li class="nav-item d-none d-md-block">
