@@ -899,7 +899,9 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | Campo           | Tipo         | Descripción                       |
 |-----------------|--------------|-----------------------------------|
 | id              | UUID         | Identificador único               |
-| nombre          | VARCHAR(150) | Nombre completo                   |
+| nombre          | VARCHAR(60)  | Nombre de pila                    |
+| apepaterno      | VARCHAR(60)  | Primer apellido                   |
+| apematerno      | VARCHAR(60)  | Segundo apellido (opcional)       |
 | email           | VARCHAR(100) | Correo electrónico (UNIQUE)       |
 | password_hash   | VARCHAR(255) | Hash de la contraseña (bcrypt/argon2) |
 | rol             | INT          | Relación con CAT_ROLES_USUARIO (FK) |
