@@ -41,6 +41,10 @@ El área solicitante (DGTIC/DGADAE) identificó **contradicciones críticas** en
 
 Este repositorio contiene **documentación técnica exhaustiva** preparada bajo estándares PSP (Personal Software Process) y RUP (Rational Unified Process). A continuación se presenta una guía para navegar los documentos según tu perfil.
 
+### 📘 Manual de usuario (Frontend)
+
+**[web/doc/manual_usuario_frontend.md](web/doc/manual_usuario_frontend.md)** reúne instrucciones paso a paso para usar el portal web: carga masiva, login, archivos guardados, descargas y flujos de soporte, además del panel de administrador. Incluye espacios sugeridos para capturas de pantalla.
+
 ---
 
 ## 👥 SEGÚN TU PERFIL
