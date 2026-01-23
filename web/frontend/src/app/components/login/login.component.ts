@@ -21,6 +21,7 @@ export class LoginComponent implements OnInit {
   redirect = '/carga-masiva';
   contrasenaGuardada: string | null = null;
   credencialesGuardadas = false;
+  sinCredenciales = false;
   mostrarContrasena = false;
 
   constructor(
@@ -34,12 +35,12 @@ export class LoginComponent implements OnInit {
     const credencialesPersistidas = this.authService.obtenerCredenciales();
     const credenciales = this.estadoCredencialesService.obtener() ?? credencialesPersistidas;
 
+    this.redirect = this.route.snapshot.queryParamMap.get('redirect') ?? this.redirect;
     if (!credenciales) {
-      void this.router.navigate(['/carga-masiva']);
+      this.sinCredenciales = true;
       return;
     }
 
-    this.redirect = this.route.snapshot.queryParamMap.get('redirect') ?? this.redirect;
     this.correo = credenciales.correo;
     this.contrasenaGuardada = credencialesPersistidas?.contrasena ?? null;
     this.credencialesGuardadas = Boolean(credencialesPersistidas);
