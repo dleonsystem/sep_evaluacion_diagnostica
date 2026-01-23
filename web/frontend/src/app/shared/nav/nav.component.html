@@ -20,7 +20,11 @@
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link subnav-link" [routerLink]="['/descargas']">
+          <a
+            class="nav-link subnav-link"
+            [routerLink]="['/descargas']"
+            *ngIf="!isUsuarioAutenticado"
+          >
             <i class="bi bi-download mr-1" aria-hidden="true"></i>
             <strong>Descargas</strong>
           </a>
@@ -46,6 +50,10 @@
               <a class="dropdown-item" [routerLink]="['/archivos-preescolar']">
                 <i class="bi bi-folder2-open mr-2" aria-hidden="true"></i>
                 Archivos guardados
+              </a>
+              <a class="dropdown-item" [routerLink]="['/descargas']">
+                <i class="bi bi-download mr-2" aria-hidden="true"></i>
+                Descargas
               </a>
               <a class="dropdown-item" [routerLink]="['/tickets']">
                 <i class="bi bi-life-preserver mr-2" aria-hidden="true"></i>
