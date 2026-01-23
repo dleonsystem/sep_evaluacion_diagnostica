@@ -49,6 +49,11 @@ Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend G
 - Descarga automática de PDF (confirmación o errores).
 - Pantalla protegida para consulta de ligas de descarga (login con CCT + correo validado).
 - Panel técnico básico para monitoreo de solicitudes.
+- Módulo de carga masiva con estado de validaciones y credenciales generadas.
+- Vista de archivos guardados con búsqueda, descarga y gestión de resultados asociados.
+- Panel de seguimiento de solicitudes y descargas con filtros por CCT/fecha.
+- Mesa de ayuda para creación y consulta de tickets de soporte.
+- Panel administrador para carga de resultados y gestión de tickets.
 - Uso de la **guía gráfica gob.mx v3** incluida desde CDN en `index.html`, con scripts auxiliares (`jquery.min.js`, `gobmx.js`, `main.js`) ya cargados.
 
 ### 2.2.2 Interfaces de hardware
@@ -72,6 +77,7 @@ Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend G
 - **Escuela autenticada:** usa CCT + contraseña (correo validado en primera carga) para reenviar archivos, cargar nuevas versiones (identificadas por hash) y descargar resultados publicados.
 - **Sistema externo de procesamiento:** genera resultados y deposita ligas/archivos para publicación.
 - **Operador técnico SEP:** supervisa logs y repositorios de archivos.
+- **Administrador SEP:** carga resultados asociados a solicitudes validadas y gestiona tickets de soporte.
 
 ### 3.2 Lista de casos de uso (resumen)
 
@@ -83,6 +89,12 @@ Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend G
 - CU-06 Detectar reenvío y requerir login.
 - CU-07 Autenticarse para reenvío de archivos y descargas (CCT + correo validado).
 - CU-08 Listar versiones y ligas de descarga provenientes del sistema externo.
+- CU-09 Consultar archivos guardados con acciones de descarga/limpieza.
+- CU-10 Seguimiento de solicitudes y descargas con filtros por CCT/fecha.
+- CU-11 Crear ticket de soporte con evidencias.
+- CU-12 Consultar historial de tickets y respuestas.
+- CU-13 Administrar carga de resultados (panel administrador).
+- CU-14 Gestionar tickets y respuestas (panel administrador).
 
 ---
 
@@ -119,6 +131,12 @@ Si la estructura o los valores no cumplen, el archivo se **rechaza** y se entreg
 - RF-10: Mostrar **todas las versiones** de resultados que el sistema externo haya depositado, con consecutivo y liga.
 - RF-11: Mantener repositorios separados para archivos recibidos y resultados publicados.
 - RF-12: Implementar servicios frontend tipificados hacia GraphQL que, mientras no exista backend disponible, devuelvan datos simulados/localStorage usando el mismo contrato esperado de las operaciones.
+- RF-13: Permitir consultar archivos guardados localmente, con búsqueda por nombre/CCT, descarga, eliminación y vista de resultados asociados.
+- RF-14: Presentar seguimiento de solicitudes y descargas con filtros por CCT/fecha y panel de estado.
+- RF-15: Habilitar creación de tickets de soporte con motivo, descripción y evidencias adjuntas.
+- RF-16: Mostrar historial de tickets con estatus y respuestas del administrador.
+- RF-17: Permitir a administradores seleccionar solicitudes validadas, filtrar por estatus/fecha y subir archivos de resultados asociados.
+- RF-18: Permitir a administradores gestionar tickets (filtrar, actualizar estatus y registrar respuestas).
 
 ---
 
