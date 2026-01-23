@@ -392,7 +392,9 @@ CREATE TABLE estudiantes (
 
 CREATE TABLE usuarios (
 	id                     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-	nombre                 VARCHAR(150) NOT NULL,
+	nombre                 VARCHAR(60) NOT NULL,
+	apepaterno             VARCHAR(60) NOT NULL,
+	apematerno             VARCHAR(60),
 	email                  VARCHAR(100) NOT NULL,
 	password_hash          VARCHAR(255) NOT NULL,
 	rol                    INT NOT NULL REFERENCES cat_roles_usuario(id_rol),
