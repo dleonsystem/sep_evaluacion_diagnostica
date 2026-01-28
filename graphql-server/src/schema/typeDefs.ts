@@ -114,7 +114,7 @@ export const typeDefs = `#graphql
     apematerno: String
     rol: UserRole!
     activo: Boolean!
-    fechaCreacion: String!
+    fechaRegistro: String!
     fechaUltimoAcceso: String
     centrosTrabajo: [CentroTrabajo!]!
   }

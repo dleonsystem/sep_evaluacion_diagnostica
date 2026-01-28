@@ -23,7 +23,7 @@ export interface Usuario {
   apematerno?: string;
   rol: UserRole;
   activo: boolean;
-  fechaCreacion: Date;
+  fechaRegistro: Date;
   fechaUltimoAcceso?: Date;
 }
 

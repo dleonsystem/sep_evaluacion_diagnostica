@@ -44,7 +44,7 @@ interface UserRow {
   apematerno: string;
   rol: string;
   activo: boolean;
-  fechaCreacion: Date;
+  fechaRegistro: Date;
   fechaUltimoAcceso?: Date;
 }
 
@@ -104,7 +104,7 @@ interface UpdateUserResult {
   apematerno: string;
   rol: string;
   activo: boolean;
-  fechaCreacion: Date;
+  fechaRegistro: Date;
 }
 
 interface ParentWithId {
@@ -119,7 +119,7 @@ interface CreateUserResult {
   apematerno: string;
   rol: string;
   activo: boolean;
-  fechaCreacion: Date;
+  fechaRegistro: Date;
 }
 
 interface UploadEvaluacionInput {
@@ -222,7 +222,7 @@ export const resolvers = {
             apematerno,
             rol,
             activo,
-            fecha_creacion as "fechaCreacion",
+            fecha_registro as "fechaRegistro",
             fecha_ultimo_acceso as "fechaUltimoAcceso"
           FROM usuarios 
           WHERE id = $1`,
@@ -267,10 +267,10 @@ export const resolvers = {
             apematerno,
             rol,
             activo,
-            fecha_creacion as "fechaCreacion",
+            fecha_registro as "fechaRegistro",
             fecha_ultimo_acceso as "fechaUltimoAcceso"
           FROM usuarios 
-          ORDER BY fecha_creacion DESC
+          ORDER BY fecha_registro DESC
           LIMIT $1 OFFSET $2`,
           [limit, offset]
         );
@@ -371,7 +371,7 @@ export const resolvers = {
         // Insertar usuario
         const result = await query(
           `INSERT INTO usuarios 
-            (email, nombre, apepaterno, apematerno, rol, activo, fecha_creacion)
+            (email, nombre, apepaterno, apematerno, rol, activo, fecha_registro)
           VALUES ($1, $2, $3, $4, $5, true, NOW())
           RETURNING 
             id, 
@@ -381,7 +381,7 @@ export const resolvers = {
             apematerno,
             rol,
             activo,
-            fecha_creacion as "fechaCreacion"`,
+            fecha_registro as "fechaRegistro"`,
           [email, nombre, apepaterno, apematerno, rol]
         );
 
@@ -425,7 +425,7 @@ export const resolvers = {
             apematerno,
             rol,
             activo,
-            fecha_creacion as "fechaCreacion"`,
+            fecha_registro as "fechaRegistro"`,
           values
         );
 
