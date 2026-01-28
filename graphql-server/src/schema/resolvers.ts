@@ -19,7 +19,7 @@ import { logger } from '../utils/logger.js';
  */
 interface ContextUser {
   id: string;
-  correo: string;
+  email: string;
   rol: string;
 }
 
@@ -38,13 +38,13 @@ export interface GraphQLContext {
  */
 interface UserRow {
   id: string;
-  correo: string;
+  email: string;
   nombre: string;
-  apellidoPaterno: string;
-  apellidoMaterno: string;
+  apepaterno: string;
+  apematerno: string;
   rol: string;
   activo: boolean;
-  fechaCreacion: Date;
+  fechaRegistro: Date;
   fechaUltimoAcceso?: Date;
 }
 
@@ -81,30 +81,30 @@ interface EstudianteRow {
 }
 
 interface CreateUserInput {
-  correo: string;
+  email: string;
   nombre: string;
-  apellidoPaterno: string;
-  apellidoMaterno: string;
+  apepaterno: string;
+  apematerno: string;
   rol: string;
 }
 
 interface UpdateUserInput {
   nombre?: string;
-  apellidoPaterno?: string;
-  apellidoMaterno?: string;
-  rol?: string;
+  apepaterno?: string;
+  apematerno?: string;
+  rol?: string | number;
   activo?: boolean;
 }
 
 interface UpdateUserResult {
   id: string;
-  correo: string;
+  email: string;
   nombre: string;
-  apellidoPaterno: string;
-  apellidoMaterno: string;
+  apepaterno: string;
+  apematerno: string;
   rol: string;
   activo: boolean;
-  fechaCreacion: Date;
+  fechaRegistro: Date;
 }
 
 interface ParentWithId {
@@ -113,13 +113,13 @@ interface ParentWithId {
 
 interface CreateUserResult {
   id: string;
-  correo: string;
+  email: string;
   nombre: string;
-  apellidoPaterno: string;
-  apellidoMaterno: string;
+  apepaterno: string;
+  apematerno: string;
   rol: string;
   activo: boolean;
-  fechaCreacion: Date;
+  fechaRegistro: Date;
 }
 
 interface UploadEvaluacionInput {
@@ -137,22 +137,22 @@ interface UploadEvaluacionInput {
  */
 const buildUpdateQuery = (
   input: UpdateUserInput
-): { updates: string[]; values: (string | boolean)[] } => {
+): { updates: string[]; values: (string | boolean | number)[] } => {
   const updates: string[] = [];
-  const values: (string | boolean)[] = [];
+  const values: (string | boolean | number)[] = [];
   let paramIndex = 1;
 
   if (input.nombre !== undefined) {
     updates.push(`nombre = $${paramIndex++}`);
     values.push(input.nombre);
   }
-  if (input.apellidoPaterno !== undefined) {
-    updates.push(`apellido_paterno = $${paramIndex++}`);
-    values.push(input.apellidoPaterno);
+  if (input.apepaterno !== undefined) {
+    updates.push(`apepaterno = $${paramIndex++}`);
+    values.push(input.apepaterno);
   }
-  if (input.apellidoMaterno !== undefined) {
-    updates.push(`apellido_materno = $${paramIndex++}`);
-    values.push(input.apellidoMaterno);
+  if (input.apematerno !== undefined) {
+    updates.push(`apematerno = $${paramIndex++}`);
+    values.push(input.apematerno);
   }
   if (input.rol !== undefined) {
     updates.push(`rol = $${paramIndex++}`);
@@ -215,17 +215,18 @@ export const resolvers = {
       try {
         const result = await query(
           `SELECT 
-            id, 
-            correo, 
-            nombre, 
-            apellido_paterno as "apellidoPaterno",
-            apellido_materno as "apellidoMaterno",
-            rol,
-            activo,
-            fecha_creacion as "fechaCreacion",
-            fecha_ultimo_acceso as "fechaUltimoAcceso"
-          FROM usuarios 
-          WHERE id = $1`,
+            u.id, 
+            u.email, 
+            u.nombre, 
+            u.apepaterno,
+            u.apematerno,
+            r.codigo as "rol",
+            u.activo,
+            u.fecha_registro as "fechaRegistro",
+            u.fecha_ultimo_acceso as "fechaUltimoAcceso"
+          FROM usuarios u
+          INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
+          WHERE u.id = $1`,
           [id]
         );
 
@@ -260,17 +261,18 @@ export const resolvers = {
         // Obtener usuarios paginados
         const usersResult = await query(
           `SELECT 
-            id, 
-            correo, 
-            nombre, 
-            apellido_paterno as "apellidoPaterno",
-            apellido_materno as "apellidoMaterno",
-            rol,
-            activo,
-            fecha_creacion as "fechaCreacion",
-            fecha_ultimo_acceso as "fechaUltimoAcceso"
-          FROM usuarios 
-          ORDER BY fecha_creacion DESC
+            u.id, 
+            u.email, 
+            u.nombre, 
+            u.apepaterno,
+            u.apematerno,
+            r.codigo as "rol",
+            u.activo,
+            u.fecha_registro as "fechaRegistro",
+            u.fecha_ultimo_acceso as "fechaUltimoAcceso"
+          FROM usuarios u
+          INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
+          ORDER BY u.fecha_registro DESC
           LIMIT $1 OFFSET $2`,
           [limit, offset]
         );
@@ -359,30 +361,41 @@ export const resolvers = {
      */
     createUser: async (_: any, { input }: { input: CreateUserInput }) => {
       try {
-        const { correo, nombre, apellidoPaterno, apellidoMaterno, rol } = input;
+        const { email, nombre, apepaterno, apematerno, rol } = input;
 
-        // Validar que el correo no exista
-        const existingUser = await query('SELECT id FROM usuarios WHERE correo = $1', [correo]);
+        // Validar que el email no exista
+        const existingUser = await query('SELECT id FROM usuarios WHERE email = $1', [email]);
 
         if (existingUser.rows.length > 0) {
-          throw new Error('El correo ya está registrado');
+          throw new Error('El email ya está registrado');
         }
+
+        const roleResult = await query(
+          'SELECT id_rol FROM cat_roles_usuario WHERE codigo = $1',
+          [rol]
+        );
+
+        if (roleResult.rows.length === 0) {
+          throw new Error('El rol especificado no existe');
+        }
+
+        const roleId = Number((roleResult.rows[0] as { id_rol: number }).id_rol);
 
         // Insertar usuario
         const result = await query(
           `INSERT INTO usuarios 
-            (correo, nombre, apellido_paterno, apellido_materno, rol, activo, fecha_creacion)
+            (email, nombre, apepaterno, apematerno, rol, activo, fecha_registro)
           VALUES ($1, $2, $3, $4, $5, true, NOW())
           RETURNING 
             id, 
-            correo, 
+            email, 
             nombre, 
-            apellido_paterno as "apellidoPaterno",
-            apellido_materno as "apellidoMaterno",
-            rol,
+            apepaterno,
+            apematerno,
+            (SELECT codigo FROM cat_roles_usuario WHERE id_rol = usuarios.rol) as "rol",
             activo,
-            fecha_creacion as "fechaCreacion"`,
-          [correo, nombre, apellidoPaterno, apellidoMaterno, rol]
+            fecha_registro as "fechaRegistro"`,
+          [email, nombre, apepaterno, apematerno, roleId]
         );
 
         const createdUser = result.rows[0] as CreateUserResult;
@@ -404,7 +417,22 @@ export const resolvers = {
       { id, input }: { id: string; input: UpdateUserInput }
     ): Promise<UpdateUserResult> => {
       try {
-        const { updates, values } = buildUpdateQuery(input);
+        const updatesInput: UpdateUserInput = { ...input };
+
+        if (input.rol !== undefined) {
+          const roleResult = await query(
+            'SELECT id_rol FROM cat_roles_usuario WHERE codigo = $1',
+            [input.rol]
+          );
+
+          if (roleResult.rows.length === 0) {
+            throw new Error('El rol especificado no existe');
+          }
+
+          updatesInput.rol = Number((roleResult.rows[0] as { id_rol: number }).id_rol);
+        }
+
+        const { updates, values } = buildUpdateQuery(updatesInput);
 
         if (updates.length === 0) {
           throw new Error('No hay campos para actualizar');
@@ -419,13 +447,13 @@ export const resolvers = {
           WHERE id = $${paramIndex}
           RETURNING 
             id, 
-            correo, 
+            email, 
             nombre, 
-            apellido_paterno as "apellidoPaterno",
-            apellido_materno as "apellidoMaterno",
-            rol,
+            apepaterno,
+            apematerno,
+            (SELECT codigo FROM cat_roles_usuario WHERE id_rol = usuarios.rol) as "rol",
             activo,
-            fecha_creacion as "fechaCreacion"`,
+            fecha_registro as "fechaRegistro"`,
           values
         );
 
@@ -554,14 +582,15 @@ export const resolvers = {
         const result = await query(
           `SELECT 
             u.id,
-            u.correo,
+            u.email,
             u.nombre,
-            u.apellido_paterno as "apellidoPaterno",
-            u.apellido_materno as "apellidoMaterno",
-            u.rol,
+            u.apepaterno,
+            u.apematerno,
+            r.codigo as "rol",
             u.activo
           FROM usuarios u
           INNER JOIN usuarios_centros_trabajo uct ON u.id = uct.usuario_id
+          INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
           WHERE uct.centro_trabajo_id = $1`,
           [parent.id]
         );
