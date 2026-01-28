@@ -92,7 +92,7 @@ interface UpdateUserInput {
   nombre?: string;
   apepaterno?: string;
   apematerno?: string;
-  rol?: string;
+  rol?: string | number;
   activo?: boolean;
 }
 
@@ -137,9 +137,9 @@ interface UploadEvaluacionInput {
  */
 const buildUpdateQuery = (
   input: UpdateUserInput
-): { updates: string[]; values: (string | boolean)[] } => {
+): { updates: string[]; values: (string | boolean | number)[] } => {
   const updates: string[] = [];
-  const values: (string | boolean)[] = [];
+  const values: (string | boolean | number)[] = [];
   let paramIndex = 1;
 
   if (input.nombre !== undefined) {
@@ -215,17 +215,18 @@ export const resolvers = {
       try {
         const result = await query(
           `SELECT 
-            id, 
-            email, 
-            nombre, 
-            apepaterno,
-            apematerno,
-            rol,
-            activo,
-            fecha_registro as "fechaRegistro",
-            fecha_ultimo_acceso as "fechaUltimoAcceso"
-          FROM usuarios 
-          WHERE id = $1`,
+            u.id, 
+            u.email, 
+            u.nombre, 
+            u.apepaterno,
+            u.apematerno,
+            r.codigo as "rol",
+            u.activo,
+            u.fecha_registro as "fechaRegistro",
+            u.fecha_ultimo_acceso as "fechaUltimoAcceso"
+          FROM usuarios u
+          INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
+          WHERE u.id = $1`,
           [id]
         );
 
@@ -260,17 +261,18 @@ export const resolvers = {
         // Obtener usuarios paginados
         const usersResult = await query(
           `SELECT 
-            id, 
-            email, 
-            nombre, 
-            apepaterno,
-            apematerno,
-            rol,
-            activo,
-            fecha_registro as "fechaRegistro",
-            fecha_ultimo_acceso as "fechaUltimoAcceso"
-          FROM usuarios 
-          ORDER BY fecha_registro DESC
+            u.id, 
+            u.email, 
+            u.nombre, 
+            u.apepaterno,
+            u.apematerno,
+            r.codigo as "rol",
+            u.activo,
+            u.fecha_registro as "fechaRegistro",
+            u.fecha_ultimo_acceso as "fechaUltimoAcceso"
+          FROM usuarios u
+          INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
+          ORDER BY u.fecha_registro DESC
           LIMIT $1 OFFSET $2`,
           [limit, offset]
         );
@@ -368,6 +370,17 @@ export const resolvers = {
           throw new Error('El email ya está registrado');
         }
 
+        const roleResult = await query(
+          'SELECT id_rol FROM cat_roles_usuario WHERE codigo = $1',
+          [rol]
+        );
+
+        if (roleResult.rows.length === 0) {
+          throw new Error('El rol especificado no existe');
+        }
+
+        const roleId = Number((roleResult.rows[0] as { id_rol: number }).id_rol);
+
         // Insertar usuario
         const result = await query(
           `INSERT INTO usuarios 
@@ -379,10 +392,10 @@ export const resolvers = {
             nombre, 
             apepaterno,
             apematerno,
-            rol,
+            (SELECT codigo FROM cat_roles_usuario WHERE id_rol = usuarios.rol) as "rol",
             activo,
             fecha_registro as "fechaRegistro"`,
-          [email, nombre, apepaterno, apematerno, rol]
+          [email, nombre, apepaterno, apematerno, roleId]
         );
 
         const createdUser = result.rows[0] as CreateUserResult;
@@ -404,7 +417,22 @@ export const resolvers = {
       { id, input }: { id: string; input: UpdateUserInput }
     ): Promise<UpdateUserResult> => {
       try {
-        const { updates, values } = buildUpdateQuery(input);
+        const updatesInput: UpdateUserInput = { ...input };
+
+        if (input.rol !== undefined) {
+          const roleResult = await query(
+            'SELECT id_rol FROM cat_roles_usuario WHERE codigo = $1',
+            [input.rol]
+          );
+
+          if (roleResult.rows.length === 0) {
+            throw new Error('El rol especificado no existe');
+          }
+
+          updatesInput.rol = Number((roleResult.rows[0] as { id_rol: number }).id_rol);
+        }
+
+        const { updates, values } = buildUpdateQuery(updatesInput);
 
         if (updates.length === 0) {
           throw new Error('No hay campos para actualizar');
@@ -423,7 +451,7 @@ export const resolvers = {
             nombre, 
             apepaterno,
             apematerno,
-            rol,
+            (SELECT codigo FROM cat_roles_usuario WHERE id_rol = usuarios.rol) as "rol",
             activo,
             fecha_registro as "fechaRegistro"`,
           values
@@ -558,10 +586,11 @@ export const resolvers = {
             u.nombre,
             u.apepaterno,
             u.apematerno,
-            u.rol,
+            r.codigo as "rol",
             u.activo
           FROM usuarios u
           INNER JOIN usuarios_centros_trabajo uct ON u.id = uct.usuario_id
+          INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
           WHERE uct.centro_trabajo_id = $1`,
           [parent.id]
         );
