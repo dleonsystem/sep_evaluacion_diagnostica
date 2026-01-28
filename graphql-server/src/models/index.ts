@@ -17,10 +17,10 @@
  */
 export interface Usuario {
   id: string;
-  correo: string;
+  email: string;
   nombre: string;
-  apellidoPaterno: string;
-  apellidoMaterno?: string;
+  apepaterno: string;
+  apematerno?: string;
   rol: UserRole;
   activo: boolean;
   fechaCreacion: Date;
