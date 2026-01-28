@@ -15,9 +15,10 @@ import {
 import { AuthService } from '../../services/auth.service';
 import Swal from 'sweetalert2';
 import { EscDatos } from '../../services/excel-validation.service';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, firstValueFrom, takeUntil } from 'rxjs';
 import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
 import { MockPdfService } from '../../services/mock-pdf.service';
+import { UsuariosService } from '../../services/usuarios.service';
 
 interface ResultadoExito {
   mensaje: string;
@@ -120,6 +121,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     private readonly authService: AuthService,
     private readonly estadoCredencialesService: EstadoCredencialesService,
     private readonly mockPdfService: MockPdfService,
+    private readonly usuariosService: UsuariosService,
     private readonly router: Router
   ) {}
 
@@ -433,6 +435,30 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       ]);
       await this.finalizarConError(resultadoArchivo);
       return;
+    }
+
+    if (resultado.esc && nuevasCredenciales?.esNueva) {
+      try {
+        await firstValueFrom(
+          this.usuariosService.crearUsuario({
+            email: resultado.esc.correo,
+            nombre: resultado.esc.nombreEscuela,
+            apepaterno: 'Responsable',
+            apematerno: 'CCT',
+            rol: 'RESPONSABLE_CCT',
+            clavesCCT: [resultado.esc.cct],
+            password: nuevasCredenciales.contrasena
+          })
+        );
+      } catch (error) {
+        this.agregarErrores(resultadoArchivo, [
+          error instanceof Error
+            ? error.message
+            : 'No pudimos registrar el usuario en el sistema. Intenta nuevamente.'
+        ]);
+        await this.finalizarConError(resultadoArchivo);
+        return;
+      }
     }
 
     resultadoArchivo.estado = 'exito';
