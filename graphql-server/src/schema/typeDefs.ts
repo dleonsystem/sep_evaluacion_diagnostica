@@ -218,6 +218,7 @@ export const typeDefs = `#graphql
     apematerno: String
     rol: UserRole!
     clavesCCT: [String!]!
+    password: String!
   }
   
   """

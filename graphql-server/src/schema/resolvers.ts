@@ -10,6 +10,7 @@
  * @cmmi CMMI Level 3 - Technical Solution
  */
 
+import crypto from 'crypto';
 import { query } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 
@@ -86,6 +87,7 @@ interface CreateUserInput {
   apepaterno: string;
   apematerno: string;
   rol: string;
+  password: string;
 }
 
 interface UpdateUserInput {
@@ -361,7 +363,7 @@ export const resolvers = {
      */
     createUser: async (_: any, { input }: { input: CreateUserInput }) => {
       try {
-        const { email, nombre, apepaterno, apematerno, rol } = input;
+        const { email, nombre, apepaterno, apematerno, rol, password } = input;
 
         // Validar que el email no exista
         const existingUser = await query('SELECT id FROM usuarios WHERE email = $1', [email]);
@@ -381,11 +383,14 @@ export const resolvers = {
 
         const roleId = Number((roleResult.rows[0] as { id_rol: number }).id_rol);
 
+        const salt = crypto.randomBytes(16).toString('hex');
+        const passwordHash = crypto.scryptSync(password, salt, 64).toString('hex');
+
         // Insertar usuario
         const result = await query(
           `INSERT INTO usuarios 
-            (email, nombre, apepaterno, apematerno, rol, activo, fecha_registro)
-          VALUES ($1, $2, $3, $4, $5, true, NOW())
+            (email, nombre, apepaterno, apematerno, rol, password_hash, activo, fecha_registro)
+          VALUES ($1, $2, $3, $4, $5, $6, true, NOW())
           RETURNING 
             id, 
             email, 
@@ -395,7 +400,7 @@ export const resolvers = {
             (SELECT codigo FROM cat_roles_usuario WHERE id_rol = usuarios.rol) as "rol",
             activo,
             fecha_registro as "fechaRegistro"`,
-          [email, nombre, apepaterno, apematerno, roleId]
+          [email, nombre, apepaterno, apematerno, roleId, `${salt}:${passwordHash}`]
         );
 
         const createdUser = result.rows[0] as CreateUserResult;
