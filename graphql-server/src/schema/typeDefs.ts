@@ -108,10 +108,10 @@ export const typeDefs = `#graphql
   """
   type User {
     id: ID!
-    correo: String!
+    email: String!
     nombre: String!
-    apellidoPaterno: String!
-    apellidoMaterno: String
+    apepaterno: String!
+    apematerno: String
     rol: UserRole!
     activo: Boolean!
     fechaCreacion: String!
@@ -212,10 +212,10 @@ export const typeDefs = `#graphql
   @psp Design by Contract - Validación de entrada
   """
   input CreateUserInput {
-    correo: String!
+    email: String!
     nombre: String!
-    apellidoPaterno: String!
-    apellidoMaterno: String
+    apepaterno: String!
+    apematerno: String
     rol: UserRole!
     clavesCCT: [String!]!
   }
@@ -225,8 +225,8 @@ export const typeDefs = `#graphql
   """
   input UpdateUserInput {
     nombre: String
-    apellidoPaterno: String
-    apellidoMaterno: String
+    apepaterno: String
+    apematerno: String
     rol: UserRole
     activo: Boolean
   }

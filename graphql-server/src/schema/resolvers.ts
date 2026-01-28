@@ -19,7 +19,7 @@ import { logger } from '../utils/logger.js';
  */
 interface ContextUser {
   id: string;
-  correo: string;
+  email: string;
   rol: string;
 }
 
@@ -38,10 +38,10 @@ export interface GraphQLContext {
  */
 interface UserRow {
   id: string;
-  correo: string;
+  email: string;
   nombre: string;
-  apellidoPaterno: string;
-  apellidoMaterno: string;
+  apepaterno: string;
+  apematerno: string;
   rol: string;
   activo: boolean;
   fechaCreacion: Date;
@@ -81,27 +81,27 @@ interface EstudianteRow {
 }
 
 interface CreateUserInput {
-  correo: string;
+  email: string;
   nombre: string;
-  apellidoPaterno: string;
-  apellidoMaterno: string;
+  apepaterno: string;
+  apematerno: string;
   rol: string;
 }
 
 interface UpdateUserInput {
   nombre?: string;
-  apellidoPaterno?: string;
-  apellidoMaterno?: string;
+  apepaterno?: string;
+  apematerno?: string;
   rol?: string;
   activo?: boolean;
 }
 
 interface UpdateUserResult {
   id: string;
-  correo: string;
+  email: string;
   nombre: string;
-  apellidoPaterno: string;
-  apellidoMaterno: string;
+  apepaterno: string;
+  apematerno: string;
   rol: string;
   activo: boolean;
   fechaCreacion: Date;
@@ -113,10 +113,10 @@ interface ParentWithId {
 
 interface CreateUserResult {
   id: string;
-  correo: string;
+  email: string;
   nombre: string;
-  apellidoPaterno: string;
-  apellidoMaterno: string;
+  apepaterno: string;
+  apematerno: string;
   rol: string;
   activo: boolean;
   fechaCreacion: Date;
@@ -146,13 +146,13 @@ const buildUpdateQuery = (
     updates.push(`nombre = $${paramIndex++}`);
     values.push(input.nombre);
   }
-  if (input.apellidoPaterno !== undefined) {
-    updates.push(`apellido_paterno = $${paramIndex++}`);
-    values.push(input.apellidoPaterno);
+  if (input.apepaterno !== undefined) {
+    updates.push(`apepaterno = $${paramIndex++}`);
+    values.push(input.apepaterno);
   }
-  if (input.apellidoMaterno !== undefined) {
-    updates.push(`apellido_materno = $${paramIndex++}`);
-    values.push(input.apellidoMaterno);
+  if (input.apematerno !== undefined) {
+    updates.push(`apematerno = $${paramIndex++}`);
+    values.push(input.apematerno);
   }
   if (input.rol !== undefined) {
     updates.push(`rol = $${paramIndex++}`);
@@ -216,10 +216,10 @@ export const resolvers = {
         const result = await query(
           `SELECT 
             id, 
-            correo, 
+            email, 
             nombre, 
-            apellido_paterno as "apellidoPaterno",
-            apellido_materno as "apellidoMaterno",
+            apepaterno,
+            apematerno,
             rol,
             activo,
             fecha_creacion as "fechaCreacion",
@@ -261,10 +261,10 @@ export const resolvers = {
         const usersResult = await query(
           `SELECT 
             id, 
-            correo, 
+            email, 
             nombre, 
-            apellido_paterno as "apellidoPaterno",
-            apellido_materno as "apellidoMaterno",
+            apepaterno,
+            apematerno,
             rol,
             activo,
             fecha_creacion as "fechaCreacion",
@@ -359,30 +359,30 @@ export const resolvers = {
      */
     createUser: async (_: any, { input }: { input: CreateUserInput }) => {
       try {
-        const { correo, nombre, apellidoPaterno, apellidoMaterno, rol } = input;
+        const { email, nombre, apepaterno, apematerno, rol } = input;
 
-        // Validar que el correo no exista
-        const existingUser = await query('SELECT id FROM usuarios WHERE correo = $1', [correo]);
+        // Validar que el email no exista
+        const existingUser = await query('SELECT id FROM usuarios WHERE email = $1', [email]);
 
         if (existingUser.rows.length > 0) {
-          throw new Error('El correo ya está registrado');
+          throw new Error('El email ya está registrado');
         }
 
         // Insertar usuario
         const result = await query(
           `INSERT INTO usuarios 
-            (correo, nombre, apellido_paterno, apellido_materno, rol, activo, fecha_creacion)
+            (email, nombre, apepaterno, apematerno, rol, activo, fecha_creacion)
           VALUES ($1, $2, $3, $4, $5, true, NOW())
           RETURNING 
             id, 
-            correo, 
+            email, 
             nombre, 
-            apellido_paterno as "apellidoPaterno",
-            apellido_materno as "apellidoMaterno",
+            apepaterno,
+            apematerno,
             rol,
             activo,
             fecha_creacion as "fechaCreacion"`,
-          [correo, nombre, apellidoPaterno, apellidoMaterno, rol]
+          [email, nombre, apepaterno, apematerno, rol]
         );
 
         const createdUser = result.rows[0] as CreateUserResult;
@@ -419,10 +419,10 @@ export const resolvers = {
           WHERE id = $${paramIndex}
           RETURNING 
             id, 
-            correo, 
+            email, 
             nombre, 
-            apellido_paterno as "apellidoPaterno",
-            apellido_materno as "apellidoMaterno",
+            apepaterno,
+            apematerno,
             rol,
             activo,
             fecha_creacion as "fechaCreacion"`,
@@ -554,10 +554,10 @@ export const resolvers = {
         const result = await query(
           `SELECT 
             u.id,
-            u.correo,
+            u.email,
             u.nombre,
-            u.apellido_paterno as "apellidoPaterno",
-            u.apellido_materno as "apellidoMaterno",
+            u.apepaterno,
+            u.apematerno,
             u.rol,
             u.activo
           FROM usuarios u
