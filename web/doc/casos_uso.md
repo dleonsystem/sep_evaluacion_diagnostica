@@ -65,9 +65,9 @@ flowchart LR
    - Actor: Escuela (anónima), Operador técnico SEP
    - Descripción: Ejecuta las verificaciones (CCT, correo, nivel, campos obligatorios por hoja, columnas obligatorias, valores 0–3, estructura general, número/nombre de hojas, consistencia interna y **huella de archivo/hash** para distinguir archivos con el mismo nombre) y muestra “Validando tu archivo…”.
 
-3. **CU-03 Generar credenciales en primera carga válida**
+3. **CU-03 Generar credenciales al cargar la primera validación exitosa**
    - Actor: Escuela (anónima)
-   - Descripción: Si es la primera carga válida, crea usuario = CCT validado y contraseña = correo validado.
+   - Descripción: Si es la primera carga exitosa, crea usuario = correo registrado y contraseña aleatoria.
 
 4. **CU-04 Emitir PDF de confirmación o errores**
    - Actor: Escuela (anónima)
@@ -83,7 +83,7 @@ flowchart LR
 
 7. **CU-07 Autenticarse para reenvío/descargas**
    - Actor: Escuela (autenticada)
-   - Descripción: Login con CCT + contraseña generada en la primera carga válida para habilitar el reenvío de archivos y el acceso a descargas.
+   - Descripción: Login con correo + contraseña generada en la primera carga para habilitar el reenvío de archivos y el acceso a descargas.
 
 8. **CU-08 Listar versiones y ligas de descarga**
    - Actores: Escuela (autenticada), Sistema externo de resultados

@@ -5,7 +5,7 @@
 
 ## 1. Introducción
 
-Describe la arquitectura de alto nivel para la plataforma que **recibe archivos .xlsx sin autenticación previa** (solo en el primer envío), los valida automáticamente, genera credenciales en la primera carga válida y publica ligas de descarga generadas por un sistema externo. Si ya existen credenciales para el CCT/correo, los **reenvíos requieren autenticación previa**.
+Describe la arquitectura de alto nivel para la plataforma que **recibe archivos .xlsx sin autenticación previa** (solo en el primer envío), los valida automáticamente, genera credenciales al cargar la primera validación exitosa y publica ligas de descarga generadas por un sistema externo. Si ya existen credenciales para el CCT/correo, los **reenvíos requieren autenticación previa**.
 
 ---
 
@@ -35,13 +35,13 @@ Arquitectura web de tres capas y procesos desacoplados:
   - 10 verificaciones (CCT, correo, nivel, campos/columnas obligatorias, valores 0–3, estructura general, número/nombre de hojas, consistencia interna y **hash de contenido** para diferenciar archivos con el mismo nombre).
   - Rechazo inmediato con PDF de errores cuando falle; si el hash coincide con un envío previo del mismo CCT/correo se notifica que el archivo ya fue recibido.
 - **Generador de Credenciales y PDFs**
-  - Credenciales solo en primera carga válida (usuario = CCT, contraseña = correo validado).
+  - Credenciales solo al cargar la primera validación exitosa (usuario = correo, contraseña aleatoria).
   - PDFs de confirmación con fecha de consulta (hoy + 4 días) o PDFs de errores.
 - **Registro de Solicitudes**
   - Consecutivo por carga válida.
   - Almacenamiento del archivo validado en repositorio de recepción.
 - **Módulo de Descargas Autenticadas**
-  - Login con CCT + contraseña generada en primera carga válida.
+  - Login con correo + contraseña generada en la primera carga.
   - Listado de versiones de resultados (consecutivo + liga) depositados por el sistema externo.
   - Reutiliza la autenticación para permitir reenvío de archivos cuando ya existan credenciales.
 - **Servicios de integración frontend**

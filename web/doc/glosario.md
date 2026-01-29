@@ -2,8 +2,8 @@
 
 - **Archivo de recepción:** Archivo .xlsx enviado por la escuela y almacenado tras pasar las 10 validaciones (incluye hash para diferenciar archivos con el mismo nombre).
 - **Archivo de resultados:** ZIP/PDF depositado por el sistema externo para descarga de la escuela.
-- **CCT (Clave del Centro de Trabajo):** Identificador oficial de la escuela; se usa como usuario de acceso a descargas.
-- **Credenciales generadas:** Usuario = CCT y contraseña = correo validado creados solo en la primera carga válida.
+- **CCT (Clave del Centro de Trabajo):** Identificador oficial de la escuela para asociar archivos y resultados.
+- **Credenciales generadas:** Usuario = correo registrado y contraseña aleatoria creados solo al cargar el primer archivo validado.
 - **PDF de confirmación:** Comprobante descargado automáticamente cuando el archivo es válido; incluye mensaje, fecha de consulta (hoy + 4 días), usuario y contraseña.
 - **PDF de errores:** Comprobante descargado automáticamente cuando las validaciones fallan.
 - **Plataforma de recepción:** Módulo web que recibe, valida y registra solicitudes sin procesar resultados.

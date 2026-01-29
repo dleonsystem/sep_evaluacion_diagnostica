@@ -33,7 +33,11 @@ export class AuthService {
     }
   }
 
-  registrarCredenciales(cct: string, correo: string): { contrasena: string; esNueva: boolean } {
+  registrarCredenciales(
+    cct: string,
+    correo: string,
+    contrasenaPersonalizada?: string
+  ): { contrasena: string; esNueva: boolean } {
     const credencialesActuales = this.obtenerCredenciales();
     const cctNormalizado = this.normalizarCct(cct);
     const correoNormalizado = this.normalizarCorreo(correo);
@@ -46,7 +50,8 @@ export class AuthService {
     }
 
     const esNueva = !credencialesActuales;
-    const contrasena = credencialesActuales?.contrasena ?? this.generarContrasena();
+    const contrasena =
+      credencialesActuales?.contrasena ?? contrasenaPersonalizada ?? this.generarContrasena();
 
     localStorage.setItem(
       this.credencialesKey,
@@ -54,6 +59,10 @@ export class AuthService {
     );
 
     return { contrasena, esNueva };
+  }
+
+  generarContrasenaTemporal(): string {
+    return this.generarContrasena();
   }
 
   coincidenCredenciales(cct: string, correo: string): boolean {
@@ -77,6 +86,11 @@ export class AuthService {
       throw new Error('El correo o la contraseña no coinciden con tu primer envío.');
     }
 
+    this.marcarSesionActiva();
+    localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
+  }
+
+  iniciarSesionSinCredenciales(correo: string): void {
     this.marcarSesionActiva();
     localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
   }

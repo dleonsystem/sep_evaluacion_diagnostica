@@ -12,3 +12,20 @@ export const CREATE_USER_MUTATION = `
     }
   }
 `;
+
+export const AUTHENTICATE_USER_MUTATION = `
+  mutation AuthenticateUser($input: AuthenticateUserInput!) {
+    authenticateUser(input: $input) {
+      ok
+      message
+      user {
+        id
+        email
+        rol
+        centrosTrabajo {
+          claveCCT
+        }
+      }
+    }
+  }
+`;
