@@ -232,7 +232,7 @@ export const resolvers = {
             r.codigo as "rol",
             u.activo,
             u.fecha_registro as "fechaRegistro",
-            u.fecha_ultimo_acceso as "fechaUltimoAcceso"
+            u.updated_at as "fechaUltimoAcceso"
           FROM usuarios u
           INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
           WHERE u.id = $1`,
@@ -278,7 +278,7 @@ export const resolvers = {
             r.codigo as "rol",
             u.activo,
             u.fecha_registro as "fechaRegistro",
-            u.fecha_ultimo_acceso as "fechaUltimoAcceso"
+            u.updated_at as "fechaUltimoAcceso"
           FROM usuarios u
           INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
           ORDER BY u.fecha_registro DESC
@@ -464,7 +464,7 @@ export const resolvers = {
             u.password_hash,
             u.activo,
             u.fecha_registro as "fechaRegistro",
-            u.fecha_ultimo_acceso as "fechaUltimoAcceso"
+            u.updated_at as "fechaUltimoAcceso"
           FROM usuarios u
           INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
           WHERE u.email = $1`,
@@ -492,7 +492,7 @@ export const resolvers = {
           return { ok: false, message: 'Credenciales inválidas', user: null };
         }
 
-        await query('UPDATE usuarios SET fecha_ultimo_acceso = NOW() WHERE id = $1', [usuario.id]);
+        await query('UPDATE usuarios SET updated_at = NOW() WHERE id = $1', [usuario.id]);
 
         return { ok: true, message: 'Autenticación correcta', user: usuario };
       } catch (error) {
