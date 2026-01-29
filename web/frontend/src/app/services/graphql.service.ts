@@ -12,7 +12,7 @@ export interface GraphQlResponse<T> {
 
 @Injectable({ providedIn: 'root' })
 export class GraphqlService {
-  private readonly graphqlEndpoint = '/graphql';
+  private readonly graphqlEndpoint = this.resolverEndpoint();
 
   constructor(private readonly http: HttpClient) {}
 
@@ -21,5 +21,19 @@ export class GraphqlService {
       query,
       variables
     });
+  }
+
+  private resolverEndpoint(): string {
+    const configurado = (window as { EIA_GRAPHQL_ENDPOINT?: string })?.EIA_GRAPHQL_ENDPOINT;
+    if (configurado) {
+      return configurado;
+    }
+
+    const enDev = window.location.port === '4200';
+    if (enDev) {
+      return 'http://localhost:4000/graphql';
+    }
+
+    return '/graphql';
   }
 }
