@@ -5,8 +5,8 @@ import { CREATE_USER_MUTATION } from '../operations/mutation';
 
 export interface CreateUserInput {
   email: string;
-  nombre: string;
-  apepaterno: string;
+  nombre?: string | null;
+  apepaterno?: string | null;
   apematerno?: string | null;
   rol: 'COORDINADOR_FEDERAL' | 'COORDINADOR_ESTATAL' | 'RESPONSABLE_CCT' | 'CONSULTA';
   clavesCCT: string[];

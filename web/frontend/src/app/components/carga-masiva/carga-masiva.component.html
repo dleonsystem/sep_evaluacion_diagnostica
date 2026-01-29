@@ -37,7 +37,7 @@
           Ya generaste credenciales con tu primer envío. Inicia sesión con tu correo y la contraseña generada para continuar con la siguiente carga.
         </p>
         <p class="carga__sesion-detalle" *ngIf="!sesionActiva && !tieneCredenciales">
-          Es tu primera carga: valida el archivo para generar automáticamente tu contraseña y credenciales de acceso.
+          Es tu primera carga: valida el archivo y cárgalo para generar automáticamente tu contraseña y credenciales de acceso.
         </p>
       </div>
     </div>
@@ -300,7 +300,7 @@
         <h3>Estatus de validación</h3>
         <ul>
           <li>Al seleccionar el archivo se muestra “Validando tu archivo…”.</li>
-          <li>Si las reglas se cumplen, se confirma la fecha disponible (hoy + 4 días) y las credenciales generadas.</li>
+          <li>Si las reglas se cumplen, se confirma la fecha disponible (hoy + 4 días) y al cargar se generan las credenciales.</li>
           <li>Si hay errores, revisa la lista anterior, corrige en Excel y vuelve a cargar.</li>
         </ul>
       </div>

@@ -213,8 +213,8 @@ export const typeDefs = `#graphql
   """
   input CreateUserInput {
     email: String!
-    nombre: String!
-    apepaterno: String!
+    nombre: String
+    apepaterno: String
     apematerno: String
     rol: UserRole!
     clavesCCT: [String!]!
