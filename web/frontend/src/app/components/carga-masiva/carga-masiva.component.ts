@@ -306,6 +306,10 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         nivel: resultado.tipoDetectado ?? undefined
       });
       await this.mostrarConfirmacionGuardado(guardado, 'guardado', resultado);
+      const credencialesListas = await this.registrarUsuarioYCredenciales(resultado);
+      if (!credencialesListas) {
+        return;
+      }
       if (resultado.escDatos && resultado.resultadoExito && resultado.pdfTipo !== 'exito') {
         await this.generarPdfExito(
           resultado,
@@ -337,6 +341,10 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
               }
             );
             await this.mostrarConfirmacionGuardado(resultadoReemplazo, 'reemplazo', resultado);
+            const credencialesListas = await this.registrarUsuarioYCredenciales(resultado);
+            if (!credencialesListas) {
+              return;
+            }
             if (resultado.escDatos && resultado.resultadoExito && resultado.pdfTipo !== 'exito') {
               await this.generarPdfExito(
                 resultado,
@@ -368,6 +376,98 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       });
     } finally {
       resultado.guardando = false;
+    }
+  }
+
+  private async registrarUsuarioYCredenciales(resultado: ResultadoArchivo): Promise<boolean> {
+    if (!resultado.escDatos || !resultado.resultadoExito) {
+      resultado.errorGuardado = 'No se encontró la información de la escuela para registrar tus credenciales.';
+      await Swal.fire({
+        icon: 'error',
+        title: 'No se pudo registrar',
+        text: resultado.errorGuardado
+      });
+      return false;
+    }
+
+    const credencialesExistentes = this.authService.obtenerCredenciales();
+
+    if (credencialesExistentes) {
+      resultado.resultadoExito.credenciales = {
+        usuario: credencialesExistentes.correo,
+        contrasena: credencialesExistentes.contrasena,
+        esNueva: false
+      };
+      this.credencialesMostradas = {
+        usuario: credencialesExistentes.correo,
+        contrasena: credencialesExistentes.contrasena,
+        esNueva: false
+      };
+      this.estadoCredencialesService.actualizar(
+        credencialesExistentes.correo,
+        credencialesExistentes.contrasena
+      );
+      this.actualizarEstadoSesion();
+      return true;
+    }
+
+    const contrasenaGenerada = this.authService.generarContrasenaTemporal();
+
+    try {
+      await firstValueFrom(
+        this.usuariosService.crearUsuario({
+          email: resultado.escDatos.correo,
+          rol: 'RESPONSABLE_CCT',
+          clavesCCT: [resultado.escDatos.cct],
+          password: contrasenaGenerada
+        })
+      );
+    } catch (error) {
+      resultado.errorGuardado =
+        error instanceof Error
+          ? error.message
+          : 'No pudimos registrar el usuario en el sistema. Intenta nuevamente.';
+      await Swal.fire({
+        icon: 'error',
+        title: 'No se pudo registrar',
+        text: resultado.errorGuardado
+      });
+      return false;
+    }
+
+    try {
+      const nuevasCredenciales = this.authService.registrarCredenciales(
+        resultado.escDatos.cct,
+        resultado.escDatos.correo,
+        contrasenaGenerada
+      );
+      this.estadoCredencialesService.actualizar(
+        resultado.escDatos.correo,
+        nuevasCredenciales.contrasena
+      );
+      resultado.resultadoExito.credenciales = {
+        usuario: resultado.escDatos.correo,
+        contrasena: nuevasCredenciales.contrasena,
+        esNueva: nuevasCredenciales.esNueva
+      };
+      this.credencialesMostradas = {
+        usuario: resultado.escDatos.correo,
+        contrasena: nuevasCredenciales.contrasena,
+        esNueva: nuevasCredenciales.esNueva
+      };
+      this.actualizarEstadoSesion();
+      return true;
+    } catch (error) {
+      resultado.errorGuardado =
+        error instanceof Error
+          ? error.message
+          : 'No pudimos registrar tus credenciales. Intenta nuevamente.';
+      await Swal.fire({
+        icon: 'error',
+        title: 'No se pudo registrar',
+        text: resultado.errorGuardado
+      });
+      return false;
     }
   }
 
@@ -419,46 +519,18 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    let habiaCredenciales = false;
-    let nuevasCredenciales: { contrasena: string; esNueva: boolean } | null = null;
     const fechaDisponible = this.calcularFechaDisponible();
+    const credencialesValidas = this.authService.coincidenCredenciales(
+      resultado.esc.cct,
+      resultado.esc.correo
+    );
 
-    try {
-      habiaCredenciales = !!this.authService.obtenerCredenciales();
-      nuevasCredenciales = this.authService.registrarCredenciales(resultado.esc.cct, resultado.esc.correo);
-      this.estadoCredencialesService.actualizar(resultado.esc.correo, nuevasCredenciales.contrasena);
-    } catch (error) {
+    if (!credencialesValidas) {
       this.agregarErrores(resultadoArchivo, [
-        error instanceof Error
-          ? error.message
-          : 'No pudimos validar tus credenciales. Usa el CCT y correo originales.'
+        'Ya existe un acceso asociado a otro CCT o correo. Usa las credenciales originales.'
       ]);
       await this.finalizarConError(resultadoArchivo);
       return;
-    }
-
-    if (resultado.esc && nuevasCredenciales?.esNueva) {
-      try {
-        await firstValueFrom(
-          this.usuariosService.crearUsuario({
-            email: resultado.esc.correo,
-            nombre: resultado.esc.nombreEscuela,
-            apepaterno: 'Responsable',
-            apematerno: 'CCT',
-            rol: 'RESPONSABLE_CCT',
-            clavesCCT: [resultado.esc.cct],
-            password: nuevasCredenciales.contrasena
-          })
-        );
-      } catch (error) {
-        this.agregarErrores(resultadoArchivo, [
-          error instanceof Error
-            ? error.message
-            : 'No pudimos registrar el usuario en el sistema. Intenta nuevamente.'
-        ]);
-        await this.finalizarConError(resultadoArchivo);
-        return;
-      }
     }
 
     resultadoArchivo.estado = 'exito';
@@ -470,20 +542,11 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       fechaDisponible,
       credenciales: {
         usuario: resultado.esc.correo,
-        contrasena: nuevasCredenciales?.contrasena ?? '',
-        esNueva: (nuevasCredenciales?.esNueva ?? false) && !habiaCredenciales
+        contrasena: '',
+        esNueva: false
       },
       totalAlumnos: resultado.alumnos?.length ?? 0
     };
-
-    this.credencialesMostradas = {
-      usuario: resultadoArchivo.resultadoExito.credenciales.usuario,
-      contrasena: resultadoArchivo.resultadoExito.credenciales.contrasena,
-      esNueva: resultadoArchivo.resultadoExito.credenciales.esNueva
-    };
-
-    this.actualizarEstadoSesion();
-
   }
 
   private validarPorTipo(tipo: TipoArchivoCarga, buffer: ArrayBuffer): Promise<ResultadoValidacion> {
