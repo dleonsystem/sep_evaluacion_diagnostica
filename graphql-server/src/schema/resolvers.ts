@@ -83,9 +83,9 @@ interface EstudianteRow {
 
 interface CreateUserInput {
   email: string;
-  nombre: string;
-  apepaterno: string;
-  apematerno: string;
+  nombre?: string | null;
+  apepaterno?: string | null;
+  apematerno?: string | null;
   rol: string;
   password: string;
 }
@@ -364,6 +364,9 @@ export const resolvers = {
     createUser: async (_: any, { input }: { input: CreateUserInput }) => {
       try {
         const { email, nombre, apepaterno, apematerno, rol, password } = input;
+        const nombreSeguro = (nombre ?? '').trim();
+        const apepaternoSeguro = (apepaterno ?? '').trim();
+        const apematernoSeguro = apematerno ? apematerno.trim() : null;
 
         // Validar que el email no exista
         const existingUser = await query('SELECT id FROM usuarios WHERE email = $1', [email]);
@@ -400,7 +403,7 @@ export const resolvers = {
             (SELECT codigo FROM cat_roles_usuario WHERE id_rol = usuarios.rol) as "rol",
             activo,
             fecha_registro as "fechaRegistro"`,
-          [email, nombre, apepaterno, apematerno, roleId, `${salt}:${passwordHash}`]
+          [email, nombreSeguro, apepaternoSeguro, apematernoSeguro, roleId, `${salt}:${passwordHash}`]
         );
 
         const createdUser = result.rows[0] as CreateUserResult;
