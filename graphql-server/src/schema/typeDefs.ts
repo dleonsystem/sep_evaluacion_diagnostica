@@ -61,6 +61,12 @@ export const typeDefs = `#graphql
     @psp Design Review - Validación de entrada
     """
     createUser(input: CreateUserInput!): User!
+
+    """
+    Autenticar usuario
+    @use-case CU-01: Autenticación de usuarios
+    """
+    authenticateUser(input: AuthenticateUserInput!): AuthPayload!
     
     """
     Actualizar usuario existente
@@ -206,6 +212,15 @@ export const typeDefs = `#graphql
     totalCount: Int!
     hasNextPage: Boolean!
   }
+
+  """
+  Resultado de autenticación
+  """
+  type AuthPayload {
+    ok: Boolean!
+    message: String
+    user: User
+  }
   
   """
   Input para crear usuario
@@ -218,6 +233,14 @@ export const typeDefs = `#graphql
     apematerno: String
     rol: UserRole!
     clavesCCT: [String!]!
+    password: String!
+  }
+
+  """
+  Input para autenticar usuario
+  """
+  input AuthenticateUserInput {
+    email: String!
     password: String!
   }
   

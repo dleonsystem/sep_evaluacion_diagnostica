@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { GraphqlService } from './graphql.service';
-import { CREATE_USER_MUTATION } from '../operations/mutation';
+import { AUTHENTICATE_USER_MUTATION, CREATE_USER_MUTATION } from '../operations/mutation';
 
 export interface CreateUserInput {
   email: string;
@@ -24,8 +24,23 @@ export interface UsuarioCreado {
   rol: string;
 }
 
+export interface UsuarioAutenticado {
+  id: string;
+  email: string;
+  rol: string;
+  centrosTrabajo: Array<{ claveCCT: string }>;
+}
+
 interface CreateUserResponse {
   createUser: UsuarioCreado;
+}
+
+interface AuthenticateUserResponse {
+  authenticateUser: {
+    ok: boolean;
+    message?: string | null;
+    user?: UsuarioAutenticado | null;
+  };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -44,6 +59,23 @@ export class UsuariosService {
             throw new Error('No se recibió respuesta al crear el usuario.');
           }
           return response.data.createUser;
+        })
+      );
+  }
+
+  autenticarUsuario(email: string, password: string): Observable<UsuarioAutenticado> {
+    return this.graphqlService
+      .execute<AuthenticateUserResponse>(AUTHENTICATE_USER_MUTATION, { input: { email, password } })
+      .pipe(
+        map((response) => {
+          if (response.errors?.length) {
+            throw new Error(response.errors[0].message ?? 'No se pudo autenticar el usuario.');
+          }
+          const resultado = response.data?.authenticateUser;
+          if (!resultado?.ok || !resultado.user) {
+            throw new Error(resultado?.message ?? 'Credenciales inválidas.');
+          }
+          return resultado.user;
         })
       );
   }

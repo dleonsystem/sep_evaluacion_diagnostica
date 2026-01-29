@@ -90,6 +90,11 @@ export class AuthService {
     localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
   }
 
+  iniciarSesionSinCredenciales(correo: string): void {
+    this.marcarSesionActiva();
+    localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
+  }
+
   cerrarSesion(): void {
     localStorage.removeItem(this.sesionKey);
     localStorage.removeItem(this.sesionCorreoKey);
