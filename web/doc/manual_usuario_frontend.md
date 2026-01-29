@@ -12,7 +12,7 @@ En el menú superior encontrarás los accesos principales al sistema:
 
 - **Inicio**: Página principal con el resumen del objetivo y el flujo rápido de carga. 【F:web/frontend/src/app/shared/nav/nav.component.html†L10-L38】
 - **Carga masiva**: Módulo para subir la plantilla oficial de Excel sin iniciar sesión. 【F:web/frontend/src/app/shared/nav/nav.component.html†L16-L21】
-- **Login**: Acceso para usuarios que ya generaron credenciales con su primera carga. 【F:web/frontend/src/app/shared/nav/nav.component.html†L65-L74】
+- **Login**: Acceso para usuarios que ya generaron credenciales al cargar su primer archivo validado. 【F:web/frontend/src/app/shared/nav/nav.component.html†L65-L74】
 - **Admin login**: Acceso exclusivo para administradores. 【F:web/frontend/src/app/shared/nav/nav.component.html†L106-L112】
 
 Cuando un usuario inicia sesión, el menú muestra un **submenú de usuario** con:
@@ -70,7 +70,7 @@ Una vez subido el archivo:
 
 - Se muestra el estado de validación (validando, con errores o validado). 【F:web/frontend/src/app/components/carga-masiva/carga-masiva.component.html†L146-L187】
 - Si hay errores, se despliega una lista detallada por hoja. 【F:web/frontend/src/app/components/carga-masiva/carga-masiva.component.html†L199-L214】
-- Si el archivo es válido, se confirma el resultado y se generan credenciales si es la primera carga. 【F:web/frontend/src/app/components/carga-masiva/carga-masiva.component.html†L223-L269】
+- Si el archivo es válido, se confirma el resultado y las credenciales se generan **al cargar** el archivo por primera vez. 【F:web/frontend/src/app/components/carga-masiva/carga-masiva.component.html†L223-L269】
 
 > 📷 **Pon aquí imagen del estado de validación con errores.**
 > 📷 **Pon aquí imagen del estado de validación exitoso.**
@@ -95,7 +95,7 @@ Al final de la página hay una guía rápida con reglas para llenar correctament
 ---
 
 ## 5. Login (usuarios)
-La página de login se usa cuando ya se generaron credenciales en una carga previa. 【F:web/frontend/src/app/components/login/login.component.html†L1-L18】
+La página de login se usa cuando ya se generaron credenciales en una carga previa. El acceso es con **correo y contraseña**. 【F:web/frontend/src/app/components/login/login.component.html†L1-L18】
 
 - Se ingresa correo y contraseña. 【F:web/frontend/src/app/components/login/login.component.html†L14-L46】
 - Hay un botón para mostrar/ocultar la contraseña. 【F:web/frontend/src/app/components/login/login.component.html†L32-L45】
@@ -199,8 +199,8 @@ El administrador puede cerrar su sesión desde el botón **Cerrar sesión** al f
 ---
 
 ## 13. Recomendaciones generales
-- Usa un correo válido para la carga masiva, ya que con ese correo se generan las credenciales de acceso. 【F:web/frontend/src/app/components/carga-masiva/carga-masiva.component.html†L68-L89】
-- Guarda la contraseña generada en la primera carga, ya que será necesaria para futuras sesiones. 【F:web/frontend/src/app/components/carga-masiva/carga-masiva.component.html†L151-L177】
+- Usa un correo válido para la carga masiva, ya que con ese correo se generan las credenciales de acceso cuando el archivo se **carga** correctamente. 【F:web/frontend/src/app/components/carga-masiva/carga-masiva.component.html†L68-L89】
+- Guarda la contraseña generada en la primera carga exitosa, ya que será necesaria para futuras sesiones. 【F:web/frontend/src/app/components/carga-masiva/carga-masiva.component.html†L151-L177】
 - Si no ves un registro en el panel de administrador, asegúrate de validar un Excel desde carga masiva. 【F:web/frontend/src/app/components/admin-panel/admin-panel.component.html†L27-L32】
 
 > 📷 **Pon aquí imagen de la sección de credenciales generadas.**
@@ -209,6 +209,6 @@ El administrador puede cerrar su sesión desde el botón **Cerrar sesión** al f
 
 ## 14. Glosario rápido
 - **Carga masiva:** Subida de plantilla Excel con validación automática.
-- **Credenciales:** Correo + contraseña generada en la primera carga.
+- **Credenciales:** Correo + contraseña aleatoria generada al cargar el primer archivo validado.
 - **Resultados:** Archivos de salida que el administrador asocia a un registro Excel.
 - **Ticket:** Solicitud de soporte enviada por el usuario.

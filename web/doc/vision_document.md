@@ -18,7 +18,7 @@ El sistema realiza:
 
 - **Recepción anónima** de archivos .xlsx con etiqueta “Validando tu archivo…” **solo para el primer envío por CCT/correo**.
 - **Validación automática** con 10 verificaciones (CCT, correo, nivel, campos y columnas obligatorias, valores 0–3, estructura general, número/nombre de hojas, consistencia interna y **huella hash** para distinguir archivos con el mismo nombre).
-- **Generación de credenciales** solo en la primera carga válida (usuario = CCT validado, contraseña = correo validado; no se regenera en cargas posteriores).
+- **Generación de credenciales** solo en la primera carga validada **y cargada** (usuario = correo registrado, contraseña aleatoria; no se regenera en cargas posteriores).
 - **Emisión de PDFs** de confirmación (mensaje, fecha hoy + 4 días, usuario/contraseña, marca de tiempo) o de errores cuando aplica.
 - **Registro de solicitudes**: cada carga válida es independiente con consecutivo; repositorio de archivos recibidos.
 - **Publicación de ligas de descarga** entregadas por un sistema externo que procesa los archivos.
@@ -75,7 +75,7 @@ Sustituir el envío de archivos por correo en la segunda aplicación EIA por un 
 - Recibe PDF de confirmación/errores.
 
 ### Escuela autenticada
-- Accede con usuario = CCT y contraseña = correo validado en la primera carga.
+- Accede con usuario = correo registrado y contraseña aleatoria generada en la primera carga.
 - Puede reenviar archivos cuando ya existan credenciales y consulta todas las versiones de resultados disponibles y sus ligas de descarga.
 
 ### Operador técnico SEP
@@ -97,9 +97,9 @@ Aplicación web de tres capas con **Angular 19 (signals)**, **backend GraphQL** 
 - Cargar archivo .xlsx sin autenticación **solo para el primer envío del CCT/correo**.
 - Ejecutar 10 validaciones y mostrar estado “Validando tu archivo…” (incluye hash para detectar archivos idénticos).
 - Generar PDF de confirmación o errores y descargarlo automáticamente.
-- Crear credenciales en la primera carga válida y mantenerlas en cargas posteriores.
+- Crear credenciales al cargar la primera validación exitosa y mantenerlas en cargas posteriores.
 - Registrar cada solicitud con consecutivo y almacenar el archivo en repositorio de recepción.
-- Permitir login (CCT + contraseña) para reenviar archivos cuando ya existan credenciales y consultar versiones y ligas de descarga depositadas externamente.
+- Permitir login (correo + contraseña) para reenviar archivos cuando ya existan credenciales y consultar versiones y ligas de descarga depositadas externamente.
 
 ## 4.3 Suposiciones y dependencias
 - Las plantillas .xlsx mantienen nombres de hojas y columnas esperadas.
@@ -116,7 +116,7 @@ Aplicación web de tres capas con **Angular 19 (signals)**, **backend GraphQL** 
 ## 5.1 Requerimientos funcionales (resumen)
 - RF-01: Recepción anónima de archivo .xlsx con etiqueta de validación en línea **solo en el primer envío**; si ya existe credencial se exige login antes de reenviar.
 - RF-02: Validación automática con 10 reglas (incluye hash) y rechazo con PDF de errores cuando falle.
-- RF-03: Generación de credenciales solo en primera carga válida (usuario = CCT, contraseña = correo validado).
+- RF-03: Generación de credenciales solo al cargar la primera validación exitosa (usuario = correo, contraseña aleatoria).
 - RF-04: Emisión de PDF de confirmación con fecha de consulta (hoy + 4 días), usuario, contraseña y marca de tiempo.
 - RF-05: Registro de solicitudes con consecutivo y almacenamiento de archivos válidos en repositorio de recepción.
 - RF-06: Portal autenticado para listar versiones y ligas de descarga provenientes del sistema externo.

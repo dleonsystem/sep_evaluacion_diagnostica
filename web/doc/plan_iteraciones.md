@@ -88,7 +88,7 @@
 ## Iteración C2 – Portal de descargas y publicación de ligas
 
 **Objetivos:**
-- Implementar login (CCT + contraseña generada) y módulo de descargas.
+- Implementar login (correo + contraseña generada) y módulo de descargas.
 - Consumir ligas/archivos provistos por el sistema externo y listarlos por versión/consecutivo (iniciando con datos simulados en frontend; conmutar a GraphQL en cuanto el equipo de backend entregue operaciones).
 - Ajustar monitoreo técnico (logs, espacio en disco, salud de workers).
 
