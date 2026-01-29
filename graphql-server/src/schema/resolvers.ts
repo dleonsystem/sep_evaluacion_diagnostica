@@ -83,9 +83,10 @@ interface EstudianteRow {
 
 interface CreateUserInput {
   email: string;
-  nombre: string;
-  apepaterno: string;
-  apematerno: string;
+  nombre?: string | null;
+  apepaterno?: string | null;
+  apematerno?: string | null;
+  clavesCCT?: string[];
   rol: string;
   password: string;
 }
@@ -122,6 +123,12 @@ interface CreateUserResult {
   rol: string;
   activo: boolean;
   fechaRegistro: Date;
+}
+
+interface AuthPayload {
+  ok: boolean;
+  message?: string | null;
+  user?: UserRow | null;
 }
 
 interface UploadEvaluacionInput {
@@ -364,6 +371,12 @@ export const resolvers = {
     createUser: async (_: any, { input }: { input: CreateUserInput }) => {
       try {
         const { email, nombre, apepaterno, apematerno, rol, password } = input;
+        const clavesCCT = Array.isArray((input as { clavesCCT?: string[] }).clavesCCT)
+          ? (input as { clavesCCT?: string[] }).clavesCCT
+          : [];
+        const nombreSeguro = (nombre ?? '').trim();
+        const apepaternoSeguro = (apepaterno ?? '').trim();
+        const apematernoSeguro = apematerno ? apematerno.trim() : null;
 
         // Validar que el email no exista
         const existingUser = await query('SELECT id FROM usuarios WHERE email = $1', [email]);
@@ -400,15 +413,90 @@ export const resolvers = {
             (SELECT codigo FROM cat_roles_usuario WHERE id_rol = usuarios.rol) as "rol",
             activo,
             fecha_registro as "fechaRegistro"`,
-          [email, nombre, apepaterno, apematerno, roleId, `${salt}:${passwordHash}`]
+          [email, nombreSeguro, apepaternoSeguro, apematernoSeguro, roleId, `${salt}:${passwordHash}`]
         );
 
         const createdUser = result.rows[0] as CreateUserResult;
+
+        if (clavesCCT.length) {
+          const centros = await query(
+            `SELECT id, clave_cct as "claveCCT"
+             FROM centros_trabajo
+             WHERE clave_cct = ANY($1)`,
+            [clavesCCT]
+          );
+
+          const centrosEncontrados = centros.rows as Array<{ id: string; claveCCT: string }>;
+          for (const centro of centrosEncontrados) {
+            await query(
+              `INSERT INTO usuarios_centros_trabajo (usuario_id, centro_trabajo_id)
+               VALUES ($1, $2)
+               ON CONFLICT DO NOTHING`,
+              [createdUser.id, centro.id]
+            );
+          }
+        }
+
         logger.info('User created successfully', { userId: createdUser.id });
 
         return createdUser;
       } catch (error) {
         logger.error('Error creating user', { input, error });
+        throw error;
+      }
+    },
+
+    /**
+     * Autenticar usuario
+     * @use-case CU-01: Autenticación de usuario
+     */
+    authenticateUser: async (_: unknown, { input }: { input: { email: string; password: string } }): Promise<AuthPayload> => {
+      try {
+        const { email, password } = input;
+        const result = await query(
+          `SELECT 
+            u.id,
+            u.email,
+            u.nombre,
+            u.apepaterno,
+            u.apematerno,
+            r.codigo as "rol",
+            u.password_hash,
+            u.activo,
+            u.fecha_registro as "fechaRegistro",
+            u.fecha_ultimo_acceso as "fechaUltimoAcceso"
+          FROM usuarios u
+          INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
+          WHERE u.email = $1`,
+          [email]
+        );
+
+        if (result.rows.length === 0) {
+          return { ok: false, message: 'Credenciales inválidas', user: null };
+        }
+
+        const usuario = result.rows[0] as UserRow & { password_hash: string | null };
+        if (!usuario.activo) {
+          return { ok: false, message: 'Usuario inactivo', user: null };
+        }
+
+        const hashGuardado = usuario.password_hash ?? '';
+        const [salt, hash] = hashGuardado.split(':');
+        if (!salt || !hash) {
+          return { ok: false, message: 'Credenciales inválidas', user: null };
+        }
+
+        const hashCalculado = crypto.scryptSync(password, salt, 64).toString('hex');
+        const coincide = crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(hashCalculado, 'hex'));
+        if (!coincide) {
+          return { ok: false, message: 'Credenciales inválidas', user: null };
+        }
+
+        await query('UPDATE usuarios SET fecha_ultimo_acceso = NOW() WHERE id = $1', [usuario.id]);
+
+        return { ok: true, message: 'Autenticación correcta', user: usuario };
+      } catch (error) {
+        logger.error('Error authenticating user', { input, error });
         throw error;
       }
     },
