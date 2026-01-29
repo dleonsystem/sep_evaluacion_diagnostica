@@ -19,7 +19,7 @@ La plataforma cubre únicamente el flujo de recepción–validación–descarga 
 - Carga anónima de archivos .xlsx.
 - Validación automática de estructura y contenido.
 - Emisión de **PDF de confirmación** (válidos) o **PDF de errores** (inválidos).
-- Generación de credenciales solo en la primera carga válida (usuario = CCT, contraseña = correo validado).
+- Generación de credenciales solo al cargar la primera validación exitosa (usuario = correo, contraseña aleatoria).
 - Registro de cada carga válida como solicitud independiente con consecutivo.
 - Exposición de ligas de descarga depositadas por un **sistema externo** que procesa los archivos.
 
@@ -47,7 +47,7 @@ Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend G
 - Pantalla de carga anónima de archivo.
 - Mensaje de validación en línea con etiqueta “Validando tu archivo…”.
 - Descarga automática de PDF (confirmación o errores).
-- Pantalla protegida para consulta de ligas de descarga (login con CCT + correo validado).
+- Pantalla protegida para consulta de ligas de descarga (login con correo + contraseña).
 - Panel técnico básico para monitoreo de solicitudes.
 - Módulo de carga masiva con estado de validaciones y credenciales generadas.
 - Vista de archivos guardados con búsqueda, descarga y gestión de resultados asociados.
@@ -74,7 +74,7 @@ Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend G
 ### 3.1 Actores
 
 - **Escuela (anónima):** carga archivo .xlsx sin autenticarse cuando es su primer envío; recibe PDF de confirmación/errores.
-- **Escuela autenticada:** usa CCT + contraseña (correo validado en primera carga) para reenviar archivos, cargar nuevas versiones (identificadas por hash) y descargar resultados publicados.
+- **Escuela autenticada:** usa correo + contraseña generada en la primera carga para reenviar archivos, cargar nuevas versiones (identificadas por hash) y descargar resultados publicados.
 - **Sistema externo de procesamiento:** genera resultados y deposita ligas/archivos para publicación.
 - **Operador técnico SEP:** supervisa logs y repositorios de archivos.
 - **Administrador SEP:** carga resultados asociados a solicitudes validadas y gestiona tickets de soporte.
@@ -83,11 +83,11 @@ Aplicación web de tres capas con **frontend Angular 19 (signals)**, **backend G
 
 - CU-01 Cargar archivo .xlsx sin login (primer envío).
 - CU-02 Validar estructura y contenido (10 verificaciones, incluye hash de archivo).
-- CU-03 Generar credenciales en primera carga válida.
+- CU-03 Generar credenciales al cargar la primera validación exitosa.
 - CU-04 Emitir PDF de confirmación o errores.
 - CU-05 Registrar solicitud con consecutivo y repositorio de archivos válidos.
 - CU-06 Detectar reenvío y requerir login.
-- CU-07 Autenticarse para reenvío de archivos y descargas (CCT + correo validado).
+- CU-07 Autenticarse para reenvío de archivos y descargas (correo + contraseña).
 - CU-08 Listar versiones y ligas de descarga provenientes del sistema externo.
 - CU-09 Consultar archivos guardados con acciones de descarga/limpieza.
 - CU-10 Seguimiento de solicitudes y descargas con filtros por CCT/fecha.
@@ -122,12 +122,12 @@ Si la estructura o los valores no cumplen, el archivo se **rechaza** y se entreg
 - RF-01: Permitir carga de archivo .xlsx sin autenticación previa **solo cuando no existan credenciales previas para el mismo CCT/correo**.
 - RF-02: Mostrar estado “Validando tu archivo…” mientras se procesa.
 - RF-03: Ejecutar las **10 reglas de validación** descritas en la sección 4 (incluida la huella hash para evitar duplicados por nombre).
-- RF-04: Si el archivo es válido, generar **PDF de confirmación** con mensaje, fecha futura de consulta (hoy + 4 días), usuario (CCT), contraseña (correo validado solo en primera carga) y marca de tiempo.
+- RF-04: Si el archivo es válido y se carga, generar **PDF de confirmación** con mensaje, fecha futura de consulta (hoy + 4 días), usuario (correo), contraseña (aleatoria solo en primera carga) y marca de tiempo.
 - RF-05: Si el archivo es inválido, generar **PDF de errores** con detalle de fallas.
-- RF-06: Crear credenciales **solo en la primera carga válida** (usuario = CCT, contraseña = correo validado) y reutilizarlas en cargas posteriores.
+- RF-06: Crear credenciales **solo al cargar la primera validación exitosa** (usuario = correo, contraseña aleatoria) y reutilizarlas en cargas posteriores.
 - RF-07: Bloquear reenvíos anónimos cuando ya existan credenciales para el CCT/correo y exigir login previo para permitir la nueva carga.
 - RF-08: Registrar cada carga válida como **solicitud independiente** con consecutivo, guardar el archivo en repositorio de recepción y **asociar su hash** para diferenciar envíos con nombres repetidos.
-- RF-09: Habilitar autenticación (CCT + contraseña) para reenviar archivos y consultar las ligas de descarga.
+- RF-09: Habilitar autenticación (correo + contraseña) para reenviar archivos y consultar las ligas de descarga.
 - RF-10: Mostrar **todas las versiones** de resultados que el sistema externo haya depositado, con consecutivo y liga.
 - RF-11: Mantener repositorios separados para archivos recibidos y resultados publicados.
 - RF-12: Implementar servicios frontend tipificados hacia GraphQL que, mientras no exista backend disponible, devuelvan datos simulados/localStorage usando el mismo contrato esperado de las operaciones.
@@ -166,6 +166,6 @@ Si la estructura o los valores no cumplen, el archivo se **rechaza** y se entreg
 
 - Cualquier escuela puede subir un archivo .xlsx y recibir PDF de confirmación o errores sin iniciar sesión **solo si es su primer envío (no existen credenciales previas para su CCT/correo)**.
 - Las 10 reglas de validación se ejecutan y rechazan archivos que no cumplan estructura/valores o que sean idénticos a un envío previo (mismo hash para el mismo CCT/correo).
-- La primera carga válida genera credenciales (usuario = CCT, contraseña = correo validado) y las mantiene para descargas futuras y reenvíos autenticados.
+- La primera carga exitosa genera credenciales (usuario = correo, contraseña aleatoria) y las mantiene para descargas futuras y reenvíos autenticados.
 - Cada carga válida queda registrada como solicitud independiente con consecutivo y archivo almacenado.
 - Los reenvíos requieren autenticación cuando ya existen credenciales, y las ligas de descarga provienen del sistema externo y se listan con su versión/consecutivo al autenticarse.
