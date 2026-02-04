@@ -48,6 +48,15 @@ export const typeDefs = `#graphql
     @use-case CU-10: Consulta de evaluaciones
     """
     getEvaluacion(id: ID!): Evaluacion
+
+    """
+    Listar solicitudes de carga EIA2
+    @use-case CU-05: Historial de cargas
+    """
+    getSolicitudes(
+      limit: Int = 10
+      offset: Int = 0
+    ): [SolicitudEia2!]!
   }
   
   """
@@ -82,10 +91,10 @@ export const typeDefs = `#graphql
     
     """
     Cargar archivo de evaluación
-    @use-case CU-05: Carga de archivos DBF
-    @psp Code Review - Validación de formato
+    @use-case CU-05: Recepción de archivos (EIA2)
+    @psp Code Review - Validación de formato Excel
     """
-    uploadEvaluacion(input: UploadEvaluacionInput!): Evaluacion!
+    uploadExcelAssessment(input: UploadExcelInput!): UploadExcelResponse!
   }
   
   """
@@ -274,6 +283,52 @@ export const typeDefs = `#graphql
   type DeleteResponse {
     success: Boolean!
     message: String!
+  }
+
+  """
+  Input para carga de Excel Universal
+  """
+  input UploadExcelInput {
+    archivoBase64: String!
+    nombreArchivo: String!
+    cicloEscolar: String!
+  }
+
+  """
+  Respuesta de carga de Excel
+  """
+  type UploadExcelResponse {
+    success: Boolean!
+    message: String!
+    solicitudId: ID
+    detalles: ExcelUploadResult
+  }
+
+  """
+  Detalles del resultado del procesamiento Excel
+  """
+  type ExcelUploadResult {
+    cct: String
+    nivel: String
+    grado: Int
+    alumnosProcesados: Int
+    errores: [String!]
+  }
+
+  """
+  Solicitud de carga EIA2
+  """
+  type SolicitudEia2 {
+    id: ID!
+    consecutivo: Int!
+    cct: String!
+    archivoOriginal: String!
+    fechaCarga: String!
+    estadoValidacion: Int!
+    nivelEducativo: Int
+    archivoPath: String
+    archivoSize: Int
+    procesadoExternamente: Boolean!
   }
 `;
 

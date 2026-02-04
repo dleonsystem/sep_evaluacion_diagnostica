@@ -29,3 +29,20 @@ export const AUTHENTICATE_USER_MUTATION = `
     }
   }
 `;
+
+export const UPLOAD_EXCEL_MUTATION = `
+  mutation UploadExcel($input: UploadExcelInput!) {
+    uploadExcelAssessment(input: $input) {
+      success
+      message
+      solicitudId
+      detalles {
+        cct
+        nivel
+        grado
+        alumnosProcesados
+        errores
+      }
+    }
+  }
+`;

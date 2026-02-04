@@ -11,7 +11,8 @@
  */
 
 import crypto from 'crypto';
-import { query } from '../config/database.js';
+import * as XLSX from 'xlsx';
+import { query, getClient } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -131,14 +132,6 @@ interface AuthPayload {
   user?: UserRow | null;
 }
 
-interface UploadEvaluacionInput {
-  claveCCT: string;
-  periodo: string;
-  grado: number;
-  grupo: string;
-  nombreArchivo: string;
-  archivoBase64?: string;
-}
 
 /**
  * Helper function to build update query
@@ -360,6 +353,36 @@ export const resolvers = {
         throw new Error('Error al obtener evaluación');
       }
     },
+
+    /**
+     * Listar solicitudes de carga EIA2
+     * @use-case CU-05: Historial de cargas
+     */
+    getSolicitudes: async (_: unknown, { limit = 10, offset = 0 }: { limit?: number; offset?: number }) => {
+      try {
+        const result = await query(
+          `SELECT 
+            id,
+            consecutivo,
+            cct,
+            archivo_original as "archivoOriginal",
+            fecha_carga as "fechaCarga",
+            estado_validacion as "estadoValidacion",
+            nivel_educativo as "nivelEducativo",
+            archivo_path as "archivoPath",
+            archivo_size as "archivoSize",
+            procesado_externamente as "procesadoExternamente"
+          FROM solicitudes_eia2
+          ORDER BY fecha_carga DESC
+          LIMIT $1 OFFSET $2`,
+          [limit, offset]
+        );
+        return result.rows;
+      } catch (error) {
+        logger.error('Error fetching solicitudes', { error });
+        throw new Error('Error al obtener historial de solicitudes');
+      }
+    },
   },
 
   Mutation: {
@@ -418,7 +441,7 @@ export const resolvers = {
 
         const createdUser = result.rows[0] as CreateUserResult;
 
-        if (clavesCCT.length) {
+        if (clavesCCT && clavesCCT.length) {
           const centros = await query(
             `SELECT id, clave_cct as "claveCCT"
              FROM centros_trabajo
@@ -597,40 +620,181 @@ export const resolvers = {
      * @use-case CU-05: Carga de archivos
      * @psp Code Review - Validación de formato
      */
-    uploadEvaluacion: async (_: any, { input }: { input: UploadEvaluacionInput }) => {
+    /**
+     * Cargar archivo de evaluación (Universal)
+     * @use-case CU-05: Recepción de archivos (EIA2)
+     * @psp Code Review - Validación de formato Excel y parsing dinámico
+     */
+    uploadExcelAssessment: async (_: any, { input }: { input: any }) => {
+      const { archivoBase64, nombreArchivo, cicloEscolar } = input;
+      const errores: string[] = [];
+      let alumnosProcesados = 0;
+      let cct = '';
+      let nivel = '';
+      let baseGrado: number | null = null;
+      let client;
+      const nivelMap: Record<string, number> = {
+        'PREESCOLAR': 1,
+        'PRIMARIA': 2,
+        'SECUNDARIA': 3,
+        'TELESECUNDARIA': 4
+      };
+      let nivelId = 2;
+
       try {
-        const { claveCCT, periodo, grado, grupo, nombreArchivo } = input;
-        // archivoBase64 se procesará en futuras iteraciones
+        logger.info('Iniciando carga masiva', { nombreArchivo, cicloEscolar });
+        const buffer = Buffer.from(archivoBase64, 'base64');
+        const workbook = XLSX.read(buffer, { type: 'buffer' });
 
-        // Insertar evaluación
-        const result = await query(
-          `INSERT INTO evaluaciones 
-            (clave_cct, periodo, grado, grupo, nombre_archivo, fecha_carga, estado_validacion)
-          VALUES ($1, $2, $3, $4, $5, NOW(), 'PENDIENTE')
-          RETURNING 
-            id,
-            clave_cct as "claveCCT",
-            periodo,
-            grado,
-            grupo,
-            fecha_carga as "fechaCarga",
-            nombre_archivo as "nombreArchivo",
-            estado_validacion as "estadoValidacion"`,
-          [claveCCT, periodo, grado, grupo, nombreArchivo]
+        const sheetEsc = workbook.Sheets['ESC'] || workbook.Sheets[workbook.SheetNames[0]];
+        const dataEsc: any[][] = XLSX.utils.sheet_to_json(sheetEsc, { header: 1 });
+
+        for (const row of dataEsc) {
+          if (row && typeof row[1] === 'string' && row[1].includes('CCT')) {
+            cct = (row[2] || '').toString().trim();
+          }
+        }
+
+        if (!cct && dataEsc[8]) cct = (dataEsc[8][3] || '').toString().trim();
+
+        const dataSheetName = workbook.SheetNames.find((n: string) =>
+          ['PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO', 'PREESCOLAR', 'SECUNDARIA'].some(prefix => n.toUpperCase().includes(prefix))
+        ) || workbook.SheetNames[1];
+
+        const sheetData = workbook.Sheets[dataSheetName];
+
+        if (dataEsc[5] && dataEsc[5][2]) {
+          nivel = dataEsc[5][2].toString().toUpperCase();
+        }
+
+        nivelId = Object.keys(nivelMap).find(k => nivel.includes(k)) ? nivelMap[Object.keys(nivelMap).find(k => nivel.includes(k))!] : 2;
+
+        client = await getClient();
+        await client.query('BEGIN');
+
+        const solicitudRes = await client.query(
+          `INSERT INTO solicitudes_eia2 
+            (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, archivo_path, archivo_size)
+          VALUES ($1, $2, NOW(), $3, $4, $5, $6)
+          RETURNING id`,
+          [cct, nombreArchivo, 1, nivelId, `storage/uploads/${nombreArchivo}`, buffer.length]
         );
+        const solicitudId = solicitudRes.rows[0].id;
 
-        const evaluacion = result.rows[0] as EvaluacionRow;
+        let escuelaRes = await client.query('SELECT id FROM escuelas WHERE cct = $1', [cct]);
+        let escuelaId;
+        if (escuelaRes.rows.length === 0) {
+          const defaultRes = await client.query(
+            `INSERT INTO escuelas (cct, nombre, id_turno, id_nivel, id_entidad, id_ciclo)
+             VALUES ($1, $2, 1, $3, 14, 1) RETURNING id`,
+            [cct, (dataEsc[4] && dataEsc[4][2]) || 'Escuela sin nombre', nivelId]
+          );
+          escuelaId = defaultRes.rows[0].id;
+        } else {
+          escuelaId = escuelaRes.rows[0].id;
+        }
 
-        logger.info('Evaluation uploaded successfully', {
-          evaluacionId: evaluacion.id,
-          claveCCT,
-          periodo,
-        });
+        const dataAlumnos: any[][] = XLSX.utils.sheet_to_json(sheetData, { header: 1 });
 
-        return evaluacion;
-      } catch (error) {
-        logger.error('Error uploading evaluation', { input, error });
-        throw error;
+        // Detectar grado de la hoja
+        const gradoFromSheet = dataSheetName.toUpperCase();
+        const gradoMap: Record<string, number> = {
+          'PRIMERO': 1, 'SEGUNDO': 2, 'TERCERO': 3, 'CUARTO': 4, 'QUINTO': 5, 'SEXTO': 6,
+          '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6
+        };
+        baseGrado = Object.keys(gradoMap).find(k => gradoFromSheet.includes(k)) ? gradoMap[Object.keys(gradoMap).find(k => gradoFromSheet.includes(k))!] : 1;
+
+        // Calcular id_grado (ej: 201 para 1ro Primaria)
+        const idGrado = (nivelId * 100) + baseGrado;
+
+        const periodRes = await client.query("SELECT id FROM periodos_evaluacion LIMIT 1");
+        const periodoId = periodRes.rows[0]?.id;
+
+        const materiaRes = await client.query("SELECT id FROM materias WHERE nivel_educativo = $1 LIMIT 4", [nivelId === 2 ? 2 : 2]);
+        const materiasIds = materiaRes.rows.map(m => m.id);
+
+        const studentRows = dataAlumnos.slice(1);
+        for (const row of studentRows) {
+          if (!row || row.length < 5 || !row[1]) continue;
+
+          const curp = (row[1] || '').toString().trim();
+          const nombreCompleto = (row[2] || '').toString().trim();
+          const grupoNombre = (row[3] || 'A').toString().trim();
+
+          if (!curp || !nombreCompleto) continue;
+
+          let grupoRes = await client.query(
+            'SELECT id FROM grupos WHERE escuela_id = $1 AND grado_id = $2 AND nombre = $3',
+            [escuelaId, idGrado, grupoNombre]
+          );
+          let grupoId;
+          if (grupoRes.rows.length === 0) {
+            const newGrupo = await client.query(
+              'INSERT INTO grupos (escuela_id, grado_id, nombre, nivel_educativo) VALUES ($1, $2, $3, $4) RETURNING id',
+              [escuelaId, idGrado, grupoNombre, nivelId]
+            );
+            grupoId = newGrupo.rows[0].id;
+          } else {
+            grupoId = grupoRes.rows[0].id;
+          }
+
+          const studentCheck = await client.query('SELECT id FROM estudiantes WHERE curp = $1', [curp]);
+          let estudianteId;
+          if (studentCheck.rows.length === 0) {
+            const newStudent = await client.query(
+              `INSERT INTO estudiantes (nombre, grupo_id, curp, estatus)
+               VALUES ($1, $2, $3, 'A') RETURNING id`,
+              [nombreCompleto, grupoId, curp]
+            );
+            estudianteId = newStudent.rows[0].id;
+          } else {
+            estudianteId = studentCheck.rows[0].id;
+            await client.query(
+              'UPDATE estudiantes SET nombre = $1, grupo_id = $2 WHERE id = $3',
+              [nombreCompleto, grupoId, estudianteId]
+            );
+          }
+
+          for (let col = 6; col < Math.min(row.length, 10); col++) {
+            const valor = row[col];
+            if (valor !== undefined && valor !== null && valor !== '' && materiasIds[col - 6]) {
+              const valorNum = parseInt(valor.toString());
+              if (!isNaN(valorNum) && valorNum >= 0 && valorNum <= 3) {
+                await client.query(
+                  `INSERT INTO evaluaciones (estudiante_id, materia_id, periodo_id, valoracion, fecha_evaluacion)
+                   VALUES ($1, $2, $3, $4, NOW())`,
+                  [estudianteId, materiasIds[col - 6], periodoId, valorNum]
+                );
+              }
+            }
+          }
+          alumnosProcesados++;
+        }
+
+        await client.query('COMMIT');
+        return {
+          success: true,
+          message: 'Archivo procesado exitosamente',
+          solicitudId,
+          detalles: { cct, nivel: Object.keys(nivelMap).find(k => nivelMap[k] === nivelId) || nivel, grado: baseGrado, alumnosProcesados, errores }
+        };
+      } catch (error: any) {
+        if (client) await client.query('ROLLBACK');
+        logger.error('Error in uploadExcelAssessment', { error });
+        return {
+          success: false,
+          message: `Error al procesar: ${error.message}`,
+          solicitudId: null,
+          detalles: {
+            cct,
+            nivel: Object.keys(nivelMap).find(k => nivelMap[k] === nivelId) || nivel,
+            grado: (typeof baseGrado !== 'undefined' ? baseGrado : null),
+            alumnosProcesados,
+            errores: [error.message]
+          }
+        };
+      } finally {
+        if (client) client.release();
       }
     },
   },

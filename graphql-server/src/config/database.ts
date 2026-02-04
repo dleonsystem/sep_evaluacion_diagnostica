@@ -139,4 +139,12 @@ export async function query(text: string, params?: any[]) {
   }
 }
 
+/**
+ * Helper to get a single client from the pool (useful for transactions)
+ */
+export async function getClient() {
+  const client = await pool.connect();
+  return client;
+}
+
 export default pool;

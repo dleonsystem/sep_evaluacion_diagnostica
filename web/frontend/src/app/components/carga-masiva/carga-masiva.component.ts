@@ -19,6 +19,7 @@ import { Subject, firstValueFrom, takeUntil } from 'rxjs';
 import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
 import { MockPdfService } from '../../services/mock-pdf.service';
 import { UsuariosService } from '../../services/usuarios.service';
+import { EvaluacionesService } from '../../services/evaluaciones.service';
 
 interface ResultadoExito {
   mensaje: string;
@@ -122,8 +123,9 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     private readonly estadoCredencialesService: EstadoCredencialesService,
     private readonly mockPdfService: MockPdfService,
     private readonly usuariosService: UsuariosService,
+    private readonly evaluacionesService: EvaluacionesService,
     private readonly router: Router
-  ) {}
+  ) { }
 
   @HostListener('window:storage')
   onStorageChange(): void {
@@ -250,8 +252,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
           deteccion.mensajesError.length
             ? deteccion.mensajesError
             : [
-                'No se reconoció el formato. Verifica que sea una plantilla válida de Preescolar, Primaria o Secundaria.'
-              ]
+              'No se reconoció el formato. Verifica que sea una plantilla válida de Preescolar, Primaria o Secundaria.'
+            ]
         );
         await this.finalizarConError(resultadoArchivo);
         return;
@@ -300,6 +302,22 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     resultado.notaGuardado = null;
 
     try {
+      // --- INTEGRACIÓN CON BACKEND ---
+      resultado.mensajeInformativo = 'Subiendo información a la base de datos...';
+      const base64 = await this.fileToBase64(resultado.archivoOriginal);
+      const respuestaApi = await firstValueFrom(
+        this.evaluacionesService.subirExcel({
+          archivoBase64: base64,
+          nombreArchivo: resultado.archivo.name,
+          cicloEscolar: '2025-2026'
+        })
+      );
+
+      if (!respuestaApi.success) {
+        throw new Error(respuestaApi.message);
+      }
+      // -------------------------------
+
       const guardado = await this.archivoStorageService.guardarArchivoPreescolar(resultado.archivoOriginal, {
         cct: resultado.escDatos?.cct,
         correo: this.correoControl.value,
@@ -853,5 +871,17 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
 
     return `Archivo detectado: ${etiqueta}.`;
+  }
+
+  private async fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const base64String = reader.result as string;
+        resolve(base64String.split(',')[1]);
+      };
+      reader.onerror = (error) => reject(error);
+    });
   }
 }
