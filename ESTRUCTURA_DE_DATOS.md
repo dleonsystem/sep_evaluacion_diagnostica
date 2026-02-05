@@ -500,6 +500,12 @@ formativo: ENS, HYC, LEN, SPC) en cada periodo de evaluación.
 | activo          | BOOLEAN      | Indica si el periodo está activo  |
 | created_at      | TIMESTAMP    | Fecha de creación                 |
 
+**Reglas de negocio / validaciones:**
+- No se permiten rangos de fechas traslapados entre periodos del mismo `ciclo_escolar` (incluye límites compartidos).
+- Se permiten periodos contiguos (fin + 1 día = inicio del siguiente).
+- Al editar un periodo, la validación compara contra el resto de registros del mismo ciclo, excluyendo el periodo editado.
+- Excepción operativa: si no existe carga válida de Periodo 1 en el ciclo y se recibe una carga etiquetada como Periodo 1 dentro del rango oficial de Periodo 2 o 3, se reclasifica como Periodo 2 (registrando la reasignación).
+
 ### PLANTILLAS_EMAIL
 
 | Campo                | Tipo         | Descripción                       |
