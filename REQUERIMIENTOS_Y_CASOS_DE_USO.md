@@ -104,6 +104,20 @@
   - Periodo 2: Evaluación intermedia
   - Periodo 3: Evaluación final
 - **RF-08.2** El sistema debe identificar periodo en reportes
+- **RF-08.3** El sistema debe validar solapamientos de periodos por ciclo escolar (reglas de negocio):
+  - **RN-08.3.1** No se permite que dos periodos del mismo **ciclo_escolar** tengan rangos de fechas que se traslapen (incluye límites compartidos: si un periodo termina el 2024-11-15, el siguiente inicia **>= 2024-11-16**).
+  - **RN-08.3.2** Sí se permiten periodos contiguos (fin + 1 día = inicio del siguiente).
+  - **RN-08.3.3** Para cambios de fechas, la validación debe evaluar el rango completo ya almacenado contra todos los periodos del mismo ciclo, excluyendo el registro que se está editando.
+- **RF-08.4** Excepción de “primera aplicación a fin de ciclo que debería ser segunda”:
+  - **RN-08.4.1** Si en un ciclo escolar **no existe carga válida** de Periodo 1 y se recibe una carga etiquetada como Periodo 1 **cuyo rango/fecha de aplicación cae dentro del rango oficial del Periodo 2 o Periodo 3**, el sistema debe **reclasificarla como Periodo 2** para reportes y comparativos.
+  - **RN-08.4.2** La reclasificación solo aplica si **no hay datos previos** asociados a Periodo 1 en ese ciclo; si ya existe Periodo 1, la carga debe rechazarse por conflicto de periodo.
+  - **RN-08.4.3** El sistema debe registrar en bitácora la reasignación (periodo_original=1, periodo_asignado=2, motivo="primera aplicación a fin de ciclo").
+
+**Ejemplos (para evitar ambigüedades):**
+- *Ejemplo A (válido)*: Periodo 1: 2024-09-01 a 2024-10-15; Periodo 2: 2024-10-16 a 2024-12-15 → **No hay solapamiento** (contiguos).
+- *Ejemplo B (inválido)*: Periodo 1: 2024-09-01 a 2024-10-20; Periodo 2: 2024-10-15 a 2024-12-15 → **Solapamiento** (10-15 al 10-20).
+- *Ejemplo C (excepción)*: Ciclo 2024-2025 sin cargas en Periodo 1. Se carga “Periodo 1” con fecha 2025-05-10 que cae dentro del rango oficial del Periodo 2/3 → **Se reclasifica a Periodo 2**.
+- *Ejemplo D (rechazo)*: Ciclo 2024-2025 ya tiene datos de Periodo 1. Se intenta cargar “Periodo 1” con fecha 2025-05-10 → **Rechazo por conflicto de periodo**.
 
 ### RF-09: Autenticación y Autorización ✨ FASE 1
 - **RF-09.1** El sistema web debe autenticar directores con CCT + contraseña
