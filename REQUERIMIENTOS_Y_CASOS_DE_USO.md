@@ -103,6 +103,7 @@
   - Periodo 1: Diagnóstico inicial (septiembre)
   - Periodo 2: Evaluación intermedia
   - Periodo 3: Evaluación final
+  - Nota: si la primera aplicación ocurre al cierre de ciclo, debe tratarse como segunda aplicación para efectos de clasificación.
 - **RF-08.2** El sistema debe identificar periodo en reportes
 
 ### RF-09: Autenticación y Autorización ✨ FASE 1

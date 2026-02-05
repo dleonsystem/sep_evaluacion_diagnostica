@@ -1870,6 +1870,7 @@ INSERT INTO EVALUACIONES (
 - Un usuario solo puede estar activo en una escuela a la vez.
 - Los valores de valoración deben estar en el rango 0-3.
 - Los periodos deben estar correctamente definidos y no solaparse.
+  - Si la primera aplicación ocurre al cierre de ciclo, se debe clasificar como segunda aplicación para efectos de periodización.
 
 ### Control de acceso
 
