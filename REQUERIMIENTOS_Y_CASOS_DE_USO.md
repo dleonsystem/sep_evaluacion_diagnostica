@@ -165,11 +165,11 @@
 
 ### RF-13: Catálogo de Escuelas ✨ FASE 1
 - **RF-13.1** El sistema debe permitir CRUD de escuelas:
-  - Crear nueva escuela con CCT único
+  - Crear nueva escuela con CCT + turno únicos
   - Editar datos de contacto
   - Desactivar (no eliminar físicamente)
   - Listar con filtros y paginación
-- **RF-13.2** El sistema debe validar unicidad de CCT a nivel nacional
+- **RF-13.2** El sistema debe validar unicidad de CCT + turno a nivel nacional
 - **RF-13.3** El sistema debe asignar nivel educativo (enum)
 - **RF-13.4** El sistema debe mantener histórico de cambios (auditoría)
 - **RF-13.5** El sistema debe permitir búsqueda por CCT, nombre o ubicación
@@ -791,10 +791,10 @@ graph TB
 2. Administrador selecciona "Nueva Escuela"
 3. Sistema muestra formulario:
    ```
-   CCT: [__________] (requerido, único, 11 caracteres)
+   CCT: [__________] (requerido, 11 caracteres)
    Nombre: [_____________________] (requerido)
    Nivel Educativo: [Dropdown: Preescolar/Primaria/Secundaria/Telesecundaria]
-   Turno: [Dropdown: Matutino/Vespertino/Tiempo Completo]
+   Turno: [Dropdown: Matutino/Vespertino/Tiempo Completo] (requerido, único con CCT)
    
    Datos de Contacto:
    Dirección: [______________________]
@@ -807,7 +807,7 @@ graph TB
    Director Actual: [___________]
    ```
 4. Sistema valida en tiempo real:
-   - CCT único (consulta a BD)
+   - CCT + turno únicos (consulta a BD)
    - Formato de email válido
    - Teléfono 10 dígitos
 5. Administrador guarda escuela

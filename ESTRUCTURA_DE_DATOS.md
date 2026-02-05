@@ -1865,7 +1865,7 @@ INSERT INTO EVALUACIONES (
 
 ### Integridad de datos
 
-- No puede haber dos escuelas con el mismo CCT.
+- No puede haber dos escuelas con el mismo CCT + turno.
 - El CURP de cada estudiante debe ser único.
 - Un usuario solo puede estar activo en una escuela a la vez.
 - Los valores de valoración deben estar en el rango 0-3.
@@ -2043,7 +2043,7 @@ INSERT INTO EVALUACIONES (
 
 ### Índices únicos
 
-- `UNIQUE INDEX idx_escuelas_cct ON ESCUELAS(cct)`
+- `UNIQUE INDEX idx_escuelas_cct ON ESCUELAS(cct, id_turno)`
 - `UNIQUE INDEX idx_estudiantes_curp ON ESTUDIANTES(curp)`
 - `UNIQUE INDEX idx_usuarios_email ON USUARIOS(email)`
 - `UNIQUE INDEX idx_cat_turnos_codigo ON CAT_TURNOS(codigo)`
