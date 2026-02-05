@@ -2025,7 +2025,7 @@ INSERT INTO EVALUACIONES (
 ### Reportes Generados (REPORTES_GENERADOS)
 
 - Se generan **5 tipos de reportes** por escuela según RF-05: ENS, HYC, LEN, SPC (reportes por campo formativo) y F5 (reporte por grupo).
-- **Volumenétrica esperada**: Preescolar (5 reportes/escuela), Primaria (30 reportes/escuela), Secundaria (15 reportes/escuela).
+- **Volumenétrica esperada (regla actual)**: por cada grupo se genera **1 reporte de resultados (F5)** y, **si aplica**, **1 reporte comparativo adicional**. Los reportes por campo formativo (ENS, HYC, LEN, SPC) se generan a nivel escuela.
 - La nomenclatura de archivos debe seguir estándar: `[CCT].[PERIODO].Reporte_[TIPO]_[CAMPO][FORMATO].[GRADO]°.[GRUPO].pdf`
 - El campo `checksum_sha256` es obligatorio para verificar integridad del archivo descargado.
 - Los reportes deben estar **disponibles por 2 ciclos escolares** (campo `disponible_hasta`).

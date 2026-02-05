@@ -73,10 +73,10 @@
   - Reporte SPC (Saberes) - 670 KB aprox
 - **RF-05.2** El sistema debe generar reportes individuales por grupo:
   - Formato F5 - 2.71 MB aprox por grupo
-- **RF-05.3** El sistema debe generar reportes según volumetría:
-  - Preescolar: 5 reportes/escuela
-  - Primaria: 30 reportes/escuela
-  - Secundaria: 15 reportes/escuela
+- **RF-05.3** El sistema debe generar reportes según volumetría por grupo:
+  - Por cada grupo se genera 1 reporte de resultados (F5).
+  - Si aplica comparativo, se genera 1 reporte comparativo adicional por grupo.
+  - Los reportes por campo formativo (ENS, HYC, LEN, SPC) se generan a nivel escuela.
 - **RF-05.4** El sistema debe generar reportes en formato PDF
 - **RF-05.5** El sistema debe aplicar nomenclatura estándar:
   ```
