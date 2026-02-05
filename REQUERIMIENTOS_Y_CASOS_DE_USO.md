@@ -37,6 +37,7 @@
 - **RF-02.4** El sistema debe validar formato de CURP
 - **RF-02.5** El sistema debe asignar estudiantes a grupos específicos
 - **RF-02.6** El sistema debe registrar datos del docente por grupo
+- **RF-02.7** El sistema debe validar unicidad de grupo por escuela, grado y nombre
 
 ### RF-03: Captura de Valoraciones
 - **RF-03.1** El sistema debe importar datos desde archivos Excel FRV

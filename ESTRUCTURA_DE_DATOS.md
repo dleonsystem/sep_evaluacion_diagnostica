@@ -1899,7 +1899,7 @@ INSERT INTO EVALUACIONES (
 - Todo usuario debe tener un rol asignado.
 - El campo `escuela_id` en GRUPOS es FK obligatorio a ESCUELAS.id.
 - El campo `grado_id` en GRUPOS es FK obligatorio a CAT_GRADOS.id.
-- No puede haber dos grupos con el mismo nombre en la misma escuela (UNIQUE en escuela_id + nombre).
+- No puede haber dos grupos con el mismo nombre dentro del mismo grado y escuela (UNIQUE en escuela_id + grado_id + nombre).
 - El campo `total_alumnos` debe actualizarse automáticamente al agregar/eliminar estudiantes.
 - Los grupos inactivos (`activo = FALSE`) no permiten asignación de nuevos estudiantes.
 
@@ -2052,7 +2052,7 @@ INSERT INTO EVALUACIONES (
 - `UNIQUE INDEX idx_cat_roles_codigo ON CAT_ROLES_USUARIO(codigo)`
 - `UNIQUE INDEX idx_credenciales_eia2_correo ON CREDENCIALES_EIA2(correo_validado)`
 - `UNIQUE INDEX idx_solicitudes_eia2_consecutivo ON SOLICITUDES_EIA2(consecutivo)`
-- `UNIQUE INDEX idx_grupos_escuela_nombre ON GRUPOS(escuela_id, nombre)`
+- `UNIQUE INDEX idx_grupos_escuela_grado_nombre ON GRUPOS(escuela_id, grado_id, nombre)`
 - `UNIQUE INDEX idx_materias_codigo ON MATERIAS(codigo)`
 
 ### Índices compuestos
@@ -5173,9 +5173,9 @@ ALTER TABLE GRUPOS ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT TRUE;
 ALTER TABLE GRUPOS ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
 ALTER TABLE GRUPOS ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
 
--- Paso 8: Agregar constraint UNIQUE en escuela_id + nombre
-ALTER TABLE GRUPOS ADD CONSTRAINT uq_grupos_escuela_nombre 
-    UNIQUE (escuela_id, nombre);
+-- Paso 8: Agregar constraint UNIQUE en escuela_id + grado_id + nombre
+ALTER TABLE GRUPOS ADD CONSTRAINT uq_grupos_escuela_grado_nombre 
+    UNIQUE (escuela_id, grado_id, nombre);
 
 -- Paso 9: Agregar índices
 CREATE INDEX idx_grupos_escuela_grado ON GRUPOS(escuela_id, grado_id);
@@ -5310,12 +5310,12 @@ BEGIN
     
     -- 5. Verificar constraints UNIQUE
     IF EXISTS (
-        SELECT escuela_id, nombre, COUNT(*)
+        SELECT escuela_id, grado_id, nombre, COUNT(*)
         FROM GRUPOS
-        GROUP BY escuela_id, nombre
+        GROUP BY escuela_id, grado_id, nombre
         HAVING COUNT(*) > 1
     ) THEN
-        v_errors := v_errors || 'ERROR: GRUPOS tiene duplicados en escuela_id + nombre' || E'\n';
+        v_errors := v_errors || 'ERROR: GRUPOS tiene duplicados en escuela_id + grado_id + nombre' || E'\n';
     END IF;
     
     IF LENGTH(v_errors) > 0 THEN
