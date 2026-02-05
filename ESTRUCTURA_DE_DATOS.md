@@ -1985,9 +1985,10 @@ INSERT INTO EVALUACIONES (
 
 - Las valoraciones deben estar en el rango **0-3** (validación estricta mediante CHECK constraint).
 - Cada estudiante debe tener **una evaluación por materia por periodo** (constraint UNIQUE en combinación estudiante_id, materia_id, periodo_id).
-- El campo `nivel_integracion` se calcula automáticamente por el sistema basado en la valoración y competencias.
-- Los niveles de integración son: 'EN DESARROLLO', 'SATISFACTORIO', 'SOBRESALIENTE', 'AVANZADO'.
-- El campo `competencia_alcanzada` se determina comparando valoración vs nivel esperado en COMPETENCIAS.
+- El campo `nivel_integracion` se calcula automáticamente por el sistema por cada combinación estudiante-asignatura, con base en la valoración y competencias.
+- Los niveles de integración son: "sin evidencia de aprendizaje", "requiere apoyo para el aprendizaje", "en proceso de desarrollo" y "aprendizaje desarrollado".
+- Cada reactivo tiene una valoración de 0 a 3 y un peso por consigna; la suma ponderada de consignas por campo formativo (suma de consignas × PESO del campo) determina el `nivel_integracion` conforme a las reglas vigentes.
+- El campo `competencia_alcanzada` se determina comparando la valoración contra los criterios de logro definidos en COMPETENCIAS; si no existe un "nivel esperado", se usa el criterio de logro vigente para la competencia evaluada.
 - Las evaluaciones importadas desde ARCHIVOS_FRV deben mantener referencia al archivo origen (campo `archivo_frv_id`).
 - Solo evaluaciones con `validado = TRUE` se consideran para generación de reportes oficiales.
 - La validación debe ser realizada por usuarios con rol 'VALIDADOR' o 'OPERADOR'.
