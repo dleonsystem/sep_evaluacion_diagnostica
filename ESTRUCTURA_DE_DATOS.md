@@ -393,7 +393,7 @@ especializada `NIVELES_INTEGRACION_ESTUDIANTE` con granularidad por Campo Format
 | Campo           | Tipo         | Descripción                                      |
 |-----------------|--------------|--------------------------------------------------|
 | id              | UUID         | Identificador único                              |
-| usuario_id      | UUID         | Relación con USUARIOS (NULL si no existe)        |
+| usuario_id      | UUID         | Relación con USUARIOS (nullable; NULL si no existe) |
 | email           | VARCHAR(100) | Email del intento de login                       |
 | ip_address      | INET         | Dirección IP de origen                           |
 | user_agent      | TEXT         | Navegador/cliente usado                          |
@@ -1909,12 +1909,13 @@ INSERT INTO EVALUACIONES (
 - Después de **5 intentos fallidos consecutivos** en 15 minutos, bloquear la cuenta por 30 minutos (RF-09.7).
 - Después de **10 intentos fallidos** en 1 hora desde diferentes IPs, bloquear cuenta y alertar administrador (posible ataque distribuido).
 - El campo `usuario_id` puede ser NULL si el email no existe en el sistema (registrar intentos con usuarios inválidos).
+- La tabla `INTENTOS_LOGIN` tiene PK propia (`id`); `usuario_id` es FK **nullable** y no participa en PK/UNIQUE.
 - El campo `email` siempre debe registrarse para trazabilidad, incluso si el usuario no existe.
 - Los intentos exitosos (`exito = TRUE`) deben registrar siempre usuario_id válido.
 - El campo `motivo_fallo` debe ser uno de: 'USUARIO_INVALIDO', 'PASSWORD_INCORRECTO', 'CUENTA_BLOQUEADA', 'CUENTA_INACTIVA', 'CUENTA_ELIMINADA', 'PASSWORD_EXPIRADO'.
 - El bloqueo automático debe registrarse en `bloqueado_hasta` con timestamp 30 minutos futuro.
-- Un usuario bloqueado no puede intentar login hasta que `bloqueado_hasta < NOW()`.
-- Los administradores pueden desbloquear manualmente una cuenta antes del tiempo establecido.
+- Un usuario bloqueado no puede intentar login hasta que `bloqueado_hasta < NOW()` o sea desbloqueado manualmente.
+- El desbloqueo puede ser **por tiempo** (expiración de `bloqueado_hasta`) o **manual**; si hay desbloqueo manual, **tiene prioridad** y debe limpiar `bloqueado_hasta` (NULL) inmediatamente.
 - Se debe enviar notificación email al usuario cuando su cuenta es bloqueada por intentos fallidos.
 - Los intentos desde IP sospechosas (múltiples cuentas fallidas) deben bloquearse temporalmente a nivel de firewall.
 - El campo `user_agent` debe registrarse para detectar patrones de bots/scripts.
