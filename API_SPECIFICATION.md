@@ -122,7 +122,7 @@ X-Request-ID: {uuid}
     "password_temporal": "Temp2024!xY7",
     "expira_en": "2026-01-19T12:00:00Z"
   },
-  "message": "Usuario creado. Se envió email con credenciales temporales."
+  "message": "Usuario creado. Credenciales temporales generadas y mostradas/descargadas en PDF."
 }
 ```
 
@@ -187,7 +187,7 @@ X-Request-ID: {uuid}
 ```json
 {
   "success": true,
-  "message": "Se envió un email con instrucciones para restablecer la contraseña",
+  "message": "Solicitud de restablecimiento registrada. El token se muestra en la plataforma.",
   "expira_en": "2026-01-12T14:30:00Z"
 }
 ```
@@ -196,7 +196,7 @@ X-Request-ID: {uuid}
 
 ### 6. POST /api/auth/reset-password
 
-**Descripción:** Restablecer contraseña con token enviado por email.
+**Descripción:** Restablecer contraseña con token generado en la plataforma (sin envío de email).
 
 **Request:**
 
@@ -855,7 +855,7 @@ Content-Disposition: attachment; filename="Reporte_09DPR1234A_2024.pdf"
     "ticket_id": "550e8400-e29b-41d4-a716-446655440400",
     "numero_ticket": "TKT-2026-001234"
   },
-  "message": "Ticket creado.Recibirá respuesta por email."
+  "message": "Ticket creado. La respuesta se dará seguimiento en el portal."
 }
 ```
 
