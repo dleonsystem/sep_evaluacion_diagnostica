@@ -1867,7 +1867,7 @@ INSERT INTO EVALUACIONES (
 
 - No puede haber dos escuelas con el mismo CCT + turno.
 - El CURP de cada estudiante debe ser único.
-- Un usuario solo puede estar activo en una escuela a la vez.
+- Un usuario puede estar activo en múltiples escuelas según su asignación en USUARIO_CCT.
 - Los valores de valoración deben estar en el rango 0-3.
 - Los periodos deben estar correctamente definidos y no solaparse.
 

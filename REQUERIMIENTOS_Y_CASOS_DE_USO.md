@@ -176,7 +176,7 @@
 
 ### RF-14: Gestión de Usuarios ✨ FASE 1
 - **RF-14.1** El sistema debe permitir CRUD de usuarios directores y supervisores
-- **RF-14.2** El sistema debe vincular usuario ↔ CCT mediante relación **1:N** (un usuario puede gestionar múltiples CCT: supervisor de zona, director con varios planteles)
+- **RF-14.2** El sistema debe vincular usuario ↔ CCT mediante relación **1:N** (un usuario puede estar activo y gestionar múltiples CCT según su asignación)
 - **RF-14.3** El sistema debe implementar tabla intermedia USUARIO_CCT para gestión granular de permisos por plantel
 - **RF-14.4** El sistema debe soportar roles:
   - Director: Acceso a su(s) escuela(s) asignadas
