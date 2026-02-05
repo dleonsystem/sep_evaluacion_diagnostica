@@ -1998,9 +1998,9 @@ INSERT INTO EVALUACIONES (
 ### Plataforma EIA 2ª Aplicación (CREDENCIALES_EIA2)
 
 - Las credenciales se generan **únicamente en la primera carga válida** de cada CCT.
-- El campo `cct` debe ser UNIQUE - un CCT solo puede tener un registro de credenciales.
-- El usuario para login es el CCT validado en el archivo.
-- La contraseña es el correo electrónico validado, almacenado como hash seguro (bcrypt con salt rounds ≥12 o argon2id).
+- El campo `cct` **NO** es UNIQUE - un CCT puede tener múltiples registros de credenciales.
+- El usuario para login es el correo electrónico validado.
+- La contraseña es aleatoria o se apega al esquema vigente de seguridad, almacenada como hash seguro (bcrypt con salt rounds ≥12 o argon2id).
 - Las credenciales **NO se regeneran** en cargas posteriores, incluso si el correo cambia.
 - Si se requiere cambio de contraseña, debe implementarse un flujo de recuperación separado.
 - El campo `primera_carga_valida_fecha` es inmutable y sirve como auditoría.
@@ -2020,7 +2020,7 @@ INSERT INTO EVALUACIONES (
 - El campo `resultado_path` contiene la liga de descarga generada por el sistema externo.
 - El campo `resultado_disponible_desde` se calcula como `fecha_carga + 4 días` según requerimiento.
 - Las solicitudes se conservan indefinidamente para auditoría y trazabilidad completa.
-- La relación `credencial_id` permite consultar todas las solicitudes de un CCT.
+- La relación `credencial_id` permite consultar todas las solicitudes asociadas al correo/usuario validado.
 
 ### Reportes Generados (REPORTES_GENERADOS)
 
@@ -2049,7 +2049,7 @@ INSERT INTO EVALUACIONES (
 - `UNIQUE INDEX idx_cat_turnos_codigo ON CAT_TURNOS(codigo)`
 - `UNIQUE INDEX idx_cat_niveles_codigo ON CAT_NIVELES_EDUCATIVOS(codigo)`
 - `UNIQUE INDEX idx_cat_roles_codigo ON CAT_ROLES_USUARIO(codigo)`
-- `UNIQUE INDEX idx_credenciales_eia2_cct ON CREDENCIALES_EIA2(cct)`
+- `UNIQUE INDEX idx_credenciales_eia2_correo ON CREDENCIALES_EIA2(correo_validado)`
 - `UNIQUE INDEX idx_solicitudes_eia2_consecutivo ON SOLICITUDES_EIA2(consecutivo)`
 - `UNIQUE INDEX idx_grupos_escuela_nombre ON GRUPOS(escuela_id, nombre)`
 - `UNIQUE INDEX idx_materias_codigo ON MATERIAS(codigo)`
