@@ -403,6 +403,13 @@ especializada `NIVELES_INTEGRACION_ESTUDIANTE` con granularidad por Campo Format
 | metadata        | JSONB        | Datos adicionales (dispositivo, ubicación, etc.) |
 | created_at      | TIMESTAMP    | Fecha/hora del intento                           |
 
+**Integridad y relación con USUARIOS**
+
+- `usuario_id` es nullable para preservar intentos con credenciales inválidas (email inexistente o usuario eliminado).
+- Cuando `usuario_id` es NULL, la integridad se conserva mediante los campos `email`, `ip_address`, `user_agent` y `created_at` (auditoría), sin violar PK/unique de otros módulos.
+- Cuando el usuario existe, `usuario_id` **debe** corresponder a `USUARIOS.id` (PK/unique) y el `email` del intento debe coincidir con `USUARIOS.email` para trazabilidad.
+- Los intentos con `usuario_id` NULL no generan relaciones en cascada ni afectan restricciones UNIQUE de usuarios; se consultan por `email`/IP para análisis de seguridad.
+
 ### LOG_ACTIVIDADES
 
 **Consolidado** - Incluye funcionalidad de BITACORA_DETALLADA eliminada
@@ -1913,8 +1920,10 @@ INSERT INTO EVALUACIONES (
 - Los intentos exitosos (`exito = TRUE`) deben registrar siempre usuario_id válido.
 - El campo `motivo_fallo` debe ser uno de: 'USUARIO_INVALIDO', 'PASSWORD_INCORRECTO', 'CUENTA_BLOQUEADA', 'CUENTA_INACTIVA', 'CUENTA_ELIMINADA', 'PASSWORD_EXPIRADO'.
 - El bloqueo automático debe registrarse en `bloqueado_hasta` con timestamp 30 minutos futuro.
-- Un usuario bloqueado no puede intentar login hasta que `bloqueado_hasta < NOW()`.
-- Los administradores pueden desbloquear manualmente una cuenta antes del tiempo establecido.
+- Un usuario bloqueado no puede intentar login hasta que `bloqueado_hasta < NOW()` **o** un administrador restablezca el bloqueo.
+- **Desbloqueo automático**: al cumplirse el tiempo (`bloqueado_hasta < NOW()`), la cuenta queda habilitada sin intervención adicional.
+- **Desbloqueo administrativo**: un administrador puede poner `bloqueado_hasta = NULL` antes del tiempo, registrar la acción en LOG_ACTIVIDADES y opcionalmente resetear el contador de fallos.
+- Flujo exacto: (1) detectar umbral de fallos, (2) setear `bloqueado_hasta` y registrar intento, (3) rechazar login mientras `bloqueado_hasta` vigente, (4) permitir login al expirar o al desbloqueo admin, (5) al primer login exitoso posterior, resetear contador de fallos.
 - Se debe enviar notificación email al usuario cuando su cuenta es bloqueada por intentos fallidos.
 - Los intentos desde IP sospechosas (múltiples cuentas fallidas) deben bloquearse temporalmente a nivel de firewall.
 - El campo `user_agent` debe registrarse para detectar patrones de bots/scripts.
