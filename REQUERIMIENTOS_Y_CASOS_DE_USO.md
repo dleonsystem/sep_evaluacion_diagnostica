@@ -41,17 +41,16 @@
 
 ### RF-03: Captura de Valoraciones
 - **RF-03.1** El sistema debe importar datos desde archivos Excel FRV
-- **RF-03.2** El sistema debe soportar 4 variantes de FRV:
+- **RF-03.2** El sistema debe soportar 3 variantes de FRV por nivel educativo:
   - Preescolar (52 KB)
   - Primaria (228 KB)
-  - Secundarias Técnicas (87 KB)
-  - Telesecundarias (88 KB)
+  - Secundaria (incluye formatos técnicos y telesecundarias, 87-88 KB)
 - **RF-03.3** El sistema debe capturar valoraciones por campo formativo:
   - ENS (Enseñanza: Español y Matemáticas)
   - HYC (Historia y Civismo)
   - LEN (Lenguaje y Comunicación)
   - SPC (Saberes y Pensamiento Científico)
-- **RF-03.4** El sistema debe validar rangos de valoración (escala 1-4)
+- **RF-03.4** El sistema debe validar rangos de valoración (escala 0-3)
 - **RF-03.5** El sistema debe permitir captura de observaciones por estudiante
 
 ### RF-04: Procesamiento y Validación (DGADAE)
