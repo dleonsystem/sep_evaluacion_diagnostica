@@ -126,6 +126,8 @@ La plataforma únicamente mostrará las ligas de descarga generadas externamente
 
 ### 5. Módulo de Descarga de Resultados
 
+El criterio único de autenticación para EIA2 es **correo + contraseña**.
+
 El usuario accede con su **correo y contraseña aleatoria generada en la primera carga válida** para consultar todas las versiones de resultados que se hayan generado externamente, aun cuando el mismo correo se use para varios CCT.
 
 Cada versión aparecerá con:
