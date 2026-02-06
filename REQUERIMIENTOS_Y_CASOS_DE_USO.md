@@ -55,14 +55,14 @@
 
 ### RF-04: Procesamiento y Validación (DGADAE)
 - **RF-04.1** El sistema debe recibir archivos FRV por correo electrónico
-- **RF-04.2** El sistema debe distribuir archivos entre 10 equipos de validación
+- **RF-04.2** El sistema debe operar en dos fases: fase 1 sin distribución de archivos y fase 2 con procesamiento centralizado
 - **RF-04.3** El sistema debe validar integridad de datos:
   - Campos obligatorios completos
   - CURP válidos
   - Valoraciones en rango permitido
   - Datos duplicados
 - **RF-04.4** El sistema debe separar registros con inconsistencias
-- **RF-04.5** El sistema debe asignar "Niveles de Integración del Aprendizaje" por estudiante
+- **RF-04.5** El sistema debe asignar "Niveles de Integración del Aprendizaje" por estudiante-asignatura
 - **RF-04.6** El sistema debe consolidar datos en base de datos central
 
 ### RF-05: Generación de Reportes
