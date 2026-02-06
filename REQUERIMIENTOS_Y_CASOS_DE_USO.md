@@ -106,7 +106,7 @@
 - **RF-08.2** El sistema debe identificar periodo en reportes
 
 ### RF-09: Autenticación y Autorización ✨ FASE 1
-- **RF-09.1** El sistema web debe autenticar directores con CCT + contraseña
+- **RF-09.1** El sistema web debe autenticar directores con correo + contraseña
 - **RF-09.2** El sistema debe implementar recuperación de contraseña por email
 - **RF-09.3** El sistema debe gestionar sesiones con timeout configurable (default: 60 min)
 - **RF-09.4** El sistema debe implementar control de acceso basado en CCT
