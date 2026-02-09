@@ -163,15 +163,17 @@ erDiagram
 | grado_nombre    | VARCHAR(20)  | Nombre del grado (Primero, etc)   |
 | orden           | INT          | Orden de visualización            |
 
-### CAT_NIVELES_EDUCATIVOS
+### CAT_NIVEL_EDUCATIVO
+
+**Catálogo consolidado de niveles educativos** (ENUM mirror)
 
 | Campo           | Tipo         | Descripción                       |
 |-----------------|--------------|-----------------------------------|
-| id_nivel        | INT          | Identificador único               |
-| nombre          | VARCHAR(50)  | Nombre del nivel educativo        |
-| codigo          | VARCHAR(10)  | Código corto (PRE, PRI, SEC, TEL) |
+| id              | SMALLINT     | Identificador único (IDENTITY)    |
+| codigo          | VARCHAR(50)  | Código: PREESCOLAR, PRIMARIA, SECUNDARIA, TELESECUNDARIA |
 | descripcion     | VARCHAR(200) | Descripción del nivel             |
-| orden           | INT          | Orden de visualización            |
+| orden           | SMALLINT     | Orden de visualización            |
+| activo          | BOOLEAN      | Indica si está activo             |
 
 ### CAT_ROLES_USUARIO
 
@@ -314,7 +316,7 @@ UNIQUE (clave)
 | fecha_registro  | DATETIME     | Fecha de registro                 |
 | estatus         | CHAR(1)      | Estado (A=Activo, I=Inactivo)     |
 | id_turno        | INT          | Relación con CAT_TURNOS           |
-| id_nivel        | INT          | Relación con CAT_NIVELES_EDUCATIVOS |
+| id_nivel        | SMALLINT     | Relación con CAT_NIVEL_EDUCATIVO  |
 | id_entidad      | INT          | Relación con CAT_ENTIDADES_FEDERATIVAS |
 | id_ciclo        | INT          | Relación con CAT_CICLOS_ESCOLARES |
 
@@ -964,7 +966,7 @@ Ejemplo de `preferencias_notif`:
  **REPORTES_GENERADOS**: Gestión completa de reportes PDF generados por el sistema (escuela y grupo). Incluye 5 tipos: ENS, HYC, LEN, SPC y F5. Trackea generación, descargas, integridad (SHA256), disponibilidad temporal (2 ciclos escolares) y archivos comprimidos. Soporta auditoría de descargas con contador y registro de usuario.
  **CAT_TURNOS**: Catálogo de turnos escolares (Matutino, Vespertino, Nocturno, Continuo).
  **CAT_ENTIDADES_FEDERATIVAS**: Catálogo de los 32 estados de la República Mexicana.
- **CAT_NIVELES_EDUCATIVOS**: Catálogo de niveles (Preescolar, Primaria, Secundaria, Telesecundaria).
+ **CAT_NIVEL_EDUCATIVO**: Catálogo consolidado de niveles educativos (PREESCOLAR, PRIMARIA, SECUNDARIA, TELESECUNDARIA) - ENUM mirror con gestión de códigos canónicos.
  **CAT_CICLOS_ESCOLARES**: Catálogo de ciclos escolares (2024-2025, 2025-2026, etc.).
  **CAT_GRADOS**: Catálogo de grados por nivel educativo (1° a 6° primaria, 1° a 3° secundaria, etc.).
  **CAT_ROLES_USUARIO**: Catálogo de roles del sistema (Director, Operador SEP, Administrador).
@@ -984,14 +986,18 @@ INSERT INTO CAT_TURNOS (id_turno, nombre, codigo, descripcion) VALUES
 (5, 'Discontinuo', 'DISC', 'Jornada discontinua');
 ```
 
-### CAT_NIVELES_EDUCATIVOS - Datos iniciales
+### CAT_NIVEL_EDUCATIVO - Datos iniciales
+
+**Nota:** Los datos se insertan automáticamente en el DDL mediante:
 
 ```sql
-INSERT INTO CAT_NIVELES_EDUCATIVOS (id_nivel, nombre, codigo, descripcion, orden) VALUES
-(1, 'Preescolar', 'PRE', 'Educación Preescolar (3-5 años)', 1),
-(2, 'Primaria', 'PRI', 'Educación Primaria (6-11 años)', 2),
-(3, 'Secundaria', 'SEC', 'Educación Secundaria General', 3),
-(4, 'Telesecundaria', 'TEL', 'Educación Telesecundaria', 4);
+INSERT INTO cat_nivel_educativo (codigo, descripcion, orden)
+SELECT val AS codigo,
+    INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')) AS descripcion,
+    ord AS orden
+FROM unnest(ARRAY['PREESCOLAR','PRIMARIA','SECUNDARIA','TELESECUNDARIA']::TEXT[]) 
+     WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
 ```
 
 ### CAT_ROLES_USUARIO - Datos iniciales
@@ -2063,7 +2069,7 @@ INSERT INTO EVALUACIONES (
 - `UNIQUE INDEX idx_estudiantes_curp ON ESTUDIANTES(curp)`
 - `UNIQUE INDEX idx_usuarios_email ON USUARIOS(email)`
 - `UNIQUE INDEX idx_cat_turnos_codigo ON CAT_TURNOS(codigo)`
-- `UNIQUE INDEX idx_cat_niveles_codigo ON CAT_NIVELES_EDUCATIVOS(codigo)`
+- `UNIQUE INDEX` en `cat_nivel_educativo(codigo)` (definido en DDL automáticamente por UNIQUE constraint)
 - `UNIQUE INDEX idx_cat_roles_codigo ON CAT_ROLES_USUARIO(codigo)`
 - `UNIQUE INDEX idx_credenciales_eia2_correo ON CREDENCIALES_EIA2(correo_validado)`
 - `UNIQUE INDEX idx_solicitudes_eia2_consecutivo ON SOLICITUDES_EIA2(consecutivo)`
@@ -2117,7 +2123,7 @@ INSERT INTO EVALUACIONES (
 ### Índices para catálogos
 
 - `INDEX idx_cat_grados_nivel ON CAT_GRADOS(nivel_educativo)`
-- `INDEX idx_escuelas_nivel ON ESCUELAS(id_nivel)`
+- `INDEX idx_escuelas_nivel ON escuelas(id_nivel)` -- FK a cat_nivel_educativo
 - `INDEX idx_escuelas_entidad ON ESCUELAS(id_entidad)`
 
 ---
