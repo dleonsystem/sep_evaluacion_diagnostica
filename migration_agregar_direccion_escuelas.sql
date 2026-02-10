@@ -63,7 +63,15 @@ COMMIT;
 
 -- Verificar estructura completa final
 SELECT 'Estructura final de tabla escuelas:' as paso;
-\d escuelas
+SELECT 
+    column_name, 
+    data_type,
+    character_maximum_length,
+    is_nullable,
+    column_default
+FROM information_schema.columns
+WHERE table_name = 'escuelas'
+ORDER BY ordinal_position;
 
 -- Verificar que los datos existentes no se afectaron
 SELECT 'Verificación de integridad de datos:' as paso;
