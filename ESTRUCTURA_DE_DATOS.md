@@ -313,12 +313,22 @@ UNIQUE (clave)
 | telefono        | VARCHAR(15)  | Teléfono                          |
 | email           | VARCHAR(100) | Correo electrónico                |
 | director        | VARCHAR(150) | Nombre del director               |
-| fecha_registro  | DATETIME     | Fecha de registro                 |
-| estatus         | CHAR(1)      | Estado (A=Activo, I=Inactivo)     |
+| municipio       | VARCHAR(100) | Municipio                         |
+| localidad       | VARCHAR(100) | Localidad                         |
+| calle           | VARCHAR(100) | Nombre de la calle                |
+| num_exterior    | VARCHAR(20)  | Número exterior                   |
+| entre_la_calle  | VARCHAR(100) | Entre la calle (referencia)       |
+| y_la_calle      | VARCHAR(100) | Y la calle (referencia)           |
+| calle_posterior | VARCHAR(100) | Calle posterior (referencia)      |
+| colonia         | VARCHAR(100) | Colonia                           |
+| fecha_registro  | TIMESTAMP    | Fecha de registro                 |
+| activo          | BOOLEAN      | Indica si está activa             |
 | id_turno        | INT          | Relación con CAT_TURNOS           |
 | id_nivel        | SMALLINT     | Relación con CAT_NIVEL_EDUCATIVO  |
 | id_entidad      | INT          | Relación con CAT_ENTIDADES_FEDERATIVAS |
 | id_ciclo        | INT          | Relación con CAT_CICLOS_ESCOLARES |
+| created_at      | TIMESTAMP    | Fecha de creación del registro    |
+| updated_at      | TIMESTAMP    | Fecha de última actualización     |
 
 ### ESTUDIANTES
 
