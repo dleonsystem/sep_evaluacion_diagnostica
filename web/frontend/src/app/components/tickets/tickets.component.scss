@@ -1,0 +1,270 @@
+.tickets {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  color: #1f2937;
+}
+
+.tickets__encabezado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tickets__eyebrow {
+  color: #0f766e;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+.tickets__titulo {
+  margin: 0;
+  font-size: clamp(1.8rem, 2vw, 2.2rem);
+}
+
+.tickets__descripcion {
+  margin: 0;
+  color: #4b5563;
+}
+
+.tickets__sesion {
+  margin: 0;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.tickets__formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.tickets__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.tickets__campo input,
+.tickets__campo textarea,
+.tickets__campo select {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.tickets__campo textarea {
+  resize: vertical;
+}
+
+.tickets__error {
+  color: #b91c1c;
+  font-weight: 500;
+}
+
+.tickets__evidencias {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.tickets__evidencias-boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  border: 1px dashed #0f766e;
+  color: #0f766e;
+  font-weight: 700;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.tickets__evidencias-boton input {
+  display: none;
+}
+
+.tickets__evidencias-ayuda {
+  margin: 0;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.tickets__evidencias-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0.4rem 0 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.tickets__evidencias-lista li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: #f9fafb;
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+}
+
+.tickets__evidencias-lista button {
+  border: none;
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+}
+
+.tickets__mensaje {
+  margin: 0;
+  font-weight: 600;
+}
+
+.tickets__mensaje--error {
+  color: #b91c1c;
+}
+
+.tickets__mensaje--exito {
+  color: #047857;
+}
+
+.tickets__boton {
+  align-self: flex-start;
+  padding: 0.85rem 1.4rem;
+  border-radius: 10px;
+  border: none;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tickets__boton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(15, 118, 110, 0.2);
+}
+
+.tickets__historial {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tickets__historial-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tickets__historial-folio,
+.tickets__historial-motivo,
+.tickets__historial-descripcion {
+  margin: 0;
+}
+
+.tickets__historial-descripcion {
+  color: #4b5563;
+}
+
+.tickets__historial-meta {
+  display: flex;
+  gap: 1rem;
+  color: #6b7280;
+  font-weight: 600;
+  flex-wrap: wrap;
+}
+
+.tickets__historial-evidencias {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #374151;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.tickets__historial-evidencias li {
+  list-style: disc;
+}
+
+.tickets__historial-respuestas {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tickets__historial-respuestas h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #0f766e;
+}
+
+.tickets__historial-respuesta {
+  background: #f0fdfa;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  color: #0f172a;
+}
+
+.tickets__historial-respuesta p {
+  margin: 0 0 0.35rem;
+  font-weight: 600;
+}
+
+.tickets__historial-respuesta span {
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.tickets__debug {
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 1rem;
+  background: #f8fafc;
+}
+
+.tickets__debug h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.tickets__debug pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #1f2937;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 720px) {
+  .tickets__formulario {
+    padding: 1.2rem;
+  }
+
+  .tickets__boton {
+    width: 100%;
+    text-align: center;
+  }
+}

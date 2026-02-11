@@ -3,8 +3,10 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import Swal from 'sweetalert2';
+import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
+import { UsuariosService } from '../../services/usuarios.service';
 
 @Component({
   selector: 'app-login',
@@ -21,11 +23,13 @@ export class LoginComponent implements OnInit {
   redirect = '/carga-masiva';
   contrasenaGuardada: string | null = null;
   credencialesGuardadas = false;
+  sinCredenciales = false;
   mostrarContrasena = false;
 
   constructor(
     private readonly authService: AuthService,
     private readonly estadoCredencialesService: EstadoCredencialesService,
+    private readonly usuariosService: UsuariosService,
     private readonly router: Router,
     private readonly route: ActivatedRoute
   ) {}
@@ -34,12 +38,12 @@ export class LoginComponent implements OnInit {
     const credencialesPersistidas = this.authService.obtenerCredenciales();
     const credenciales = this.estadoCredencialesService.obtener() ?? credencialesPersistidas;
 
+    this.redirect = this.route.snapshot.queryParamMap.get('redirect') ?? this.redirect;
     if (!credenciales) {
-      void this.router.navigate(['/carga-masiva']);
+      this.sinCredenciales = true;
       return;
     }
 
-    this.redirect = this.route.snapshot.queryParamMap.get('redirect') ?? this.redirect;
     this.correo = credenciales.correo;
     this.contrasenaGuardada = credencialesPersistidas?.contrasena ?? null;
     this.credencialesGuardadas = Boolean(credencialesPersistidas);
@@ -53,7 +57,23 @@ export class LoginComponent implements OnInit {
     this.autenticando = true;
 
     try {
-      this.authService.iniciarSesion(this.correo, this.contrasena);
+      const usuario = await firstValueFrom(
+        this.usuariosService.autenticarUsuario(this.correo, this.contrasena)
+      );
+
+      const cct = usuario.centrosTrabajo?.[0]?.claveCCT ?? null;
+      if (cct) {
+        const nuevasCredenciales = this.authService.registrarCredenciales(
+          cct,
+          this.correo,
+          this.contrasena
+        );
+        this.estadoCredencialesService.actualizar(this.correo, nuevasCredenciales.contrasena);
+        this.authService.iniciarSesion(this.correo, this.contrasena);
+      } else {
+        this.authService.iniciarSesionSinCredenciales(this.correo);
+      }
+
       await Swal.fire({
         icon: 'success',
         title: 'Sesión iniciada',

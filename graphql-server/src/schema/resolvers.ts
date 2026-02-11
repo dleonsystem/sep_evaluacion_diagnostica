@@ -10,6 +10,7 @@
  * @cmmi CMMI Level 3 - Technical Solution
  */
 
+import crypto from 'crypto';
 import { query } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 
@@ -19,7 +20,7 @@ import { logger } from '../utils/logger.js';
  */
 interface ContextUser {
   id: string;
-  correo: string;
+  email: string;
   rol: string;
 }
 
@@ -38,13 +39,13 @@ export interface GraphQLContext {
  */
 interface UserRow {
   id: string;
-  correo: string;
+  email: string;
   nombre: string;
-  apellidoPaterno: string;
-  apellidoMaterno: string;
+  apepaterno: string;
+  apematerno: string;
   rol: string;
   activo: boolean;
-  fechaCreacion: Date;
+  fechaRegistro: Date;
   fechaUltimoAcceso?: Date;
 }
 
@@ -81,30 +82,32 @@ interface EstudianteRow {
 }
 
 interface CreateUserInput {
-  correo: string;
-  nombre: string;
-  apellidoPaterno: string;
-  apellidoMaterno: string;
+  email: string;
+  nombre?: string | null;
+  apepaterno?: string | null;
+  apematerno?: string | null;
+  clavesCCT?: string[];
   rol: string;
+  password: string;
 }
 
 interface UpdateUserInput {
   nombre?: string;
-  apellidoPaterno?: string;
-  apellidoMaterno?: string;
-  rol?: string;
+  apepaterno?: string;
+  apematerno?: string;
+  rol?: string | number;
   activo?: boolean;
 }
 
 interface UpdateUserResult {
   id: string;
-  correo: string;
+  email: string;
   nombre: string;
-  apellidoPaterno: string;
-  apellidoMaterno: string;
+  apepaterno: string;
+  apematerno: string;
   rol: string;
   activo: boolean;
-  fechaCreacion: Date;
+  fechaRegistro: Date;
 }
 
 interface ParentWithId {
@@ -113,13 +116,19 @@ interface ParentWithId {
 
 interface CreateUserResult {
   id: string;
-  correo: string;
+  email: string;
   nombre: string;
-  apellidoPaterno: string;
-  apellidoMaterno: string;
+  apepaterno: string;
+  apematerno: string;
   rol: string;
   activo: boolean;
-  fechaCreacion: Date;
+  fechaRegistro: Date;
+}
+
+interface AuthPayload {
+  ok: boolean;
+  message?: string | null;
+  user?: UserRow | null;
 }
 
 interface UploadEvaluacionInput {
@@ -137,22 +146,22 @@ interface UploadEvaluacionInput {
  */
 const buildUpdateQuery = (
   input: UpdateUserInput
-): { updates: string[]; values: (string | boolean)[] } => {
+): { updates: string[]; values: (string | boolean | number)[] } => {
   const updates: string[] = [];
-  const values: (string | boolean)[] = [];
+  const values: (string | boolean | number)[] = [];
   let paramIndex = 1;
 
   if (input.nombre !== undefined) {
     updates.push(`nombre = $${paramIndex++}`);
     values.push(input.nombre);
   }
-  if (input.apellidoPaterno !== undefined) {
-    updates.push(`apellido_paterno = $${paramIndex++}`);
-    values.push(input.apellidoPaterno);
+  if (input.apepaterno !== undefined) {
+    updates.push(`apepaterno = $${paramIndex++}`);
+    values.push(input.apepaterno);
   }
-  if (input.apellidoMaterno !== undefined) {
-    updates.push(`apellido_materno = $${paramIndex++}`);
-    values.push(input.apellidoMaterno);
+  if (input.apematerno !== undefined) {
+    updates.push(`apematerno = $${paramIndex++}`);
+    values.push(input.apematerno);
   }
   if (input.rol !== undefined) {
     updates.push(`rol = $${paramIndex++}`);
@@ -215,17 +224,18 @@ export const resolvers = {
       try {
         const result = await query(
           `SELECT 
-            id, 
-            correo, 
-            nombre, 
-            apellido_paterno as "apellidoPaterno",
-            apellido_materno as "apellidoMaterno",
-            rol,
-            activo,
-            fecha_creacion as "fechaCreacion",
-            fecha_ultimo_acceso as "fechaUltimoAcceso"
-          FROM usuarios 
-          WHERE id = $1`,
+            u.id, 
+            u.email, 
+            u.nombre, 
+            u.apepaterno,
+            u.apematerno,
+            r.codigo as "rol",
+            u.activo,
+            u.fecha_registro as "fechaRegistro",
+            u.updated_at as "fechaUltimoAcceso"
+          FROM usuarios u
+          INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
+          WHERE u.id = $1`,
           [id]
         );
 
@@ -260,17 +270,18 @@ export const resolvers = {
         // Obtener usuarios paginados
         const usersResult = await query(
           `SELECT 
-            id, 
-            correo, 
-            nombre, 
-            apellido_paterno as "apellidoPaterno",
-            apellido_materno as "apellidoMaterno",
-            rol,
-            activo,
-            fecha_creacion as "fechaCreacion",
-            fecha_ultimo_acceso as "fechaUltimoAcceso"
-          FROM usuarios 
-          ORDER BY fecha_creacion DESC
+            u.id, 
+            u.email, 
+            u.nombre, 
+            u.apepaterno,
+            u.apematerno,
+            r.codigo as "rol",
+            u.activo,
+            u.fecha_registro as "fechaRegistro",
+            u.updated_at as "fechaUltimoAcceso"
+          FROM usuarios u
+          INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
+          ORDER BY u.fecha_registro DESC
           LIMIT $1 OFFSET $2`,
           [limit, offset]
         );
@@ -359,38 +370,133 @@ export const resolvers = {
      */
     createUser: async (_: any, { input }: { input: CreateUserInput }) => {
       try {
-        const { correo, nombre, apellidoPaterno, apellidoMaterno, rol } = input;
+        const { email, nombre, apepaterno, apematerno, rol, password } = input;
+        const clavesCCT = Array.isArray((input as { clavesCCT?: string[] }).clavesCCT)
+          ? (input as { clavesCCT?: string[] }).clavesCCT
+          : [];
+        const nombreSeguro = (nombre ?? '').trim();
+        const apepaternoSeguro = (apepaterno ?? '').trim();
+        const apematernoSeguro = apematerno ? apematerno.trim() : null;
 
-        // Validar que el correo no exista
-        const existingUser = await query('SELECT id FROM usuarios WHERE correo = $1', [correo]);
+        // Validar que el email no exista
+        const existingUser = await query('SELECT id FROM usuarios WHERE email = $1', [email]);
 
         if (existingUser.rows.length > 0) {
-          throw new Error('El correo ya está registrado');
+          throw new Error('El email ya está registrado');
         }
+
+        const roleResult = await query(
+          'SELECT id_rol FROM cat_roles_usuario WHERE codigo = $1',
+          [rol]
+        );
+
+        if (roleResult.rows.length === 0) {
+          throw new Error('El rol especificado no existe');
+        }
+
+        const roleId = Number((roleResult.rows[0] as { id_rol: number }).id_rol);
+
+        const salt = crypto.randomBytes(16).toString('hex');
+        const passwordHash = crypto.scryptSync(password, salt, 64).toString('hex');
 
         // Insertar usuario
         const result = await query(
           `INSERT INTO usuarios 
-            (correo, nombre, apellido_paterno, apellido_materno, rol, activo, fecha_creacion)
-          VALUES ($1, $2, $3, $4, $5, true, NOW())
+            (email, nombre, apepaterno, apematerno, rol, password_hash, activo, fecha_registro)
+          VALUES ($1, $2, $3, $4, $5, $6, true, NOW())
           RETURNING 
             id, 
-            correo, 
+            email, 
             nombre, 
-            apellido_paterno as "apellidoPaterno",
-            apellido_materno as "apellidoMaterno",
-            rol,
+            apepaterno,
+            apematerno,
+            (SELECT codigo FROM cat_roles_usuario WHERE id_rol = usuarios.rol) as "rol",
             activo,
-            fecha_creacion as "fechaCreacion"`,
-          [correo, nombre, apellidoPaterno, apellidoMaterno, rol]
+            fecha_registro as "fechaRegistro"`,
+          [email, nombreSeguro, apepaternoSeguro, apematernoSeguro, roleId, `${salt}:${passwordHash}`]
         );
 
         const createdUser = result.rows[0] as CreateUserResult;
+
+        if (clavesCCT.length) {
+          const centros = await query(
+            `SELECT id, clave_cct as "claveCCT"
+             FROM centros_trabajo
+             WHERE clave_cct = ANY($1)`,
+            [clavesCCT]
+          );
+
+          const centrosEncontrados = centros.rows as Array<{ id: string; claveCCT: string }>;
+          for (const centro of centrosEncontrados) {
+            await query(
+              `INSERT INTO usuarios_centros_trabajo (usuario_id, centro_trabajo_id)
+               VALUES ($1, $2)
+               ON CONFLICT DO NOTHING`,
+              [createdUser.id, centro.id]
+            );
+          }
+        }
+
         logger.info('User created successfully', { userId: createdUser.id });
 
         return createdUser;
       } catch (error) {
         logger.error('Error creating user', { input, error });
+        throw error;
+      }
+    },
+
+    /**
+     * Autenticar usuario
+     * @use-case CU-01: Autenticación de usuario
+     */
+    authenticateUser: async (_: unknown, { input }: { input: { email: string; password: string } }): Promise<AuthPayload> => {
+      try {
+        const { email, password } = input;
+        const result = await query(
+          `SELECT 
+            u.id,
+            u.email,
+            u.nombre,
+            u.apepaterno,
+            u.apematerno,
+            r.codigo as "rol",
+            u.password_hash,
+            u.activo,
+            u.fecha_registro as "fechaRegistro",
+            u.updated_at as "fechaUltimoAcceso"
+          FROM usuarios u
+          INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
+          WHERE u.email = $1`,
+          [email]
+        );
+
+        if (result.rows.length === 0) {
+          return { ok: false, message: 'Credenciales inválidas', user: null };
+        }
+
+        const usuario = result.rows[0] as UserRow & { password_hash: string | null };
+        if (!usuario.activo) {
+          return { ok: false, message: 'Usuario inactivo', user: null };
+        }
+
+        const hashGuardado = usuario.password_hash ?? '';
+        const [salt, hash] = hashGuardado.split(':');
+        if (!salt || !hash) {
+          return { ok: false, message: 'Credenciales inválidas', user: null };
+        }
+
+        const hashCalculado = crypto.scryptSync(password, salt, 64).toString('hex');
+        const coincide = crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(hashCalculado, 'hex'));
+        if (!coincide) {
+          return { ok: false, message: 'Credenciales inválidas', user: null };
+        }
+
+        await query('UPDATE usuarios SET updated_at = NOW() WHERE id = $1', [usuario.id]);
+
+        return { ok: true, message: 'Autenticación correcta', user: usuario };
+      } catch (error) {
+        logger.error('Error authenticating user', { input, error });
         throw error;
       }
     },
@@ -404,7 +510,22 @@ export const resolvers = {
       { id, input }: { id: string; input: UpdateUserInput }
     ): Promise<UpdateUserResult> => {
       try {
-        const { updates, values } = buildUpdateQuery(input);
+        const updatesInput: UpdateUserInput = { ...input };
+
+        if (input.rol !== undefined) {
+          const roleResult = await query(
+            'SELECT id_rol FROM cat_roles_usuario WHERE codigo = $1',
+            [input.rol]
+          );
+
+          if (roleResult.rows.length === 0) {
+            throw new Error('El rol especificado no existe');
+          }
+
+          updatesInput.rol = Number((roleResult.rows[0] as { id_rol: number }).id_rol);
+        }
+
+        const { updates, values } = buildUpdateQuery(updatesInput);
 
         if (updates.length === 0) {
           throw new Error('No hay campos para actualizar');
@@ -419,13 +540,13 @@ export const resolvers = {
           WHERE id = $${paramIndex}
           RETURNING 
             id, 
-            correo, 
+            email, 
             nombre, 
-            apellido_paterno as "apellidoPaterno",
-            apellido_materno as "apellidoMaterno",
-            rol,
+            apepaterno,
+            apematerno,
+            (SELECT codigo FROM cat_roles_usuario WHERE id_rol = usuarios.rol) as "rol",
             activo,
-            fecha_creacion as "fechaCreacion"`,
+            fecha_registro as "fechaRegistro"`,
           values
         );
 
@@ -554,14 +675,15 @@ export const resolvers = {
         const result = await query(
           `SELECT 
             u.id,
-            u.correo,
+            u.email,
             u.nombre,
-            u.apellido_paterno as "apellidoPaterno",
-            u.apellido_materno as "apellidoMaterno",
-            u.rol,
+            u.apepaterno,
+            u.apematerno,
+            r.codigo as "rol",
             u.activo
           FROM usuarios u
           INNER JOIN usuarios_centros_trabajo uct ON u.id = uct.usuario_id
+          INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
           WHERE uct.centro_trabajo_id = $1`,
           [parent.id]
         );

@@ -3,6 +3,11 @@
     <h1>Inicia sesión para continuar</h1>
     <p>Usa el correo y la contraseña generada en tu primer envío.</p>
 
+    <div class="login__alerta" *ngIf="sinCredenciales">
+      Aún no tienes credenciales. Realiza tu primera carga en el módulo de carga masiva para generar tu usuario y
+      contraseña.
+    </div>
+
     <form (ngSubmit)="iniciarSesion()" #loginForm="ngForm" novalidate>
       <label for="correo">Correo (usuario)</label>
       <input

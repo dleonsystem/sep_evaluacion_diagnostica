@@ -1,0 +1,111 @@
+import { CommonModule } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
+import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
+import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
+
+interface TicketSoporte {
+  id: string;
+  folio: string;
+  correo: string;
+  motivo: string;
+  motivoDetalle: string;
+  descripcion: string;
+  fecha: string;
+  estatus: 'pendiente' | 'en-proceso' | 'respondido';
+  respuestas: Array<{ mensaje: string; fecha: string; autor: 'admin' }>;
+  evidencias: Array<{ nombre: string; tamano: number; tipo: string }>;
+}
+
+@Component({
+  selector: 'app-tickets-historial',
+  standalone: true,
+  imports: [CommonModule, RouterModule],
+  templateUrl: './tickets-historial.component.html',
+  styleUrl: './tickets-historial.component.scss'
+})
+export class TicketsHistorialComponent implements OnInit {
+  tickets: TicketSoporte[] = [];
+  mensajeInfo: string | null = null;
+  correoActivo: string | null = null;
+  ticketExpandidoId: string | null = null;
+
+  constructor(
+    private readonly authService: AuthService,
+    private readonly estadoCredencialesService: EstadoCredencialesService,
+    private readonly router: Router
+  ) {}
+
+  ngOnInit(): void {
+    if (!this.authService.estaAutenticado()) {
+      void this.router.navigate(['/login'], { queryParams: { redirect: '/tickets-historial' } });
+      return;
+    }
+
+    const credenciales = this.estadoCredencialesService.obtener() ?? this.authService.obtenerCredenciales();
+    const correoSesion = this.authService.obtenerCorreoSesion();
+    this.correoActivo = this.normalizarCorreo(credenciales?.correo ?? correoSesion ?? null);
+    this.cargarTickets();
+  }
+
+  cargarTickets(): void {
+    const data = localStorage.getItem('tickets-soporte');
+    const tickets = data ? (JSON.parse(data) as TicketSoporte[]) : [];
+    const correoActivo = this.normalizarCorreo(this.correoActivo);
+    this.tickets = correoActivo
+      ? tickets.filter((ticket) => this.normalizarCorreo(ticket.correo) === correoActivo)
+      : tickets;
+
+    if (!this.tickets.length) {
+      this.mensajeInfo = 'Aún no has enviado tickets de soporte.';
+      return;
+    }
+
+    this.mensajeInfo = null;
+  }
+
+  obtenerEtiquetaEstatus(estatus: TicketSoporte['estatus']): string {
+    switch (estatus) {
+      case 'respondido':
+        return 'Respondido';
+      case 'en-proceso':
+        return 'En proceso';
+      default:
+        return 'Pendiente';
+    }
+  }
+
+  formatearFecha(fecha: string): string {
+    const parsed = new Date(fecha);
+    if (Number.isNaN(parsed.getTime())) {
+      return '—';
+    }
+    return new Intl.DateTimeFormat('es-MX', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(parsed);
+  }
+
+  obtenerUltimaRespuesta(ticket: TicketSoporte): { mensaje: string; fecha: string } | null {
+    if (!ticket.respuestas?.length) {
+      return null;
+    }
+    const respuesta = ticket.respuestas[ticket.respuestas.length - 1];
+    return { mensaje: respuesta.mensaje, fecha: respuesta.fecha };
+  }
+
+  toggleDetalleRespuesta(ticketId: string): void {
+    this.ticketExpandidoId = this.ticketExpandidoId === ticketId ? null : ticketId;
+  }
+
+  esTicketExpandido(ticketId: string): boolean {
+    return this.ticketExpandidoId === ticketId;
+  }
+
+  private normalizarCorreo(correo: string | null): string | null {
+    if (!correo) {
+      return null;
+    }
+    return correo.trim().toLowerCase();
+  }
+}

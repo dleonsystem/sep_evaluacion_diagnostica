@@ -287,13 +287,7 @@ CREATE TABLE cat_entidades_federativas (
 	region       VARCHAR(50)
 );
 
-CREATE TABLE cat_niveles_educativos (
-	id_nivel    INT PRIMARY KEY,
-	nombre      VARCHAR(50) NOT NULL,
-	codigo      VARCHAR(10) NOT NULL UNIQUE,
-	descripcion VARCHAR(200),
-	orden       INT
-);
+-- cat_niveles_educativos eliminado: consolidado en cat_nivel_educativo
 
 CREATE TABLE cat_turnos (
 	id_turno    INT PRIMARY KEY,
@@ -351,10 +345,18 @@ CREATE TABLE escuelas (
 	telefono       VARCHAR(15),
 	email          VARCHAR(100),
 	director       VARCHAR(150),
+	municipio      VARCHAR(100),
+	localidad      VARCHAR(100),
+	calle          VARCHAR(100),
+	num_exterior   VARCHAR(20),
+	entre_la_calle VARCHAR(100),
+	y_la_calle     VARCHAR(100),
+	calle_posterior VARCHAR(100),
+	colonia        VARCHAR(100),
 	fecha_registro TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
 	activo         BOOLEAN NOT NULL DEFAULT TRUE,
 	id_turno       INT NOT NULL REFERENCES cat_turnos(id_turno),
-	id_nivel       INT NOT NULL REFERENCES cat_niveles_educativos(id_nivel),
+	id_nivel       SMALLINT NOT NULL REFERENCES cat_nivel_educativo(id),
 	id_entidad     INT NOT NULL REFERENCES cat_entidades_federativas(id_entidad),
 	id_ciclo       INT NOT NULL REFERENCES cat_ciclos_escolares(id_ciclo),
 	created_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),

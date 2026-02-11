@@ -61,6 +61,12 @@ export const typeDefs = `#graphql
     @psp Design Review - Validación de entrada
     """
     createUser(input: CreateUserInput!): User!
+
+    """
+    Autenticar usuario
+    @use-case CU-01: Autenticación de usuarios
+    """
+    authenticateUser(input: AuthenticateUserInput!): AuthPayload!
     
     """
     Actualizar usuario existente
@@ -108,13 +114,13 @@ export const typeDefs = `#graphql
   """
   type User {
     id: ID!
-    correo: String!
+    email: String!
     nombre: String!
-    apellidoPaterno: String!
-    apellidoMaterno: String
+    apepaterno: String!
+    apematerno: String
     rol: UserRole!
     activo: Boolean!
-    fechaCreacion: String!
+    fechaRegistro: String!
     fechaUltimoAcceso: String
     centrosTrabajo: [CentroTrabajo!]!
   }
@@ -206,18 +212,36 @@ export const typeDefs = `#graphql
     totalCount: Int!
     hasNextPage: Boolean!
   }
+
+  """
+  Resultado de autenticación
+  """
+  type AuthPayload {
+    ok: Boolean!
+    message: String
+    user: User
+  }
   
   """
   Input para crear usuario
   @psp Design by Contract - Validación de entrada
   """
   input CreateUserInput {
-    correo: String!
-    nombre: String!
-    apellidoPaterno: String!
-    apellidoMaterno: String
+    email: String!
+    nombre: String
+    apepaterno: String
+    apematerno: String
     rol: UserRole!
     clavesCCT: [String!]!
+    password: String!
+  }
+
+  """
+  Input para autenticar usuario
+  """
+  input AuthenticateUserInput {
+    email: String!
+    password: String!
   }
   
   """
@@ -225,8 +249,8 @@ export const typeDefs = `#graphql
   """
   input UpdateUserInput {
     nombre: String
-    apellidoPaterno: String
-    apellidoMaterno: String
+    apepaterno: String
+    apematerno: String
     rol: UserRole
     activo: Boolean
   }
