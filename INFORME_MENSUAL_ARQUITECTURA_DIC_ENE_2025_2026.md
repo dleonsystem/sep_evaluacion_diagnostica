@@ -42,6 +42,8 @@ Este informe documenta el **análisis de arquitectura Frontend de sistemas web**
 
 ## 4) Arquitectura lógica y tecnológica del sistema
 
+**Descripción del diagrama:** este flujo resume cómo conviven dos modos de operación en el periodo reportado: (a) persistencia local y servicios simulados para continuidad funcional del frontend, y (b) integración progresiva con GraphQL hasta llegar a Apollo + PostgreSQL para operaciones reales.
+
 ```mermaid
 flowchart LR
   U[Usuario SEP] --> FE[Frontend Angular 19 SPA]
@@ -72,6 +74,8 @@ Rutas funcionales:
 - `/tickets-historial`
 - `/admin/login`
 - `/admin/panel`
+
+**Descripción del diagrama:** este mapa de componentes muestra el enrutador como eje central de navegación y la distribución de páginas funcionales del sistema, incluyendo flujo de usuario final, soporte y administración.
 
 ```mermaid
 graph TD
@@ -105,6 +109,8 @@ graph TD
 - **PostgreSQL** con `pg`
 - **XLSX** para parseo de archivos de carga
 
+**Descripción del diagrama:** el mindmap sintetiza el stack tecnológico realmente usado en el periodo, separando capa frontend y backend para evidenciar frameworks base y librerías complementarias.
+
 ```mermaid
 mindmap
   root((Stack técnico))
@@ -125,6 +131,8 @@ mindmap
 ---
 
 ## 7) Arquitectura de servicios frontend
+
+**Descripción del diagrama:** el diagrama de clases representa la separación por responsabilidades en servicios Angular (autenticación, almacenamiento local, estado de credenciales y consumo GraphQL), así como las dependencias entre servicios de dominio y el cliente de API.
 
 ```mermaid
 classDiagram
@@ -175,6 +183,8 @@ Durante diciembre se implementó una arquitectura **offline-first/simulada** par
 - `AdminAuthService`: token simulado para panel administrativo.
 - Servicios de seguimiento/versiones en modo mock.
 
+**Descripción del diagrama:** esta secuencia describe el flujo típico de diciembre sin backend obligatorio: validación de archivo, guardado con hash, registro de credenciales y persistencia en localStorage con confirmación al usuario.
+
 ```mermaid
 sequenceDiagram
   participant U as Usuario
@@ -205,6 +215,8 @@ En enero se mantiene la experiencia frontend pero se activa integración real po
 - `EvaluacionesService` consume `uploadExcelAssessment`.
 - Se conserva soporte mock para funcionalidades aún no acopladas totalmente.
 
+**Descripción del diagrama (decisión de flujo):** este flujo explica la estrategia híbrida de enero: si el caso de uso ya estaba disponible en GraphQL se enviaba por API; en caso contrario se mantenía servicio mock/localStorage para no frenar operación.
+
 ```mermaid
 flowchart TD
   A[CargaMasiva/Login] --> B{Flujo disponible en GraphQL?}
@@ -213,6 +225,8 @@ flowchart TD
   D --> E[(PostgreSQL)]
   B -- No --> F[Servicio mock/localStorage]
 ```
+
+**Descripción del diagrama (secuencia GraphQL):** esta secuencia detalla la autenticación real vía GraphQL: frontend ejecuta mutation, Apollo consulta PostgreSQL, y retorna el objeto de usuario para completar inicio de sesión en la SPA.
 
 ```mermaid
 sequenceDiagram
@@ -233,6 +247,8 @@ sequenceDiagram
 
 ## 10) Backend GraphQL y componentes (enero)
 
+**Descripción del diagrama:** este componente lógico del backend muestra el punto de entrada (`index.ts`), definición de esquema (`typeDefs`), resolvedores por tipo (queries/mutations) y acceso a datos centralizado mediante `database.ts` hacia PostgreSQL.
+
 ```mermaid
 graph LR
   IDX[index.ts
@@ -250,6 +266,8 @@ graph LR
 ---
 
 ## 11) Diagrama de despliegue técnico
+
+**Descripción del diagrama:** este despliegue resume la topología en ejecución: navegador consumiendo la SPA Angular, comunicación HTTP con endpoint `/graphql`, conexión de API a PostgreSQL y persistencia local complementaria en el cliente.
 
 ```mermaid
 flowchart LR
@@ -284,6 +302,8 @@ flowchart LR
 
 ## 14) Anexo: diagrama de roadmap mensual
 
+**Descripción del diagrama:** el Gantt permite justificar temporalmente el trabajo del periodo, mostrando la progresión de entregables desde base Angular y validación local (diciembre) hasta integración GraphQL en flujos críticos (enero).
+
 ```mermaid
 gantt
   title Evolución técnica Dic 2025 - Ene 2026
@@ -297,4 +317,3 @@ gantt
   Soporte/tickets y seguimiento            :done, e2, 2026-01-10, 14d
   Integración GraphQL usuarios/carga       :done, e3, 2026-01-22, 9d
 ```
-
