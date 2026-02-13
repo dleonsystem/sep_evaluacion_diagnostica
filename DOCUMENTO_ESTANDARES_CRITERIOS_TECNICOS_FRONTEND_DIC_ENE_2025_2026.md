@@ -30,6 +30,23 @@ Este documento establece y verifica los criterios técnicos, estándares de desa
 - **Capa de integración API (GraphQL)** con estrategia híbrida (mock/localStorage + integración real gradual).
 - **Trazabilidad y control de cambios** sobre funcionalidades frontend implementadas.
 
+**Descripción del diagrama:** este diagrama muestra la vista integral del alcance técnico evaluado y cómo se relacionan módulos de UI, servicios de dominio, capa de integración GraphQL y persistencia temporal en navegador.
+
+```mermaid
+flowchart LR
+  U[Usuario/Administrador] --> UI[Angular SPA]
+  UI --> R[Router y componentes]
+  UI --> S[Servicios de negocio]
+
+  S --> V[ExcelValidationService]
+  S --> A[AuthService / EstadoCredencialesService]
+  S --> L[ArchivoStorageService localStorage]
+  S --> G[GraphqlService]
+
+  G --> API[/GraphQL API/]
+  API --> DB[(PostgreSQL)]
+```
+
 ---
 
 ## 4) Lineamientos y estándares técnicos establecidos
@@ -65,6 +82,20 @@ Este documento establece y verifica los criterios técnicos, estándares de desa
 - Evidencia por commits con mensajes que documentan correcciones/ajustes.
 - Evidencia verificable por pruebas unitarias en funcionalidades críticas.
 
+**Descripción del diagrama:** este mapa de componentes resume el estándar de organización que se siguió en frontend para mantener trazabilidad y separación de responsabilidades.
+
+```mermaid
+graph TD
+  APP[Aplicación Angular] --> ROUTES[app.routes.ts]
+  APP --> COMPONENTS[components/*]
+  APP --> GUARDS[guards/*]
+  APP --> SERVICES[services/*]
+  SERVICES --> OPS[operations/mutation.ts + query.ts]
+  SERVICES --> STORAGE[localStorage]
+  SERVICES --> GRAPHQL[GraphqlService]
+  GRAPHQL --> API[/GraphQL endpoint/]
+```
+
 ---
 
 ## 5) Validaciones realizadas (dic/ene)
@@ -91,6 +122,31 @@ Este documento establece y verifica los criterios técnicos, estándares de desa
 - Reglas explícitas de error en creación/autenticación de usuario y carga de Excel.
 - Estrategia de fallback operativo local mientras se consolidan flujos API.
 
+**Descripción del diagrama:** esta secuencia representa el flujo de validación/carga, incluyendo decisiones de bloqueo por errores, persistencia local y uso de GraphQL en flujos habilitados.
+
+```mermaid
+sequenceDiagram
+  participant USR as Usuario
+  participant CM as CargaMasivaComponent
+  participant EV as ExcelValidationService
+  participant AS as ArchivoStorageService
+  participant GS as GraphqlService
+
+  USR->>CM: Selecciona archivo .xlsx
+  CM->>EV: Validar estructura y reglas
+  EV-->>CM: Resultado (ok/error)
+  alt Validación error
+    CM-->>USR: Muestra errores y bloquea carga
+  else Validación exitosa
+    CM->>AS: Guardar registro local (hash + metadatos)
+    opt Flujo GraphQL habilitado
+      CM->>GS: Ejecutar mutation
+      GS-->>CM: Respuesta API
+    end
+    CM-->>USR: Confirmación y estado final
+  end
+```
+
 ---
 
 ## 6) Observaciones técnicas identificadas
@@ -100,6 +156,21 @@ Este documento establece y verifica los criterios técnicos, estándares de desa
 3. **Fuerte concentración de reglas en validación Excel**: técnicamente útil para centralizar reglas, pero requiere mantenimiento riguroso por volumen de variantes por nivel/grado.
 4. **Buenas prácticas de UX técnica presentes**: alertas de estado, mensajes de error/sugerencia y bloqueo preventivo de acciones inválidas.
 5. **Necesidad de ampliar automatización de pruebas**: ya existen tests relevantes, pero el crecimiento funcional sugiere ampliar cobertura (especialmente autenticación/integración).
+
+**Descripción del diagrama:** este diagrama de decisión sintetiza las observaciones técnicas y su impacto operativo para priorizar acciones de mejora.
+
+```mermaid
+flowchart TD
+  O[Observaciones técnicas] --> O1[Persistencia local limitada]
+  O --> O2[Híbrido mock/GraphQL]
+  O --> O3[Reglas Excel complejas]
+  O --> O4[Cobertura de pruebas parcial]
+
+  O1 --> I1[Riesgo de auditoría/seguridad]
+  O2 --> I2[Riesgo de divergencia funcional]
+  O3 --> I3[Riesgo de mantenimiento]
+  O4 --> I4[Riesgo de regresión]
+```
 
 ---
 
@@ -117,30 +188,73 @@ Este documento establece y verifica los criterios técnicos, estándares de desa
 - Integración progresiva GraphQL para autenticación y creación de usuario.
 - Alineación de campos y endpoint GraphQL para compatibilidad con backend/DB.
 
+**Descripción del diagrama:** el timeline organiza las acciones correctivas por mes para evidenciar continuidad técnica y trazabilidad del trabajo realizado.
+
+```mermaid
+timeline
+  title Acciones correctivas implementadas (dic 2025 - ene 2026)
+  Diciembre 2025 : Validación robusta de correo/archivo
+                 : Correcciones de guardado local y duplicados
+                 : Mejora de flujo de sesión y credenciales
+                 : Corrección de fecha disponible en mensajes
+  Enero 2026 : Reorganización de navegación por sesión/rol
+             : Correcciones de tickets e historial
+             : Integración progresiva con GraphQL
+             : Alineación de endpoint y campos API
+```
+
 ---
 
 ## 8) Evidencia de verificación de cumplimiento
 
-## 8.1 Cumplimiento de estándares de arquitectura frontend
+### 8.1 Cumplimiento de estándares de arquitectura frontend
 - Se verifica separación por módulos/rutas/servicios y configuración central de providers.
 - Se verifica existencia de rutas funcionales para módulos comprometidos (inicio, carga, login, descargas, tickets, admin).
 
-## 8.2 Cumplimiento de validaciones técnicas
+### 8.2 Cumplimiento de validaciones técnicas
 - Servicio de validación Excel centralizado con reglas por nivel y catálogos de encabezados/columnas esperadas.
 - Servicio de almacenamiento con hash SHA-256 y política de duplicados.
 - Servicio de autenticación con reglas de normalización y control de sesión.
 
-## 8.3 Cumplimiento de trazabilidad
+### 8.3 Cumplimiento de trazabilidad
 - Bitácora con hitos de diciembre y enero que documentan acciones y correcciones.
 - Historial de commits de enero con mensajes de integración/corrección alineados al avance funcional.
 
-## 8.4 Cumplimiento de verificación por pruebas
+### 8.4 Cumplimiento de verificación por pruebas
 - Existen pruebas unitarias enfocadas en: detección de duplicados/reemplazo (`ArchivoStorageService`) y creación de componentes clave.
 - La existencia de pruebas demuestra práctica de verificación técnica en funcionalidades críticas del frontend.
 
+**Descripción del diagrama:** este flujo de verificación muestra cómo se consolidó la evidencia de cumplimiento desde código, bitácora, historial de commits y pruebas.
+
+```mermaid
+flowchart LR
+  CODE[Código frontend] --> VER[Verificación técnica]
+  BIT[Bitácora dic/ene] --> VER
+  GIT[Commits dic/ene] --> VER
+  TEST[Pruebas unitarias] --> VER
+  VER --> OUT[Conclusión de cumplimiento contractual]
+```
+
 ---
 
-## 9) Matriz de cumplimiento del entregable contractual
+## 9) Sugerencias de capturas de pantalla (si deseas reforzar evidencia visual)
+Sí aplica incluir capturas porque el entregable es técnico y de cumplimiento; las imágenes ayudan a demostrar que los estándares se reflejan en la interfaz y en el flujo operativo real.
+
+Recomendación de capturas mínimas:
+1. **Pantalla de Carga Masiva** mostrando correo, zona de carga y reglas visibles.
+2. **Estado de validación con errores** (evidencia de validaciones y mensajes de control).
+3. **Estado de validación exitosa + botón de carga** (evidencia de flujo correcto).
+4. **Pantalla de login usuario** (evidencia de control de acceso).
+5. **Vista con sesión iniciada y submenú de usuario** (evidencia de navegación condicionada).
+6. **Módulo de tickets/historial** (evidencia de trazabilidad funcional de soporte).
+7. **Vista admin login/admin panel** (evidencia de separación de rol administrativo).
+
+Sugerencia de formato para anexarlas en el informe:
+- Captura + breve pie de figura: *“Qué estándar valida / qué evidencia aporta”*.
+
+---
+
+## 10) Matriz de cumplimiento del entregable contractual
 
 | Requisito del entregable | Evidencia del proyecto (dic/ene) | Estado |
 |---|---|---|
@@ -152,7 +266,7 @@ Este documento establece y verifica los criterios técnicos, estándares de desa
 
 ---
 
-## 10) Criterios de aceptación para auditoría interna
+## 11) Criterios de aceptación para auditoría interna
 Para considerar conforme este entregable en futuras revisiones mensuales:
 
 1. Mantener corte temporal explícito por mes evaluado.
@@ -163,7 +277,7 @@ Para considerar conforme este entregable en futuras revisiones mensuales:
 
 ---
 
-## 11) Conclusión ejecutiva
+## 12) Conclusión ejecutiva
 Con base en la evidencia revisada del repositorio, **sí existe un marco técnico de desarrollo frontend aplicado y verificable para diciembre-enero**, con lineamientos claros, validaciones operativas, acciones correctivas documentadas y trazabilidad suficiente para sustentar el cumplimiento contractual del entregable solicitado.
 
 > **Nota final de alcance:** este documento excluye deliberadamente avances de febrero para no mezclar periodos de reporte.
