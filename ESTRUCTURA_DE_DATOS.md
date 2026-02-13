@@ -403,6 +403,13 @@ especializada `NIVELES_INTEGRACION_ESTUDIANTE` con granularidad por Campo Format
 | metadata        | JSONB        | Datos adicionales (dispositivo, ubicación, etc.) |
 | created_at      | TIMESTAMP    | Fecha/hora del intento                           |
 
+**Integridad y relación con USUARIOS**
+
+- `usuario_id` es nullable para preservar intentos con credenciales inválidas (email inexistente o usuario eliminado).
+- Cuando `usuario_id` es NULL, la integridad se conserva mediante los campos `email`, `ip_address`, `user_agent` y `created_at` (auditoría), sin violar PK/unique de otros módulos.
+- Cuando el usuario existe, `usuario_id` **debe** corresponder a `USUARIOS.id` (PK/unique) y el `email` del intento debe coincidir con `USUARIOS.email` para trazabilidad.
+- Los intentos con `usuario_id` NULL no generan relaciones en cascada ni afectan restricciones UNIQUE de usuarios; se consultan por `email`/IP para análisis de seguridad.
+
 ### LOG_ACTIVIDADES
 
 **Consolidado** - Incluye funcionalidad de BITACORA_DETALLADA eliminada
@@ -499,6 +506,12 @@ formativo: ENS, HYC, LEN, SPC) en cada periodo de evaluación.
 | fecha_fin       | DATE         | Fecha de fin                      |
 | activo          | BOOLEAN      | Indica si el periodo está activo  |
 | created_at      | TIMESTAMP    | Fecha de creación                 |
+
+**Reglas de negocio / validaciones:**
+- No se permiten rangos de fechas traslapados entre periodos del mismo `ciclo_escolar` (incluye límites compartidos).
+- Se permiten periodos contiguos (fin + 1 día = inicio del siguiente).
+- Al editar un periodo, la validación compara contra el resto de registros del mismo ciclo, excluyendo el periodo editado.
+- Excepción operativa: si no existe carga válida de Periodo 1 en el ciclo y se recibe una carga etiquetada como Periodo 1 dentro del rango oficial de Periodo 2 o 3, se reclasifica como Periodo 2 (registrando la reasignación).
 
 ### PLANTILLAS_EMAIL
 
@@ -899,7 +912,9 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | Campo           | Tipo         | Descripción                       |
 |-----------------|--------------|-----------------------------------|
 | id              | UUID         | Identificador único               |
-| nombre          | VARCHAR(150) | Nombre completo                   |
+| nombre          | VARCHAR(60)  | Nombre de pila                    |
+| apepaterno      | VARCHAR(60)  | Primer apellido                   |
+| apematerno      | VARCHAR(60)  | Segundo apellido (opcional)       |
 | email           | VARCHAR(100) | Correo electrónico (UNIQUE)       |
 | password_hash   | VARCHAR(255) | Hash de la contraseña (bcrypt/argon2) |
 | rol             | INT          | Relación con CAT_ROLES_USUARIO (FK) |
@@ -1863,9 +1878,9 @@ INSERT INTO EVALUACIONES (
 
 ### Integridad de datos
 
-- No puede haber dos escuelas con el mismo CCT.
+- No puede haber dos escuelas con el mismo CCT + turno.
 - El CURP de cada estudiante debe ser único.
-- Un usuario solo puede estar activo en una escuela a la vez.
+- Un usuario puede estar activo en múltiples escuelas según su asignación en USUARIO_CCT.
 - Los valores de valoración deben estar en el rango 0-3.
 - Los periodos deben estar correctamente definidos y no solaparse.
 
@@ -1897,7 +1912,7 @@ INSERT INTO EVALUACIONES (
 - Todo usuario debe tener un rol asignado.
 - El campo `escuela_id` en GRUPOS es FK obligatorio a ESCUELAS.id.
 - El campo `grado_id` en GRUPOS es FK obligatorio a CAT_GRADOS.id.
-- No puede haber dos grupos con el mismo nombre en la misma escuela (UNIQUE en escuela_id + nombre).
+- No puede haber dos grupos con el mismo nombre dentro del mismo grado y escuela (UNIQUE en escuela_id + grado_id + nombre).
 - El campo `total_alumnos` debe actualizarse automáticamente al agregar/eliminar estudiantes.
 - Los grupos inactivos (`activo = FALSE`) no permiten asignación de nuevos estudiantes.
 
@@ -1911,8 +1926,10 @@ INSERT INTO EVALUACIONES (
 - Los intentos exitosos (`exito = TRUE`) deben registrar siempre usuario_id válido.
 - El campo `motivo_fallo` debe ser uno de: 'USUARIO_INVALIDO', 'PASSWORD_INCORRECTO', 'CUENTA_BLOQUEADA', 'CUENTA_INACTIVA', 'CUENTA_ELIMINADA', 'PASSWORD_EXPIRADO'.
 - El bloqueo automático debe registrarse en `bloqueado_hasta` con timestamp 30 minutos futuro.
-- Un usuario bloqueado no puede intentar login hasta que `bloqueado_hasta < NOW()`.
-- Los administradores pueden desbloquear manualmente una cuenta antes del tiempo establecido.
+- Un usuario bloqueado no puede intentar login hasta que `bloqueado_hasta < NOW()` **o** un administrador restablezca el bloqueo.
+- **Desbloqueo automático**: al cumplirse el tiempo (`bloqueado_hasta < NOW()`), la cuenta queda habilitada sin intervención adicional.
+- **Desbloqueo administrativo**: un administrador puede poner `bloqueado_hasta = NULL` antes del tiempo, registrar la acción en LOG_ACTIVIDADES y opcionalmente resetear el contador de fallos.
+- Flujo exacto: (1) detectar umbral de fallos, (2) setear `bloqueado_hasta` y registrar intento, (3) rechazar login mientras `bloqueado_hasta` vigente, (4) permitir login al expirar o al desbloqueo admin, (5) al primer login exitoso posterior, resetear contador de fallos.
 - Se debe enviar notificación email al usuario cuando su cuenta es bloqueada por intentos fallidos.
 - Los intentos desde IP sospechosas (múltiples cuentas fallidas) deben bloquearse temporalmente a nivel de firewall.
 - El campo `user_agent` debe registrarse para detectar patrones de bots/scripts.
@@ -1983,9 +2000,10 @@ INSERT INTO EVALUACIONES (
 
 - Las valoraciones deben estar en el rango **0-3** (validación estricta mediante CHECK constraint).
 - Cada estudiante debe tener **una evaluación por materia por periodo** (constraint UNIQUE en combinación estudiante_id, materia_id, periodo_id).
-- El campo `nivel_integracion` se calcula automáticamente por el sistema basado en la valoración y competencias.
-- Los niveles de integración son: 'EN DESARROLLO', 'SATISFACTORIO', 'SOBRESALIENTE', 'AVANZADO'.
-- El campo `competencia_alcanzada` se determina comparando valoración vs nivel esperado en COMPETENCIAS.
+- El campo `nivel_integracion` se calcula automáticamente por el sistema por cada combinación estudiante-asignatura, con base en la valoración y competencias.
+- Los niveles de integración son: "sin evidencia de aprendizaje", "requiere apoyo para el aprendizaje", "en proceso de desarrollo" y "aprendizaje desarrollado".
+- Cada reactivo tiene una valoración de 0 a 3 y un peso por consigna; la suma ponderada de consignas por campo formativo (suma de consignas × PESO del campo) determina el `nivel_integracion` conforme a las reglas vigentes.
+- El campo `competencia_alcanzada` se determina comparando la valoración contra los criterios de logro definidos en COMPETENCIAS; si no existe un "nivel esperado", se usa el criterio de logro vigente para la competencia evaluada.
 - Las evaluaciones importadas desde ARCHIVOS_FRV deben mantener referencia al archivo origen (campo `archivo_frv_id`).
 - Solo evaluaciones con `validado = TRUE` se consideran para generación de reportes oficiales.
 - La validación debe ser realizada por usuarios con rol 'VALIDADOR' o 'OPERADOR'.
@@ -1996,9 +2014,9 @@ INSERT INTO EVALUACIONES (
 ### Plataforma EIA 2ª Aplicación (CREDENCIALES_EIA2)
 
 - Las credenciales se generan **únicamente en la primera carga válida** de cada CCT.
-- El campo `cct` debe ser UNIQUE - un CCT solo puede tener un registro de credenciales.
-- El usuario para login es el CCT validado en el archivo.
-- La contraseña es el correo electrónico validado, almacenado como hash seguro (bcrypt con salt rounds ≥12 o argon2id).
+- El campo `cct` **NO** es UNIQUE - un CCT puede tener múltiples registros de credenciales.
+- El usuario para login es el correo electrónico validado.
+- La contraseña es aleatoria o se apega al esquema vigente de seguridad, almacenada como hash seguro (bcrypt con salt rounds ≥12 o argon2id).
 - Las credenciales **NO se regeneran** en cargas posteriores, incluso si el correo cambia.
 - Si se requiere cambio de contraseña, debe implementarse un flujo de recuperación separado.
 - El campo `primera_carga_valida_fecha` es inmutable y sirve como auditoría.
@@ -2018,12 +2036,12 @@ INSERT INTO EVALUACIONES (
 - El campo `resultado_path` contiene la liga de descarga generada por el sistema externo.
 - El campo `resultado_disponible_desde` se calcula como `fecha_carga + 4 días` según requerimiento.
 - Las solicitudes se conservan indefinidamente para auditoría y trazabilidad completa.
-- La relación `credencial_id` permite consultar todas las solicitudes de un CCT.
+- La relación `credencial_id` permite consultar todas las solicitudes asociadas al correo/usuario validado.
 
 ### Reportes Generados (REPORTES_GENERADOS)
 
 - Se generan **5 tipos de reportes** por escuela según RF-05: ENS, HYC, LEN, SPC (reportes por campo formativo) y F5 (reporte por grupo).
-- **Volumenétrica esperada**: Preescolar (5 reportes/escuela), Primaria (30 reportes/escuela), Secundaria (15 reportes/escuela).
+- **Volumenétrica esperada (regla actual)**: por cada grupo se genera **1 reporte de resultados (F5)** y, **si aplica**, **1 reporte comparativo adicional**. Los reportes por campo formativo (ENS, HYC, LEN, SPC) se generan a nivel escuela.
 - La nomenclatura de archivos debe seguir estándar: `[CCT].[PERIODO].Reporte_[TIPO]_[CAMPO][FORMATO].[GRADO]°.[GRUPO].pdf`
 - El campo `checksum_sha256` es obligatorio para verificar integridad del archivo descargado.
 - Los reportes deben estar **disponibles por 2 ciclos escolares** (campo `disponible_hasta`).
@@ -2041,15 +2059,15 @@ INSERT INTO EVALUACIONES (
 
 ### Índices únicos
 
-- `UNIQUE INDEX idx_escuelas_cct ON ESCUELAS(cct)`
+- `UNIQUE INDEX idx_escuelas_cct ON ESCUELAS(cct, id_turno)`
 - `UNIQUE INDEX idx_estudiantes_curp ON ESTUDIANTES(curp)`
 - `UNIQUE INDEX idx_usuarios_email ON USUARIOS(email)`
 - `UNIQUE INDEX idx_cat_turnos_codigo ON CAT_TURNOS(codigo)`
 - `UNIQUE INDEX idx_cat_niveles_codigo ON CAT_NIVELES_EDUCATIVOS(codigo)`
 - `UNIQUE INDEX idx_cat_roles_codigo ON CAT_ROLES_USUARIO(codigo)`
-- `UNIQUE INDEX idx_credenciales_eia2_cct ON CREDENCIALES_EIA2(cct)`
+- `UNIQUE INDEX idx_credenciales_eia2_correo ON CREDENCIALES_EIA2(correo_validado)`
 - `UNIQUE INDEX idx_solicitudes_eia2_consecutivo ON SOLICITUDES_EIA2(consecutivo)`
-- `UNIQUE INDEX idx_grupos_escuela_nombre ON GRUPOS(escuela_id, nombre)`
+- `UNIQUE INDEX idx_grupos_escuela_grado_nombre ON GRUPOS(escuela_id, grado_id, nombre)`
 - `UNIQUE INDEX idx_materias_codigo ON MATERIAS(codigo)`
 
 ### Índices compuestos
@@ -5170,9 +5188,9 @@ ALTER TABLE GRUPOS ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT TRUE;
 ALTER TABLE GRUPOS ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
 ALTER TABLE GRUPOS ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
 
--- Paso 8: Agregar constraint UNIQUE en escuela_id + nombre
-ALTER TABLE GRUPOS ADD CONSTRAINT uq_grupos_escuela_nombre 
-    UNIQUE (escuela_id, nombre);
+-- Paso 8: Agregar constraint UNIQUE en escuela_id + grado_id + nombre
+ALTER TABLE GRUPOS ADD CONSTRAINT uq_grupos_escuela_grado_nombre 
+    UNIQUE (escuela_id, grado_id, nombre);
 
 -- Paso 9: Agregar índices
 CREATE INDEX idx_grupos_escuela_grado ON GRUPOS(escuela_id, grado_id);
@@ -5307,12 +5325,12 @@ BEGIN
     
     -- 5. Verificar constraints UNIQUE
     IF EXISTS (
-        SELECT escuela_id, nombre, COUNT(*)
+        SELECT escuela_id, grado_id, nombre, COUNT(*)
         FROM GRUPOS
-        GROUP BY escuela_id, nombre
+        GROUP BY escuela_id, grado_id, nombre
         HAVING COUNT(*) > 1
     ) THEN
-        v_errors := v_errors || 'ERROR: GRUPOS tiene duplicados en escuela_id + nombre' || E'\n';
+        v_errors := v_errors || 'ERROR: GRUPOS tiene duplicados en escuela_id + grado_id + nombre' || E'\n';
     END IF;
     
     IF LENGTH(v_errors) > 0 THEN
