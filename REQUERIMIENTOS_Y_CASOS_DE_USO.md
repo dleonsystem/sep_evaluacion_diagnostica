@@ -37,32 +37,32 @@
 - **RF-02.4** El sistema debe validar formato de CURP
 - **RF-02.5** El sistema debe asignar estudiantes a grupos específicos
 - **RF-02.6** El sistema debe registrar datos del docente por grupo
+- **RF-02.7** El sistema debe validar unicidad de grupo por escuela, grado y nombre
 
 ### RF-03: Captura de Valoraciones
 - **RF-03.1** El sistema debe importar datos desde archivos Excel FRV
-- **RF-03.2** El sistema debe soportar 4 variantes de FRV:
+- **RF-03.2** El sistema debe soportar 3 variantes de FRV por nivel educativo:
   - Preescolar (52 KB)
   - Primaria (228 KB)
-  - Secundarias Técnicas (87 KB)
-  - Telesecundarias (88 KB)
+  - Secundaria (incluye formatos técnicos y telesecundarias, 87-88 KB)
 - **RF-03.3** El sistema debe capturar valoraciones por campo formativo:
   - ENS (Enseñanza: Español y Matemáticas)
   - HYC (Historia y Civismo)
   - LEN (Lenguaje y Comunicación)
   - SPC (Saberes y Pensamiento Científico)
-- **RF-03.4** El sistema debe validar rangos de valoración (escala 1-4)
+- **RF-03.4** El sistema debe validar rangos de valoración (escala 0-3)
 - **RF-03.5** El sistema debe permitir captura de observaciones por estudiante
 
 ### RF-04: Procesamiento y Validación (DGADAE)
 - **RF-04.1** El sistema debe recibir archivos FRV por correo electrónico
-- **RF-04.2** El sistema debe distribuir archivos entre 10 equipos de validación
+- **RF-04.2** El sistema debe operar en dos fases: fase 1 sin distribución de archivos y fase 2 con procesamiento centralizado
 - **RF-04.3** El sistema debe validar integridad de datos:
   - Campos obligatorios completos
   - CURP válidos
   - Valoraciones en rango permitido
   - Datos duplicados
 - **RF-04.4** El sistema debe separar registros con inconsistencias
-- **RF-04.5** El sistema debe asignar "Niveles de Integración del Aprendizaje" por estudiante
+- **RF-04.5** El sistema debe asignar "Niveles de Integración del Aprendizaje" por estudiante-asignatura
 - **RF-04.6** El sistema debe consolidar datos en base de datos central
 
 ### RF-05: Generación de Reportes
@@ -73,10 +73,10 @@
   - Reporte SPC (Saberes) - 670 KB aprox
 - **RF-05.2** El sistema debe generar reportes individuales por grupo:
   - Formato F5 - 2.71 MB aprox por grupo
-- **RF-05.3** El sistema debe generar reportes según volumetría:
-  - Preescolar: 5 reportes/escuela
-  - Primaria: 30 reportes/escuela
-  - Secundaria: 15 reportes/escuela
+- **RF-05.3** El sistema debe generar reportes según volumetría por grupo:
+  - Por cada grupo se genera 1 reporte de resultados (F5).
+  - Si aplica comparativo, se genera 1 reporte comparativo adicional por grupo.
+  - Los reportes por campo formativo (ENS, HYC, LEN, SPC) se generan a nivel escuela.
 - **RF-05.4** El sistema debe generar reportes en formato PDF
 - **RF-05.5** El sistema debe aplicar nomenclatura estándar:
   ```
@@ -104,9 +104,23 @@
   - Periodo 2: Evaluación intermedia
   - Periodo 3: Evaluación final
 - **RF-08.2** El sistema debe identificar periodo en reportes
+- **RF-08.3** El sistema debe validar solapamientos de periodos por ciclo escolar (reglas de negocio):
+  - **RN-08.3.1** No se permite que dos periodos del mismo **ciclo_escolar** tengan rangos de fechas que se traslapen (incluye límites compartidos: si un periodo termina el 2024-11-15, el siguiente inicia **>= 2024-11-16**).
+  - **RN-08.3.2** Sí se permiten periodos contiguos (fin + 1 día = inicio del siguiente).
+  - **RN-08.3.3** Para cambios de fechas, la validación debe evaluar el rango completo ya almacenado contra todos los periodos del mismo ciclo, excluyendo el registro que se está editando.
+- **RF-08.4** Excepción de “primera aplicación a fin de ciclo que debería ser segunda”:
+  - **RN-08.4.1** Si en un ciclo escolar **no existe carga válida** de Periodo 1 y se recibe una carga etiquetada como Periodo 1 **cuyo rango/fecha de aplicación cae dentro del rango oficial del Periodo 2 o Periodo 3**, el sistema debe **reclasificarla como Periodo 2** para reportes y comparativos.
+  - **RN-08.4.2** La reclasificación solo aplica si **no hay datos previos** asociados a Periodo 1 en ese ciclo; si ya existe Periodo 1, la carga debe rechazarse por conflicto de periodo.
+  - **RN-08.4.3** El sistema debe registrar en bitácora la reasignación (periodo_original=1, periodo_asignado=2, motivo="primera aplicación a fin de ciclo").
+
+**Ejemplos (para evitar ambigüedades):**
+- *Ejemplo A (válido)*: Periodo 1: 2024-09-01 a 2024-10-15; Periodo 2: 2024-10-16 a 2024-12-15 → **No hay solapamiento** (contiguos).
+- *Ejemplo B (inválido)*: Periodo 1: 2024-09-01 a 2024-10-20; Periodo 2: 2024-10-15 a 2024-12-15 → **Solapamiento** (10-15 al 10-20).
+- *Ejemplo C (excepción)*: Ciclo 2024-2025 sin cargas en Periodo 1. Se carga “Periodo 1” con fecha 2025-05-10 que cae dentro del rango oficial del Periodo 2/3 → **Se reclasifica a Periodo 2**.
+- *Ejemplo D (rechazo)*: Ciclo 2024-2025 ya tiene datos de Periodo 1. Se intenta cargar “Periodo 1” con fecha 2025-05-10 → **Rechazo por conflicto de periodo**.
 
 ### RF-09: Autenticación y Autorización ✨ FASE 1
-- **RF-09.1** El sistema web debe autenticar directores con CCT + contraseña
+- **RF-09.1** El sistema web debe autenticar directores con correo + contraseña
 - **RF-09.2** El sistema debe implementar recuperación de contraseña por email
 - **RF-09.3** El sistema debe gestionar sesiones con timeout configurable (default: 60 min)
 - **RF-09.4** El sistema debe implementar control de acceso basado en CCT
@@ -165,18 +179,18 @@
 
 ### RF-13: Catálogo de Escuelas ✨ FASE 1
 - **RF-13.1** El sistema debe permitir CRUD de escuelas:
-  - Crear nueva escuela con CCT único
+  - Crear nueva escuela con CCT + turno únicos
   - Editar datos de contacto
   - Desactivar (no eliminar físicamente)
   - Listar con filtros y paginación
-- **RF-13.2** El sistema debe validar unicidad de CCT a nivel nacional
+- **RF-13.2** El sistema debe validar unicidad de CCT + turno a nivel nacional
 - **RF-13.3** El sistema debe asignar nivel educativo (enum)
 - **RF-13.4** El sistema debe mantener histórico de cambios (auditoría)
 - **RF-13.5** El sistema debe permitir búsqueda por CCT, nombre o ubicación
 
 ### RF-14: Gestión de Usuarios ✨ FASE 1
 - **RF-14.1** El sistema debe permitir CRUD de usuarios directores y supervisores
-- **RF-14.2** El sistema debe vincular usuario ↔ CCT mediante relación **1:N** (un usuario puede gestionar múltiples CCT: supervisor de zona, director con varios planteles)
+- **RF-14.2** El sistema debe vincular usuario ↔ CCT mediante relación **1:N** (un usuario puede estar activo y gestionar múltiples CCT según su asignación)
 - **RF-14.3** El sistema debe implementar tabla intermedia USUARIO_CCT para gestión granular de permisos por plantel
 - **RF-14.4** El sistema debe soportar roles:
   - Director: Acceso a su(s) escuela(s) asignadas
@@ -791,10 +805,10 @@ graph TB
 2. Administrador selecciona "Nueva Escuela"
 3. Sistema muestra formulario:
    ```
-   CCT: [__________] (requerido, único, 11 caracteres)
+   CCT: [__________] (requerido, 11 caracteres)
    Nombre: [_____________________] (requerido)
    Nivel Educativo: [Dropdown: Preescolar/Primaria/Secundaria/Telesecundaria]
-   Turno: [Dropdown: Matutino/Vespertino/Tiempo Completo]
+   Turno: [Dropdown: Matutino/Vespertino/Tiempo Completo] (requerido, único con CCT)
    
    Datos de Contacto:
    Dirección: [______________________]
@@ -807,7 +821,7 @@ graph TB
    Director Actual: [___________]
    ```
 4. Sistema valida en tiempo real:
-   - CCT único (consulta a BD)
+   - CCT + turno únicos (consulta a BD)
    - Formato de email válido
    - Teléfono 10 dígitos
 5. Administrador guarda escuela
