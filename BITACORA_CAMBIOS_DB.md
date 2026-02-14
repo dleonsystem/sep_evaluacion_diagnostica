@@ -15,6 +15,8 @@ Este documento detalla todas las modificaciones realizadas a la base de datos `E
 | 2024-02-04 | `grupos` | Inclusión de campo en INSERT | La tabla requería `nivel_educativo` como NOT NULL. Se ajustó el código para enviarlo durante la creación automática del grupo. |
 | 2024-02-04 | `evaluaciones` | Corrección de nombre de columna | El código intentaba insertar en `fecha_aplicacion`, pero el campo real en DB es `fecha_evaluacion`. |
 | 2024-02-04 | `solicitudes_eia2` | Inclusión de metadatos | Se incluyeron `archivo_path` y `archivo_size` en la inserción para cumplir con los requerimientos de auditoría y almacenamiento. |
+| 2026-02-13 | `grupos` | Ajuste de unicidad | Se cambió la restricción `UNIQUE (escuela_id, nombre)` por `UNIQUE (escuela_id, grado_id, nombre)` para permitir grupos con el mismo nombre en diferentes grados (RF-02.7). |
+| 2026-02-13 | `solicitudes_eia2`, `evaluaciones` | Soporte de versiones y duplicados | Se agregó `hash_archivo` y `solicitud_id` para permitir carga de múltiples archivos y control de duplicados (RF-XX). |
 
 ### Notas Adicionales:
 - **Catálogos Duplicados:** Se detectó la coexistencia de `cat_nivel_educativo` (singular) y `cat_niveles_educativos` (plural). Se pobló el plural para cumplir con las referencias de la tabla `escuelas`.

@@ -57,6 +57,12 @@ export const typeDefs = `#graphql
       limit: Int = 10
       offset: Int = 0
     ): [SolicitudEia2!]!
+
+    """
+    Listar tickets del usuario autenticado o por correo
+    @use-case CU-13: Mesa de ayuda
+    """
+    getMyTickets(correo: String): [Ticket!]!
   }
   
   """
@@ -292,6 +298,7 @@ export const typeDefs = `#graphql
     archivoBase64: String!
     nombreArchivo: String!
     cicloEscolar: String!
+    confirmarReemplazo: Boolean
   }
 
   """
@@ -301,6 +308,7 @@ export const typeDefs = `#graphql
     success: Boolean!
     message: String!
     solicitudId: ID
+    duplicadoDetectado: Boolean
     detalles: ExcelUploadResult
   }
 
@@ -329,6 +337,70 @@ export const typeDefs = `#graphql
     archivoPath: String
     archivoSize: Int
     procesadoExternamente: Boolean!
+  }
+  """
+  Ticket de Soporte
+  """
+  type Ticket {
+    id: ID!
+    numeroTicket: String!
+    asunto: String!
+    descripcion: String!
+    estado: String!
+    prioridad: String!
+    evidencias: [TicketEvidencia!]
+    correo: String
+    fechaCreacion: String!
+    fechaActualizacion: String!
+  }
+
+  """
+  Evidencia de Ticket
+  """
+  type TicketEvidencia {
+    nombre: String!
+    url: String!
+    size: Int
+  }
+
+  """
+  Input para crear Ticket
+  """
+  input CreateTicketInput {
+    motivo: String!
+    descripcion: String!
+    correo: String
+    evidencias: [TicketEvidenciaInput!]
+  }
+
+  """
+  Input para evidencia de Ticket
+  """
+  input TicketEvidenciaInput {
+    nombre: String!
+    base64: String!
+  }
+
+  extend type Mutation {
+    """
+    Crear nuevo ticket de soporte
+    @use-case CU-13: Mesa de ayuda
+    """
+    createTicket(input: CreateTicketInput!): Ticket!
+
+    """
+    Responder a un ticket de soporte (Admin)
+    @use-case CU-13: Mesa de ayuda
+    """
+    respondToTicket(ticketId: ID!, respuesta: String!, cerrar: Boolean!): Ticket!
+  }
+
+  extend type Query {
+    """
+    Listar todos los tickets del sistema (Admin)
+    @use-case CU-13: Mesa de ayuda
+    """
+    getAllTickets: [Ticket!]!
   }
 `;
 

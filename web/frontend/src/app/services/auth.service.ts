@@ -98,6 +98,7 @@ export class AuthService {
   cerrarSesion(): void {
     localStorage.removeItem(this.sesionKey);
     localStorage.removeItem(this.sesionCorreoKey);
+    localStorage.removeItem(this.credencialesKey); // Limpiar credenciales persistentes del usuario anterior
   }
 
   estaAutenticado(): boolean {

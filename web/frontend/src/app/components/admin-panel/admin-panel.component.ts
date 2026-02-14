@@ -4,7 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AdminAuthService } from '../../services/admin-auth.service';
 import { ArchivoStorageService, RegistroArchivo } from '../../services/archivo-storage.service';
+import { TicketsService, Ticket as TicketDB } from '../../services/tickets.service';
 import Swal from 'sweetalert2';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-admin-panel',
@@ -41,8 +43,9 @@ export class AdminPanelComponent implements OnInit {
   constructor(
     private readonly adminAuthService: AdminAuthService,
     private readonly archivoStorageService: ArchivoStorageService,
+    private readonly ticketsService: TicketsService,
     private readonly router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.uploadHistory = this.loadUploadHistory();
@@ -122,9 +125,8 @@ export class AdminPanelComponent implements OnInit {
     if (existingFiles.length) {
       const confirmacion = await Swal.fire({
         title: '¿Agregar más archivos?',
-        text: `Ya hay archivos asignados a ${excelSeleccionado?.nombre ?? 'este Excel'} (${
-          excelSeleccionado?.cct ?? 'CCT no registrada'
-        }, ${excelSeleccionado?.correo ?? 'correo no registrado'}).`,
+        text: `Ya hay archivos asignados a ${excelSeleccionado?.nombre ?? 'este Excel'} (${excelSeleccionado?.cct ?? 'CCT no registrada'
+          }, ${excelSeleccionado?.correo ?? 'correo no registrado'}).`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sí, agregar',
@@ -158,9 +160,9 @@ export class AdminPanelComponent implements OnInit {
       this.saveUploadHistory();
       this.actualizarEstadoExcel(excelKey);
 
-        this.uploadStatus = 'success';
-        this.feedbackMessage = 'Archivos cargados correctamente.';
-      } catch (error) {
+      this.uploadStatus = 'success';
+      this.feedbackMessage = 'Archivos cargados correctamente.';
+    } catch (error) {
       this.uploadStatus = 'error';
       this.feedbackMessage = 'No se pudieron leer los archivos. Intenta nuevamente.';
     }
@@ -200,36 +202,37 @@ export class AdminPanelComponent implements OnInit {
     this.respuestaAdmin = '';
   }
 
-  guardarRespuesta(): void {
+  async guardarRespuesta(): Promise<void> {
     if (!this.ticketSeleccionadoId) {
       return;
     }
 
     const mensaje = this.respuestaAdmin.trim();
-    const tickets = this.obtenerTicketsSoporte();
-    const actualizados = tickets.map((ticket) => {
-      if (ticket.id !== this.ticketSeleccionadoId) {
-        return ticket;
-      }
-      const respuestas = ticket.respuestas ?? [];
-      const nuevasRespuestas =
-        mensaje.length > 0
-          ? [
-              ...respuestas,
-              { mensaje, fecha: new Date().toISOString(), autor: 'admin' as const }
-            ]
-          : respuestas;
+    if (!mensaje) {
+      await Swal.fire('Error', 'Debes escribir una respuesta', 'error');
+      return;
+    }
 
-      return {
-        ...ticket,
-        estatus: this.estatusTicketSeleccionado,
-        respuestas: nuevasRespuestas
-      };
-    });
+    try {
+      const cerrar = this.estatusTicketSeleccionado === 'respondido';
+      await firstValueFrom(
+        this.ticketsService.respondToTicket(this.ticketSeleccionadoId, mensaje, cerrar)
+      );
 
-    localStorage.setItem(this.ticketsStorageKey, JSON.stringify(actualizados));
-    this.respuestaAdmin = '';
-    this.cargarTicketsSoporte();
+      await Swal.fire({
+        icon: 'success',
+        title: 'Respuesta enviada',
+        text: 'El ticket ha sido actualizado correctamente.',
+        timer: 2000,
+        showConfirmButton: false
+      });
+
+      this.respuestaAdmin = '';
+      await this.cargarTicketsSoporte();
+    } catch (error) {
+      console.error('Error enviando respuesta:', error);
+      await Swal.fire('Error', 'No se pudo enviar la respuesta', 'error');
+    }
   }
 
   obtenerUltimaRespuesta(ticket: TicketSoporte): { mensaje: string; fecha: string } | null {
@@ -305,8 +308,42 @@ export class AdminPanelComponent implements OnInit {
     return [];
   }
 
-  private cargarTicketsSoporte(): void {
-    this.ticketsSoporte = this.obtenerTicketsSoporte();
+  private async cargarTicketsSoporte(): Promise<void> {
+    try {
+      const ticketsDB = await firstValueFrom(this.ticketsService.getAllTickets());
+      this.ticketsSoporte = ticketsDB.map(t => this.mapTicketDBToUI(t));
+    } catch (error) {
+      console.error('Error cargando tickets:', error);
+    }
+  }
+
+  private mapTicketDBToUI(t: TicketDB): TicketSoporte {
+    return {
+      id: t.id,
+      folio: t.numeroTicket,
+      correo: (t as any).correo || 'Anónimo',
+      motivo: t.asunto,
+      motivoDetalle: t.asunto,
+      descripcion: t.descripcion,
+      fecha: t.fechaCreacion,
+      estatus: this.mapEstatusDBToUI(t.estado),
+      respuestas: [], // TODO: Traer comentarios del backend
+      evidencias: (t.evidencias || []).map(e => ({
+        nombre: e.nombre,
+        tamano: e.size || 0,
+        tipo: 'archivo'
+      }))
+    };
+  }
+
+  private mapEstatusDBToUI(estado: string): TicketSoporte['estatus'] {
+    switch (estado) {
+      case 'ABIERTO': return 'pendiente';
+      case 'EN PROCESO': return 'en-proceso';
+      case 'RESUELTO':
+      case 'CERRADO': return 'respondido';
+      default: return 'pendiente';
+    }
   }
 
   private obtenerTicketsSoporte(): TicketSoporte[] {

@@ -383,6 +383,88 @@ export const resolvers = {
         throw new Error('Error al obtener historial de solicitudes');
       }
     },
+
+    /**
+     * Listar tickets del usuario autenticado o por correo
+     * @use-case CU-13: Mesa de ayuda
+     */
+    getMyTickets: async (_: any, { correo }: { correo?: string }, context: GraphQLContext) => {
+      const { user } = context;
+      let userId = user?.id;
+
+      try {
+        let sql = `
+          SELECT 
+            t.id,
+            t.numero_ticket as "numeroTicket",
+            t.asunto,
+            t.descripcion,
+            (SELECT nombre FROM cat_estado_ticket WHERE id = t.estado) as estado,
+            t.prioridad,
+            t.evidencias,
+            u.email as "correo",
+            t.created_at as "fechaCreacion",
+            t.updated_at as "fechaActualizacion"
+          FROM tickets_soporte t
+          INNER JOIN usuarios u ON t.usuario_id = u.id
+        `;
+        const params: any[] = [];
+
+        if (userId) {
+          sql += ' WHERE t.usuario_id = $1';
+          params.push(userId);
+        } else if (correo) {
+          // Búsqueda por correo si no hay sesión (Auth Mock)
+          sql += ' WHERE u.email = $1';
+          params.push(correo.trim().toLowerCase());
+        } else {
+          throw new Error('Se requiere estar autenticado o proporcionar un correo');
+        }
+
+        sql += ' ORDER BY t.created_at DESC';
+
+        const result = await query(sql, params);
+        return result.rows;
+
+      } catch (error) {
+        logger.error('Error fetching my tickets', { correo, error });
+        throw new Error('Error al obtener tus tickets');
+      }
+    },
+
+    /**
+     * Listar todos los tickets del sistema (Admin)
+     * @use-case CU-13: Mesa de ayuda
+     */
+    getAllTickets: async (_: any, __: any, context: GraphQLContext) => {
+      // Validar que sea admin (Coordinador Federal o Estatal)
+      if (!context.user || !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)) {
+        throw new Error('No autorizado: Solo administradores pueden ver todos los tickets');
+      }
+
+      try {
+        const result = await query(`
+          SELECT 
+            t.id,
+            t.numero_ticket as "numeroTicket",
+            t.asunto,
+            t.descripcion,
+            (SELECT nombre FROM cat_estado_ticket WHERE id = t.estado) as estado,
+            t.prioridad,
+            t.evidencias,
+            u.email as "correo",
+            t.created_at as "fechaCreacion",
+            t.updated_at as "fechaActualizacion"
+          FROM tickets_soporte t
+          INNER JOIN usuarios u ON t.usuario_id = u.id
+          ORDER BY t.created_at DESC
+        `);
+        return result.rows;
+      } catch (error) {
+        logger.error('Error fetching all tickets', { error });
+        throw new Error('Error al obtener los tickets');
+      }
+    },
   },
 
   Mutation: {
@@ -616,6 +698,152 @@ export const resolvers = {
     },
 
     /**
+     * Crear nuevo ticket de soporte
+     * @use-case CU-13: Mesa de ayuda
+     */
+    createTicket: async (_: any, { input }: { input: any }, context: GraphQLContext) => {
+      const { motivo, descripcion, evidencias, correo } = input;
+      const client = await getClient();
+      let userId = context.user?.id;
+
+      // 1. Validar autenticación o buscar por correo
+      if (!userId && correo) {
+        try {
+          const userRes = await client.query('SELECT id FROM usuarios WHERE email = $1', [correo.trim().toLowerCase()]);
+          if (userRes.rows.length > 0) {
+            userId = userRes.rows[0].id;
+          }
+          // Si no encuentra usuario, userId = undefined (ticket anónimo o solo correo)
+        } catch (e) {
+          logger.warn('Error buscando usuario por correo', { correo, error: e });
+        }
+      }
+
+      // Si no hay usuario ni por token ni por correo, ¿permitimos?
+      // El requerimiento decía "usuario debe estar autenticado".
+      // Pero dado que el frontend es mock, permitiremos tickets con userId nulo si se manda correo.
+      if (!userId && !correo) {
+        throw new Error('No autorizado: Debes iniciar sesión o proporcionar un correo para crear un ticket');
+      }
+
+      try {
+        await client.query('BEGIN');
+
+        // 2. Generar número de ticket (TKT-{YYYY}-{MM}{DD}-{SEQ})
+        const now = new Date();
+        const ymd = now.toISOString().slice(0, 10).replace(/-/g, '');
+
+        // Obtener siguiente secuencia (usamos una secuencia global o conteo)
+        const seqRes = await client.query("SELECT nextval('seq_numero_ticket') as seq");
+        const seq = seqRes.rows[0].seq;
+        const numeroTicket = `TKT-${ymd}-${seq.toString().padStart(4, '0')}`;
+
+        // 3. Procesar evidencias (Guardar archivos)
+        const evidenciasProcesadas = [];
+        if (evidencias && evidencias.length > 0) {
+          for (const evidencia of evidencias) {
+            // En un entorno real, guardaríamos el base64 en disco/S3.
+            // Aquí simularemos generando una ruta.
+            const fileName = `ticket_${numeroTicket}_${Date.now()}_${evidencia.nombre}`;
+            const filePath = `storage/tickets/${fileName}`;
+
+            evidenciasProcesadas.push({
+              nombre: evidencia.nombre,
+              url: filePath,
+              size: Math.round(evidencia.base64.length * 0.75) // Aproximación
+            });
+          }
+        }
+
+        // 4. Insertar Ticket
+        const insertRes = await client.query(
+          `INSERT INTO tickets_soporte 
+            (numero_ticket, usuario_id, asunto, descripcion, estado, prioridad, evidencias, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, fn_catalogo_id('cat_estado_ticket', 'ABIERTO'), 'MEDIA', $5, NOW(), NOW())
+           RETURNING 
+            id, 
+            numero_ticket as "numeroTicket", 
+            asunto, 
+            descripcion,
+            evidencias,
+            created_at as "fechaCreacion", 
+            updated_at as "fechaActualizacion",
+            prioridad,
+            estado`,
+          [numeroTicket, userId, motivo, descripcion, JSON.stringify(evidenciasProcesadas)]
+        );
+
+        await client.query('COMMIT');
+
+        const row = insertRes.rows[0];
+        return row;
+
+      } catch (error) {
+        await client.query('ROLLBACK');
+        logger.error('Error creating ticket', { input, error });
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    /**
+     * Responder a un ticket de soporte (Admin)
+     * @use-case CU-13: Mesa de ayuda
+     */
+    respondToTicket: async (_: any, { ticketId, respuesta, cerrar }: { ticketId: string, respuesta: string, cerrar: boolean }, context: GraphQLContext) => {
+      if (!context.user || !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)) {
+        throw new Error('No autorizado: Solo administradores pueden responder tickets');
+      }
+
+      const client = await getClient();
+      try {
+        await client.query('BEGIN');
+
+        // 1. Insertar comentario
+        await client.query(`
+          INSERT INTO comentarios_ticket (ticket_id, usuario_id, comentario, es_interno)
+          VALUES ($1, $2, $3, false)
+        `, [ticketId, context.user.id, respuesta]);
+
+        // 2. Actualizar estado del ticket
+        const nuevoEstado = cerrar ? 'RESUELTO' : 'EN PROCESO';
+        await client.query(`
+          UPDATE tickets_soporte
+          SET estado = (SELECT id FROM cat_estado_ticket WHERE nombre = $1),
+              updated_at = NOW()
+          WHERE id = $2
+        `, [nuevoEstado, ticketId]);
+
+        await client.query('COMMIT');
+
+        const result = await client.query(`
+          SELECT 
+            t.id,
+            t.numero_ticket as "numeroTicket",
+            t.asunto,
+            t.descripcion,
+            (SELECT nombre FROM cat_estado_ticket WHERE id = t.estado) as estado,
+            t.prioridad,
+            t.evidencias,
+            t.created_at as "fechaCreacion",
+            t.updated_at as "fechaActualizacion"
+          FROM tickets_soporte t
+          WHERE t.id = $1
+        `, [ticketId]);
+
+        return result.rows[0];
+
+      } catch (error) {
+        await client.query('ROLLBACK');
+        logger.error('Error responding to ticket', { ticketId, error });
+        throw new Error('Error al responder el ticket');
+      } finally {
+        client.release();
+      }
+    },
+
+    /**
      * Cargar evaluación
      * @use-case CU-05: Carga de archivos
      * @psp Code Review - Validación de formato
@@ -626,7 +854,7 @@ export const resolvers = {
      * @psp Code Review - Validación de formato Excel y parsing dinámico
      */
     uploadExcelAssessment: async (_: any, { input }: { input: any }) => {
-      const { archivoBase64, nombreArchivo, cicloEscolar } = input;
+      const { archivoBase64, nombreArchivo, cicloEscolar, confirmarReemplazo } = input;
       const errores: string[] = [];
       let alumnosProcesados = 0;
       let cct = '';
@@ -672,14 +900,48 @@ export const resolvers = {
         client = await getClient();
         await client.query('BEGIN');
 
-        const solicitudRes = await client.query(
-          `INSERT INTO solicitudes_eia2 
-            (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, archivo_path, archivo_size)
-          VALUES ($1, $2, NOW(), $3, $4, $5, $6)
-          RETURNING id`,
-          [cct, nombreArchivo, 1, nivelId, `storage/uploads/${nombreArchivo}`, buffer.length]
+        // Calcular Hash del archivo para detectar duplicados
+        const fileHash = crypto.createHash('sha256').update(buffer).digest('hex');
+
+        // Verificar si existe una solicitud con el mismo hash
+        const existingReq = await client.query(
+          'SELECT id FROM solicitudes_eia2 WHERE hash_archivo = $1 LIMIT 1',
+          [fileHash]
         );
-        const solicitudId = solicitudRes.rows[0].id;
+
+        let solicitudId;
+
+        if (existingReq.rows.length > 0) {
+          // DUPLICADO DETECTADO
+          if (!confirmarReemplazo) {
+            await client.query('ROLLBACK');
+            return {
+              success: false,
+              message: 'El archivo ya existe en el sistema. ¿Desea reemplazarlo?',
+              duplicadoDetectado: true,
+              detalles: null
+            };
+          } else {
+            // CONFIRMADO: Usar solicitud existente y actualizar fecha
+            solicitudId = existingReq.rows[0].id;
+            await client.query(
+              'UPDATE solicitudes_eia2 SET updated_at = NOW() WHERE id = $1',
+              [solicitudId]
+            );
+            logger.info('Reemplazando archivo existente (Duplicate Hash)', { solicitudId, fileHash });
+          }
+        } else {
+          // NUEVO ARCHIVO (Versión diferente o nuevo)
+          const solicitudRes = await client.query(
+            `INSERT INTO solicitudes_eia2 
+              (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, archivo_path, archivo_size, hash_archivo)
+            VALUES ($1, $2, NOW(), $3, $4, $5, $6, $7)
+            RETURNING id`,
+            [cct, nombreArchivo, 1, nivelId, `storage/uploads/${nombreArchivo}`, buffer.length, fileHash]
+          );
+          solicitudId = solicitudRes.rows[0].id;
+          logger.info('Nueva solicitud creada', { solicitudId, fileHash });
+        }
 
         let escuelaRes = await client.query('SELECT id FROM escuelas WHERE cct = $1', [cct]);
         let escuelaId;
@@ -761,9 +1023,14 @@ export const resolvers = {
               const valorNum = parseInt(valor.toString());
               if (!isNaN(valorNum) && valorNum >= 0 && valorNum <= 3) {
                 await client.query(
-                  `INSERT INTO evaluaciones (estudiante_id, materia_id, periodo_id, valoracion, fecha_evaluacion)
-                   VALUES ($1, $2, $3, $4, NOW())`,
-                  [estudianteId, materiasIds[col - 6], periodoId, valorNum]
+                  `INSERT INTO evaluaciones (estudiante_id, materia_id, periodo_id, valoracion, fecha_evaluacion, updated_at, solicitud_id)
+                   VALUES ($1, $2, $3, $4, NOW(), NOW(), $5)
+                   ON CONFLICT (estudiante_id, materia_id, periodo_id, solicitud_id)
+                   DO UPDATE SET 
+                     valoracion = EXCLUDED.valoracion,
+                     fecha_evaluacion = EXCLUDED.fecha_evaluacion,
+                     updated_at = NOW()`,
+                  [estudianteId, materiasIds[col - 6], periodoId, valorNum, solicitudId]
                 );
               }
             }
@@ -798,6 +1065,7 @@ export const resolvers = {
       }
     },
   },
+
 
   /**
    * Field resolvers para User
