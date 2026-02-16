@@ -4,8 +4,8 @@
     <p>Usa el correo y la contraseña generada en tu primer envío.</p>
 
     <div class="login__alerta" *ngIf="sinCredenciales">
-      Aún no tienes credenciales. Realiza tu primera carga en el módulo de carga masiva para generar tu usuario y
-      contraseña.
+      Aún no tienes credenciales. Realiza tu primera carga en el módulo de carga
+      masiva para generar tu usuario y contraseña.
     </div>
 
     <form (ngSubmit)="iniciarSesion()" #loginForm="ngForm" novalidate>
@@ -33,20 +33,26 @@
           autocomplete="current-password"
           placeholder="Clave enviada en tu primer carga"
         />
-        <button class="login__toggle" type="button" (click)="mostrarContrasena = !mostrarContrasena">
+        <button
+          class="login__toggle"
+          type="button"
+          (click)="mostrarContrasena = !mostrarContrasena"
+        >
           <i
             class="bi"
             [ngClass]="mostrarContrasena ? 'bi-eye-slash' : 'bi-eye'"
             aria-hidden="true"
           ></i>
-          <span class="login__toggle-text">{{ mostrarContrasena ? 'Ocultar' : 'Mostrar' }}</span>
+          <span class="login__toggle-text">{{
+            mostrarContrasena ? "Ocultar" : "Mostrar"
+          }}</span>
         </button>
       </div>
       <p class="login__hint">Usa la contraseña generada en tu primer envío.</p>
 
       <div class="login__alerta" *ngIf="credencialesGuardadas">
-        Ya existen credenciales guardadas para {{ correo }}. Si es necesario, puedes actualizar la contraseña antes de
-        continuar.
+        Ya existen credenciales guardadas para {{ correo }}. Si es necesario,
+        puedes actualizar la contraseña antes de continuar.
       </div>
 
       <div class="login__error" *ngIf="error">{{ error }}</div>
@@ -54,12 +60,21 @@
       <button
         class="login__submit"
         type="submit"
-        [disabled]="correoModel.invalid || contrasenaModel.invalid || autenticando"
+        [disabled]="
+          correoModel.invalid || contrasenaModel.invalid || autenticando
+        "
       >
-        {{ autenticando ? 'Validando...' : 'Ingresar' }}
+        {{ autenticando ? "Validando..." : "Ingresar" }}
       </button>
     </form>
 
-    <a class="login__link" routerLink="/carga-masiva">Volver a la carga masiva</a>
+    <div class="d-flex justify-content-between mt-3">
+      <a class="login__link" routerLink="/carga-masiva"
+        >Volver a la carga masiva</a
+      >
+      <a class="login__link" routerLink="/recuperar-password"
+        >¿Olvidaste tu contraseña?</a
+      >
+    </div>
   </div>
 </section>

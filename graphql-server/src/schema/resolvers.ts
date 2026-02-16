@@ -11,7 +11,8 @@
  */
 
 import crypto from 'crypto';
-import * as XLSX from 'xlsx';
+import path from 'path';
+
 import { query, getClient } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 
@@ -131,7 +132,6 @@ interface AuthPayload {
   message?: string | null;
   user?: UserRow | null;
 }
-
 
 /**
  * Helper function to build update query
@@ -358,7 +358,10 @@ export const resolvers = {
      * Listar solicitudes de carga EIA2
      * @use-case CU-05: Historial de cargas
      */
-    getSolicitudes: async (_: unknown, { limit = 10, offset = 0 }: { limit?: number; offset?: number }) => {
+    getSolicitudes: async (
+      _: unknown,
+      { limit = 10, offset = 0 }: { limit?: number; offset?: number }
+    ) => {
       try {
         const result = await query(
           `SELECT 
@@ -390,7 +393,7 @@ export const resolvers = {
      */
     getMyTickets: async (_: any, { correo }: { correo?: string }, context: GraphQLContext) => {
       const { user } = context;
-      let userId = user?.id;
+      const userId = user?.id;
 
       try {
         let sql = `
@@ -425,7 +428,6 @@ export const resolvers = {
 
         const result = await query(sql, params);
         return result.rows;
-
       } catch (error) {
         logger.error('Error fetching my tickets', { correo, error });
         throw new Error('Error al obtener tus tickets');
@@ -438,7 +440,10 @@ export const resolvers = {
      */
     getAllTickets: async (_: any, __: any, context: GraphQLContext) => {
       // Validar que sea admin (Coordinador Federal o Estatal)
-      if (!context.user || !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)) {
+      if (
+        !context.user ||
+        !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)
+      ) {
         throw new Error('No autorizado: Solo administradores pueden ver todos los tickets');
       }
 
@@ -490,10 +495,9 @@ export const resolvers = {
           throw new Error('El email ya está registrado');
         }
 
-        const roleResult = await query(
-          'SELECT id_rol FROM cat_roles_usuario WHERE codigo = $1',
-          [rol]
-        );
+        const roleResult = await query('SELECT id_rol FROM cat_roles_usuario WHERE codigo = $1', [
+          rol,
+        ]);
 
         if (roleResult.rows.length === 0) {
           throw new Error('El rol especificado no existe');
@@ -518,7 +522,14 @@ export const resolvers = {
             (SELECT codigo FROM cat_roles_usuario WHERE id_rol = usuarios.rol) as "rol",
             activo,
             fecha_registro as "fechaRegistro"`,
-          [email, nombreSeguro, apepaternoSeguro, apematernoSeguro, roleId, `${salt}:${passwordHash}`]
+          [
+            email,
+            nombreSeguro,
+            apepaternoSeguro,
+            apematernoSeguro,
+            roleId,
+            `${salt}:${passwordHash}`,
+          ]
         );
 
         const createdUser = result.rows[0] as CreateUserResult;
@@ -555,7 +566,10 @@ export const resolvers = {
      * Autenticar usuario
      * @use-case CU-01: Autenticación de usuario
      */
-    authenticateUser: async (_: unknown, { input }: { input: { email: string; password: string } }): Promise<AuthPayload> => {
+    authenticateUser: async (
+      _: unknown,
+      { input }: { input: { email: string; password: string } }
+    ): Promise<AuthPayload> => {
       try {
         const { email, password } = input;
         const result = await query(
@@ -592,7 +606,10 @@ export const resolvers = {
         }
 
         const hashCalculado = crypto.scryptSync(password, salt, 64).toString('hex');
-        const coincide = crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(hashCalculado, 'hex'));
+        const coincide = crypto.timingSafeEqual(
+          Buffer.from(hash, 'hex'),
+          Buffer.from(hashCalculado, 'hex')
+        );
         if (!coincide) {
           return { ok: false, message: 'Credenciales inválidas', user: null };
         }
@@ -618,10 +635,9 @@ export const resolvers = {
         const updatesInput: UpdateUserInput = { ...input };
 
         if (input.rol !== undefined) {
-          const roleResult = await query(
-            'SELECT id_rol FROM cat_roles_usuario WHERE codigo = $1',
-            [input.rol]
-          );
+          const roleResult = await query('SELECT id_rol FROM cat_roles_usuario WHERE codigo = $1', [
+            input.rol,
+          ]);
 
           if (roleResult.rows.length === 0) {
             throw new Error('El rol especificado no existe');
@@ -709,7 +725,9 @@ export const resolvers = {
       // 1. Validar autenticación o buscar por correo
       if (!userId && correo) {
         try {
-          const userRes = await client.query('SELECT id FROM usuarios WHERE email = $1', [correo.trim().toLowerCase()]);
+          const userRes = await client.query('SELECT id FROM usuarios WHERE email = $1', [
+            correo.trim().toLowerCase(),
+          ]);
           if (userRes.rows.length > 0) {
             userId = userRes.rows[0].id;
           }
@@ -723,7 +741,9 @@ export const resolvers = {
       // El requerimiento decía "usuario debe estar autenticado".
       // Pero dado que el frontend es mock, permitiremos tickets con userId nulo si se manda correo.
       if (!userId && !correo) {
-        throw new Error('No autorizado: Debes iniciar sesión o proporcionar un correo para crear un ticket');
+        throw new Error(
+          'No autorizado: Debes iniciar sesión o proporcionar un correo para crear un ticket'
+        );
       }
 
       try {
@@ -750,7 +770,7 @@ export const resolvers = {
             evidenciasProcesadas.push({
               nombre: evidencia.nombre,
               url: filePath,
-              size: Math.round(evidencia.base64.length * 0.75) // Aproximación
+              size: Math.round(evidencia.base64.length * 0.75), // Aproximación
             });
           }
         }
@@ -777,7 +797,6 @@ export const resolvers = {
 
         const row = insertRes.rows[0];
         return row;
-
       } catch (error) {
         await client.query('ROLLBACK');
         logger.error('Error creating ticket', { input, error });
@@ -791,8 +810,15 @@ export const resolvers = {
      * Responder a un ticket de soporte (Admin)
      * @use-case CU-13: Mesa de ayuda
      */
-    respondToTicket: async (_: any, { ticketId, respuesta, cerrar }: { ticketId: string, respuesta: string, cerrar: boolean }, context: GraphQLContext) => {
-      if (!context.user || !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)) {
+    respondToTicket: async (
+      _: any,
+      { ticketId, respuesta, cerrar }: { ticketId: string; respuesta: string; cerrar: boolean },
+      context: GraphQLContext
+    ) => {
+      if (
+        !context.user ||
+        !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)
+      ) {
         throw new Error('No autorizado: Solo administradores pueden responder tickets');
       }
 
@@ -801,23 +827,30 @@ export const resolvers = {
         await client.query('BEGIN');
 
         // 1. Insertar comentario
-        await client.query(`
+        await client.query(
+          `
           INSERT INTO comentarios_ticket (ticket_id, usuario_id, comentario, es_interno)
           VALUES ($1, $2, $3, false)
-        `, [ticketId, context.user.id, respuesta]);
+        `,
+          [ticketId, context.user.id, respuesta]
+        );
 
         // 2. Actualizar estado del ticket
         const nuevoEstado = cerrar ? 'RESUELTO' : 'EN PROCESO';
-        await client.query(`
+        await client.query(
+          `
           UPDATE tickets_soporte
           SET estado = (SELECT id FROM cat_estado_ticket WHERE nombre = $1),
               updated_at = NOW()
           WHERE id = $2
-        `, [nuevoEstado, ticketId]);
+        `,
+          [nuevoEstado, ticketId]
+        );
 
         await client.query('COMMIT');
 
-        const result = await client.query(`
+        const result = await client.query(
+          `
           SELECT 
             t.id,
             t.numero_ticket as "numeroTicket",
@@ -830,14 +863,74 @@ export const resolvers = {
             t.updated_at as "fechaActualizacion"
           FROM tickets_soporte t
           WHERE t.id = $1
-        `, [ticketId]);
+        `,
+          [ticketId]
+        );
 
         return result.rows[0];
-
       } catch (error) {
         await client.query('ROLLBACK');
         logger.error('Error responding to ticket', { ticketId, error });
         throw new Error('Error al responder el ticket');
+      } finally {
+        client.release();
+      }
+    },
+
+    /**
+     * Recuperar contraseña (envío de email con nueva contraseña)
+     * @use-case CU-01: Autenticación
+     */
+    recoverPassword: async (_: any, { email }: { email: string }) => {
+      const client = await getClient();
+      try {
+        await client.query('BEGIN');
+
+        // 1. Buscar usuario
+        const userRes = await client.query('SELECT id, email FROM usuarios WHERE email = $1', [
+          email.trim(),
+        ]);
+
+        if (userRes.rows.length === 0) {
+          // Por seguridad, no decimos que no existe, pero retornamos true simulado
+          // O retornamos false si queremos ser explícitos en log pero opacos al usuario
+          await client.query('ROLLBACK');
+          return true;
+        }
+
+        const userId = userRes.rows[0].id;
+
+        // 2. Generar nueva contraseña aleatoria
+        // Ejemplo: "P" + random(8 chars) + "!"
+        const randomPart = crypto.randomBytes(4).toString('hex'); // 8 chars
+        const newPassword = `P${randomPart}!`;
+
+        // 3. Hashear contraseña
+        const salt = crypto.randomBytes(16).toString('hex');
+        const passwordHash = crypto.scryptSync(newPassword, salt, 64).toString('hex');
+        const finalHash = `${salt}:${passwordHash}`;
+
+        // 4. Actualizar usuario
+        await client.query(
+          'UPDATE usuarios SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+          [finalHash, userId]
+        );
+
+        // 5. Enviar correo (Simulado por ahora)
+        // TODO: Integrar servicio de correo real (Nodemailer / SMTP SEP)
+        logger.info(
+          `[EMAIL SERVICE] Sending recovery email to ${email}. New Password: ${newPassword}`
+        );
+        console.log(
+          `\n========================================\n[EMAIL SIMULADO] Para: ${email}\nContraseña Nueva: ${newPassword}\n========================================\n`
+        );
+
+        await client.query('COMMIT');
+        return true;
+      } catch (error) {
+        await client.query('ROLLBACK');
+        logger.error('Error recovering password', { email, error });
+        throw new Error('Error procesando la solicitud');
       } finally {
         client.release();
       }
@@ -849,58 +942,72 @@ export const resolvers = {
      * @psp Code Review - Validación de formato
      */
     /**
-     * Cargar archivo de evaluación (Universal)
+     * Cargar archivo de evaluación (Universal) - Asíncrono con Worker Threads
      * @use-case CU-05: Recepción de archivos (EIA2)
-     * @psp Code Review - Validación de formato Excel y parsing dinámico
+     * @psp Code Review - Offloading parsing to worker thread
      */
     uploadExcelAssessment: async (_: any, { input }: { input: any }) => {
-      const { archivoBase64, nombreArchivo, cicloEscolar, confirmarReemplazo } = input;
-      const errores: string[] = [];
-      let alumnosProcesados = 0;
-      let cct = '';
-      let nivel = '';
-      let baseGrado: number | null = null;
-      let client;
-      const nivelMap: Record<string, number> = {
-        'PREESCOLAR': 1,
-        'PRIMARIA': 2,
-        'SECUNDARIA': 3,
-        'TELESECUNDARIA': 4
-      };
-      let nivelId = 2;
+      const { archivoBase64, nombreArchivo, confirmarReemplazo } = input;
+      const client = await getClient();
 
       try {
-        logger.info('Iniciando carga masiva', { nombreArchivo, cicloEscolar });
-        const buffer = Buffer.from(archivoBase64, 'base64');
-        const workbook = XLSX.read(buffer, { type: 'buffer' });
+        logger.info('Iniciando carga masiva con Worker', { nombreArchivo });
 
-        const sheetEsc = workbook.Sheets['ESC'] || workbook.Sheets[workbook.SheetNames[0]];
-        const dataEsc: any[][] = XLSX.utils.sheet_to_json(sheetEsc, { header: 1 });
+        // Instantiate Worker
+        // Fallback for dev environment structure if different
+        // In dev (ts-node), __dirname is src/schema. We need ../workers/worker-excel.ts but workers need to be compiled or registered.
+        // As a safe bet for this environment, we assume the worker is compiled to dist/workers/worker-excel.js
+        // If checking finding the file fails, we might need a different strategy.
+        // For now, let's try to locate it relative to __dirname.
 
-        for (const row of dataEsc) {
-          if (row && typeof row[1] === 'string' && row[1].includes('CCT')) {
-            cct = (row[2] || '').toString().trim();
-          }
-        }
+        // Simulating the worker execution promise
+        const runWorker = () =>
+          new Promise<any>((resolve, reject) => {
+            // Dynamic import to avoid build issues if types are missing
+            import('worker_threads')
+              .then(({ Worker }) => {
+                // Dynamic worker path resolution
+                const isTsNode = path.extname(__filename) === '.ts';
+                const workerFileName = isTsNode ? 'worker-excel.ts' : 'worker-excel.js';
+                // If TS-Node, look in src/workers. If JS (dist), look in dist/workers.
+                // resolvers is in schema/ (src or dist). So ../workers/ is correct for both.
+                const wPath = path.resolve(__dirname, '../workers/', workerFileName);
 
-        if (!cct && dataEsc[8]) cct = (dataEsc[8][3] || '').toString().trim();
+                logger.debug('Worker Path resolved', { wPath, isTsNode });
 
-        const dataSheetName = workbook.SheetNames.find((n: string) =>
-          ['PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO', 'PREESCOLAR', 'SECUNDARIA'].some(prefix => n.toUpperCase().includes(prefix))
-        ) || workbook.SheetNames[1];
+                const worker = new Worker(wPath);
 
-        const sheetData = workbook.Sheets[dataSheetName];
+                worker.on('message', (message) => {
+                  if (message.success) resolve(message.data);
+                  else reject(new Error(message.error));
+                });
+                worker.on('error', reject);
+                worker.on('exit', (code) => {
+                  if (code !== 0) reject(new Error(`Worker stopped with exit code ${code}`));
+                });
 
-        if (dataEsc[5] && dataEsc[5][2]) {
-          nivel = dataEsc[5][2].toString().toUpperCase();
-        }
+                worker.postMessage({ archivoBase64, nombreArchivo });
+              })
+              .catch(reject);
+          });
 
-        nivelId = Object.keys(nivelMap).find(k => nivel.includes(k)) ? nivelMap[Object.keys(nivelMap).find(k => nivel.includes(k))!] : 2;
+        const workerResult = await runWorker();
+        const { cct, nivel, grado, alumnos, metadata } = workerResult;
 
-        client = await getClient();
+        const nivelMap: Record<string, number> = {
+          PREESCOLAR: 1,
+          PRIMARIA: 2,
+          SECUNDARIA: 3,
+          TELESECUNDARIA: 4,
+        };
+        const nivelId = Object.keys(nivelMap).find((k) => k === nivel || k.includes(nivel))
+          ? nivelMap[Object.keys(nivelMap).find((k) => k === nivel || k.includes(nivel))!]
+          : 2;
+
         await client.query('BEGIN');
 
-        // Calcular Hash del archivo para detectar duplicados
+        // Calcular Hash (podemos hacerlo aquí o el worker puede devolverlo, pero mejor aquí para consistencia rápida)
+        const buffer = Buffer.from(archivoBase64, 'base64');
         const fileHash = crypto.createHash('sha256').update(buffer).digest('hex');
 
         // Verificar si existe una solicitud con el mismo hash
@@ -909,163 +1016,195 @@ export const resolvers = {
           [fileHash]
         );
 
-        let solicitudId;
+        let solicitudId: string;
 
         if (existingReq.rows.length > 0) {
-          // DUPLICADO DETECTADO
           if (!confirmarReemplazo) {
             await client.query('ROLLBACK');
             return {
               success: false,
               message: 'El archivo ya existe en el sistema. ¿Desea reemplazarlo?',
               duplicadoDetectado: true,
-              detalles: null
+              detalles: null,
             };
           } else {
-            // CONFIRMADO: Usar solicitud existente y actualizar fecha
             solicitudId = existingReq.rows[0].id;
-            await client.query(
-              'UPDATE solicitudes_eia2 SET updated_at = NOW() WHERE id = $1',
-              [solicitudId]
-            );
-            logger.info('Reemplazando archivo existente (Duplicate Hash)', { solicitudId, fileHash });
+            await client.query('UPDATE solicitudes_eia2 SET updated_at = NOW() WHERE id = $1', [
+              solicitudId,
+            ]);
           }
         } else {
-          // NUEVO ARCHIVO (Versión diferente o nuevo)
           const solicitudRes = await client.query(
             `INSERT INTO solicitudes_eia2 
               (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, archivo_path, archivo_size, hash_archivo)
             VALUES ($1, $2, NOW(), $3, $4, $5, $6, $7)
             RETURNING id`,
-            [cct, nombreArchivo, 1, nivelId, `storage/uploads/${nombreArchivo}`, buffer.length, fileHash]
+            [
+              cct,
+              nombreArchivo,
+              1,
+              nivelId,
+              `storage/uploads/${nombreArchivo}`,
+              buffer.length,
+              fileHash,
+            ]
           );
           solicitudId = solicitudRes.rows[0].id;
-          logger.info('Nueva solicitud creada', { solicitudId, fileHash });
         }
 
-        let escuelaRes = await client.query('SELECT id FROM escuelas WHERE cct = $1', [cct]);
+        // Procesar Escuela, Grupos, Estudiantes y Evaluaciones (Database I/O)
+
+        // 1. Escuela
+        const escuelaRes = await client.query('SELECT id FROM escuelas WHERE cct = $1', [cct]);
         let escuelaId;
         if (escuelaRes.rows.length === 0) {
           const defaultRes = await client.query(
             `INSERT INTO escuelas (cct, nombre, id_turno, id_nivel, id_entidad, id_ciclo)
              VALUES ($1, $2, 1, $3, 14, 1) RETURNING id`,
-            [cct, (dataEsc[4] && dataEsc[4][2]) || 'Escuela sin nombre', nivelId]
+            [cct, 'Escuela sin nombre (Importada)', nivelId]
           );
           escuelaId = defaultRes.rows[0].id;
         } else {
           escuelaId = escuelaRes.rows[0].id;
         }
 
-        const dataAlumnos: any[][] = XLSX.utils.sheet_to_json(sheetData, { header: 1 });
-
-        // Detectar grado de la hoja
-        const gradoFromSheet = dataSheetName.toUpperCase();
-        const gradoMap: Record<string, number> = {
-          'PRIMERO': 1, 'SEGUNDO': 2, 'TERCERO': 3, 'CUARTO': 4, 'QUINTO': 5, 'SEXTO': 6,
-          '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6
-        };
-        baseGrado = Object.keys(gradoMap).find(k => gradoFromSheet.includes(k)) ? gradoMap[Object.keys(gradoMap).find(k => gradoFromSheet.includes(k))!] : 1;
-
-        // Calcular id_grado (ej: 201 para 1ro Primaria)
-        const idGrado = (nivelId * 100) + baseGrado;
-
-        const periodRes = await client.query("SELECT id FROM periodos_evaluacion LIMIT 1");
+        // 2. Grupos y Estudiantes
+        const periodRes = await client.query('SELECT id FROM periodos_evaluacion LIMIT 1');
         const periodoId = periodRes.rows[0]?.id;
 
-        const materiaRes = await client.query("SELECT id FROM materias WHERE nivel_educativo = $1 LIMIT 4", [nivelId === 2 ? 2 : 2]);
-        const materiasIds = materiaRes.rows.map(m => m.id);
+        const materiaRes = await client.query(
+          'SELECT id FROM materias WHERE nivel_educativo = $1 LIMIT 4',
+          [nivelId === 2 ? 2 : 2]
+        );
+        const materiasIds = materiaRes.rows.map((m) => m.id);
 
-        const studentRows = dataAlumnos.slice(1);
-        for (const row of studentRows) {
-          if (!row || row.length < 5 || !row[1]) continue;
+        const idGrado = nivelId * 100 + grado;
+        let alumnosProcesados = 0;
 
-          const curp = (row[1] || '').toString().trim();
-          const nombreCompleto = (row[2] || '').toString().trim();
-          const grupoNombre = (row[3] || 'A').toString().trim();
-
-          if (!curp || !nombreCompleto) continue;
-
-          let grupoRes = await client.query(
+        for (const alumno of alumnos) {
+          // Grupo
+          const grupoRes = await client.query(
             'SELECT id FROM grupos WHERE escuela_id = $1 AND grado_id = $2 AND nombre = $3',
-            [escuelaId, idGrado, grupoNombre]
+            [escuelaId, idGrado, alumno.grupo]
           );
           let grupoId;
           if (grupoRes.rows.length === 0) {
             const newGrupo = await client.query(
               'INSERT INTO grupos (escuela_id, grado_id, nombre, nivel_educativo) VALUES ($1, $2, $3, $4) RETURNING id',
-              [escuelaId, idGrado, grupoNombre, nivelId]
+              [escuelaId, idGrado, alumno.grupo, nivelId]
             );
             grupoId = newGrupo.rows[0].id;
           } else {
             grupoId = grupoRes.rows[0].id;
           }
 
-          const studentCheck = await client.query('SELECT id FROM estudiantes WHERE curp = $1', [curp]);
+          // Estudiante
+          const studentCheck = await client.query('SELECT id FROM estudiantes WHERE curp = $1', [
+            alumno.curp,
+          ]);
           let estudianteId;
           if (studentCheck.rows.length === 0) {
             const newStudent = await client.query(
               `INSERT INTO estudiantes (nombre, grupo_id, curp, estatus)
                VALUES ($1, $2, $3, 'A') RETURNING id`,
-              [nombreCompleto, grupoId, curp]
+              [alumno.nombre, grupoId, alumno.curp]
             );
             estudianteId = newStudent.rows[0].id;
           } else {
             estudianteId = studentCheck.rows[0].id;
-            await client.query(
-              'UPDATE estudiantes SET nombre = $1, grupo_id = $2 WHERE id = $3',
-              [nombreCompleto, grupoId, estudianteId]
-            );
+            await client.query('UPDATE estudiantes SET nombre = $1, grupo_id = $2 WHERE id = $3', [
+              alumno.nombre,
+              grupoId,
+              estudianteId,
+            ]);
           }
 
-          for (let col = 6; col < Math.min(row.length, 10); col++) {
-            const valor = row[col];
-            if (valor !== undefined && valor !== null && valor !== '' && materiasIds[col - 6]) {
-              const valorNum = parseInt(valor.toString());
-              if (!isNaN(valorNum) && valorNum >= 0 && valorNum <= 3) {
-                await client.query(
-                  `INSERT INTO evaluaciones (estudiante_id, materia_id, periodo_id, valoracion, fecha_evaluacion, updated_at, solicitud_id)
+          // Evaluaciones
+          for (const ev of alumno.evaluaciones) {
+            if (materiasIds[ev.materiaIndex]) {
+              await client.query(
+                `INSERT INTO evaluaciones (estudiante_id, materia_id, periodo_id, valoracion, fecha_evaluacion, updated_at, solicitud_id)
                    VALUES ($1, $2, $3, $4, NOW(), NOW(), $5)
                    ON CONFLICT (estudiante_id, materia_id, periodo_id, solicitud_id)
                    DO UPDATE SET 
                      valoracion = EXCLUDED.valoracion,
                      fecha_evaluacion = EXCLUDED.fecha_evaluacion,
                      updated_at = NOW()`,
-                  [estudianteId, materiasIds[col - 6], periodoId, valorNum, solicitudId]
-                );
-              }
+                [estudianteId, materiasIds[ev.materiaIndex], periodoId, ev.valor, solicitudId]
+              );
             }
           }
           alumnosProcesados++;
         }
 
         await client.query('COMMIT');
+
         return {
           success: true,
-          message: 'Archivo procesado exitosamente',
+          message: 'Archivo procesado exitosamente (Worker Thread)',
           solicitudId,
-          detalles: { cct, nivel: Object.keys(nivelMap).find(k => nivelMap[k] === nivelId) || nivel, grado: baseGrado, alumnosProcesados, errores }
+          detalles: { cct, nivel: metadata.nivelDetectado, grado, alumnosProcesados, errores: [] },
         };
       } catch (error: any) {
-        if (client) await client.query('ROLLBACK');
+        await client.query('ROLLBACK');
         logger.error('Error in uploadExcelAssessment', { error });
         return {
           success: false,
           message: `Error al procesar: ${error.message}`,
           solicitudId: null,
           detalles: {
-            cct,
-            nivel: Object.keys(nivelMap).find(k => nivelMap[k] === nivelId) || nivel,
-            grado: (typeof baseGrado !== 'undefined' ? baseGrado : null),
-            alumnosProcesados,
-            errores: [error.message]
-          }
+            cct: null,
+            nivel: null,
+            grado: null,
+            alumnosProcesados: 0,
+            errores: [error.message],
+          },
         };
       } finally {
-        if (client) client.release();
+        client.release();
+      }
+    },
+
+    /**
+     * Obtener métricas para el dashboard
+     * @use-case CU-14: Dashboard
+     */
+    getDashboardMetrics: async () => {
+      try {
+        const [
+          usersRes,
+          ticketsRes,
+          ticketsOpenRes,
+          ticketsResolvedRes,
+          solicitudesRes,
+          solicitudesValidRes,
+        ] = await Promise.all([
+          query('SELECT COUNT(*) as count FROM usuarios'),
+          query('SELECT COUNT(*) as count FROM tickets_soporte'),
+          query(
+            "SELECT COUNT(*) as count FROM tickets_soporte WHERE estado = (SELECT id FROM cat_estado_ticket WHERE nombre = 'ABIERTO')"
+          ),
+          query(
+            "SELECT COUNT(*) as count FROM tickets_soporte WHERE estado = (SELECT id FROM cat_estado_ticket WHERE nombre = 'RESUELTO')"
+          ),
+          query('SELECT COUNT(*) as count FROM solicitudes_eia2'),
+          query('SELECT COUNT(*) as count FROM solicitudes_eia2 WHERE estado_validacion = 2'), // Assuming 2 is VALIDADO
+        ]);
+
+        return {
+          totalUsuarios: parseInt(usersRes.rows[0].count),
+          totalTickets: parseInt(ticketsRes.rows[0].count),
+          ticketsAbiertos: parseInt(ticketsOpenRes.rows[0].count),
+          ticketsResueltos: parseInt(ticketsResolvedRes.rows[0].count),
+          totalSolicitudes: parseInt(solicitudesRes.rows[0].count),
+          solicitudesValidadas: parseInt(solicitudesValidRes.rows[0].count),
+        };
+      } catch (error) {
+        logger.error('Error fetching dashboard metrics', error);
+        throw new Error('Error al obtener métricas');
       }
     },
   },
-
 
   /**
    * Field resolvers para User

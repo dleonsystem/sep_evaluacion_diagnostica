@@ -1,6 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ArchivosGuardadosComponent } from './archivos-guardados.component';
-import { ArchivoStorageService, RegistroArchivo } from '../../services/archivo-storage.service';
+import {
+  ArchivoStorageService,
+  RegistroArchivo,
+} from '../../services/archivo-storage.service';
 import { AuthService } from '../../services/auth.service';
 
 class ArchivoStorageServiceStub {
@@ -14,8 +17,9 @@ class ArchivoStorageServiceStub {
         contenidoBase64: 'ZGF0YQ==',
         hash: 'hash-demo',
         cct: '01DJN0000A',
-        email: 'demo@correo.mx'
-      }
+        correo: 'demo@correo.mx',
+        claveEstable: 'clave-hmac-test',
+      },
     ];
   }
 
@@ -37,8 +41,8 @@ describe('ArchivosGuardadosComponent', () => {
       imports: [ArchivosGuardadosComponent],
       providers: [
         { provide: ArchivoStorageService, useClass: ArchivoStorageServiceStub },
-        { provide: AuthService, useClass: AuthServiceStub }
-      ]
+        { provide: AuthService, useClass: AuthServiceStub },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ArchivosGuardadosComponent);

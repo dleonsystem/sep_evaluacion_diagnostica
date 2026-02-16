@@ -63,6 +63,24 @@ export const typeDefs = `#graphql
     @use-case CU-13: Mesa de ayuda
     """
     getMyTickets(correo: String): [Ticket!]!
+    
+    """
+    Obtener métricas para el dashboard administrativo
+    @use-case CU-14: Dashboard
+    """
+    getDashboardMetrics: DashboardMetrics!
+  }
+
+  """
+  Métricas para el dashboard
+  """
+  type DashboardMetrics {
+    totalUsuarios: Int!
+    totalTickets: Int!
+    ticketsAbiertos: Int!
+    ticketsResueltos: Int!
+    totalSolicitudes: Int!
+    solicitudesValidadas: Int!
   }
   
   """
@@ -101,6 +119,12 @@ export const typeDefs = `#graphql
     @psp Code Review - Validación de formato Excel
     """
     uploadExcelAssessment(input: UploadExcelInput!): UploadExcelResponse!
+    
+    """
+    Recuperar contraseña (envío de email)
+    @use-case CU-01: Autenticación
+    """
+    recoverPassword(email: String!): Boolean!
   }
   
   """

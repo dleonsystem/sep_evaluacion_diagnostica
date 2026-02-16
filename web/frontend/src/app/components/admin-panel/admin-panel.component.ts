@@ -3,8 +3,18 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AdminAuthService } from '../../services/admin-auth.service';
-import { ArchivoStorageService, RegistroArchivo } from '../../services/archivo-storage.service';
-import { TicketsService, Ticket as TicketDB } from '../../services/tickets.service';
+import {
+  ArchivoStorageService,
+  RegistroArchivo,
+} from '../../services/archivo-storage.service';
+import {
+  TicketsService,
+  Ticket as TicketDB,
+} from '../../services/tickets.service';
+import {
+  UsuariosService,
+  UsuarioCreado,
+} from '../../services/usuarios.service';
 import Swal from 'sweetalert2';
 import { firstValueFrom } from 'rxjs';
 
@@ -17,7 +27,14 @@ import { firstValueFrom } from 'rxjs';
 })
 export class AdminPanelComponent implements OnInit {
   readonly maxArchivos = 10;
-  readonly extensionesPermitidas = ['.pdf', '.xlsx', '.jpg', '.jpeg', '.doc', '.docx'];
+  readonly extensionesPermitidas = [
+    '.pdf',
+    '.xlsx',
+    '.jpg',
+    '.jpeg',
+    '.doc',
+    '.docx',
+  ];
   selectedFiles: File[] = [];
   selectedNivel = '';
   uploadStatus: 'idle' | 'uploading' | 'success' | 'error' = 'idle';
@@ -40,17 +57,27 @@ export class AdminPanelComponent implements OnInit {
   private readonly archivosStoragePrefix = 'archivos-resultados';
   private readonly ticketsStorageKey = 'tickets-soporte';
 
+  // Usuarios
+  usuarios: UsuarioCreado[] = [];
+  filtroUsuarioTexto = '';
+  paginaUsuariosActual = 1;
+  totalUsuarios = 0;
+  cargandoUsuarios = false;
+
   constructor(
     private readonly adminAuthService: AdminAuthService,
     private readonly archivoStorageService: ArchivoStorageService,
     private readonly ticketsService: TicketsService,
-    private readonly router: Router
-  ) { }
+    private readonly usuariosService: UsuariosService,
+    private readonly router: Router,
+  ) {}
 
   ngOnInit(): void {
     this.uploadHistory = this.loadUploadHistory();
     this.cargarExcelDisponibles();
+    this.cargarExcelDisponibles();
     this.cargarTicketsSoporte();
+    this.cargarUsuarios();
   }
 
   seleccionarArchivo(event: Event): void {
@@ -86,12 +113,13 @@ export class AdminPanelComponent implements OnInit {
   async subirArchivos(): Promise<void> {
     if (!this.excelSeleccionado) {
       this.uploadStatus = 'error';
-      this.feedbackMessage = 'Selecciona un registro de Excel antes de subir los archivos.';
+      this.feedbackMessage =
+        'Selecciona un registro de Excel antes de subir los archivos.';
       await Swal.fire({
         icon: 'warning',
         title: 'Registro requerido',
         text: 'Selecciona un registro de Excel antes de subir los archivos.',
-        confirmButtonText: 'Entendido'
+        confirmButtonText: 'Entendido',
       });
       return;
     }
@@ -109,7 +137,9 @@ export class AdminPanelComponent implements OnInit {
       return;
     }
 
-    const existingFiles = this.obtenerArchivosParaExcel(this.excelSeleccionado.key);
+    const existingFiles = this.obtenerArchivosParaExcel(
+      this.excelSeleccionado.key,
+    );
     if (existingFiles.length + this.selectedFiles.length > this.maxArchivos) {
       this.uploadStatus = 'error';
       this.feedbackMessage = `Solo puedes cargar hasta ${this.maxArchivos} archivos por registro.`;
@@ -125,38 +155,48 @@ export class AdminPanelComponent implements OnInit {
     if (existingFiles.length) {
       const confirmacion = await Swal.fire({
         title: '¿Agregar más archivos?',
-        text: `Ya hay archivos asignados a ${excelSeleccionado?.nombre ?? 'este Excel'} (${excelSeleccionado?.cct ?? 'CCT no registrada'
-          }, ${excelSeleccionado?.correo ?? 'correo no registrado'}).`,
+        text: `Ya hay archivos asignados a ${excelSeleccionado?.nombre ?? 'este Excel'} (${
+          excelSeleccionado?.cct ?? 'CCT no registrada'
+        }, ${excelSeleccionado?.correo ?? 'correo no registrado'}).`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sí, agregar',
-        cancelButtonText: 'Cancelar'
+        cancelButtonText: 'Cancelar',
       });
 
       if (!confirmacion.isConfirmed) {
         this.uploadStatus = 'idle';
-        this.feedbackMessage = 'Carga cancelada. Se mantuvieron los archivos previos.';
+        this.feedbackMessage =
+          'Carga cancelada. Se mantuvieron los archivos previos.';
         return;
       }
     }
 
     try {
-      const nuevosArchivos = await this.convertirArchivosBase64(this.selectedFiles);
+      const nuevosArchivos = await this.convertirArchivosBase64(
+        this.selectedFiles,
+      );
       const metadata = {
         excelKey,
         archivos: [...existingFiles, ...nuevosArchivos],
-        fecha: new Date().toISOString()
+        fecha: new Date().toISOString(),
       };
 
-      localStorage.setItem(this.obtenerArchivosStorageKey(excelKey), JSON.stringify(metadata));
+      localStorage.setItem(
+        this.obtenerArchivosStorageKey(excelKey),
+        JSON.stringify(metadata),
+      );
 
       const historyEntries = nuevosArchivos.map((archivo) => ({
         name: archivo.name,
         size: archivo.size,
-        uploadedAt: metadata.fecha
+        uploadedAt: metadata.fecha,
       }));
 
-      this.uploadHistory = [...historyEntries, ...this.uploadHistory].slice(0, 5);
+      this.uploadHistory = [...historyEntries, ...this.uploadHistory].slice(
+        0,
+        5,
+      );
       this.saveUploadHistory();
       this.actualizarEstadoExcel(excelKey);
 
@@ -164,7 +204,8 @@ export class AdminPanelComponent implements OnInit {
       this.feedbackMessage = 'Archivos cargados correctamente.';
     } catch (error) {
       this.uploadStatus = 'error';
-      this.feedbackMessage = 'No se pudieron leer los archivos. Intenta nuevamente.';
+      this.feedbackMessage =
+        'No se pudieron leer los archivos. Intenta nuevamente.';
     }
   }
 
@@ -216,7 +257,11 @@ export class AdminPanelComponent implements OnInit {
     try {
       const cerrar = this.estatusTicketSeleccionado === 'respondido';
       await firstValueFrom(
-        this.ticketsService.respondToTicket(this.ticketSeleccionadoId, mensaje, cerrar)
+        this.ticketsService.respondToTicket(
+          this.ticketSeleccionadoId,
+          mensaje,
+          cerrar,
+        ),
       );
 
       await Swal.fire({
@@ -224,7 +269,7 @@ export class AdminPanelComponent implements OnInit {
         title: 'Respuesta enviada',
         text: 'El ticket ha sido actualizado correctamente.',
         timer: 2000,
-        showConfirmButton: false
+        showConfirmButton: false,
       });
 
       this.respuestaAdmin = '';
@@ -235,7 +280,9 @@ export class AdminPanelComponent implements OnInit {
     }
   }
 
-  obtenerUltimaRespuesta(ticket: TicketSoporte): { mensaje: string; fecha: string } | null {
+  obtenerUltimaRespuesta(
+    ticket: TicketSoporte,
+  ): { mensaje: string; fecha: string } | null {
     if (!ticket.respuestas?.length) {
       return null;
     }
@@ -250,7 +297,7 @@ export class AdminPanelComponent implements OnInit {
     }
     return new Intl.DateTimeFormat('es-MX', {
       dateStyle: 'medium',
-      timeStyle: 'short'
+      timeStyle: 'short',
     }).format(parsed);
   }
 
@@ -269,7 +316,10 @@ export class AdminPanelComponent implements OnInit {
   get excelDisponiblesPaginados(): ExcelDisponible[] {
     const paginaActual = this.paginaActualDerivada;
     const inicio = (paginaActual - 1) * this.tamanioPagina;
-    return this.excelDisponiblesFiltrados.slice(inicio, inicio + this.tamanioPagina);
+    return this.excelDisponiblesFiltrados.slice(
+      inicio,
+      inicio + this.tamanioPagina,
+    );
   }
 
   get paginasDisponibles(): number[] {
@@ -290,7 +340,11 @@ export class AdminPanelComponent implements OnInit {
     this.feedbackMessage = `Registro seleccionado: ${excel.nombre}.`;
   }
 
-  private loadUploadHistory(): Array<{ name: string; size: number; uploadedAt: string }> {
+  private loadUploadHistory(): Array<{
+    name: string;
+    size: number;
+    uploadedAt: string;
+  }> {
     const storedHistory = localStorage.getItem(this.uploadHistoryKey);
     if (!storedHistory) {
       return [];
@@ -310,11 +364,82 @@ export class AdminPanelComponent implements OnInit {
 
   private async cargarTicketsSoporte(): Promise<void> {
     try {
-      const ticketsDB = await firstValueFrom(this.ticketsService.getAllTickets());
-      this.ticketsSoporte = ticketsDB.map(t => this.mapTicketDBToUI(t));
+      const ticketsDB = await firstValueFrom(
+        this.ticketsService.getAllTickets(),
+      );
+      this.ticketsSoporte = ticketsDB.map((t) => this.mapTicketDBToUI(t));
     } catch (error) {
       console.error('Error cargando tickets:', error);
     }
+  }
+  async cargarUsuarios(): Promise<void> {
+    this.cargandoUsuarios = true;
+    try {
+      const offset = (this.paginaUsuariosActual - 1) * this.tamanioPagina;
+      const resultado = await firstValueFrom(
+        this.usuariosService.listarUsuarios(this.tamanioPagina, offset),
+      );
+      this.usuarios = resultado.nodes;
+      this.totalUsuarios = resultado.totalCount;
+    } catch (error) {
+      console.error('Error cargando usuarios:', error);
+    } finally {
+      this.cargandoUsuarios = false;
+    }
+  }
+
+  async enviarPassword(usuario: UsuarioCreado): Promise<void> {
+    const confirmacion = await Swal.fire({
+      title: '¿Enviar contraseña?',
+      text: `Se enviará una nueva contraseña al correo ${usuario.email}. La contraseña anterior dejará de funcionar.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, enviar',
+      cancelButtonText: 'Cancelar',
+    });
+
+    if (!confirmacion.isConfirmed) {
+      return;
+    }
+
+    try {
+      await firstValueFrom(
+        this.usuariosService.recuperarPassword(usuario.email),
+      );
+      await Swal.fire(
+        'Enviado',
+        `Se ha enviado la nueva contraseña a ${usuario.email}`,
+        'success',
+      );
+    } catch (error) {
+      await Swal.fire('Error', 'No se pudo enviar la contraseña.', 'error');
+    }
+  }
+
+  irAPaginaUsuarios(pagina: number): void {
+    const totalPaginas = Math.ceil(this.totalUsuarios / this.tamanioPagina);
+    if (pagina < 1 || pagina > totalPaginas) return;
+    this.paginaUsuariosActual = pagina;
+    this.cargarUsuarios();
+  }
+
+  get usuariosFiltrados(): UsuarioCreado[] {
+    if (!this.filtroUsuarioTexto) return this.usuarios;
+    const texto = this.filtroUsuarioTexto.toLowerCase();
+    return this.usuarios.filter(
+      (u) =>
+        u.email.toLowerCase().includes(texto) ||
+        u.nombre.toLowerCase().includes(texto) ||
+        (u.apepaterno && u.apepaterno.toLowerCase().includes(texto)),
+    );
+  }
+
+  get totalPaginasUsuarios(): number {
+    return Math.ceil(this.totalUsuarios / this.tamanioPagina);
+  }
+
+  get paginasUsuariosDisponibles(): number[] {
+    return Array.from({ length: this.totalPaginasUsuarios }, (_, i) => i + 1);
   }
 
   private mapTicketDBToUI(t: TicketDB): TicketSoporte {
@@ -328,21 +453,25 @@ export class AdminPanelComponent implements OnInit {
       fecha: t.fechaCreacion,
       estatus: this.mapEstatusDBToUI(t.estado),
       respuestas: [], // TODO: Traer comentarios del backend
-      evidencias: (t.evidencias || []).map(e => ({
+      evidencias: (t.evidencias || []).map((e) => ({
         nombre: e.nombre,
         tamano: e.size || 0,
-        tipo: 'archivo'
-      }))
+        tipo: 'archivo',
+      })),
     };
   }
 
   private mapEstatusDBToUI(estado: string): TicketSoporte['estatus'] {
     switch (estado) {
-      case 'ABIERTO': return 'pendiente';
-      case 'EN PROCESO': return 'en-proceso';
+      case 'ABIERTO':
+        return 'pendiente';
+      case 'EN PROCESO':
+        return 'en-proceso';
       case 'RESUELTO':
-      case 'CERRADO': return 'respondido';
-      default: return 'pendiente';
+      case 'CERRADO':
+        return 'respondido';
+      default:
+        return 'pendiente';
     }
   }
 
@@ -359,7 +488,7 @@ export class AdminPanelComponent implements OnInit {
       }
       return parsed.map((ticket) => ({
         ...ticket,
-        respuestas: Array.isArray(ticket.respuestas) ? ticket.respuestas : []
+        respuestas: Array.isArray(ticket.respuestas) ? ticket.respuestas : [],
       }));
     } catch {
       return [];
@@ -367,7 +496,10 @@ export class AdminPanelComponent implements OnInit {
   }
 
   private saveUploadHistory(): void {
-    localStorage.setItem(this.uploadHistoryKey, JSON.stringify(this.uploadHistory));
+    localStorage.setItem(
+      this.uploadHistoryKey,
+      JSON.stringify(this.uploadHistory),
+    );
   }
 
   private cargarExcelDisponibles(): void {
@@ -376,7 +508,9 @@ export class AdminPanelComponent implements OnInit {
       const key = this.obtenerClaveExcel(registro);
       const nivel = this.obtenerNivelRegistro(registro);
       const fecha = registro.fechaGuardado || new Date().toISOString();
-      const estatus = registro.estatus ?? (this.existeArchivosParaExcel(key) ? 'asignado' : 'pendiente');
+      const estatus =
+        registro.estatus ??
+        (this.existeArchivosParaExcel(key) ? 'asignado' : 'pendiente');
       return {
         key,
         nombre: registro.nombre,
@@ -384,11 +518,13 @@ export class AdminPanelComponent implements OnInit {
         correo: registro.correo ?? '—',
         estatus,
         fecha,
-        nivel
+        nivel,
       };
     });
 
-    this.paginaActual = this.obtenerPaginaActualDesdeListado(this.excelDisponiblesFiltrados);
+    this.paginaActual = this.obtenerPaginaActualDesdeListado(
+      this.excelDisponiblesFiltrados,
+    );
   }
 
   private actualizarEstadoExcel(excelKey: string): void {
@@ -413,7 +549,8 @@ export class AdminPanelComponent implements OnInit {
         excel.cct.toLowerCase().includes(texto) ||
         excel.correo.toLowerCase().includes(texto);
       const coincideEstatus = estatus === 'todos' || excel.estatus === estatus;
-      const coincideFecha = !fecha || this.obtenerFechaISO(excel.fecha) === fecha;
+      const coincideFecha =
+        !fecha || this.obtenerFechaISO(excel.fecha) === fecha;
       const coincideNivel = !nivel || excel.nivel === nivel;
 
       return coincideTexto && coincideEstatus && coincideFecha && coincideNivel;
@@ -452,16 +589,23 @@ export class AdminPanelComponent implements OnInit {
   }
 
   private obtenerArchivosParaExcel(
-    excelKey: string
+    excelKey: string,
   ): Array<{ name: string; size: number; type: string; base64: string }> {
-    const stored = localStorage.getItem(this.obtenerArchivosStorageKey(excelKey));
+    const stored = localStorage.getItem(
+      this.obtenerArchivosStorageKey(excelKey),
+    );
     if (!stored) {
       return [];
     }
 
     try {
       const parsed = JSON.parse(stored) as {
-        archivos?: Array<{ name: string; size: number; type: string; base64: string }>;
+        archivos?: Array<{
+          name: string;
+          size: number;
+          type: string;
+          base64: string;
+        }>;
         pdfName?: string;
         pdfBase64?: string;
       };
@@ -476,8 +620,8 @@ export class AdminPanelComponent implements OnInit {
             name: parsed.pdfName,
             size: 0,
             type: 'application/pdf',
-            base64: parsed.pdfBase64
-          }
+            base64: parsed.pdfBase64,
+          },
         ];
       }
 
@@ -532,8 +676,10 @@ export class AdminPanelComponent implements OnInit {
   }
 
   private async convertirArchivosBase64(
-    archivos: File[]
-  ): Promise<Array<{ name: string; size: number; type: string; base64: string }>> {
+    archivos: File[],
+  ): Promise<
+    Array<{ name: string; size: number; type: string; base64: string }>
+  > {
     const resultados = [];
     for (const archivo of archivos) {
       const base64 = await this.readArchivoAsBase64(archivo);
@@ -541,31 +687,42 @@ export class AdminPanelComponent implements OnInit {
         name: archivo.name,
         size: archivo.size,
         type: archivo.type,
-        base64
+        base64,
       });
     }
     return resultados;
   }
 
-  private validarCantidadArchivos(archivos: File[]): { esValida: boolean; mensaje: string } {
+  private validarCantidadArchivos(archivos: File[]): {
+    esValida: boolean;
+    mensaje: string;
+  } {
     if (!archivos.length) {
-      return { esValida: false, mensaje: 'Selecciona hasta 10 archivos para comenzar.' };
+      return {
+        esValida: false,
+        mensaje: 'Selecciona hasta 10 archivos para comenzar.',
+      };
     }
 
     if (archivos.length > this.maxArchivos) {
       return {
         esValida: false,
-        mensaje: `Solo puedes seleccionar hasta ${this.maxArchivos} archivos por carga.`
+        mensaje: `Solo puedes seleccionar hasta ${this.maxArchivos} archivos por carga.`,
       };
     }
 
     return { esValida: true, mensaje: '' };
   }
 
-  private validarTiposArchivos(archivos: File[]): { esValida: boolean; mensaje: string } {
+  private validarTiposArchivos(archivos: File[]): {
+    esValida: boolean;
+    mensaje: string;
+  } {
     const archivosInvalidos = archivos.filter((archivo) => {
       const nombre = archivo.name.toLowerCase();
-      return !this.extensionesPermitidas.some((extension) => nombre.endsWith(extension));
+      return !this.extensionesPermitidas.some((extension) =>
+        nombre.endsWith(extension),
+      );
     });
 
     if (!archivosInvalidos.length) {
@@ -575,7 +732,7 @@ export class AdminPanelComponent implements OnInit {
     const nombres = archivosInvalidos.map((archivo) => archivo.name).join(', ');
     return {
       esValida: false,
-      mensaje: `Tipo de archivo no permitido: ${nombres}. Solo PDF, XLSX, JPG o Word.`
+      mensaje: `Tipo de archivo no permitido: ${nombres}. Solo PDF, XLSX, JPG o Word.`,
     };
   }
 }

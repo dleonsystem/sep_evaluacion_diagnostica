@@ -8,7 +8,10 @@ import { AdminLoginComponent } from './components/admin-login/admin-login.compon
 import { AdminPanelComponent } from './components/admin-panel/admin-panel.component';
 import { TicketsComponent } from './components/tickets/tickets.component';
 import { TicketsHistorialComponent } from './components/tickets-historial/tickets-historial.component';
-
+import { AuthGuard } from './guards/auth.guard';
+import { AdminGuard } from './guards/admin.guard';
+import { LoginGuard } from './guards/login.guard';
+import { RecuperarPasswordComponent } from './components/recuperar-password/recuperar-password.component';
 
 export const routes: Routes = [
   {
@@ -39,37 +42,50 @@ export const routes: Routes = [
   {
     path: 'archivos-preescolar',
     component: ArchivosGuardadosComponent,
-    pathMatch: 'full'
+    canActivate: [AuthGuard],
+    pathMatch: 'full',
   },
   {
     path: 'login',
     component: LoginComponent,
-    pathMatch: 'full'
+    canActivate: [LoginGuard],
+    pathMatch: 'full',
   },
   {
     path: 'admin/login',
     component: AdminLoginComponent,
-    pathMatch: 'full'
+    canActivate: [LoginGuard],
+    pathMatch: 'full',
+  },
+  {
+    path: 'recuperar-password',
+    component: RecuperarPasswordComponent,
+    canActivate: [LoginGuard],
+    pathMatch: 'full',
   },
   {
     path: 'admin/panel',
     component: AdminPanelComponent,
-    pathMatch: 'full'
+    canActivate: [AdminGuard],
+    pathMatch: 'full',
   },
   {
     path: 'descargas',
     component: DescargasComponent,
-    pathMatch: 'full'
+    canActivate: [AuthGuard],
+    pathMatch: 'full',
   },
   {
     path: 'tickets',
     component: TicketsComponent,
-    pathMatch: 'full'
+    canActivate: [AuthGuard],
+    pathMatch: 'full',
   },
   {
     path: 'tickets-historial',
     component: TicketsHistorialComponent,
-    pathMatch: 'full'
+    canActivate: [AuthGuard],
+    pathMatch: 'full',
   },
   /* {
     path: 'carga-masiva/detalle',
