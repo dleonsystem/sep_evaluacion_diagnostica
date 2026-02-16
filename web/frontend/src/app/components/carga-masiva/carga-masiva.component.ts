@@ -7,11 +7,6 @@ import {
   ResultadoValidacion,
   TipoArchivoCarga
 } from '../../services/excel-validation.service';
-import {
-  ArchivoDuplicadoError,
-  ArchivoStorageService,
-  ResultadoGuardado
-} from '../../services/archivo-storage.service';
 import { AuthService } from '../../services/auth.service';
 import Swal from 'sweetalert2';
 import { EscDatos } from '../../services/excel-validation.service';
@@ -20,6 +15,7 @@ import { EstadoCredencialesService } from '../../services/estado-credenciales.se
 import { MockPdfService } from '../../services/mock-pdf.service';
 import { UsuariosService } from '../../services/usuarios.service';
 import { EvaluacionesService } from '../../services/evaluaciones.service';
+import { ArchivoStorageService } from '../../services/archivo-storage.service';
 
 interface ResultadoExito {
   mensaje: string;
@@ -118,12 +114,12 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly excelValidationService: ExcelValidationService,
-    private readonly archivoStorageService: ArchivoStorageService,
     private readonly authService: AuthService,
     private readonly estadoCredencialesService: EstadoCredencialesService,
     private readonly mockPdfService: MockPdfService,
     private readonly usuariosService: UsuariosService,
     private readonly evaluacionesService: EvaluacionesService,
+    private readonly archivoStorageService: ArchivoStorageService,
     private readonly router: Router
   ) { }
 
@@ -309,8 +305,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         this.evaluacionesService.subirExcel({
           archivoBase64: base64,
           nombreArchivo: resultado.archivo.name,
-          cicloEscolar: '2025-2026'
-        })
+          cicloEscolar: '2025-2026',
+        }),
       );
 
       if (!respuestaApi.success) {
@@ -318,79 +314,56 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       }
       // -------------------------------
 
-      const guardado = await this.archivoStorageService.guardarArchivoPreescolar(resultado.archivoOriginal, {
-        cct: resultado.escDatos?.cct,
-        correo: this.correoControl.value,
-        nivel: resultado.tipoDetectado ?? undefined
+      // GUARDADO LOCAL DE RESPALDO (para vista de historial inmediata)
+      if (resultado.escDatos) {
+        this.archivoStorageService.guardarRegistro({
+          nombre: resultado.archivo.name,
+          cct: resultado.escDatos.cct,
+          nivel: resultado.tipoDetectado ?? 'preescolar',
+          fecha: new Date().toISOString(),
+          size: resultado.archivoOriginal.size,
+          correo: resultado.escDatos.correo
+        });
+      }
+
+      resultado.guardado = true;
+      resultado.mensajeInformativo =
+        'El archivo se recibió correctamente en el servidor.';
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Archivo cargado',
+        text: 'La información se ha sincronizado correctamente con el servidor.',
       });
-      await this.mostrarConfirmacionGuardado(guardado, 'guardado', resultado);
-      const credencialesListas = await this.registrarUsuarioYCredenciales(resultado);
+
+      const credencialesListas = await this.registrarUsuarioYCredenciales(
+        resultado,
+      );
       if (!credencialesListas) {
         return;
       }
-      if (resultado.escDatos && resultado.resultadoExito && resultado.pdfTipo !== 'exito') {
+
+      if (
+        resultado.escDatos &&
+        resultado.resultadoExito &&
+        resultado.pdfTipo !== 'exito'
+      ) {
         await this.generarPdfExito(
           resultado,
           resultado.escDatos,
           resultado.resultadoExito.fechaDisponible,
-          resultado.resultadoExito.totalAlumnos
+          resultado.resultadoExito.totalAlumnos,
         );
       }
-    } catch (error) {
-      if (error instanceof ArchivoDuplicadoError) {
-        const confirmacion = await Swal.fire({
-          icon: 'question',
-          title: 'Archivo ya existe',
-          text: `Ya tienes una copia del archivo "${resultado.archivo.name}" con el mismo contenido. ¿Quieres sustituirla?`,
-          showCancelButton: true,
-          confirmButtonText: 'Sí, sustituir',
-          cancelButtonText: 'Cancelar'
-        });
-
-        if (confirmacion.isConfirmed) {
-          try {
-            const resultadoReemplazo = await this.archivoStorageService.guardarArchivoPreescolar(
-              resultado.archivoOriginal,
-              {
-                forzarReemplazo: true,
-                cct: resultado.escDatos?.cct,
-                correo: this.correoControl.value,
-                nivel: resultado.tipoDetectado ?? undefined
-              }
-            );
-            await this.mostrarConfirmacionGuardado(resultadoReemplazo, 'reemplazo', resultado);
-            const credencialesListas = await this.registrarUsuarioYCredenciales(resultado);
-            if (!credencialesListas) {
-              return;
-            }
-            if (resultado.escDatos && resultado.resultadoExito && resultado.pdfTipo !== 'exito') {
-              await this.generarPdfExito(
-                resultado,
-                resultado.escDatos,
-                resultado.resultadoExito.fechaDisponible,
-                resultado.resultadoExito.totalAlumnos
-              );
-            }
-            return;
-          } catch (reemplazoError) {
-            resultado.errorGuardado =
-              reemplazoError instanceof Error
-                ? reemplazoError.message
-                : 'No se pudo sustituir el archivo guardado.';
-          }
-        }
-
-        return;
-      }
-
+    } catch (error: any) {
       resultado.errorGuardado =
         error instanceof Error
           ? error.message
-          : 'No se pudo guardar el archivo localmente. Inténtalo de nuevo.';
+          : 'No se pudo cargar el archivo al servidor. Inténtalo de nuevo.';
       await Swal.fire({
         icon: 'error',
-        title: 'No se pudo guardar',
-        text: resultado.errorGuardado
+        title: 'Error de carga',
+        text: resultado.errorGuardado,
       });
     } finally {
       resultado.guardando = false;
@@ -437,20 +410,31 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
           email: resultado.escDatos.correo,
           rol: 'RESPONSABLE_CCT',
           clavesCCT: [resultado.escDatos.cct],
-          password: contrasenaGenerada
-        })
+          password: contrasenaGenerada,
+        }),
       );
-    } catch (error) {
-      resultado.errorGuardado =
-        error instanceof Error
-          ? error.message
-          : 'No pudimos registrar el usuario en el sistema. Intenta nuevamente.';
-      await Swal.fire({
-        icon: 'error',
-        title: 'No se pudo registrar',
-        text: resultado.errorGuardado
-      });
-      return false;
+    } catch (error: any) {
+      const errorMessage = error?.message || '';
+      if (
+        errorMessage.includes('ya está registrado') ||
+        errorMessage.includes('already exists')
+      ) {
+        // El usuario ya existe, no es un error para la carga del archivo
+        resultado.notaGuardado =
+          'El correo ya estaba registrado previamente. Usa tu contraseña original para ingresar.';
+        console.log('El usuario ya existe, omitiendo creación.');
+      } else {
+        resultado.errorGuardado =
+          error instanceof Error
+            ? error.message
+            : 'No pudimos registrar el usuario en el sistema. Intenta nuevamente.';
+        await Swal.fire({
+          icon: 'error',
+          title: 'No se pudo registrar',
+          text: resultado.errorGuardado,
+        });
+        return false;
+      }
     }
 
     try {
@@ -603,30 +587,6 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     this.resultados = [];
   }
 
-  private async mostrarConfirmacionGuardado(
-    resultado: ResultadoGuardado,
-    tipo: 'guardado' | 'reemplazo',
-    resultadoArchivo: ResultadoArchivo
-  ): Promise<void> {
-    resultadoArchivo.rutaGuardado = resultado.rutaVirtual;
-    resultadoArchivo.modoGuardado = resultado.modo;
-    resultadoArchivo.notaGuardado = resultado.nota;
-    resultadoArchivo.guardado = true;
-    resultadoArchivo.mensajeInformativo =
-      'El archivo se conservó en el almacenamiento local del navegador. Copia el archivo a ' +
-      `${this.obtenerRutaReferencia(resultadoArchivo.tipoDetectado)} en tu proyecto si lo necesitas.`;
-
-    const esReemplazo = tipo === 'reemplazo';
-
-    await Swal.fire({
-      icon: 'success',
-      title: esReemplazo ? 'Archivo sustituido' : 'Archivo guardado',
-      text: esReemplazo
-        ? 'Se reemplazó la copia previa con la nueva versión.'
-        : 'Se guardó una copia en el almacenamiento local del navegador.',
-      footer: resultadoArchivo.rutaGuardado ? `Ruta sugerida: ${resultadoArchivo.rutaGuardado}` : undefined
-    });
-  }
 
   private actualizarEstadoSesion(): void {
     const credenciales = this.authService.obtenerCredenciales();

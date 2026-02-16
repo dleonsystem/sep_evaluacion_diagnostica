@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { InicioComponent } from './components/inicio/inicio.component';
 import { CargaMasivaComponent } from './components/carga-masiva/carga-masiva.component';
-import { ArchivosGuardadosComponent } from './components/archivos-guardados/archivos-guardados.component';
+import { ArchivosEvaluacionComponent } from './components/archivos-evaluacion/archivos-evaluacion.component';
 import { LoginComponent } from './components/login/login.component';
 import { DescargasComponent } from './components/descargas/descargas.component';
 import { AdminLoginComponent } from './components/admin-login/admin-login.component';
@@ -40,8 +40,8 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
-    path: 'archivos-preescolar',
-    component: ArchivosGuardadosComponent,
+    path: 'archivos-evaluacion',
+    component: ArchivosEvaluacionComponent,
     canActivate: [AuthGuard],
     pathMatch: 'full',
   },

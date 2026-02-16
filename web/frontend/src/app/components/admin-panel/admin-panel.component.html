@@ -1,6 +1,35 @@
 <section class="admin-panel">
   <div class="admin-panel__card">
     <h2>Panel de administrador</h2>
+
+    <section class="admin-panel__metrics" *ngIf="metrics">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <span class="metric-card__label">Usuarios Totales</span>
+          <span class="metric-card__value">{{ metrics.totalUsuarios }}</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-card__label">Solicitudes EIA (Total)</span>
+          <span class="metric-card__value">{{ metrics.totalSolicitudes }}</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-card__label">Solicitudes Validadas</span>
+          <span class="metric-card__value">{{ metrics.solicitudesValidadas }}</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-card__label">Tickets Totales</span>
+          <span class="metric-card__value">{{ metrics.totalTickets }}</span>
+        </div>
+        <div class="metric-card metric-card--warning">
+          <span class="metric-card__label">Tickets Abiertos</span>
+          <span class="metric-card__value">{{ metrics.ticketsAbiertos }}</span>
+        </div>
+        <div class="metric-card metric-card--success">
+          <span class="metric-card__label">Tickets Resueltos</span>
+          <span class="metric-card__value">{{ metrics.ticketsResueltos }}</span>
+        </div>
+      </div>
+    </section>
     <!--  <p>Token activo para la carga de PDFs.</p> -->
 
     <!-- <div class="admin-panel__token" *ngIf="obtenerToken(); else sinSesion">
@@ -15,14 +44,8 @@
     </ng-template>
 
     <div class="admin-panel__upload">
-      <label class="admin-panel__upload-label" for="nivel-select"
-        >Selecciona el nivel</label
-      >
-      <select
-        id="nivel-select"
-        class="admin-panel__upload-input"
-        [(ngModel)]="selectedNivel"
-      >
+      <label class="admin-panel__upload-label" for="nivel-select">Selecciona el nivel</label>
+      <select id="nivel-select" class="admin-panel__upload-input" [(ngModel)]="selectedNivel">
         <option value="" disabled>Selecciona un nivel</option>
         <option value="preescolar">Preescolar</option>
         <option value="primaria">Primaria</option>
@@ -42,21 +65,13 @@
         <div class="admin-panel__filters">
           <label class="admin-panel__filters-field">
             <span class="admin-panel__filters-label">Buscar</span>
-            <input
-              class="admin-panel__filters-input"
-              type="text"
-              placeholder="Nombre, CCT o correo"
-              [(ngModel)]="filtroTexto"
-              (ngModelChange)="onFiltrosActualizados()"
-            />
+            <input class="admin-panel__filters-input" type="text" placeholder="Nombre, CCT o correo"
+              [(ngModel)]="filtroTexto" (ngModelChange)="onFiltrosActualizados()" />
           </label>
           <label class="admin-panel__filters-field">
             <span class="admin-panel__filters-label">Estatus</span>
-            <select
-              class="admin-panel__filters-input"
-              [(ngModel)]="filtroEstatus"
-              (ngModelChange)="onFiltrosActualizados()"
-            >
+            <select class="admin-panel__filters-input" [(ngModel)]="filtroEstatus"
+              (ngModelChange)="onFiltrosActualizados()">
               <option value="todos">Todos</option>
               <option value="asignado">Asignado</option>
               <option value="pendiente">Pendiente</option>
@@ -64,12 +79,8 @@
           </label>
           <label class="admin-panel__filters-field">
             <span class="admin-panel__filters-label">Fecha</span>
-            <input
-              class="admin-panel__filters-input"
-              type="date"
-              [(ngModel)]="filtroFecha"
-              (ngModelChange)="onFiltrosActualizados()"
-            />
+            <input class="admin-panel__filters-input" type="date" [(ngModel)]="filtroFecha"
+              (ngModelChange)="onFiltrosActualizados()" />
           </label>
         </div>
         <table class="admin-panel__table">
@@ -86,25 +97,17 @@
             <tr *ngFor="let excel of excelDisponiblesPaginados">
               <td>
                 <label class="admin-panel__select">
-                  <input
-                    type="radio"
-                    name="excelSeleccionado"
-                    [checked]="excelSeleccionado?.key === excel.key"
-                    (change)="seleccionarExcel(excel)"
-                    aria-label="Seleccionar registro"
-                  />
+                  <input type="radio" name="excelSeleccionado" [checked]="excelSeleccionado?.key === excel.key"
+                    (change)="seleccionarExcel(excel)" aria-label="Seleccionar registro" />
                 </label>
               </td>
               <td>{{ excel.nombre }}</td>
               <td>{{ excel.cct }}</td>
               <td>{{ excel.correo }}</td>
               <td>
-                <span
-                  class="admin-panel__badge"
-                  [class.admin-panel__badge--assigned]="
+                <span class="admin-panel__badge" [class.admin-panel__badge--assigned]="
                     excel.estatus === 'asignado'
-                  "
-                >
+                  ">
                   {{ excel.estatus === "asignado" ? "Asignado" : "Pendiente" }}
                 </span>
               </td>
@@ -112,70 +115,42 @@
           </tbody>
         </table>
         <div class="admin-panel__pagination" *ngIf="totalPaginas > 1">
-          <button
-            class="admin-panel__pagination-button"
-            type="button"
-            [disabled]="paginaActualDerivada === 1"
-            (click)="irAPagina(paginaActualDerivada - 1)"
-          >
+          <button class="admin-panel__pagination-button" type="button" [disabled]="paginaActualDerivada === 1"
+            (click)="irAPagina(paginaActualDerivada - 1)">
             Anterior
           </button>
-          <button
-            class="admin-panel__pagination-button"
-            type="button"
-            *ngFor="let pagina of paginasDisponibles"
+          <button class="admin-panel__pagination-button" type="button" *ngFor="let pagina of paginasDisponibles"
             [class.admin-panel__pagination-button--active]="
               pagina === paginaActualDerivada
-            "
-            (click)="irAPagina(pagina)"
-          >
+            " (click)="irAPagina(pagina)">
             {{ pagina }}
           </button>
-          <button
-            class="admin-panel__pagination-button"
-            type="button"
-            [disabled]="paginaActualDerivada === totalPaginas"
-            (click)="irAPagina(paginaActualDerivada + 1)"
-          >
+          <button class="admin-panel__pagination-button" type="button"
+            [disabled]="paginaActualDerivada === totalPaginas" (click)="irAPagina(paginaActualDerivada + 1)">
             Siguiente
           </button>
         </div>
       </div>
 
-      <label class="admin-panel__upload-label" for="pdf-upload"
-        >Selecciona archivos de resultados</label
-      >
+      <label class="admin-panel__upload-label" for="pdf-upload">Selecciona archivos de resultados</label>
       <p class="admin-panel__helper" *ngIf="!excelSeleccionado">
         Selecciona un registro de Excel para habilitar la carga de archivos.
       </p>
-      <input
-        id="pdf-upload"
-        class="admin-panel__upload-input"
-        type="file"
-        accept=".pdf,.xlsx,.jpg,.jpeg,.doc,.docx"
-        multiple
-        (change)="seleccionarArchivo($event)"
-      />
+      <input id="pdf-upload" class="admin-panel__upload-input" type="file" accept=".pdf,.xlsx,.jpg,.jpeg,.doc,.docx"
+        multiple (change)="seleccionarArchivo($event)" />
       <p class="admin-panel__helper">
         Formatos permitidos: PDF, XLSX, JPG, Word. Máximo
         {{ maxArchivos }} archivos.
       </p>
-      <button
-        class="admin-panel__upload-button"
-        type="button"
-        (click)="subirArchivos()"
-        [disabled]="!selectedFiles.length"
-      >
+      <button class="admin-panel__upload-button" type="button" (click)="subirArchivos()"
+        [disabled]="!selectedFiles.length">
         Subir archivos
       </button>
 
-      <div
-        class="admin-panel__status"
-        [class.admin-panel__status--idle]="uploadStatus === 'idle'"
+      <div class="admin-panel__status" [class.admin-panel__status--idle]="uploadStatus === 'idle'"
         [class.admin-panel__status--uploading]="uploadStatus === 'uploading'"
         [class.admin-panel__status--success]="uploadStatus === 'success'"
-        [class.admin-panel__status--error]="uploadStatus === 'error'"
-      >
+        [class.admin-panel__status--error]="uploadStatus === 'error'">
         <span class="admin-panel__status-label">Estado de carga:</span>
         <span class="admin-panel__status-message">
           {{ feedbackMessage || "Sin acciones por el momento." }}
@@ -185,10 +160,7 @@
       <div class="admin-panel__history" *ngIf="uploadHistory.length">
         <span class="admin-panel__history-title">Historial reciente</span>
         <ul class="admin-panel__history-list">
-          <li
-            class="admin-panel__history-item"
-            *ngFor="let item of uploadHistory"
-          >
+          <li class="admin-panel__history-item" *ngFor="let item of uploadHistory">
             <span class="admin-panel__history-name">{{ item.name }}</span>
             <span class="admin-panel__history-meta">
               {{ item.size / 1024 | number: "1.0-0" }} KB ·
@@ -204,11 +176,7 @@
       <div class="admin-panel__tickets-filters">
         <label>
           <span>Buscar</span>
-          <input
-            type="text"
-            [(ngModel)]="filtroTicketTexto"
-            placeholder="Folio, correo o motivo"
-          />
+          <input type="text" [(ngModel)]="filtroTicketTexto" placeholder="Folio, correo o motivo" />
         </label>
         <label>
           <span>Estatus</span>
@@ -219,34 +187,28 @@
             <option value="respondido">Respondido</option>
           </select>
         </label>
+        <div class="admin-panel__tickets-actions">
+          <button class="admin-panel__export-btn" (click)="exportarTickets()">
+            Exportar a CSV
+          </button>
+        </div>
       </div>
 
-      <p
-        class="admin-panel__tickets-empty"
-        *ngIf="!ticketsSoporteFiltrados.length"
-      >
+      <p class="admin-panel__tickets-empty" *ngIf="!ticketsSoporteFiltrados.length">
         No hay tickets registrados aún.
       </p>
 
-      <div
-        class="admin-panel__tickets-grid"
-        *ngIf="ticketsSoporteFiltrados.length"
-      >
+      <div class="admin-panel__tickets-grid" *ngIf="ticketsSoporteFiltrados.length">
         <div class="admin-panel__tickets-list">
-          <button
-            class="admin-panel__ticket-card"
-            type="button"
-            *ngFor="let ticket of ticketsSoporteFiltrados"
-            (click)="seleccionarTicket(ticket)"
-            [class.admin-panel__ticket-card--active]="
+          <button class="admin-panel__ticket-card" type="button" *ngFor="let ticket of ticketsSoporteFiltrados"
+            (click)="seleccionarTicket(ticket)" [class.admin-panel__ticket-card--active]="
               ticket.id === ticketSeleccionadoId
-            "
-          >
+            ">
             <div class="admin-panel__ticket-header">
               <strong>{{ ticket.folio }}</strong>
               <span class="admin-panel__ticket-status">{{
                 ticket.estatus
-              }}</span>
+                }}</span>
             </div>
             <p>{{ ticket.motivo }}</p>
             <small>{{ ticket.correo }}</small>
@@ -257,10 +219,7 @@
           </button>
         </div>
 
-        <div
-          class="admin-panel__ticket-detail"
-          *ngIf="ticketSeleccionadoId as ticketId"
-        >
+        <div class="admin-panel__ticket-detail" *ngIf="ticketSeleccionadoId as ticketId">
           <ng-container *ngFor="let ticket of ticketsSoporte">
             <ng-container *ngIf="ticket.id === ticketId">
               <h4>Detalle del ticket</h4>
@@ -273,10 +232,7 @@
               <p><strong>Descripción:</strong> {{ ticket.descripcion }}</p>
               <p><strong>Fecha:</strong> {{ formatearFecha(ticket.fecha) }}</p>
 
-              <div
-                class="admin-panel__ticket-evidencias"
-                *ngIf="ticket.evidencias.length"
-              >
+              <div class="admin-panel__ticket-evidencias" *ngIf="ticket.evidencias.length">
                 <strong>Evidencias:</strong>
                 <ul>
                   <li *ngFor="let evidencia of ticket.evidencias">
@@ -285,15 +241,9 @@
                 </ul>
               </div>
 
-              <div
-                class="admin-panel__ticket-respuestas"
-                *ngIf="ticket.respuestas?.length"
-              >
+              <div class="admin-panel__ticket-respuestas" *ngIf="ticket.respuestas?.length">
                 <strong>Respuestas previas:</strong>
-                <div
-                  class="admin-panel__ticket-respuesta"
-                  *ngFor="let respuesta of ticket.respuestas"
-                >
+                <div class="admin-panel__ticket-respuesta" *ngFor="let respuesta of ticket.respuestas">
                   <p>{{ respuesta.mensaje }}</p>
                   <small>{{ formatearFecha(respuesta.fecha) }}</small>
                 </div>
@@ -310,17 +260,10 @@
                 </label>
                 <label>
                   <span>Respuesta al usuario</span>
-                  <textarea
-                    rows="4"
-                    [(ngModel)]="respuestaAdmin"
-                    placeholder="Escribe la respuesta del administrador"
-                  ></textarea>
+                  <textarea rows="4" [(ngModel)]="respuestaAdmin"
+                    placeholder="Escribe la respuesta del administrador"></textarea>
                 </label>
-                <button
-                  class="admin-panel__ticket-save"
-                  type="button"
-                  (click)="guardarRespuesta()"
-                >
+                <button class="admin-panel__ticket-save" type="button" (click)="guardarRespuesta()">
                   Guardar respuesta
                 </button>
               </div>
@@ -335,11 +278,7 @@
       <div class="admin-panel__tickets-filters">
         <label>
           <span>Buscar usuario</span>
-          <input
-            type="text"
-            [(ngModel)]="filtroUsuarioTexto"
-            placeholder="Nombre o correo"
-          />
+          <input type="text" [(ngModel)]="filtroUsuarioTexto" placeholder="Nombre o correo" />
         </label>
       </div>
 
@@ -362,11 +301,7 @@
               </td>
               <td>{{ usuario.rol }}</td>
               <td>
-                <button
-                  class="admin-panel__action-btn"
-                  type="button"
-                  (click)="enviarPassword(usuario)"
-                >
+                <button class="admin-panel__action-btn" type="button" (click)="enviarPassword(usuario)">
                   Enviar Contraseña
                 </button>
               </td>
@@ -381,31 +316,19 @@
       </div>
 
       <div class="admin-panel__pagination" *ngIf="totalPaginasUsuarios > 1">
-        <button
-          class="admin-panel__pagination-button"
-          type="button"
-          [disabled]="paginaUsuariosActual === 1"
-          (click)="irAPaginaUsuarios(paginaUsuariosActual - 1)"
-        >
+        <button class="admin-panel__pagination-button" type="button" [disabled]="paginaUsuariosActual === 1"
+          (click)="irAPaginaUsuarios(paginaUsuariosActual - 1)">
           Anterior
         </button>
-        <button
-          class="admin-panel__pagination-button"
-          type="button"
-          *ngFor="let p of paginasUsuariosDisponibles"
+        <button class="admin-panel__pagination-button" type="button" *ngFor="let p of paginasUsuariosDisponibles"
           [class.admin-panel__pagination-button--active]="
             p === paginaUsuariosActual
-          "
-          (click)="irAPaginaUsuarios(p)"
-        >
+          " (click)="irAPaginaUsuarios(p)">
           {{ p }}
         </button>
-        <button
-          class="admin-panel__pagination-button"
-          type="button"
+        <button class="admin-panel__pagination-button" type="button"
           [disabled]="paginaUsuariosActual === totalPaginasUsuarios"
-          (click)="irAPaginaUsuarios(paginaUsuariosActual + 1)"
-        >
+          (click)="irAPaginaUsuarios(paginaUsuariosActual + 1)">
           Siguiente
         </button>
       </div>

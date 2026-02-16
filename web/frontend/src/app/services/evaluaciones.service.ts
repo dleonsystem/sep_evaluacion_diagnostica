@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { GraphqlService } from './graphql.service';
 import { UPLOAD_EXCEL_MUTATION } from '../operations/mutation';
+import { GET_SOLICITUDES } from '../operations/query';
 
 export interface UploadExcelInput {
     archivoBase64: string;
@@ -26,6 +27,23 @@ export interface UploadExcelResponse {
     };
 }
 
+export interface SolicitudEia2 {
+    id: string;
+    consecutivo: number;
+    cct: string;
+    archivoOriginal: string;
+    fechaCarga: string;
+    estadoValidacion: number;
+    nivelEducativo?: number;
+    archivoPath?: string;
+    archivoSize?: number;
+    procesadoExternamente: boolean;
+}
+
+export interface GetSolicitudesResponse {
+    getSolicitudes: SolicitudEia2[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class EvaluacionesService {
     constructor(private readonly graphqlService: GraphqlService) { }
@@ -42,6 +60,19 @@ export class EvaluacionesService {
                         throw new Error('No se recibió respuesta del servidor.');
                     }
                     return response.data.uploadExcelAssessment;
+                })
+            );
+    }
+
+    getSolicitudes(cct?: string, limit: number = 10, offset: number = 0): Observable<SolicitudEia2[]> {
+        return this.graphqlService
+            .execute<GetSolicitudesResponse>(GET_SOLICITUDES, { cct, limit, offset })
+            .pipe(
+                map((response) => {
+                    if (response.errors?.length) {
+                        throw new Error(response.errors[0].message ?? 'Error al obtener historial.');
+                    }
+                    return response.data?.getSolicitudes ?? [];
                 })
             );
     }

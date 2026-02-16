@@ -3,10 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AdminAuthService } from '../../services/admin-auth.service';
-import {
-  ArchivoStorageService,
-  RegistroArchivo,
-} from '../../services/archivo-storage.service';
+import { EvaluacionesService, SolicitudEia2 } from '../../services/evaluaciones.service';
 import {
   TicketsService,
   Ticket as TicketDB,
@@ -15,6 +12,7 @@ import {
   UsuariosService,
   UsuarioCreado,
 } from '../../services/usuarios.service';
+import { DashboardService, DashboardMetrics } from '../../services/dashboard.service';
 import Swal from 'sweetalert2';
 import { firstValueFrom } from 'rxjs';
 
@@ -64,13 +62,18 @@ export class AdminPanelComponent implements OnInit {
   totalUsuarios = 0;
   cargandoUsuarios = false;
 
+  // Métricas
+  metrics: DashboardMetrics | null = null;
+  cargandoMetrics = false;
+
   constructor(
     private readonly adminAuthService: AdminAuthService,
-    private readonly archivoStorageService: ArchivoStorageService,
+    private readonly evaluacionesService: EvaluacionesService,
     private readonly ticketsService: TicketsService,
     private readonly usuariosService: UsuariosService,
+    private readonly dashboardService: DashboardService,
     private readonly router: Router,
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.uploadHistory = this.loadUploadHistory();
@@ -78,6 +81,7 @@ export class AdminPanelComponent implements OnInit {
     this.cargarExcelDisponibles();
     this.cargarTicketsSoporte();
     this.cargarUsuarios();
+    this.cargarMetrics();
   }
 
   seleccionarArchivo(event: Event): void {
@@ -155,9 +159,8 @@ export class AdminPanelComponent implements OnInit {
     if (existingFiles.length) {
       const confirmacion = await Swal.fire({
         title: '¿Agregar más archivos?',
-        text: `Ya hay archivos asignados a ${excelSeleccionado?.nombre ?? 'este Excel'} (${
-          excelSeleccionado?.cct ?? 'CCT no registrada'
-        }, ${excelSeleccionado?.correo ?? 'correo no registrado'}).`,
+        text: `Ya hay archivos asignados a ${excelSeleccionado?.nombre ?? 'este Excel'} (${excelSeleccionado?.cct ?? 'CCT no registrada'
+          }, ${excelSeleccionado?.correo ?? 'correo no registrado'}).`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sí, agregar',
@@ -277,6 +280,27 @@ export class AdminPanelComponent implements OnInit {
     } catch (error) {
       console.error('Error enviando respuesta:', error);
       await Swal.fire('Error', 'No se pudo enviar la respuesta', 'error');
+    }
+  }
+
+  async exportarTickets(): Promise<void> {
+    try {
+      const { fileName, contentBase64 } = await firstValueFrom(this.ticketsService.exportTicketsCSV());
+      const link = document.createElement('a');
+      link.href = `data:text/csv;base64,${contentBase64}`;
+      link.download = fileName;
+      link.click();
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Exportación completada',
+        text: `El archivo ${fileName} se ha descargado correctamente.`,
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      console.error('Error exportando tickets:', error);
+      await Swal.fire('Error', 'No se pudo exportar el archivo CSV', 'error');
     }
   }
 
@@ -502,29 +526,52 @@ export class AdminPanelComponent implements OnInit {
     );
   }
 
-  private cargarExcelDisponibles(): void {
-    const registros = this.archivoStorageService.obtenerTodosRegistros();
-    this.excelDisponibles = registros.map((registro) => {
-      const key = this.obtenerClaveExcel(registro);
-      const nivel = this.obtenerNivelRegistro(registro);
-      const fecha = registro.fechaGuardado || new Date().toISOString();
-      const estatus =
-        registro.estatus ??
-        (this.existeArchivosParaExcel(key) ? 'asignado' : 'pendiente');
-      return {
-        key,
-        nombre: registro.nombre,
-        cct: registro.cct ?? '—',
-        correo: registro.correo ?? '—',
-        estatus,
-        fecha,
-        nivel,
-      };
-    });
+  private async cargarExcelDisponibles(): Promise<void> {
+    try {
+      const registros = await firstValueFrom(this.evaluacionesService.getSolicitudes());
+      this.excelDisponibles = registros.map((registro) => {
+        const key = registro.id;
+        const nivel = this.obtenerEtiquetaNivel(registro.nivelEducativo);
+        const fecha = registro.fechaCarga;
+        const estatus = registro.estadoValidacion === 2 ? 'asignado' : 'pendiente';
 
-    this.paginaActual = this.obtenerPaginaActualDesdeListado(
-      this.excelDisponiblesFiltrados,
-    );
+        return {
+          key,
+          nombre: registro.archivoOriginal,
+          cct: registro.cct ?? '—',
+          correo: 'Sincronizado', // El admin ve el CCT, el correo es del usuario
+          estatus: estatus as 'asignado' | 'pendiente',
+          fecha,
+          nivel,
+        };
+      });
+
+      this.paginaActual = this.obtenerPaginaActualDesdeListado(
+        this.excelDisponiblesFiltrados,
+      );
+    } catch (error) {
+      console.error('Error cargando archivos del backend:', error);
+    }
+  }
+
+  private obtenerEtiquetaNivel(id?: number): string {
+    switch (id) {
+      case 1: return 'preescolar';
+      case 2: return 'primaria';
+      case 3: return 'secundaria';
+      default: return 'preescolar';
+    }
+  }
+
+  async cargarMetrics(): Promise<void> {
+    this.cargandoMetrics = true;
+    try {
+      this.metrics = await firstValueFrom(this.dashboardService.getMetrics());
+    } catch (error) {
+      console.error('Error cargando métricas:', error);
+    } finally {
+      this.cargandoMetrics = false;
+    }
   }
 
   private actualizarEstadoExcel(excelKey: string): void {
@@ -631,34 +678,6 @@ export class AdminPanelComponent implements OnInit {
     }
   }
 
-  private obtenerClaveExcel(registro: RegistroArchivo): string {
-    if (registro.claveEstable) {
-      return registro.claveEstable;
-    }
-
-    const cct = (registro.cct ?? '').trim();
-    const correo = (registro.correo ?? '').trim().toLowerCase();
-    return `${cct}|${correo}|${registro.nombre}|${registro.fechaGuardado}`;
-  }
-
-  private obtenerNivelRegistro(registro: RegistroArchivo): string {
-    if (registro.nivel) {
-      return registro.nivel;
-    }
-
-    const ruta = registro.ruta?.toLowerCase() ?? '';
-    if (ruta.includes('/primaria/')) {
-      return 'primaria';
-    }
-    if (ruta.includes('/secundaria/')) {
-      return 'secundaria';
-    }
-    if (ruta.includes('/preescolar/')) {
-      return 'preescolar';
-    }
-
-    return 'preescolar';
-  }
 
   private readArchivoAsBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {

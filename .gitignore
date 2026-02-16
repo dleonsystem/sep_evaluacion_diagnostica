@@ -145,3 +145,6 @@ vite.config.ts.timestamp-*
 # Angular CLI cache
 web/frontend/.angular/
 **/.angular/cache
+
+# SFTP local storage
+sftp-data/

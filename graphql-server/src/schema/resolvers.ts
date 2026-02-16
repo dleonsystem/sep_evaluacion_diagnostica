@@ -10,11 +10,19 @@
  * @cmmi CMMI Level 3 - Technical Solution
  */
 
-import crypto from 'crypto';
+import { logger } from '../utils/logger.js';
 import path from 'path';
+import fs from 'fs/promises';
+import { SftpService } from '../services/sftp.service.js';
+import crypto from 'crypto';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 import { query, getClient } from '../config/database.js';
-import { logger } from '../utils/logger.js';
+
+const sftpService = new SftpService();
 
 /**
  * User type for context
@@ -347,7 +355,11 @@ export const resolvers = {
           return null;
         }
 
-        return result.rows[0] as EvaluacionRow;
+        const row = result.rows[0];
+        return {
+          ...row,
+          fechaCarga: row.fechaCarga instanceof Date ? row.fechaCarga.toISOString() : row.fechaCarga,
+        } as EvaluacionRow;
       } catch (error) {
         logger.error('Error fetching evaluation', { id, error });
         throw new Error('Error al obtener evaluación');
@@ -360,11 +372,10 @@ export const resolvers = {
      */
     getSolicitudes: async (
       _: unknown,
-      { limit = 10, offset = 0 }: { limit?: number; offset?: number }
+      { cct, limit = 10, offset = 0 }: { cct?: string; limit?: number; offset?: number }
     ) => {
       try {
-        const result = await query(
-          `SELECT 
+        let sql = `SELECT 
             id,
             consecutivo,
             cct,
@@ -374,13 +385,27 @@ export const resolvers = {
             nivel_educativo as "nivelEducativo",
             archivo_path as "archivoPath",
             archivo_size as "archivoSize",
-            procesado_externamente as "procesadoExternamente"
-          FROM solicitudes_eia2
-          ORDER BY fecha_carga DESC
-          LIMIT $1 OFFSET $2`,
-          [limit, offset]
-        );
-        return result.rows;
+            procesado_externamente as "procesadoExternamente",
+            detalles_error as "errores"
+          FROM solicitudes_eia2`;
+
+        const params: any[] = [];
+
+        if (cct) {
+          sql += ` WHERE cct = $1`;
+          params.push(cct);
+          sql += ` ORDER BY fecha_carga DESC LIMIT $2 OFFSET $3`;
+          params.push(limit, offset);
+        } else {
+          sql += ` ORDER BY fecha_carga DESC LIMIT $1 OFFSET $2`;
+          params.push(limit, offset);
+        }
+
+        const result = await query(sql, params);
+        return result.rows.map((row: any) => ({
+          ...row,
+          fechaCarga: row.fechaCarga instanceof Date ? row.fechaCarga.toISOString() : row.fechaCarga,
+        }));
       } catch (error) {
         logger.error('Error fetching solicitudes', { error });
         throw new Error('Error al obtener historial de solicitudes');
@@ -468,6 +493,92 @@ export const resolvers = {
       } catch (error) {
         logger.error('Error fetching all tickets', { error });
         throw new Error('Error al obtener los tickets');
+      }
+    },
+
+    /**
+     * Obtener métricas para el dashboard
+     * @use-case CU-14: Dashboard
+     */
+    getDashboardMetrics: async () => {
+      try {
+        const [
+          usersRes,
+          ticketsRes,
+          ticketsOpenRes,
+          ticketsResolvedRes,
+          solicitudesRes,
+          solicitudesValidRes,
+        ] = await Promise.all([
+          query('SELECT COUNT(*) as count FROM usuarios'),
+          query('SELECT COUNT(*) as count FROM tickets_soporte'),
+          query(
+            "SELECT COUNT(*) as count FROM tickets_soporte WHERE estado = (SELECT id FROM cat_estado_ticket WHERE nombre = 'ABIERTO')"
+          ),
+          query(
+            "SELECT COUNT(*) as count FROM tickets_soporte WHERE estado = (SELECT id FROM cat_estado_ticket WHERE nombre = 'RESUELTO')"
+          ),
+          query('SELECT COUNT(*) as count FROM solicitudes_eia2'),
+          query('SELECT COUNT(*) as count FROM solicitudes_eia2 WHERE estado_validacion = 2'),
+        ]);
+
+        return {
+          totalUsuarios: parseInt(usersRes.rows[0].count),
+          totalTickets: parseInt(ticketsRes.rows[0].count),
+          ticketsAbiertos: parseInt(ticketsOpenRes.rows[0].count),
+          ticketsResueltos: parseInt(ticketsResolvedRes.rows[0].count),
+          totalSolicitudes: parseInt(solicitudesRes.rows[0].count),
+          solicitudesValidadas: parseInt(solicitudesValidRes.rows[0].count),
+        };
+      } catch (error) {
+        logger.error('Error fetching dashboard metrics', error);
+        throw new Error('Error al obtener métricas');
+      }
+    },
+
+    exportTicketsCSV: async () => {
+      try {
+        const client = await getClient();
+        const res = await client.query(`
+          SELECT 
+            t.numero_ticket as "folio",
+            t.asunto,
+            u.email as "usuario",
+            (SELECT nombre FROM cat_estado_ticket WHERE id = t.estado) as estado,
+            t.prioridad,
+            t.created_at as "fecha"
+          FROM tickets_soporte t
+          LEFT JOIN usuarios u ON t.usuario_id = u.id
+          ORDER BY t.created_at DESC
+        `);
+        client.release();
+
+        const headers = ['Folio', 'Asunto', 'Usuario', 'Estado', 'Prioridad', 'Fecha'];
+        const rows = res.rows.map((r) => [
+          r.folio,
+          r.asunto,
+          r.usuario || 'Anónimo',
+          r.estado,
+          r.prioridad,
+          r.fecha.toISOString(),
+        ]);
+
+        const csvContent = [
+          headers.join(','),
+          ...rows.map((row) => row.map((val) => `"${String(val).replace(/"/g, '""')}"`).join(',')),
+        ].join('\n');
+
+        const base64 = Buffer.from(csvContent, 'utf-8').toString('base64');
+        const fileName = `tickets_export_${new Date().toISOString().split('T')[0]}.csv`;
+
+        return {
+          success: true,
+          fileName,
+          contentBase64: base64,
+        };
+      } catch (error) {
+        logger.error('Error exporting tickets CSV', error);
+        throw new Error('Error al generar CSV de tickets');
       }
     },
   },
@@ -1000,9 +1111,16 @@ export const resolvers = {
           SECUNDARIA: 3,
           TELESECUNDARIA: 4,
         };
-        const nivelId = Object.keys(nivelMap).find((k) => k === nivel || k.includes(nivel))
-          ? nivelMap[Object.keys(nivelMap).find((k) => k === nivel || k.includes(nivel))!]
-          : 2;
+        const nivelNormalizado = (nivel || '').trim().toUpperCase();
+        const foundKey = Object.keys(nivelMap).find(
+          (k) => FoundKeyMatch(k, nivelNormalizado)
+        );
+
+        function FoundKeyMatch(key: string, normalized: string): boolean {
+          return key === normalized || normalized.includes(key) || key.includes(normalized);
+        }
+
+        const nivelId = foundKey ? nivelMap[foundKey] : 2;
 
         await client.query('BEGIN');
 
@@ -1139,9 +1257,32 @@ export const resolvers = {
 
         await client.query('COMMIT');
 
+        // US-2.6: Sincronización con SFTP (Asíncrono, no bloqueante para el usuario)
+        const syncSftp = async () => {
+          const tempPath = path.resolve(__dirname, `../../temp_${nombreArchivo}`);
+          try {
+            await fs.writeFile(tempPath, buffer);
+            const remotePath = `/upload/${new Date().getTime()}_${nombreArchivo}`;
+            const success = await sftpService.uploadFile(tempPath, remotePath);
+            if (success) {
+              logger.info('Archivo sincronizado con SFTP exitosamente', { remotePath });
+            } else {
+              logger.warn('Fallo la sincronización con SFTP, pero el registro en DB fue exitoso');
+            }
+          } catch (err) {
+            logger.error('Error durante la sincronización SFTP', err);
+          } finally {
+            // Limpiar archivo temporal
+            try { await fs.unlink(tempPath); } catch { }
+          }
+        };
+
+        // Ejecutar en segundo plano para no demorar la respuesta GraphQL
+        syncSftp().catch((e) => logger.error('Unhandled SFTP sync error', e));
+
         return {
           success: true,
-          message: 'Archivo procesado exitosamente (Worker Thread)',
+          message: 'Archivo procesado exitosamente (Worker Thread) y en proceso de sincronización SFTP',
           solicitudId,
           detalles: { cct, nivel: metadata.nivelDetectado, grado, alumnosProcesados, errores: [] },
         };
@@ -1162,46 +1303,6 @@ export const resolvers = {
         };
       } finally {
         client.release();
-      }
-    },
-
-    /**
-     * Obtener métricas para el dashboard
-     * @use-case CU-14: Dashboard
-     */
-    getDashboardMetrics: async () => {
-      try {
-        const [
-          usersRes,
-          ticketsRes,
-          ticketsOpenRes,
-          ticketsResolvedRes,
-          solicitudesRes,
-          solicitudesValidRes,
-        ] = await Promise.all([
-          query('SELECT COUNT(*) as count FROM usuarios'),
-          query('SELECT COUNT(*) as count FROM tickets_soporte'),
-          query(
-            "SELECT COUNT(*) as count FROM tickets_soporte WHERE estado = (SELECT id FROM cat_estado_ticket WHERE nombre = 'ABIERTO')"
-          ),
-          query(
-            "SELECT COUNT(*) as count FROM tickets_soporte WHERE estado = (SELECT id FROM cat_estado_ticket WHERE nombre = 'RESUELTO')"
-          ),
-          query('SELECT COUNT(*) as count FROM solicitudes_eia2'),
-          query('SELECT COUNT(*) as count FROM solicitudes_eia2 WHERE estado_validacion = 2'), // Assuming 2 is VALIDADO
-        ]);
-
-        return {
-          totalUsuarios: parseInt(usersRes.rows[0].count),
-          totalTickets: parseInt(ticketsRes.rows[0].count),
-          ticketsAbiertos: parseInt(ticketsOpenRes.rows[0].count),
-          ticketsResueltos: parseInt(ticketsResolvedRes.rows[0].count),
-          totalSolicitudes: parseInt(solicitudesRes.rows[0].count),
-          solicitudesValidadas: parseInt(solicitudesValidRes.rows[0].count),
-        };
-      } catch (error) {
-        logger.error('Error fetching dashboard metrics', error);
-        throw new Error('Error al obtener métricas');
       }
     },
   },

@@ -54,6 +54,7 @@ export const typeDefs = `#graphql
     @use-case CU-05: Historial de cargas
     """
     getSolicitudes(
+      cct: String
       limit: Int = 10
       offset: Int = 0
     ): [SolicitudEia2!]!
@@ -69,6 +70,21 @@ export const typeDefs = `#graphql
     @use-case CU-14: Dashboard
     """
     getDashboardMetrics: DashboardMetrics!
+
+    """
+    Exportar tickets a formato CSV (Base64)
+    @use-case CU-15: Reportes
+    """
+    exportTicketsCSV: ExportResponse!
+  }
+
+  """
+  Respuesta de exportación de archivos
+  """
+  type ExportResponse {
+    success: Boolean!
+    fileName: String!
+    contentBase64: String!
   }
 
   """
@@ -361,6 +377,7 @@ export const typeDefs = `#graphql
     archivoPath: String
     archivoSize: Int
     procesadoExternamente: Boolean!
+    errores: [String!]
   }
   """
   Ticket de Soporte

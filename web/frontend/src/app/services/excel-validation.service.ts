@@ -23,6 +23,7 @@ export interface ResultadoValidacion {
   esc?: EscDatos;
   alumnos?: AlumnoValidado[];
   hojasEncontradas?: string[];
+  nivel?: TipoArchivoCarga;
 }
 
 export type TipoArchivoCarga = 'preescolar' | 'primaria' | 'secundaria';
@@ -436,15 +437,21 @@ export class ExcelValidationService {
       };
     }
 
+    let resultado: ResultadoValidacion;
     switch (nivel) {
       case 'primaria':
-        return this.validarPrimariaWorkbook(xlsx, workbook, hojas);
+        resultado = this.validarPrimariaWorkbook(xlsx, workbook, hojas);
+        break;
       case 'secundaria':
-        return this.validarSecundariaWorkbook(xlsx, workbook, hojas);
+        resultado = this.validarSecundariaWorkbook(xlsx, workbook, hojas);
+        break;
       case 'preescolar':
       default:
-        return this.validarPreescolarWorkbook(xlsx, workbook, hojas);
+        resultado = this.validarPreescolarWorkbook(xlsx, workbook, hojas);
+        break;
     }
+    resultado.nivel = nivel;
+    return resultado;
   }
 
   async validarPreescolar(buffer: ArrayBuffer): Promise<ResultadoValidacion> {
@@ -770,11 +777,11 @@ export class ExcelValidationService {
       datos: errores.length
         ? undefined
         : {
-            cct: cct?.trim() ?? '',
-            turno: turno?.trim() ?? '',
-            nombreEscuela: nombreEscuela?.trim() ?? '',
-            correo: correo?.trim() ?? ''
-          },
+          cct: cct?.trim() ?? '',
+          turno: turno?.trim() ?? '',
+          nombreEscuela: nombreEscuela?.trim() ?? '',
+          correo: correo?.trim() ?? ''
+        },
       errores,
       advertencia: !sheet['!ref']
         ? 'No se pudieron leer todos los datos de la hoja ESC. Verifica que la plantilla no haya sido modificada.'
@@ -939,8 +946,8 @@ export class ExcelValidationService {
     return [
       `No se pudo determinar el nivel con las hojas encontradas: ${hojasListado}.`,
       'Patrones esperados: Preescolar (ESC, INSTRUCCIONES, TERCERO); ' +
-        'Primaria (ESC, INSTRUCCIONES, PRIMERO, SEGUNDO, TERCERO, CUARTO, QUINTO, SEXTO); ' +
-        'Secundaria (ESC, INSTRUCCIONES, PRIMERO, SEGUNDO, TERCERO).'
+      'Primaria (ESC, INSTRUCCIONES, PRIMERO, SEGUNDO, TERCERO, CUARTO, QUINTO, SEXTO); ' +
+      'Secundaria (ESC, INSTRUCCIONES, PRIMERO, SEGUNDO, TERCERO).'
     ];
   }
 

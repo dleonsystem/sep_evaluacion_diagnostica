@@ -1,26 +1,27 @@
 import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { GraphqlService } from './graphql.service';
+import { EXPORT_TICKETS_CSV } from '../operations/query';
 
 export interface Ticket {
-    id: string;
-    numeroTicket: string;
-    asunto: string;
-    descripcion: string;
-    estado: string;
-    prioridad: string;
-    correo?: string;
-    fechaCreacion: string;
-    fechaActualizacion: string;
-    evidencias?: Array<{ nombre: string; url: string; size?: number }>;
+  id: string;
+  numeroTicket: string;
+  asunto: string;
+  descripcion: string;
+  estado: string;
+  prioridad: string;
+  correo?: string;
+  fechaCreacion: string;
+  fechaActualizacion: string;
+  evidencias?: Array<{ nombre: string; url: string; size?: number }>;
 }
 
 @Injectable({ providedIn: 'root' })
 export class TicketsService {
-    constructor(private readonly graphqlService: GraphqlService) { }
+  constructor(private readonly graphqlService: GraphqlService) { }
 
-    getAllTickets(): Observable<Ticket[]> {
-        const query = `
+  getAllTickets(): Observable<Ticket[]> {
+    const query = `
       query GetAllTickets {
         getAllTickets {
           id
@@ -40,16 +41,16 @@ export class TicketsService {
         }
       }
     `;
-        return this.graphqlService.execute<{ getAllTickets: Ticket[] }>(query).pipe(
-            map(res => {
-                if (res.errors) throw new Error(res.errors[0].message);
-                return res.data?.getAllTickets || [];
-            })
-        );
-    }
+    return this.graphqlService.execute<{ getAllTickets: Ticket[] }>(query).pipe(
+      map(res => {
+        if (res.errors) throw new Error(res.errors[0].message);
+        return res.data?.getAllTickets || [];
+      })
+    );
+  }
 
-    respondToTicket(ticketId: string, respuesta: string, cerrar: boolean): Observable<Ticket> {
-        const mutation = `
+  respondToTicket(ticketId: string, respuesta: string, cerrar: boolean): Observable<Ticket> {
+    const mutation = `
       mutation RespondToTicket($ticketId: ID!, $respuesta: String!, $cerrar: Boolean!) {
         respondToTicket(ticketId: $ticketId, respuesta: $respuesta, cerrar: $cerrar) {
           id
@@ -60,12 +61,21 @@ export class TicketsService {
         }
       }
     `;
-        return this.graphqlService.execute<{ respondToTicket: Ticket }>(mutation, { ticketId, respuesta, cerrar }).pipe(
-            map(res => {
-                if (res.errors) throw new Error(res.errors[0].message);
-                if (!res.data?.respondToTicket) throw new Error('No se pudo responder al ticket');
-                return res.data.respondToTicket;
-            })
-        );
-    }
+    return this.graphqlService.execute<{ respondToTicket: Ticket }>(mutation, { ticketId, respuesta, cerrar }).pipe(
+      map(res => {
+        if (res.errors) throw new Error(res.errors[0].message);
+        if (!res.data?.respondToTicket) throw new Error('No se pudo responder al ticket');
+        return res.data.respondToTicket;
+      })
+    );
+  }
+
+  exportTicketsCSV(): Observable<{ success: boolean; fileName: string; contentBase64: string }> {
+    return this.graphqlService.execute<{ exportTicketsCSV: any }>(EXPORT_TICKETS_CSV).pipe(
+      map(res => {
+        if (res.errors) throw new Error(res.errors[0].message);
+        return res.data?.exportTicketsCSV;
+      })
+    );
+  }
 }

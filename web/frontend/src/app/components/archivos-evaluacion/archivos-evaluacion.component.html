@@ -1,0 +1,87 @@
+<section class="archivos">
+  <header class="archivos__encabezado">
+    <p class="archivos__eyebrow">Cargas realizadas</p>
+    <h1 class="archivos__titulo">Historial de archivos de evaluación</h1>
+    <p class="archivos__descripcion">
+      Consulta el estado de los archivos que has subido al servidor.
+    </p>
+  </header>
+
+  <div class="archivos__mensajes">
+    <p class="archivos__mensaje archivos__mensaje--info" *ngIf="mensajeInfo">{{ mensajeInfo }}</p>
+    <p class="archivos__mensaje archivos__mensaje--error" *ngIf="mensajeError">{{ mensajeError }}</p>
+  </div>
+
+  <div class="archivos__controles" *ngIf="registros.length">
+    <label class="archivos__control">
+      <span>Buscar por nombre o CCT</span>
+      <input type="search" placeholder="Ej. CCT 09ABC1234 o nombre del archivo" [(ngModel)]="filtroTexto" />
+    </label>
+    <span class="archivos__contador">
+      {{ registrosFiltrados.length }} de {{ registros.length }} archivos sincronizados
+    </span>
+  </div>
+
+  <div class="archivos__tabla" *ngIf="registros.length; else sinRegistros">
+    <table>
+      <thead>
+        <tr>
+          <th>Folio</th>
+          <th>Nombre del archivo</th>
+          <th>Nivel</th>
+          <th>CCT</th>
+          <th>Tamaño</th>
+          <th>Fecha de carga</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let registro of registrosFiltrados">
+          <tr (click)="alternarDetalle(registro.id)" style="cursor: pointer;">
+            <td data-label="Folio"><strong>#{{ registro.consecutivo || '?' }}</strong></td>
+            <td data-label="Archivo">{{ registro.archivoOriginal }}</td>
+            <td data-label="Nivel">{{ obtenerEtiquetaNivel(registro.nivelEducativo) }}</td>
+            <td data-label="CCT">{{ registro.cct }}</td>
+            <td data-label="Tamaño">{{ formatearTamano(registro.archivoSize) }}</td>
+            <td data-label="Fecha">{{ formatearFecha(registro.fechaCarga) }}</td>
+            <td data-label="Estado">
+              <span class="archivos__badge" [attr.data-estado]="registro.estadoValidacion">
+                {{ obtenerEstadoDescripcion(registro.estadoValidacion) }}
+              </span>
+            </td>
+          </tr>
+          <tr *ngIf="idRegistroExpandido === registro.id" class="archivos__resultados-row">
+            <td colspan="7">
+              <div class="archivos__resultados">
+                <h4>Detalles del procesamiento:</h4>
+                <ul *ngIf="registro.errores && registro.errores.length; else sinErrores">
+                  <li *ngFor="let error of registro.errores" class="archivos__mensaje--error">
+                    {{ error }}
+                  </li>
+                </ul>
+                <ng-template #sinErrores>
+                  <p class="archivos__mensaje--info" style="margin: 0; padding: 0.5rem 0;">
+                    No se encontraron errores en este archivo. El procesamiento fue exitoso.
+                  </p>
+                </ng-template>
+                <div class="archivos__resultados-meta">
+                  Ruta en servidor: <code>{{ registro.archivoPath || 'N/D' }}</code>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+
+  <ng-template #sinRegistros>
+    <div class="archivos__vacio" *ngIf="!cargando">
+      <p>No hay archivos registrados en el servidor todavía.</p>
+      <a routerLink="/carga-masiva" class="archivos__link">Ir al módulo de carga</a>
+    </div>
+    <div class="archivos__vacio" *ngIf="cargando">
+      <p>Cargando historial del servidor...</p>
+    </div>
+  </ng-template>
+</section>

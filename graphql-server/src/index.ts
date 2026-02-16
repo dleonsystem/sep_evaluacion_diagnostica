@@ -22,7 +22,7 @@ import compression from 'compression';
 import dotenv from 'dotenv';
 import { typeDefs } from './schema/typeDefs.js';
 import { resolvers } from './schema/resolvers.js';
-import { testConnection, closePool } from './config/database.js';
+import { query, testConnection, closePool } from './config/database.js';
 import { logger, logPSPTime } from './utils/logger.js';
 
 // Cargar variables de entorno
@@ -123,6 +123,55 @@ function configureRoutes(app: express.Application) {
 }
 
 /**
+ * Rutas de API REST para sistemas legados
+ * @use-case CU-15: Integración con Sistemas Legados
+ */
+function configureLegacyApi(app: express.Application) {
+  const router = express.Router();
+
+  // Endpoint para obtener estadísticas por CCT
+  router.get('/stats/:cct', async (req, res) => {
+    const { cct } = req.params;
+    try {
+      const dbRes = await query(`
+        SELECT 
+          COUNT(DISTINCT e.id) as total_estudiantes,
+          COUNT(v.id) as total_evaluaciones
+        FROM escuelas esc
+        JOIN grupos g ON g.escuela_id = esc.id
+        JOIN estudiantes e ON e.grupo_id = g.id
+        LEFT JOIN evaluaciones v ON v.estudiante_id = e.id
+        WHERE esc.cct = $1
+      `, [cct]);
+
+      if (dbRes.rows.length === 0) {
+        return res.status(404).json({ error: 'CCT no encontrada' });
+      }
+
+      const stats = dbRes.rows[0];
+      res.json({
+        cct,
+        success: true,
+        data: {
+          total_estudiantes: parseInt(stats.total_estudiantes),
+          total_evaluaciones: parseInt(stats.total_evaluaciones),
+          porcentaje_completado: stats.total_estudiantes > 0
+            ? (stats.total_evaluaciones / (stats.total_estudiantes * 4) * 100).toFixed(2) + '%'
+            : '0%'
+        }
+      });
+      return; // Added return to match code path expectation
+    } catch (error) {
+      logger.error('Legacy API Error:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+      return;
+    }
+  });
+
+  app.use('/api/legacy', router);
+}
+
+/**
  * Función principal para iniciar el servidor
  * @psp Process Script - Startup Sequence
  * @rup Iteration Planning - Bootstrap Phase
@@ -173,6 +222,7 @@ async function startServer() {
 
     // 7. Configurar rutas
     configureRoutes(app);
+    configureLegacyApi(app);
 
     // 8. Iniciar servidor HTTP
     await new Promise<void>((resolve) => {
