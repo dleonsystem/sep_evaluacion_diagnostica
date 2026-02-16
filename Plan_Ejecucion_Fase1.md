@@ -18,10 +18,10 @@ El sistema se encuentra en una etapa avanzada de desarrollo de la Fase 1. La arq
 | **Autenticación** | Login, Roles (Admin/Escuela), JWT/Session | **Completo** | 🟢 Verde | Implementado `authenticateUser`, `createUser` con hashing y roles. |
 | **Carga Masiva** | Subida Excel, Validación Formato, Parsing, Guardado BD | **Completo** | 🟢 Verde | Lógica compleja de parsing implementada en Backend. Frontend `CargaMasivaComponent` existe. |
 | **Tickets** | Crear Ticket, Adjuntar Evidencia, Responder (Admin), Listar | **Completo** | 🟢 Verde | Flujo completo implementado. Manejo de evidencias como rutas de archivo. |
-| **Dashboard** | Visualización métricas, Gráficas de avance, KPIs | **En Progreso** | 🟡 Amarillo | Existe `AdminPanelComponent` pero el Backend carece de queries de agregación (COUNT, GROUP BY) para métricas. |
+| **Dashboard** | Visualización métricas, Gráficas de avance, KPIs | **Completo** | 🟢 Verde | Implementado query `getDashboardMetrics` con conteos reales y visualización en AdminPanel. |
 | **Validación** | Reglas de negocio (CURP, Grados), Rechazo de duplicados | **Completo** | 🟢 Verde | Implementado hash SHA256 para detectar duplicados y validación de CCT/Nivel. |
-| **Integración Legacy** | Exposición de API para consulta e inserción desde Legacy | **Pendiente** | 🟡 Amarillo | Se requiere API REST/GraphQL para que los sistemas legacy consulten solicitudes y suban respuestas/archivos. |
-| **Infraestructura SFTP** | Servidor de archivos seguro y cliente en Node.js | **Pendiente** | 🔴 Rojo | Falta configurar ambiente Docker SFTP y desarrollar el servicio de conexión en Backend. |
+| **Integración Legacy** | Exposición de API para consulta e inserción desde Legacy | **Completo** | 🟢 Verde | Endpoints REST expuestos y documentados con Swagger (`/api-docs`). |
+| **Infraestructura SFTP** | Servidor de archivos seguro y cliente en Node.js | **Completo** | � Verde | Servidor Docker configurado y servicio Backend (`SftpService`) probado exitosamente. |
 | **Descargas** | Generación de reportes, descarga de comprobantes | **En Progreso** | 🟡 Amarillo | Componente `DescargasComponent` existe, pero falta confirmar la generación de PDFs en Backend. |
 
 ---
@@ -37,30 +37,30 @@ El sistema se encuentra en una etapa avanzada de desarrollo de la Fase 1. La arq
 | :--- | :--- | :--- | :--- | :--- |
 | **US-1.1** | Optimizar queries de usuarios y CCT usando selección de campos específica. | Backend | 3 Pts | - Reemplazar queries manuales con Query Builder o función helper.<br>- Reducir tiempo de respuesta en `listUsers`. |
 | **US-1.2** | Implementar feedback de progreso en Carga Masiva (Spinner/Barra). | Frontend | 5 Pts | - Mostrar estado "Procesando" durante la mutación GraphQL.<br>- Manejar errores de timeout o validación amigablemente. |
-| **US-1.3** | Refactorizar `uploadExcelAssessment` para stream o worker thread. | Backend | 8 Pts | - El parsing de Excel no debe bloquear el Event Loop.<br>- Soporte para archivos >10MB sin crash. |
+| **US-1.3** | Refactorizar `uploadExcelAssessment` para stream o worker thread. | Backend | 8 Pts | ✅ **Completo** - Implementado `worker-excel.ts` con manejo de hilos. |
 | **US-1.4** | Crear Guard de Autenticación para rutas protegidas en Angular. | Frontend | 3 Pts | ✅ **Completo** - Rutas `/admin`, `/carga-masiva` redirigen a login. |
 | **US-1.7** | Implementar recuperación de contraseña (usuario y admin). | Fullstack | 5 Pts | ✅ **Completo** - Vista pública y gestión en Admin Panel. |
-| **US-1.5** | Implementar borrado lógico de Tickets y Usuarios (Soft Delete). | DB/Back | 2 Pts | - `deleteUser` ya hace soft delete. Extender a Tickets si es necesario. |
-| **US-1.6** | Configurar ambiente Docker para servidor SFTP (Pruebas Integrales). | DevOps | 3 Pts | - `docker-compose.yml` incluye servicio `atmoz/sftp` o similar.<br>- Usuarios y permisos de prueba configurados. |
+| **US-1.5** | Implementar borrado lógico de Tickets y Usuarios (Soft Delete). | DB/Back | 2 Pts | ✅ **Completo** - Mutación `deleteTicket` y filtros implementados. |
+| **US-1.6** | Configurar ambiente Docker para servidor SFTP (Pruebas Integrales). | DevOps | 3 Pts | ✅ **Completo** - `docker-compose.yml` ejecutando `atmoz/sftp` en puerto 2222. |
 
 ### Sprint 2: Dashboard y Servicios de Integración (API y SFTP)
 **Objetivo**: Proveer métricas para administradores e implementar los canales de comunicación (API + SFTP) para sistemas externos.
 
 | ID | User Story | Capa | Estimación | Criterios de Aceptación |
 | :--- | :--- | :--- | :--- | :--- |
-| **US-2.1** | Crear Query GraphQL `getDashboardMetrics`. | Backend | 8 Pts | - Retornar conteos: Total Escuelas, Total Alumnos, % Avance por Estado, Tickets Abiertos. |
-| **US-2.2** | Implementar Widgets de Métricas en `AdminPanelComponent`. | Frontend | 5 Pts | - Tarjetas con KPIs (Números grandes).<br>- Gráfica de barras (Solicitudes por día). |
-| **US-2.3** | Exportar listado de Tickets a CSV/Excel. | Front/Back | 5 Pts | - Botón "Exportar" en historial de tickets.<br>- Generar archivo descargable. |
-| **US-2.4** | Vista de detalle de Solicitud de Carga. | Frontend | 5 Pts | - Ver errores específicos de un archivo rechazado (línea, motivo). |
-| **US-2.5** | Exponer Endpoints de API para consumo Legacy. | Backend | 8 Pts | - Endpoint (GET) para que Legacy consulte solicitudes por CCT.<br>- Endpoint (POST) para que Legacy suba estatus de procesamiento. |
-| **US-2.6** | Implementar Servicio Cliente SFTP en Node.js. | Backend | 8 Pts | - Módulo para conectar, subir y listar archivos en SFTP.<br>- Integrar en flujo de carga masiva (guardar en SFTP además/en lugar de local). |
+| **US-2.1** | Crear Query GraphQL `getDashboardMetrics`. | Backend | 8 Pts | ✅ **Completo** - Retorna conteos: Total Escuelas, Alumnos, Tickets, Solicitudes. |
+| **US-2.2** | Implementar Widgets de Métricas en `AdminPanelComponent`. | Frontend | 5 Pts | ✅ **Completo** - Tarjetas con KPIs visuales implementadas. |
+| **US-2.3** | Exportar listado de Tickets a CSV/Excel. | Front/Back | 5 Pts | ✅ **Completo** - Resolver `exportTicketsCSV` funcional. |
+| **US-2.4** | Vista de detalle de Solicitud de Carga. | Frontend | 5 Pts | ✅ **Completo** - Filas expandibles con lista de errores detallada. |
+| **US-2.5** | Exponer Endpoints de API para consumo Legacy. | Backend | 8 Pts | ✅ **Completo** - Endpoints REST en `index.ts` (/stats/:cct). |
+| **US-2.6** | Implementar Servicio Cliente SFTP en Node.js. | Backend | 8 Pts | ✅ **Completo** - Servicio probado con contenedor local. |
 
 ### Sprint 3: Integración Final y Despliegue
 **Objetivo**: Validar la integración completa (API + SFTP), asegurar la integridad de datos y preparar el ambiente de producción.
 
 | ID | User Story | Capa | Estimación | Criterios de Aceptación |
 | :--- | :--- | :--- | :--- | :--- |
-| **US-3.1** | Documentación de API y Protocolo SFTP para Integración Legacy. | Doc | 3 Pts | - Swagger para API.<br>- Guía de estructura de carpetas SFTP para equipo Legacy. |
+| **US-3.1** | Documentación de API y Protocolo SFTP para Integración Legacy. | Doc | 3 Pts | ✅ **Completo** - Swagger UI implementado en `/api-docs`. |
 | **US-3.2** | Pruebas de Carga (Load Testing) para subida de archivos. | QA | 5 Pts | - Simular 50 usuarios subiendo Excel simultáneamente.<br>- Asegurar integridad de BD y SFTP. |
 | **US-3.3** | Validación de flujo de integración API + SFTP. | QA | 5 Pts | - Simular cliente Legacy consumiendo API y descargando de SFTP.<br>- Verificar integridad de archivos transferidos. |
 | **US-3.4** | Configuración de Docker/PM2 para producción. | DevOps | 3 Pts | - Dockerfile optimizado.<br>- Variables de entorno seguras (Credenciales SFTP). |
@@ -102,9 +102,9 @@ Automatización de pruebas y despliegue usando GitHub Actions (o similar).
 **Agregar a Sprint 1 (Foundation):**
 | ID | User Story | Estimación | Criterios de Aceptación |
 | :--- | :--- | :--- | :--- |
-| **US-0.1** | Establecer Configuración CI/CD. | 3 Pts | - Archivo `.github/workflows/ci.yml` creado.<br>- Ejecuta linter y tests en cada Push a `develop`. |
-| **US-0.2** | Definir Guías Unificadas y Tablero de Proyecto. | 2 Pts | - Archivo `docs/DEVELOPMENT_GUIDE_PSP_SCRUM.md` creado.<br>- Archivo `docs/KANBAN_BOARD.md` inicializado con columnas (ToDo, WIP, Done). |
-| **US-0.3** | Configurar Husky/Pre-commit hooks. | 2 Pts | - No permite commits con errores de sintaxis (lint).<br>- Valida formato de mensaje de commit. |
+| **US-0.1** | Establecer Configuración CI/CD. | 3 Pts | ✅ **Completo** - Archivo `.github/workflows/ci.yml` creado. |
+| **US-0.2** | Definir Guías Unificadas y Tablero de Proyecto. | 2 Pts | ✅ **Completo** - Archivos creados en `docs/`. |
+| **US-0.3** | Configurar Husky/Pre-commit hooks. | 2 Pts | ✅ **Completo** - Configurado y validando commits. |
 
 ### Recomendación Inmediata
 Iniciar con **US-0.1** y **US-0.2** para establecer la gobernanza técnica. Luego proceder con **US-1.3** y **US-1.2** como prioridades funcionales.

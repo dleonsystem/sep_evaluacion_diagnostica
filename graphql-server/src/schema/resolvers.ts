@@ -439,11 +439,11 @@ export const resolvers = {
         const params: any[] = [];
 
         if (userId) {
-          sql += ' WHERE t.usuario_id = $1';
+          sql += ' WHERE t.usuario_id = $1 AND t.deleted_at IS NULL';
           params.push(userId);
         } else if (correo) {
           // Búsqueda por correo si no hay sesión (Auth Mock)
-          sql += ' WHERE u.email = $1';
+          sql += ' WHERE u.email = $1 AND t.deleted_at IS NULL';
           params.push(correo.trim().toLowerCase());
         } else {
           throw new Error('Se requiere estar autenticado o proporcionar un correo');
@@ -487,6 +487,7 @@ export const resolvers = {
             t.updated_at as "fechaActualizacion"
           FROM tickets_soporte t
           INNER JOIN usuarios u ON t.usuario_id = u.id
+          WHERE t.deleted_at IS NULL
           ORDER BY t.created_at DESC
         `);
         return result.rows;
@@ -1392,6 +1393,40 @@ export const resolvers = {
       } catch (error) {
         logger.error('Error fetching evaluation students', { evaluacionId: parent.id, error });
         return [];
+      }
+    },
+
+    deleteTicket: async (_: any, { ticketId }: { ticketId: string }, context: GraphQLContext) => {
+      // 1. Validar autenticación
+      if (!context.user) throw new Error('No autorizado');
+
+      try {
+        // 2. Verificar propiedad o rol (Admin borra todo, usuario solo lo suyo)
+        // Obtenemos el owner del ticket
+        const ticketOwnerQuery = await query(
+          'SELECT usuario_id FROM tickets_soporte WHERE id = $1',
+          [ticketId]
+        );
+
+        if (ticketOwnerQuery.rows.length === 0) throw new Error('Ticket no encontrado');
+        const ownerId = ticketOwnerQuery.rows[0].usuario_id;
+
+        // Si no es admin y no es el dueño, error
+        const isAdmin = ['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol);
+        if (!isAdmin && ownerId !== context.user.id) {
+          throw new Error('No tienes permiso para eliminar este ticket');
+        }
+
+        // 3. Soft Delete
+        await query(
+          'UPDATE tickets_soporte SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1',
+          [ticketId]
+        );
+
+        return true;
+      } catch (error) {
+        logger.error('Error deleting ticket', ticketId, error);
+        throw new Error('No se pudo eliminar el ticket');
       }
     },
   },

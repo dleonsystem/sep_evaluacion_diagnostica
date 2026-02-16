@@ -3,10 +3,11 @@ version: '3.8'
 services:
   sftp:
     image: atmoz/sftp
-    container_name: sftp-server
+    container_name: eia_sftp
     volumes:
-      - ./sftp-data:/home/user/upload
+      - ./sftp-data:/home/eia_user/upload
     ports:
       - "2222:22"
-    command: user:pass:1001
+    environment:
+      SFTP_USERS: "eia_user:eia_password:1001"
     restart: unless-stopped

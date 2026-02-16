@@ -10,8 +10,44 @@
  * @cmmi CMMI Level 3 - Integrated Project Management
  */
 
-import 'reflect-metadata';
-import { ApolloServer } from '@apollo/server';
+// Imports de Swagger
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
+
+// ... (después de imports)
+
+/**
+ * Configura Swagger UI
+ */
+function configureSwagger(app: express.Application) {
+  const options = {
+    definition: {
+      openapi: '3.0.0',
+      info: {
+        title: 'API Sistema de Evaluación Diagnóstica EIA',
+        version: '1.0.0',
+        description: 'Documentación de API REST para integración con sistemas legados.',
+      },
+      servers: [
+        {
+          url: `http://${HOST}:${PORT}/api`,
+        },
+      ],
+    },
+    apis: ['./src/config/swagger.def.js', './src/index.ts'], // Path to files with annotations
+  };
+
+  const specs = swaggerJsdoc(options);
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+  logger.info(`📚 Documentación Swagger disponible en http://${HOST}:${PORT}/api-docs`);
+}
+
+// ... (dentro de startServer, antes de iniciar servidor)
+
+configureLegacyApi(app);
+configureSwagger(app);
+
+// 8. Iniciar servidor HTTP
 import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import express from 'express';

@@ -434,6 +434,12 @@ export const typeDefs = `#graphql
     @use-case CU-13: Mesa de ayuda
     """
     respondToTicket(ticketId: ID!, respuesta: String!, cerrar: Boolean!): Ticket!
+
+    """
+    Borrar lógicamente un ticket (Usuario/Admin)
+    @use-case CU-13: Mesa de ayuda
+    """
+    deleteTicket(ticketId: ID!): Boolean!
   }
 
   extend type Query {
