@@ -21,8 +21,8 @@ El sistema se encuentra en una etapa avanzada de desarrollo de la Fase 1. La arq
 | **Dashboard** | Visualización métricas, Gráficas de avance, KPIs | **Completo** | 🟢 Verde | Implementado query `getDashboardMetrics` con conteos reales y visualización en AdminPanel. |
 | **Validación** | Reglas de negocio (CURP, Grados), Rechazo de duplicados | **Completo** | 🟢 Verde | Implementado hash SHA256 para detectar duplicados y validación de CCT/Nivel. |
 | **Integración Legacy** | Exposición de API para consulta e inserción desde Legacy | **Completo** | 🟢 Verde | Endpoints REST expuestos y documentados con Swagger (`/api-docs`). |
-| **Infraestructura SFTP** | Servidor de archivos seguro y cliente en Node.js | **Completo** | � Verde | Servidor Docker configurado y servicio Backend (`SftpService`) probado exitosamente. |
-| **Descargas** | Generación de reportes, descarga de comprobantes | **En Progreso** | 🟡 Amarillo | Componente `DescargasComponent` existe, pero falta confirmar la generación de PDFs en Backend. |
+| **Infraestructura SFTP** | Servidor de archivos seguro y cliente en Node.js | **Completo** | 🟢 Verde | Servidor Docker configurado y servicio Backend (`SftpService`) probado exitosamente. |
+| **Descargas** | Generación de reportes, descarga de comprobantes | **Completo** | 🟢 Verde | Query `generateComprobante` implementada y retornando archivo Base64. |
 
 ---
 

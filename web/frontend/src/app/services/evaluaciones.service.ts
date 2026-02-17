@@ -38,6 +38,7 @@ export interface SolicitudEia2 {
     archivoPath?: string;
     archivoSize?: number;
     procesadoExternamente: boolean;
+    errores?: string[];
 }
 
 export interface GetSolicitudesResponse {

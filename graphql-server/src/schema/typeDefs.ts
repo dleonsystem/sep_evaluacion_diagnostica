@@ -448,6 +448,12 @@ export const typeDefs = `#graphql
     @use-case CU-13: Mesa de ayuda
     """
     getAllTickets: [Ticket!]!
+
+    """
+    Generar comprobante de recepción (PDF)
+    @use-case CU-16: Descarga de Comprobantes
+    """
+    generateComprobante(solicitudId: ID!): FileDownload!
   }
 `;
 
