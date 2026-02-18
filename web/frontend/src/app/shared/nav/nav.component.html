@@ -13,7 +13,7 @@
             <strong>Inicio</strong>
           </a>
         </li>
-        <li class="nav-item">
+        <li class="nav-item" *ngIf="!isAdminAutenticado">
           <a class="nav-link subnav-link" [routerLink]="['/carga-masiva']">
             <i class="bi bi-upload mr-1" aria-hidden="true"></i>
             <strong>Carga masiva</strong>
@@ -34,6 +34,10 @@
               <a class="dropdown-item" [routerLink]="['/admin/panel']">
                 <i class="bi bi-window-stack mr-2" aria-hidden="true"></i>
                 Panel admin
+              </a>
+              <a class="dropdown-item" [routerLink]="['/admin/panel']">
+                <i class="bi bi-speedometer2 mr-2" aria-hidden="true"></i>
+                Dashboard
               </a>
               <div class="dropdown-divider"></div>
               <a class="dropdown-item" href="javascript:void(0)" (click)="cerrarSesionAdmin()">

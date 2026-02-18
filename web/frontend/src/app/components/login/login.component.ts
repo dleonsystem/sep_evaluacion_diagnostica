@@ -32,7 +32,7 @@ export class LoginComponent implements OnInit {
     private readonly usuariosService: UsuariosService,
     private readonly router: Router,
     private readonly route: ActivatedRoute
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     const credencialesPersistidas = this.authService.obtenerCredenciales();
@@ -60,6 +60,26 @@ export class LoginComponent implements OnInit {
       const usuario = await firstValueFrom(
         this.usuariosService.autenticarUsuario(this.correo, this.contrasena)
       );
+
+      // Detectar Roles Administrativos (Rol 2 o 3)
+      if (usuario.rol === 'COORDINADOR_FEDERAL' || usuario.rol === 'COORDINADOR_ESTATAL') {
+        // Redirigir al flujo de AdminAuthService
+        // Simulamos el inicio de sesión admin para activar el menú correcto
+        localStorage.setItem('admin-session-token', btoa(`${usuario.email}:${Date.now()}`));
+        localStorage.setItem('admin-session-correo', usuario.email);
+        localStorage.setItem('admin-session-rol', usuario.rol);
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Sesión administrativa',
+          text: 'Bienvenido al panel de administración.',
+          timer: 2000,
+          timerProgressBar: true
+        });
+
+        await this.router.navigateByUrl('/admin/panel');
+        return;
+      }
 
       const cct = usuario.centrosTrabajo?.[0]?.claveCCT ?? null;
       if (cct) {

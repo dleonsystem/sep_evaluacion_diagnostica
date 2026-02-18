@@ -61,7 +61,10 @@
       </p>
 
       <div class="admin-panel__excel-list" *ngIf="excelDisponibles.length">
-        <span class="admin-panel__history-title">Excels disponibles</span>
+        <h3>Archivos cargados en Base de Datos</h3>
+        <p class="admin-panel__helper">
+          Lista sincronizada de archivos Excel procesados por el sistema (EIA2).
+        </p>
         <div class="admin-panel__filters">
           <label class="admin-panel__filters-field">
             <span class="admin-panel__filters-label">Buscar</span>
@@ -87,9 +90,10 @@
           <thead>
             <tr>
               <th scope="col">Seleccionar</th>
-              <th scope="col">Nombre</th>
+              <th scope="col">Nombre del Archivo</th>
               <th scope="col">CCT</th>
-              <th scope="col">Correo</th>
+              <th scope="col">Tamaño</th>
+              <th scope="col">Fecha Carga</th>
               <th scope="col">Estatus</th>
             </tr>
           </thead>
@@ -103,7 +107,8 @@
               </td>
               <td>{{ excel.nombre }}</td>
               <td>{{ excel.cct }}</td>
-              <td>{{ excel.correo }}</td>
+              <td>{{ (excel.size || 0) / 1024 | number:'1.0-1' }} KB</td>
+              <td>{{ formatearFecha(excel.fecha) }}</td>
               <td>
                 <span class="admin-panel__badge" [class.admin-panel__badge--assigned]="
                     excel.estatus === 'asignado'

@@ -76,6 +76,18 @@ export const typeDefs = `#graphql
     @use-case CU-15: Reportes
     """
     exportTicketsCSV: ExportResponse!
+
+    """
+    Listar todos los tickets del sistema (Admin)
+    @use-case CU-13: Mesa de ayuda
+    """
+    getAllTickets: [Ticket!]!
+
+    """
+    Generar comprobante de recepción (PDF)
+    @use-case CU-16: Descarga de Comprobantes
+    """
+    generateComprobante(solicitudId: ID!): FileDownload!
   }
 
   """
@@ -141,6 +153,24 @@ export const typeDefs = `#graphql
     @use-case CU-01: Autenticación
     """
     recoverPassword(email: String!): Boolean!
+
+    """
+    Crear nuevo ticket de soporte
+    @use-case CU-13: Mesa de ayuda
+    """
+    createTicket(input: CreateTicketInput!): Ticket!
+
+    """
+    Responder a un ticket de soporte (Admin)
+    @use-case CU-13: Mesa de ayuda
+    """
+    respondToTicket(ticketId: ID!, respuesta: String!, cerrar: Boolean!): Ticket!
+
+    """
+    Borrar lógicamente un ticket (Usuario/Admin)
+    @use-case CU-13: Mesa de ayuda
+    """
+    deleteTicket(ticketId: ID!): Boolean!
   }
   
   """
@@ -422,38 +452,13 @@ export const typeDefs = `#graphql
     base64: String!
   }
 
-  extend type Mutation {
-    """
-    Crear nuevo ticket de soporte
-    @use-case CU-13: Mesa de ayuda
-    """
-    createTicket(input: CreateTicketInput!): Ticket!
-
-    """
-    Responder a un ticket de soporte (Admin)
-    @use-case CU-13: Mesa de ayuda
-    """
-    respondToTicket(ticketId: ID!, respuesta: String!, cerrar: Boolean!): Ticket!
-
-    """
-    Borrar lógicamente un ticket (Usuario/Admin)
-    @use-case CU-13: Mesa de ayuda
-    """
-    deleteTicket(ticketId: ID!): Boolean!
-  }
-
-  extend type Query {
-    """
-    Listar todos los tickets del sistema (Admin)
-    @use-case CU-13: Mesa de ayuda
-    """
-    getAllTickets: [Ticket!]!
-
-    """
-    Generar comprobante de recepción (PDF)
-    @use-case CU-16: Descarga de Comprobantes
-    """
-    generateComprobante(solicitudId: ID!): FileDownload!
+  """
+  Respuesta para descarga de archivos
+  """
+  type FileDownload {
+    success: Boolean!
+    fileName: String!
+    contentBase64: String!
   }
 `;
 

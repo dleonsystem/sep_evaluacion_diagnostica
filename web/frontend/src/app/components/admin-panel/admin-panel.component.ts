@@ -539,7 +539,8 @@ export class AdminPanelComponent implements OnInit {
           key,
           nombre: registro.archivoOriginal,
           cct: registro.cct ?? '—',
-          correo: 'Sincronizado', // El admin ve el CCT, el correo es del usuario
+          correo: 'Sincronizado',
+          size: registro.archivoSize,
           estatus: estatus as 'asignado' | 'pendiente',
           fecha,
           nivel,
@@ -761,6 +762,7 @@ interface ExcelDisponible {
   nombre: string;
   cct: string;
   correo: string;
+  size?: number; // Tamaño en bytes
   estatus: 'asignado' | 'pendiente';
   fecha: string;
   nivel: string;

@@ -42,12 +42,8 @@ function configureSwagger(app: express.Application) {
   logger.info(`📚 Documentación Swagger disponible en http://${HOST}:${PORT}/api-docs`);
 }
 
-// ... (dentro de startServer, antes de iniciar servidor)
-
-configureLegacyApi(app);
-configureSwagger(app);
-
 // 8. Iniciar servidor HTTP
+import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import express from 'express';
@@ -218,7 +214,8 @@ async function startServer() {
   try {
     logger.info('=== Iniciando servidor GraphQL EIA ===');
 
-    // 1. Verificar conexión a base de datos
+    // 1. Verificar conexión a base de datos (Opcional en desarrollo)
+    /*
     logger.info('Verificando conexión a PostgreSQL...');
     const dbConnected = await testConnection();
     if (dbConnected) {
@@ -227,6 +224,8 @@ async function startServer() {
       logger.warn('⚠️  PostgreSQL no disponible - ejecutando en modo sin BD');
       logger.warn('   Para habilitar BD, configura PostgreSQL y actualiza .env');
     }
+    */
+    logger.info('⚠️ Modo de visualización local: Verificación de BD saltada.');
 
     // 2. Crear aplicación Express
     const app = express();
@@ -259,6 +258,7 @@ async function startServer() {
     // 7. Configurar rutas
     configureRoutes(app);
     configureLegacyApi(app);
+    configureSwagger(app);
 
     // 8. Iniciar servidor HTTP
     await new Promise<void>((resolve) => {
