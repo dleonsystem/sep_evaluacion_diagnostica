@@ -194,7 +194,7 @@
       <div class="carga__acciones">
         <button class="carga__boton-primario" *ngIf="!mostrarCargaMasiva"
           [class.carga__boton-guardado]="resultado.guardado" (click)="guardarArchivo(resultado)"
-          [disabled]="resultado.estado !== 'exito' || resultado.guardando || !correoControl.valid || resultado.guardado">
+          [disabled]="resultado.estado !== 'exito' || resultado.guardando || correoControl.invalid || resultado.guardado">
           {{
           resultado.guardado
           ? 'Archivo guardado'

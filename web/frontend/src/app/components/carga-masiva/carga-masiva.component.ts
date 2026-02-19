@@ -138,8 +138,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.actualizarEstadoSesion();
     this.inicializarEstadoCredenciales();
+    this.actualizarEstadoSesion();
   }
 
   ngOnDestroy(): void {
@@ -151,7 +151,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     const input = evento.target as HTMLInputElement;
     const archivos = input.files ? Array.from(input.files) : [];
 
-    if (!this.correoControl.valid) {
+    if (this.correoControl.invalid) {
       this.correoControl.markAllAsTouched();
       await Swal.fire({
         icon: 'warning',
@@ -162,7 +162,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.authService.requiereLoginParaNuevaCarga()) {
+    if (this.authService.requiereLoginParaNuevaCarga(this.correoControl.value)) {
       await Swal.fire({
         icon: 'info',
         title: 'Inicia sesión',
@@ -269,7 +269,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   }
 
   async guardarArchivo(resultado: ResultadoArchivo): Promise<void> {
-    if (!this.correoControl.valid) {
+    if (this.correoControl.invalid) {
       this.correoControl.markAllAsTouched();
       resultado.errorGuardado = 'Agrega un correo electrónico válido para continuar con la carga.';
       await Swal.fire({
@@ -297,26 +297,51 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     resultado.modoGuardado = null;
     resultado.notaGuardado = null;
 
+    if (this.sesionActiva && this.correoSesion) {
+      this.correoControl.setValue(this.correoSesion);
+    }
+
+    // Al intentar guardar, ocultamos la caja de credenciales viejas para que solo se vea 
+    // lo nuevo o lo que corresponda a este envío.
+    this.credencialesMostradas = null;
+
     try {
+      resultado.mensajeInformativo = 'Registrando usuario y generando credenciales de acceso...';
+      const credencialesListas = await this.registrarUsuarioYCredenciales(resultado);
+
+      if (credencialesListas) {
+        // Ya no iniciamos sesión automáticamente para permitir que el usuario 
+        // pueda cambiar el correo si desea subir archivos de otra persona.
+        this.actualizarEstadoSesion();
+      } else {
+        throw new Error('No se pudieron establecer las credenciales de acceso.');
+      }
+
       resultado.mensajeInformativo = 'Sincronizando con base de datos y SFTP institucional...';
       const base64 = await this.fileToBase64(resultado.archivoOriginal);
 
-      // Usamos timeout de 45 segundos para dar tiempo al procesamiento de worker threads y SFTP
-      const respuestaApi = await firstValueFrom(
-        this.evaluacionesService.subirExcel({
-          archivoBase64: base64,
-          nombreArchivo: resultado.archivo.name,
-          cicloEscolar: '2025-2026',
-        }).pipe(
-          timeout(45000),
-          catchError(err => {
-            if (err.name === 'TimeoutError') {
-              return throwError(() => new Error('La carga está tomando más tiempo de lo esperado (Timeout). Los archivos grandes pueden tardar, intenta de nuevo o revisa tu conexión.'));
-            }
-            return throwError(() => err);
-          })
-        ),
-      );
+      let respuestaApi = await this.ejecutarCargaServidor(base64, resultado.archivo.name, false);
+
+      if (!respuestaApi.success && respuestaApi.duplicadoDetectado) {
+        const confirm = await Swal.fire({
+          icon: 'question',
+          title: 'Archivo duplicado',
+          text: respuestaApi.message,
+          showCancelButton: true,
+          confirmButtonText: 'Sí, reemplazar',
+          cancelButtonText: 'No, cancelar'
+        });
+
+        if (confirm.isConfirmed) {
+          resultado.mensajeInformativo = 'Reemplazando versión anterior en el servidor...';
+          respuestaApi = await this.ejecutarCargaServidor(base64, resultado.archivo.name, true);
+        } else {
+          resultado.estado = 'idle';
+          resultado.guardando = false;
+          resultado.mensajeInformativo = 'Carga cancelada por el usuario.';
+          return;
+        }
+      }
 
       if (!respuestaApi.success) {
         throw new Error(respuestaApi.message);
@@ -331,11 +356,6 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         title: 'Archivo cargado',
         text: 'La información se ha sincronizado correctamente con el servidor.',
       });
-
-      const credencialesListas = await this.registrarUsuarioYCredenciales(resultado);
-      if (!credencialesListas) {
-        return;
-      }
 
       if (resultado.escDatos && resultado.resultadoExito && resultado.pdfTipo !== 'exito') {
         await this.generarPdfExito(
@@ -360,6 +380,26 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
   }
 
+  private ejecutarCargaServidor(base64: string, nombreArchivo: string, confirmarReemplazo: boolean) {
+    return firstValueFrom(
+      this.evaluacionesService.subirExcel({
+        archivoBase64: base64,
+        nombreArchivo: nombreArchivo,
+        cicloEscolar: '2025-2026',
+        email: this.correoControl.value,
+        confirmarReemplazo
+      }).pipe(
+        timeout(45000),
+        catchError(err => {
+          if (err.name === 'TimeoutError') {
+            return throwError(() => new Error('La carga está tomando más tiempo de lo esperado (Timeout).'));
+          }
+          return throwError(() => err);
+        })
+      )
+    );
+  }
+
   private async registrarUsuarioYCredenciales(resultado: ResultadoArchivo): Promise<boolean> {
     if (!resultado.escDatos || !resultado.resultadoExito) {
       resultado.errorGuardado = 'No se encontró la información de la escuela para registrar tus credenciales.';
@@ -371,9 +411,20 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       return false;
     }
 
+    if (this.sesionActiva && this.correoSesion) {
+      resultado.resultadoExito.credenciales = {
+        usuario: this.correoSesion,
+        contrasena: '********',
+        esNueva: false
+      };
+      return true;
+    }
+
     const credencialesExistentes = this.authService.obtenerCredenciales();
 
-    if (credencialesExistentes) {
+    const correoActual = this.authService.normalizarCorreo(this.correoControl.value);
+
+    if (credencialesExistentes && credencialesExistentes.correo === correoActual) {
       resultado.resultadoExito.credenciales = {
         usuario: credencialesExistentes.correo,
         contrasena: credencialesExistentes.contrasena,
@@ -397,7 +448,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     try {
       await firstValueFrom(
         this.usuariosService.crearUsuario({
-          email: resultado.escDatos.correo,
+          email: this.correoControl.value,
           rol: 'RESPONSABLE_CCT',
           clavesCCT: [resultado.escDatos.cct],
           password: contrasenaGenerada,
@@ -430,20 +481,20 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     try {
       const nuevasCredenciales = this.authService.registrarCredenciales(
         resultado.escDatos.cct,
-        resultado.escDatos.correo,
+        this.correoControl.value,
         contrasenaGenerada
       );
       this.estadoCredencialesService.actualizar(
-        resultado.escDatos.correo,
+        this.correoControl.value,
         nuevasCredenciales.contrasena
       );
       resultado.resultadoExito.credenciales = {
-        usuario: resultado.escDatos.correo,
+        usuario: this.correoControl.value,
         contrasena: nuevasCredenciales.contrasena,
         esNueva: nuevasCredenciales.esNueva
       };
       this.credencialesMostradas = {
-        usuario: resultado.escDatos.correo,
+        usuario: this.correoControl.value,
         contrasena: nuevasCredenciales.contrasena,
         esNueva: nuevasCredenciales.esNueva
       };
@@ -464,7 +515,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   }
 
   async guardarTodo(): Promise<void> {
-    if (!this.correoControl.valid) {
+    if (this.correoControl.invalid) {
       this.correoControl.markAllAsTouched();
       await Swal.fire({
         icon: 'warning',
@@ -511,20 +562,10 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Ya no bloqueamos si el CCT es diferente. El usuario puede subir cualquier CCT.
+    // Solo se valida la estructura y datos del Excel.
+
     const fechaDisponible = this.calcularFechaDisponible();
-    const credencialesValidas = this.authService.coincidenCredenciales(
-      resultado.esc.cct,
-      resultado.esc.correo
-    );
-
-    if (!credencialesValidas) {
-      this.agregarErrores(resultadoArchivo, [
-        'Ya existe un acceso asociado a otro CCT o correo. Usa las credenciales originales.'
-      ]);
-      await this.finalizarConError(resultadoArchivo);
-      return;
-    }
-
     resultadoArchivo.estado = 'exito';
     resultadoArchivo.mensajeInformativo =
       'Validación exitosa. Podrás consultar tus resultados a partir del día: ' +
@@ -533,7 +574,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       mensaje: `Podrás consultar tus resultados a partir del día: ${fechaDisponible.toLocaleDateString()}`,
       fechaDisponible,
       credenciales: {
-        usuario: resultado.esc.correo,
+        usuario: this.correoControl.value,
         contrasena: '',
         esNueva: false
       },
@@ -579,16 +620,22 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
 
   private actualizarEstadoSesion(): void {
-    const credenciales = this.authService.obtenerCredenciales();
     this.sesionActiva = this.authService.estaAutenticado();
+    const credenciales = this.authService.obtenerCredenciales();
     this.tieneCredenciales = !!credenciales;
-    this.correoSesion = credenciales?.correo ?? null;
+    this.correoSesion = this.authService.obtenerCorreoSesion();
+
+    if (this.sesionActiva && this.correoSesion) {
+      this.correoControl.setValue(this.correoSesion);
+      this.correoControl.disable();
+    } else {
+      this.correoControl.enable();
+      if (credenciales?.correo && !this.correoControl.value.trim()) {
+        this.correoControl.setValue(credenciales.correo);
+      }
+    }
 
     this.establecerCredencialesMostradas();
-
-    if (credenciales?.correo && !this.correoControl.value.trim()) {
-      this.correoControl.setValue(credenciales.correo);
-    }
   }
 
   private inicializarEstadoCredenciales(): void {
@@ -607,17 +654,23 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   }
 
   private establecerCredencialesMostradas(): void {
+    const correoInput = this.authService.normalizarCorreo(this.correoControl.value);
     const credencialesExistentes = this.authService.obtenerCredenciales();
     const credencialesGuardadas = this.estadoCredencialesService.obtener();
 
-    const credencialesFuente = credencialesGuardadas ?? credencialesExistentes;
+    // Priorizamos las credenciales que coincidan con el correo del input
+    let fuente = null;
+    if (credencialesGuardadas?.correo === correoInput) fuente = credencialesGuardadas;
+    else if (credencialesExistentes?.correo === correoInput) fuente = credencialesExistentes;
 
-    if (!this.credencialesMostradas && credencialesFuente) {
+    if (fuente) {
       this.credencialesMostradas = {
-        usuario: credencialesFuente.correo,
-        contrasena: credencialesFuente.contrasena,
+        usuario: fuente.correo,
+        contrasena: fuente.contrasena,
         esNueva: false
       };
+    } else {
+      this.credencialesMostradas = null;
     }
   }
 
@@ -628,6 +681,9 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     this.credencialesAsociadas = coincideCorreo;
     this.contrasenaAsociada = coincideCorreo ? credencialesGuardadas?.contrasena ?? null : null;
+
+    // Actualizar también la caja de credenciales mostradas al cambiar el correo
+    this.establecerCredencialesMostradas();
   }
 
   private async generarPdfExito(
@@ -644,7 +700,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     try {
       const blob = await this.mockPdfService.generarPdfExito({
-        correo: esc.correo,
+        correo: this.correoControl.value,
         contrasena: resultadoArchivo.resultadoExito?.credenciales.contrasena ?? '',
         fechaDisponible: fechaDisponible.toLocaleDateString(),
         alumnosValidados: totalAlumnos,

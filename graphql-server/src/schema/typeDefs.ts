@@ -370,6 +370,7 @@ export const typeDefs = `#graphql
     archivoBase64: String!
     nombreArchivo: String!
     cicloEscolar: String!
+    email: String
     confirmarReemplazo: Boolean
   }
 
@@ -380,8 +381,8 @@ export const typeDefs = `#graphql
     success: Boolean!
     message: String!
     solicitudId: ID
-    duplicadoDetectado: Boolean
     detalles: ExcelUploadResult
+    duplicadoDetectado: Boolean
   }
 
   """

@@ -8,6 +8,8 @@ export interface UploadExcelInput {
     archivoBase64: string;
     nombreArchivo: string;
     cicloEscolar: string;
+    email?: string;
+    confirmarReemplazo?: boolean;
 }
 
 export interface ExcelUploadResult {
@@ -24,6 +26,7 @@ export interface UploadExcelResponse {
         message: string;
         solicitudId?: string;
         detalles?: ExcelUploadResult;
+        duplicadoDetectado?: boolean;
     };
 }
 

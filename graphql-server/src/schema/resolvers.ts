@@ -737,22 +737,20 @@ export const resolvers = {
 
         const createdUser = result.rows[0] as CreateUserResult;
 
-        if (clavesCCT && clavesCCT.length) {
-          const centros = await query(
-            `SELECT id, clave_cct as "claveCCT"
-             FROM centros_trabajo
-             WHERE clave_cct = ANY($1)`,
-            [clavesCCT]
-          );
-
-          const centrosEncontrados = centros.rows as Array<{ id: string; claveCCT: string }>;
-          for (const centro of centrosEncontrados) {
-            await query(
-              `INSERT INTO usuarios_centros_trabajo (usuario_id, centro_trabajo_id)
-               VALUES ($1, $2)
-               ON CONFLICT DO NOTHING`,
-              [createdUser.id, centro.id]
+        if (clavesCCT && clavesCCT.length > 0) {
+          try {
+            const escuelas = await query(
+              `SELECT id FROM escuelas WHERE cct = $1 LIMIT 1`,
+              [clavesCCT[0]]
             );
+            if (escuelas.rows.length > 0) {
+              await query(
+                'UPDATE usuarios SET escuela_id = $1 WHERE id = $2',
+                [escuelas.rows[0].id, createdUser.id]
+              );
+            }
+          } catch (err) {
+            logger.error('Error vinculando escuela al crear usuario', err);
           }
         }
 
@@ -1081,8 +1079,8 @@ export const resolvers = {
      * @use-case CU-05: Recepción de archivos (EIA2)
      * @psp Code Review - Offloading parsing to worker thread
      */
-    uploadExcelAssessment: async (_: any, { input }: { input: any }) => {
-      const { archivoBase64, nombreArchivo, confirmarReemplazo } = input;
+    uploadExcelAssessment: async (_: any, { input }: { input: any }, context: GraphQLContext) => {
+      const { archivoBase64, nombreArchivo, confirmarReemplazo, email } = input;
 
       const client = await getClient();
       try {
@@ -1208,6 +1206,36 @@ export const resolvers = {
           escuelaId = defaultRes.rows[0].id;
         } else {
           escuelaId = escuelaRes.rows[0].id;
+        }
+
+        // Vinculación automática del usuario con la escuela si no está vinculado
+        let userToLink = context.user?.id;
+
+        // Si no hay sesión, intentar vincular por el email proporcionado en el input
+        if (!userToLink && email) {
+          try {
+            const userRes = await client.query('SELECT id FROM usuarios WHERE email = $1', [email.trim().toLowerCase()]);
+            if (userRes.rows.length > 0) {
+              userToLink = userRes.rows[0].id;
+            }
+          } catch (err) {
+            logger.error('Error buscando usuario para vinculación por email', err);
+          }
+        }
+
+        if (userToLink) {
+          try {
+            await client.query(
+              'UPDATE usuarios SET escuela_id = $1, updated_at = NOW() WHERE id = $2 AND (escuela_id IS NULL OR escuela_id != $1)',
+              [escuelaId, userToLink]
+            );
+            logger.info('Vinculación automática de usuario con escuela exitosa', {
+              userId: userToLink,
+              escuelaId
+            });
+          } catch (err) {
+            logger.error('Error en vinculación automática', err);
+          }
         }
 
         // 2. Grupos y Estudiantes
@@ -1449,6 +1477,7 @@ export const resolvers = {
    */
   User: {
     centrosTrabajo: async (parent: ParentWithId) => {
+      logger.debug('Fetching centrosTrabajo for user', { userId: parent.id });
       try {
         const result = await query(
           `SELECT 
@@ -1467,6 +1496,7 @@ export const resolvers = {
           [parent.id]
         );
 
+        logger.debug('Found centrosTrabajo', { count: result.rows.length, userId: parent.id });
         return result.rows as CentroTrabajoRow[];
       } catch (error) {
         logger.error('Error fetching user CCTs', { userId: parent.id, error });

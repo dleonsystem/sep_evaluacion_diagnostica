@@ -42,16 +42,11 @@ export class AuthService {
     const cctNormalizado = this.normalizarCct(cct);
     const correoNormalizado = this.normalizarCorreo(correo);
 
-    if (
-      credencialesActuales &&
-      (credencialesActuales.cct !== cctNormalizado || credencialesActuales.correo !== correoNormalizado)
-    ) {
-      throw new Error('Ya existe un acceso asociado a otro CCT o correo. Usa las credenciales originales.');
-    }
-
-    const esNueva = !credencialesActuales;
+    const esNueva = !credencialesActuales || credencialesActuales.correo !== correoNormalizado;
     const contrasena =
-      credencialesActuales?.contrasena ?? contrasenaPersonalizada ?? this.generarContrasena();
+      (credencialesActuales?.correo === correoNormalizado ? credencialesActuales?.contrasena : null) ??
+      contrasenaPersonalizada ??
+      this.generarContrasena();
 
     localStorage.setItem(
       this.credencialesKey,
@@ -71,9 +66,8 @@ export class AuthService {
       return true;
     }
 
-    return (
-      guardadas.cct === this.normalizarCct(cct) && guardadas.correo === this.normalizarCorreo(correo)
-    );
+    // Solo verificamos el correo. El usuario puede subir cualquier CCT.
+    return guardadas.correo === this.normalizarCorreo(correo);
   }
 
   iniciarSesion(correo: string, contrasena: string): void {
@@ -86,6 +80,11 @@ export class AuthService {
       throw new Error('El correo o la contraseña no coinciden con tu primer envío.');
     }
 
+    this.marcarSesionActiva();
+    localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
+  }
+
+  iniciarSesionTrasCarga(correo: string): void {
     this.marcarSesionActiva();
     localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
   }
@@ -105,8 +104,16 @@ export class AuthService {
     return localStorage.getItem(this.sesionKey) === 'true';
   }
 
-  requiereLoginParaNuevaCarga(): boolean {
-    return !!this.obtenerCredenciales() && !this.estaAutenticado();
+  requiereLoginParaNuevaCarga(correo?: string): boolean {
+    const credenciales = this.obtenerCredenciales();
+    if (!credenciales || this.estaAutenticado()) {
+      return false;
+    }
+    // Solo requerir login si el correo que se intenta usar es el mismo que ya tiene credenciales guardadas
+    if (correo && credenciales.correo !== this.normalizarCorreo(correo)) {
+      return false;
+    }
+    return true;
   }
 
   obtenerCorreoSesion(): string | null {
@@ -122,7 +129,7 @@ export class AuthService {
     return (cct ?? '').trim().toUpperCase();
   }
 
-  private normalizarCorreo(correo: string): string {
+  public normalizarCorreo(correo: string): string {
     return (correo ?? '').trim().toLowerCase();
   }
 

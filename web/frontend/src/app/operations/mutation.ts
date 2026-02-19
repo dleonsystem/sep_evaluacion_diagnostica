@@ -36,6 +36,7 @@ export const UPLOAD_EXCEL_MUTATION = `
       success
       message
       solicitudId
+      duplicadoDetectado
       detalles {
         cct
         nivel
