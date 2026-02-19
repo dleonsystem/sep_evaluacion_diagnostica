@@ -422,9 +422,21 @@ export const typeDefs = `#graphql
     estado: String!
     prioridad: String!
     evidencias: [TicketEvidencia!]
+    respuestas: [TicketRespuesta!]
     correo: String
     fechaCreacion: String!
     fechaActualizacion: String!
+  }
+
+  """
+  Respuesta de Ticket (Comentario)
+  """
+  type TicketRespuesta {
+    id: ID!
+    mensaje: String!
+    fecha: String!
+    autor: String!
+    esInterno: Boolean!
   }
 
   """

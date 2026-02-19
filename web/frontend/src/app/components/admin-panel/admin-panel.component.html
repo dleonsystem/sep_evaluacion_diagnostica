@@ -175,7 +175,8 @@
         No hay tickets registrados aún.
       </p>
 
-      <div class="admin-panel__tickets-grid" *ngIf="ticketsSoporteFiltrados.length">
+      <div class="admin-panel__tickets-grid" *ngIf="ticketsSoporteFiltrados.length"
+        [class.admin-panel__tickets-grid--details-open]="!!ticketSeleccionadoId">
         <div class="admin-panel__tickets-list">
           <button class="admin-panel__ticket-card" type="button" *ngFor="let ticket of ticketsSoporteFiltrados"
             (click)="seleccionarTicket(ticket)" [class.admin-panel__ticket-card--active]="
@@ -266,7 +267,7 @@
               <th>Correo</th>
               <th>Nombre Completo</th>
               <th>Rol</th>
-              <th>Acciones</th>
+              <th class="text-center">Enviar contraseña</th>
             </tr>
           </thead>
           <tbody>
@@ -277,9 +278,10 @@
                 {{ usuario.apematerno }}
               </td>
               <td>{{ usuario.rol }}</td>
-              <td>
-                <button class="admin-panel__action-btn" type="button" (click)="enviarPassword(usuario)">
-                  Enviar Contraseña
+              <td class="text-center">
+                <button class="admin-panel__action-btn" type="button" (click)="enviarPassword(usuario)"
+                  title="Enviar contraseña por correo">
+                  <i class="bi bi-envelope-at-fill" style="font-size: 1.5rem;"></i>
                 </button>
               </td>
             </tr>

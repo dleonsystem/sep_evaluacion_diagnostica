@@ -253,9 +253,40 @@ async function startServer() {
         credentials: true,
       }),
       expressMiddleware(server, {
-        context: async ({ req }) => ({
-          user: req.headers.authorization ? { id: 'test-user' } : null,
-        }),
+        context: async ({ req }) => {
+          const token = req.headers.authorization || '';
+          if (!token) return { user: null };
+
+          try {
+            // Formato esperado: "Bearer <base64>"
+            // Base64 decodificado: "email:timestamp" (Generado por AdminAuthService)
+            const encoded = token.replace('Bearer ', '');
+            const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+            const [email] = decoded.split(':');
+
+            if (!email) return { user: null };
+
+            // Buscar usuario real en BD con su rol (codigo)
+            const result = await query(
+              `SELECT 
+                u.id, 
+                u.email, 
+                r.codigo as rol 
+               FROM usuarios u
+               INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
+               WHERE u.email = $1 AND u.activo = true`,
+              [email]
+            );
+
+            if (result.rows.length > 0) {
+              return { user: result.rows[0] };
+            }
+          } catch (error) {
+            logger.error('Error procesando token de contexto', error);
+          }
+
+          return { user: null };
+        },
       })
     );
 

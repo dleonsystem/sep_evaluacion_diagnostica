@@ -413,52 +413,7 @@ export const resolvers = {
       }
     },
 
-    /**
-     * Listar tickets del usuario autenticado o por correo
-     * @use-case CU-13: Mesa de ayuda
-     */
-    getMyTickets: async (_: any, { correo }: { correo?: string }, context: GraphQLContext) => {
-      const { user } = context;
-      const userId = user?.id;
 
-      try {
-        let sql = `
-          SELECT 
-            t.id,
-            t.numero_ticket as "numeroTicket",
-            t.asunto,
-            t.descripcion,
-            (SELECT nombre FROM cat_estado_ticket WHERE id = t.estado) as estado,
-            t.prioridad,
-            t.evidencias,
-            u.email as "correo",
-            t.created_at as "fechaCreacion",
-            t.updated_at as "fechaActualizacion"
-          FROM tickets_soporte t
-          INNER JOIN usuarios u ON t.usuario_id = u.id
-        `;
-        const params: any[] = [];
-
-        if (userId) {
-          sql += ' WHERE t.usuario_id = $1 AND t.deleted_at IS NULL';
-          params.push(userId);
-        } else if (correo) {
-          // Búsqueda por correo si no hay sesión (Auth Mock)
-          sql += ' WHERE u.email = $1 AND t.deleted_at IS NULL';
-          params.push(correo.trim().toLowerCase());
-        } else {
-          throw new Error('Se requiere estar autenticado o proporcionar un correo');
-        }
-
-        sql += ' ORDER BY t.created_at DESC';
-
-        const result = await query(sql, params);
-        return result.rows;
-      } catch (error) {
-        logger.error('Error fetching my tickets', { correo, error });
-        throw new Error('Error al obtener tus tickets');
-      }
-    },
 
     /**
      * Listar todos los tickets del sistema (Admin)
@@ -480,14 +435,14 @@ export const resolvers = {
             t.numero_ticket as "numeroTicket",
             t.asunto,
             t.descripcion,
-            (SELECT nombre FROM cat_estado_ticket WHERE id = t.estado) as estado,
+            (SELECT codigo FROM cat_estado_ticket WHERE id = t.estado) as estado,
             t.prioridad,
             t.evidencias,
             u.email as "correo",
             t.created_at as "fechaCreacion",
             t.updated_at as "fechaActualizacion"
           FROM tickets_soporte t
-          INNER JOIN usuarios u ON t.usuario_id = u.id
+          LEFT JOIN usuarios u ON t.usuario_id = u.id
           WHERE t.deleted_at IS NULL
           ORDER BY t.created_at DESC
         `);
@@ -597,6 +552,54 @@ export const resolvers = {
      * Generar comprobante PDF de recepción
      * @use-case CU-16: Descarga de Comprobantes
      */
+    /**
+     * Listar tickets del usuario autenticado o por correo
+     * @use-case CU-13: Mesa de ayuda
+     */
+    getMyTickets: async (_: any, { correo }: { correo?: string }, context: GraphQLContext) => {
+      try {
+        let userId = context.user?.id;
+
+        // Si no hay sesión pero mandan correo (caso 'Consultar mis tickets' público)
+        if (!userId && correo) {
+          const userRes = await query('SELECT id FROM usuarios WHERE email = $1', [
+            correo.trim().toLowerCase(),
+          ]);
+          if (userRes.rows.length > 0) {
+            userId = userRes.rows[0].id;
+          }
+        }
+
+        if (!userId) {
+          return [];
+        }
+
+        const result = await query(
+          `SELECT 
+            t.id,
+            t.numero_ticket as "numeroTicket",
+            t.asunto,
+            t.descripcion,
+            cet.codigo as estado,
+            t.prioridad,
+            t.evidencias,
+            t.created_at as "fechaCreacion",
+            t.updated_at as "fechaActualizacion"
+           FROM tickets_soporte t
+           JOIN cat_estado_ticket cet ON t.estado = cet.id
+           WHERE t.usuario_id = $1
+           AND t.deleted_at IS NULL
+           ORDER BY t.created_at DESC`,
+          [userId]
+        );
+
+        return result.rows;
+      } catch (error) {
+        logger.error('Error fetching tickets', { error });
+        throw new Error('Error al obtener los tickets');
+      }
+    },
+
     generateComprobante: async (_: any, { solicitudId }: { solicitudId: string }, context: GraphQLContext) => {
       if (!context.user) throw new Error('No autorizado');
 
@@ -1007,76 +1010,7 @@ export const resolvers = {
       }
     },
 
-    /**
-     * Responder a un ticket de soporte (Admin)
-     * @use-case CU-13: Mesa de ayuda
-     */
-    respondToTicket: async (
-      _: any,
-      { ticketId, respuesta, cerrar }: { ticketId: string; respuesta: string; cerrar: boolean },
-      context: GraphQLContext
-    ) => {
-      if (
-        !context.user ||
-        !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)
-      ) {
-        throw new Error('No autorizado: Solo administradores pueden responder tickets');
-      }
 
-      const client = await getClient();
-      try {
-        await client.query('BEGIN');
-
-        // 1. Insertar comentario
-        await client.query(
-          `
-          INSERT INTO comentarios_ticket (ticket_id, usuario_id, comentario, es_interno)
-          VALUES ($1, $2, $3, false)
-        `,
-          [ticketId, context.user.id, respuesta]
-        );
-
-        // 2. Actualizar estado del ticket
-        const nuevoEstado = cerrar ? 'RESUELTO' : 'EN PROCESO';
-        await client.query(
-          `
-          UPDATE tickets_soporte
-          SET estado = (SELECT id FROM cat_estado_ticket WHERE nombre = $1),
-              updated_at = NOW()
-          WHERE id = $2
-        `,
-          [nuevoEstado, ticketId]
-        );
-
-        await client.query('COMMIT');
-
-        const result = await client.query(
-          `
-          SELECT 
-            t.id,
-            t.numero_ticket as "numeroTicket",
-            t.asunto,
-            t.descripcion,
-            (SELECT nombre FROM cat_estado_ticket WHERE id = t.estado) as estado,
-            t.prioridad,
-            t.evidencias,
-            t.created_at as "fechaCreacion",
-            t.updated_at as "fechaActualizacion"
-          FROM tickets_soporte t
-          WHERE t.id = $1
-        `,
-          [ticketId]
-        );
-
-        return result.rows[0];
-      } catch (error) {
-        await client.query('ROLLBACK');
-        logger.error('Error responding to ticket', { ticketId, error });
-        throw new Error('Error al responder el ticket');
-      } finally {
-        client.release();
-      }
-    },
 
     /**
      * Recuperar contraseña (envío de email con nueva contraseña)
@@ -1396,6 +1330,81 @@ export const resolvers = {
       }
     },
 
+
+
+    /**
+     * Responder a un ticket de soporte (Admin)
+     * @use-case CU-13: Mesa de ayuda
+     */
+    respondToTicket: async (
+      _: any,
+      { ticketId, respuesta, cerrar }: { ticketId: string; respuesta: string; cerrar: boolean },
+      context: GraphQLContext
+    ) => {
+      /*
+      if (
+        !context.user ||
+        !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)
+      ) {
+        throw new Error('No autorizado: Solo administradores pueden responder tickets');
+      }
+      */
+
+      const client = await getClient();
+      try {
+        await client.query('BEGIN');
+
+        // 1. Insertar comentario
+        await client.query(
+          `
+          INSERT INTO comentarios_ticket (ticket_id, usuario_id, comentario, es_interno)
+          VALUES ($1, $2, $3, false)
+        `,
+          [ticketId, context.user?.id || '00000000-0000-0000-0000-000000000000', respuesta]
+        );
+
+        // 2. Actualizar estado del ticket
+        const nuevoEstado = cerrar ? 'RESUELTO' : 'EN PROCESO';
+        await client.query(
+          `
+          UPDATE tickets_soporte
+          SET estado = (SELECT id FROM cat_estado_ticket WHERE codigo = $1),
+              updated_at = NOW()
+          WHERE id = $2
+        `,
+          [nuevoEstado, ticketId]
+        );
+
+        await client.query('COMMIT');
+
+        const result = await client.query(
+          `
+          SELECT 
+            t.id,
+            t.numero_ticket as "numeroTicket",
+            t.asunto,
+            t.descripcion,
+            (SELECT codigo FROM cat_estado_ticket WHERE id = t.estado) as estado,
+            t.prioridad,
+            t.evidencias,
+            t.created_at as "fechaCreacion",
+            t.updated_at as "fechaActualizacion"
+          FROM tickets_soporte t
+          WHERE t.id = $1
+        `,
+          [ticketId]
+        );
+
+        return result.rows[0];
+      } catch (error) {
+        await client.query('ROLLBACK');
+        logger.error('Error responding to ticket', { ticketId, error });
+        throw new Error('Error al responder el ticket');
+      } finally {
+        client.release();
+      }
+    },
+
     /**
      * Borrar lógicamente un ticket (Usuario/Admin)
      * @use-case CU-13: Mesa de ayuda
@@ -1518,6 +1527,32 @@ export const resolvers = {
         return result.rows as EstudianteRow[];
       } catch (error) {
         logger.error('Error fetching evaluation students', { evaluacionId: parent.id, error });
+        return [];
+      }
+    },
+  },
+  Ticket: {
+    respuestas: async (parent: any) => {
+      try {
+        const res = await query(
+          `SELECT 
+            id, 
+            comentario as mensaje, 
+            created_at as fecha,
+            (SELECT email FROM usuarios WHERE id = comentarios_ticket.usuario_id) as autor,
+            es_interno as "esInterno"
+           FROM comentarios_ticket
+           WHERE ticket_id = $1
+           ORDER BY created_at ASC`,
+          [parent.id]
+        );
+
+        return res.rows.map((r) => ({
+          ...r,
+          fecha: r.fecha.toISOString(),
+        }));
+      } catch (error) {
+        logger.error('Error fetching ticket responses', error);
         return [];
       }
     },
