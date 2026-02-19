@@ -1364,7 +1364,7 @@ export const resolvers = {
         );
 
         // 2. Actualizar estado del ticket
-        const nuevoEstado = cerrar ? 'RESUELTO' : 'EN PROCESO';
+        const nuevoEstado = cerrar ? 'RESUELTO' : 'EN_PROCESO';
         await client.query(
           `
           UPDATE tickets_soporte
