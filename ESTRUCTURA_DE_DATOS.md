@@ -917,6 +917,27 @@ INDEX idx_plantillas_tipo ON PLANTILLAS_EMAIL(tipo_notificacion)
 | created_at      | TIMESTAMP    | Fecha de creación                 |
 | updated_at      | TIMESTAMP    | Fecha de actualización            |
 
+### ARCHIVOS_TICKETS
+
+**Almacena metadata de archivos adjuntos a tickets de soporte** (relación 1:N con TICKETS_SOPORTE)
+
+| Campo           | Tipo         | Descripción                       |
+|-----------------|--------------|-----------------------------------|
+| id              | UUID         | Identificador único               |
+| numero_ticket   | VARCHAR(20)  | Número de ticket (FK)             |
+| nombre_archivo  | VARCHAR(255) | Nombre original del archivo       |
+| tamanio         | BIGINT       | Tamaño del archivo en bytes       |
+| extension       | VARCHAR(20)  | Extensión del archivo (pdf, jpg, etc) |
+| ruta            | VARCHAR(500) | Ruta completa en filesystem/storage |
+| estado          | SMALLINT     | FK a CAT_ESTADO_ARCHIVO_TICKET    |
+| created_at      | TIMESTAMP    | Fecha de creación                 |
+| updated_at      | TIMESTAMP    | Fecha de actualización            |
+
+**Constraints:**
+- FK a `tickets_soporte(numero_ticket)` con `ON DELETE CASCADE`
+- `tamanio > 0`
+- `extension` debe ser alfanumérico (1-20 caracteres)
+
 ### USUARIOS
 
 **Consolidado** - Incluye funcionalidad de CONFIGURACIONES_USUARIO eliminada
@@ -980,6 +1001,8 @@ Ejemplo de `preferencias_notif`:
  **CAT_CICLOS_ESCOLARES**: Catálogo de ciclos escolares (2024-2025, 2025-2026, etc.).
  **CAT_GRADOS**: Catálogo de grados por nivel educativo (1° a 6° primaria, 1° a 3° secundaria, etc.).
  **CAT_ROLES_USUARIO**: Catálogo de roles del sistema (Director, Operador SEP, Administrador).
+ **CAT_ESTADO_ARCHIVO_TICKET**: Catálogo de estados para archivos adjuntos a tickets (ACTIVO, ELIMINADO, CORRUPTO, EN_CUARENTENA) - ENUM mirror.
+ **ARCHIVOS_TICKETS**: Gestión de metadata de archivos adjuntos a tickets de soporte. Relación 1:N con TICKETS_SOPORTE. Almacena nombre, tamaño, extensión, ruta y estado de cada archivo. Constraint FK garantiza que el ticket exista antes de insertar archivos.
 
 ---
 

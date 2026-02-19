@@ -240,6 +240,21 @@ SELECT val,
 FROM unnest(ARRAY['ABIERTO','EN_PROCESO','RESUELTO','CERRADO']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
+CREATE TABLE cat_estado_archivo_ticket (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_estado_archivo_ticket (codigo, descripcion, orden)
+SELECT val,
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
+	   ord
+FROM unnest(ARRAY['ACTIVO','ELIMINADO','CORRUPTO','EN_CUARENTENA']::TEXT[]) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
 -- Helper para obtener IDs de catálogos por código canónico
 CREATE OR REPLACE FUNCTION fn_catalogo_id(p_catalogo TEXT, p_codigo TEXT)
 RETURNS SMALLINT
@@ -674,6 +689,21 @@ CREATE TABLE comentarios_ticket (
 	created_at         TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at         TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	CONSTRAINT chk_comentario_longitud CHECK (char_length(trim(comentario)) BETWEEN 10 AND 5000)
+);
+
+CREATE TABLE archivos_tickets (
+	id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	numero_ticket  VARCHAR(20) NOT NULL,
+	nombre_archivo VARCHAR(255) NOT NULL,
+	tamanio        BIGINT NOT NULL,
+	extension      VARCHAR(20),
+	ruta           VARCHAR(500) NOT NULL,
+	estado         SMALLINT NOT NULL DEFAULT fn_catalogo_id('cat_estado_archivo_ticket','ACTIVO') REFERENCES cat_estado_archivo_ticket(id),
+	created_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	updated_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	CONSTRAINT fk_archivos_tickets_numero FOREIGN KEY (numero_ticket) REFERENCES tickets_soporte(numero_ticket) ON DELETE CASCADE,
+	CONSTRAINT chk_archivos_tickets_tamanio CHECK (tamanio > 0),
+	CONSTRAINT chk_archivos_tickets_extension CHECK (extension IS NULL OR extension ~ '^[a-zA-Z0-9]{1,20}$')
 );
 
 CREATE TABLE sesiones (
