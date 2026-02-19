@@ -9,44 +9,19 @@ export interface RegistroArchivoLocal {
   correo: string;
 }
 
+/**
+ * @deprecated El almacenamiento local ha sido desactivado a favor de la persistencia en Servidor (BD) y SFTP.
+ * Este servicio se mantiene temporalmente para evitar errores de compilación durante la transición.
+ */
 @Injectable({ providedIn: 'root' })
 export class ArchivoStorageService {
-  private readonly storageKey = 'archivos-preescolar';
-
   obtenerRegistros(correo: string): RegistroArchivoLocal[] {
-    const data = localStorage.getItem(this.storageKey);
-    if (!data) return [];
-
-    try {
-      const all: RegistroArchivoLocal[] = JSON.parse(data);
-      if (!Array.isArray(all)) return [];
-
-      // Filtrar por correo si se proporciona
-      const correoNormalizado = this.normalizarCorreo(correo);
-      return all.filter(r => this.normalizarCorreo(r.correo) === correoNormalizado);
-    } catch {
-      return [];
-    }
+    // Ya no se utilizan registros locales
+    return [];
   }
 
   guardarRegistro(registro: RegistroArchivoLocal): void {
-    try {
-      const data = localStorage.getItem(this.storageKey);
-      let all: RegistroArchivoLocal[] = data ? JSON.parse(data) : [];
-      if (!Array.isArray(all)) all = [];
-
-      // Evitar duplicados por nombre y CCT
-      const existe = all.some(r => r.nombre === registro.nombre && r.cct === registro.cct && r.correo === registro.correo);
-      if (!existe) {
-        all.unshift(registro); // Agregar al inicio
-        localStorage.setItem(this.storageKey, JSON.stringify(all));
-      }
-    } catch (error) {
-      console.error('Error guardando en localStorage:', error);
-    }
-  }
-
-  normalizarCorreo(correo: string): string {
-    return (correo ?? '').trim().toLowerCase();
+    // Deprecated: No guardar nada localmente
+    console.warn('Uso de ArchivoStorageService.guardarRegistro ignorado: La persistencia ahora es vía Servidor/SFTP.');
   }
 }

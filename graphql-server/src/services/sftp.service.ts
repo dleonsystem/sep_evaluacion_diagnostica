@@ -57,7 +57,23 @@ export class SftpService {
       return true;
     } catch (err: any) {
       logger.error('SFTP Upload Failed', { localPath, remotePath, error: err.message });
-      // If upload fails, maybe connection dropped.
+      this.isConnected = false;
+      return false;
+    }
+  }
+
+  async uploadBuffer(buffer: Buffer, remotePath: string): Promise<boolean> {
+    try {
+      if (!this.isConnected) {
+        const connected = await this.connect();
+        if (!connected) return false;
+      }
+      // put can take a Buffer as the first argument
+      await this.client.put(buffer, remotePath);
+      logger.info(`Buffer uploaded to SFTP: ${remotePath}`);
+      return true;
+    } catch (err: any) {
+      logger.error('SFTP Buffer Upload Failed', { remotePath, error: err.message });
       this.isConnected = false;
       return false;
     }

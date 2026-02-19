@@ -15,7 +15,6 @@ import { EstadoCredencialesService } from '../../services/estado-credenciales.se
 import { MockPdfService } from '../../services/mock-pdf.service';
 import { UsuariosService } from '../../services/usuarios.service';
 import { EvaluacionesService } from '../../services/evaluaciones.service';
-import { ArchivoStorageService } from '../../services/archivo-storage.service';
 
 interface ResultadoExito {
   mensaje: string;
@@ -119,7 +118,6 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     private readonly mockPdfService: MockPdfService,
     private readonly usuariosService: UsuariosService,
     private readonly evaluacionesService: EvaluacionesService,
-    private readonly archivoStorageService: ArchivoStorageService,
     private readonly router: Router
   ) { }
 
@@ -313,18 +311,6 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         throw new Error(respuestaApi.message);
       }
       // -------------------------------
-
-      // GUARDADO LOCAL DE RESPALDO (para vista de historial inmediata)
-      if (resultado.escDatos) {
-        this.archivoStorageService.guardarRegistro({
-          nombre: resultado.archivo.name,
-          cct: resultado.escDatos.cct,
-          nivel: resultado.tipoDetectado ?? 'preescolar',
-          fecha: new Date().toISOString(),
-          size: resultado.archivoOriginal.size,
-          correo: resultado.escDatos.correo
-        });
-      }
 
       resultado.guardado = true;
       resultado.mensajeInformativo =

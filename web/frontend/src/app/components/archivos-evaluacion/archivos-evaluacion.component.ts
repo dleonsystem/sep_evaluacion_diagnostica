@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { EvaluacionesService, SolicitudEia2 } from '../../services/evaluaciones.service';
-import { ArchivoStorageService } from '../../services/archivo-storage.service';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -27,7 +26,6 @@ export class ArchivosEvaluacionComponent implements OnInit {
   constructor(
     private readonly authService: AuthService,
     private readonly evaluacionesService: EvaluacionesService,
-    private readonly archivoStorageService: ArchivoStorageService,
     private readonly router: Router
   ) { }
 
@@ -53,61 +51,28 @@ export class ArchivosEvaluacionComponent implements OnInit {
     // 1. Cargar del backend si hay CCT
     if (this.cctActivo) {
       try {
-        registrosBackend = await firstValueFrom(this.evaluacionesService.getSolicitudes(this.cctActivo));
+        this.registros = await firstValueFrom(this.evaluacionesService.getSolicitudes(this.cctActivo));
       } catch (error) {
         console.error('Error cargando historial del backend:', error);
-        this.mensajeError = 'No se pudo conectar con el servidor para obtener tu historial completo.';
+        this.mensajeError = 'No se pudo conectar con el servidor para obtener tu historial.';
       }
+    } else {
+      this.registros = [];
     }
-
-    // 2. Cargar de local storage (para soporte de cargas previas offline/locales)
-    const registrosLocalesRaw = this.archivoStorageService.obtenerRegistros(this.correoActivo || '');
-    const registrosLocalesMapped: SolicitudEia2[] = registrosLocalesRaw.map((local, index) => ({
-      id: `local-${index}`,
-      consecutivo: 0,
-      cct: local.cct,
-      archivoOriginal: local.nombre,
-      fechaCarga: local.fecha,
-      estadoValidacion: 0, // LOCAL
-      nivelEducativo: this.mapearNivelALocal(local.nivel),
-      archivoSize: local.size,
-      procesadoExternamente: false
-    }));
-
-    // 3. Mezclar (evitar duplicados que ya estén en el servidor)
-    this.registros = [
-      ...registrosBackend,
-      ...registrosLocalesMapped.filter(l =>
-        !registrosBackend.some(b =>
-          b.archivoOriginal === l.archivoOriginal && b.cct === l.cct
-        )
-      )
-    ];
 
     this.cargando = false;
 
     if (this.registros.length === 0) {
       if (this.cctActivo) {
         this.mensajeInfo = 'No se han encontrado cargas registradas para tu CCT.';
-      } else if (this.authService.estaAutenticado()) {
-        this.mensajeInfo = 'No tienes un CCT asignado a tu cuenta. Solo se muestran cargas locales.';
       } else {
         this.mensajeInfo = 'Inicia sesión para ver tu historial de archivos sincronizados.';
       }
     } else {
-      this.mensajeInfo = this.cctActivo
-        ? 'Se muestran tus cargas sincronizadas con el servidor.'
-        : 'Se muestran tus cargas guardadas localmente.';
+      this.mensajeInfo = 'Se muestran tus cargas sincronizadas con el servidor.';
     }
   }
 
-  private mapearNivelALocal(nivel: string): number {
-    const n = (nivel || '').toUpperCase();
-    if (n.includes('PRE')) return 1;
-    if (n.includes('PRI')) return 2;
-    if (n.includes('SEC')) return 3;
-    return 0;
-  }
 
   get registrosFiltrados(): SolicitudEia2[] {
     const filtro = this.filtroTexto.trim().toLowerCase();
