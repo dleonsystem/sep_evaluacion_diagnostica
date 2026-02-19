@@ -134,9 +134,13 @@
             [class.carga__estado-indicador--progreso]="resultado.estado === 'validando'"
             [class.carga__estado-indicador--error]="resultado.estado === 'error'"
             [class.carga__estado-indicador--exito]="resultado.estado === 'exito'">
-            <span class="carga__estado-punto" aria-hidden="true"></span>
+            <span *ngIf="resultado.estado !== 'validando' && resultado.estado !== 'guardando'"
+              class="carga__estado-punto" aria-hidden="true"></span>
+            <span *ngIf="resultado.estado === 'validando' || resultado.estado === 'guardando'" class="spinner"
+              aria-hidden="true"></span>
             <span class="carga__estado-texto">
-              {{ resultado.estado === 'validando' ? 'Validando' : resultado.estado === 'exito' ? 'Validado' : 'Con
+              {{ resultado.estado === 'validando' ? 'Validando' : resultado.estado === 'guardando' ? 'Subiendo' :
+              resultado.estado === 'exito' ? 'Validado' : 'Con
               errores' }}
             </span>
           </span>

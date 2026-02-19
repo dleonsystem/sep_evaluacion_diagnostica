@@ -8,11 +8,7 @@ import {
   TicketsService,
   Ticket as TicketDB,
 } from '../../services/tickets.service';
-import {
-  UsuariosService,
-  UsuarioCreado,
-} from '../../services/usuarios.service';
-import { DashboardService, DashboardMetrics } from '../../services/dashboard.service';
+import { UsuariosService, UsuarioCreado } from '../../services/usuarios.service';
 import Swal from 'sweetalert2';
 import { firstValueFrom } from 'rxjs';
 
@@ -62,16 +58,12 @@ export class AdminPanelComponent implements OnInit {
   totalUsuarios = 0;
   cargandoUsuarios = false;
 
-  // Métricas
-  metrics: DashboardMetrics | null = null;
-  cargandoMetrics = false;
 
   constructor(
     private readonly adminAuthService: AdminAuthService,
     private readonly evaluacionesService: EvaluacionesService,
     private readonly ticketsService: TicketsService,
     private readonly usuariosService: UsuariosService,
-    private readonly dashboardService: DashboardService,
     private readonly router: Router,
   ) { }
 
@@ -81,7 +73,6 @@ export class AdminPanelComponent implements OnInit {
     this.cargarExcelDisponibles();
     this.cargarTicketsSoporte();
     this.cargarUsuarios();
-    this.cargarMetrics();
   }
 
   seleccionarArchivo(event: Event): void {
@@ -564,16 +555,6 @@ export class AdminPanelComponent implements OnInit {
     }
   }
 
-  async cargarMetrics(): Promise<void> {
-    this.cargandoMetrics = true;
-    try {
-      this.metrics = await firstValueFrom(this.dashboardService.getMetrics());
-    } catch (error) {
-      console.error('Error cargando métricas:', error);
-    } finally {
-      this.cargandoMetrics = false;
-    }
-  }
 
   private actualizarEstadoExcel(excelKey: string): void {
     this.excelDisponibles = this.excelDisponibles.map((excel) => {

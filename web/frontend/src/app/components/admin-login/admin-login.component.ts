@@ -22,7 +22,7 @@ export class AdminLoginComponent {
   constructor(
     private readonly adminAuthService: AdminAuthService,
     private readonly router: Router,
-  ) {}
+  ) { }
 
   async iniciarSesion(): Promise<void> {
     this.error = null;
@@ -33,11 +33,11 @@ export class AdminLoginComponent {
       await Swal.fire({
         icon: 'success',
         title: 'Sesión de administrador iniciada',
-        text: 'Ya puedes acceder al panel de carga de PDFs.',
+        text: 'Ya puedes acceder al panel de administración.',
         timer: 2500,
         timerProgressBar: true,
       });
-      await this.router.navigateByUrl('/admin/panel');
+      await this.router.navigateByUrl('/admin/dashboard');
     } catch (error) {
       this.error = error instanceof Error ? error.message : 'No fue posible iniciar sesión.';
       await Swal.fire({

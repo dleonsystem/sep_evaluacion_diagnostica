@@ -74,7 +74,7 @@ export class NavComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   iniciarSesionAdmin(): void {
-    void this.router.navigate(['/admin/login'], { queryParams: { redirect: '/admin/panel' } });
+    void this.router.navigate(['/admin/login'], { queryParams: { redirect: '/admin/dashboard' } });
     this.cerrarMenus();
   }
 

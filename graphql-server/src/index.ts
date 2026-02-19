@@ -214,18 +214,15 @@ async function startServer() {
   try {
     logger.info('=== Iniciando servidor GraphQL EIA ===');
 
-    // 1. Verificar conexión a base de datos (Opcional en desarrollo)
-    /*
+    // 1. Verificar conexión a base de datos
     logger.info('Verificando conexión a PostgreSQL...');
     const dbConnected = await testConnection();
     if (dbConnected) {
       logger.info('✓ Conexión a PostgreSQL establecida');
     } else {
-      logger.warn('⚠️  PostgreSQL no disponible - ejecutando en modo sin BD');
-      logger.warn('   Para habilitar BD, configura PostgreSQL y actualiza .env');
+      logger.error('❌ Falló la conexión a PostgreSQL. El servidor requiere una BD activa.');
+      process.exit(1);
     }
-    */
-    logger.info('⚠️ Modo de visualización local: Verificación de BD saltada.');
 
     // 2. Crear aplicación Express
     const app = express();
@@ -245,7 +242,14 @@ async function startServer() {
     app.use(
       GRAPHQL_PATH,
       cors<cors.CorsRequest>({
-        origin: process.env.CORS_ORIGIN || '*',
+        origin: (origin, callback) => {
+          // En desarrollo, permitimos cualquier origen para evitar problemas de CORS
+          if (!origin || process.env.NODE_ENV === 'development') {
+            callback(null, true);
+          } else {
+            callback(null, process.env.CORS_ORIGIN || '*');
+          }
+        },
         credentials: true,
       }),
       expressMiddleware(server, {

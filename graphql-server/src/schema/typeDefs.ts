@@ -104,11 +104,13 @@ export const typeDefs = `#graphql
   """
   type DashboardMetrics {
     totalUsuarios: Int!
+    usuariosActivos: Int!
     totalTickets: Int!
     ticketsAbiertos: Int!
     ticketsResueltos: Int!
     totalSolicitudes: Int!
     solicitudesValidadas: Int!
+    totalCCTs: Int!
   }
   
   """
@@ -152,7 +154,7 @@ export const typeDefs = `#graphql
     Recuperar contraseña (envío de email)
     @use-case CU-01: Autenticación
     """
-    recoverPassword(email: String!): Boolean!
+    recoverPassword(email: String!): String!
 
     """
     Crear nuevo ticket de soporte

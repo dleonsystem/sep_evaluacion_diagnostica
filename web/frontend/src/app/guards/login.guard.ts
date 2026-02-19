@@ -9,7 +9,7 @@ export class LoginGuard {
     private readonly authService: AuthService,
     private readonly adminAuthService: AdminAuthService,
     private readonly router: Router,
-  ) {}
+  ) { }
 
   canActivate(): boolean {
     if (this.authService.estaAutenticado()) {
@@ -18,7 +18,7 @@ export class LoginGuard {
     }
 
     if (this.adminAuthService.estaAutenticado()) {
-      void this.router.navigate(['/admin/panel']);
+      void this.router.navigate(['/admin/dashboard']);
       return false;
     }
 

@@ -35,8 +35,8 @@ El sistema se encuentra en una etapa avanzada de desarrollo de la Fase 1. La arq
 
 | ID | User Story | Capa | Estimación | Criterios de Aceptación |
 | :--- | :--- | :--- | :--- | :--- |
-| **US-1.1** | Optimizar queries de usuarios y CCT usando selección de campos específica. | Backend | 3 Pts | - Reemplazar queries manuales con Query Builder o función helper.<br>- Reducir tiempo de respuesta en `listUsers`. |
-| **US-1.2** | Implementar feedback de progreso en Carga Masiva (Spinner/Barra). | Frontend | 5 Pts | - Mostrar estado "Procesando" durante la mutación GraphQL.<br>- Manejar errores de timeout o validación amigablemente. |
+| **US-1.1** | Optimizar queries de usuarios y CCT usando selección de campos específica. | Backend | 3 Pts | ✅ **Completo** - Implementado uso de constantes de campos y selección específica en resolvers. |
+| **US-1.2** | Implementar feedback de progreso en Carga Masiva (Spinner/Barra). | Frontend | 5 Pts | ✅ **Completo** - Spinners animados y overlay de carga masiva implementados. |
 | **US-1.3** | Refactorizar `uploadExcelAssessment` para stream o worker thread. | Backend | 8 Pts | ✅ **Completo** - Implementado `worker-excel.ts` con manejo de hilos. |
 | **US-1.4** | Crear Guard de Autenticación para rutas protegidas en Angular. | Frontend | 3 Pts | ✅ **Completo** - Rutas `/admin`, `/carga-masiva` redirigen a login. |
 | **US-1.7** | Implementar recuperación de contraseña (usuario y admin). | Fullstack | 5 Pts | ✅ **Completo** - Vista pública y gestión en Admin Panel. |
@@ -48,8 +48,8 @@ El sistema se encuentra en una etapa avanzada de desarrollo de la Fase 1. La arq
 
 | ID | User Story | Capa | Estimación | Criterios de Aceptación |
 | :--- | :--- | :--- | :--- | :--- |
-| **US-2.1** | Crear Query GraphQL `getDashboardMetrics`. | Backend | 8 Pts | ✅ **Completo** - Retorna conteos: Total Escuelas, Alumnos, Tickets, Solicitudes. |
-| **US-2.2** | Implementar Widgets de Métricas en `AdminPanelComponent`. | Frontend | 5 Pts | ✅ **Completo** - Tarjetas con KPIs visuales implementadas. |
+| **US-2.1** | Crear Query GraphQL `getDashboardMetrics` con métricas extendidas. | Backend | 8 Pts | ✅ **Completo** - Retorna: Usuarios (Activos/Totales), CCTs, Excel subidos/validados y Tickets. |
+| **US-2.2** | Implementar Widgets de Métricas Premium en `AdminPanelComponent`. | Frontend | 5 Pts | ✅ **Completo** - Diseño premium con iconos, gradientes y subtextos de KPI. |
 | **US-2.3** | Exportar listado de Tickets a CSV/Excel. | Front/Back | 5 Pts | ✅ **Completo** - Resolver `exportTicketsCSV` funcional. |
 | **US-2.4** | Vista de detalle de Solicitud de Carga. | Frontend | 5 Pts | ✅ **Completo** - Filas expandibles con lista de errores detallada. |
 | **US-2.5** | Exponer Endpoints de API para consumo Legacy. | Backend | 8 Pts | ✅ **Completo** - Endpoints REST en `index.ts` (/stats/:cct). |

@@ -24,59 +24,6 @@ import { query, getClient } from '../config/database.js';
 
 const sftpService = new SftpService();
 
-// Almacenamiento temporal en memoria para el modo simulación (sin BD)
-const MOCK_SOLICITUDES: any[] = [
-  {
-    id: 'mock-solicitud-1',
-    consecutivo: 101,
-    cct: '09DPR0001A',
-    archivoOriginal: 'Evaluacion_Primaria_Zona01.xlsx',
-    fechaCarga: '2026-02-18T17:39:00.000Z',
-    estadoValidacion: 2, // Validado
-    nivelEducativo: 2, // Primaria
-    archivoPath: '/uploads/mock1.xlsx',
-    archivoSize: 102450,
-    procesadoExternamente: true,
-    errores: []
-  },
-  {
-    id: 'mock-solicitud-2',
-    consecutivo: 102,
-    cct: '09DJN0002B',
-    archivoOriginal: 'Carga_Preescolar_Norte.xlsx',
-    fechaCarga: '2026-02-17T17:39:00.000Z',
-    estadoValidacion: 2,
-    nivelEducativo: 1, // Preescolar
-    archivoSize: 85600,
-    procesadoExternamente: true,
-    errores: []
-  },
-  {
-    id: 'mock-solicitud-3',
-    consecutivo: 103,
-    cct: '09DST0003C',
-    archivoOriginal: 'Resultados_Secundaria_3_Final.xlsx',
-    fechaCarga: '2026-02-16T17:39:00.000Z',
-    estadoValidacion: 1, // Pendiente
-    nivelEducativo: 3, // Secundaria
-    archivoSize: 152300,
-    procesadoExternamente: false,
-    errores: []
-  },
-  {
-    id: 'mock-solicitud-4',
-    consecutivo: 104,
-    cct: '09DPR0005Z',
-    archivoOriginal: 'Error_Formato_Incorrecto.xlsx',
-    fechaCarga: '2026-02-15T17:39:00.000Z',
-    estadoValidacion: 3, // Rechazado
-    nivelEducativo: 2,
-    archivoSize: 43900,
-    procesadoExternamente: false,
-    errores: ['Estructura de columnas inválida', 'Faltan campos obligatorios']
-  }
-];
-
 /**
  * User type for context
  * @psp Type Safety - User authentication
@@ -195,6 +142,33 @@ interface AuthPayload {
 }
 
 /**
+ * Base field selections for optimized queries
+ * @psp Code Reuse - Field selection constants
+ */
+const BASE_USER_FIELDS = `
+  u.id, 
+  u.email, 
+  u.nombre, 
+  u.apepaterno,
+  u.apematerno,
+  r.codigo as "rol",
+  u.activo,
+  u.fecha_registro as "fechaRegistro",
+  u.updated_at as "fechaUltimoAcceso"
+`;
+
+const BASE_CCT_FIELDS = `
+  id,
+  clave_cct as "claveCCT",
+  nombre,
+  entidad,
+  municipio,
+  localidad,
+  nivel,
+  turno
+`;
+
+/**
  * Helper function to build update query
  * @psp Code Reuse - Extract complex logic
  */
@@ -277,16 +251,7 @@ export const resolvers = {
     getUser: async (_: unknown, { id }: { id: string }): Promise<UserRow | null> => {
       try {
         const result = await query(
-          `SELECT 
-            u.id, 
-            u.email, 
-            u.nombre, 
-            u.apepaterno,
-            u.apematerno,
-            r.codigo as "rol",
-            u.activo,
-            u.fecha_registro as "fechaRegistro",
-            u.updated_at as "fechaUltimoAcceso"
+          `SELECT ${BASE_USER_FIELDS}
           FROM usuarios u
           INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
           WHERE u.id = $1`,
@@ -323,16 +288,7 @@ export const resolvers = {
 
         // Obtener usuarios paginados
         const usersResult = await query(
-          `SELECT 
-            u.id, 
-            u.email, 
-            u.nombre, 
-            u.apepaterno,
-            u.apematerno,
-            r.codigo as "rol",
-            u.activo,
-            u.fecha_registro as "fechaRegistro",
-            u.updated_at as "fechaUltimoAcceso"
+          `SELECT ${BASE_USER_FIELDS}
           FROM usuarios u
           INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
           ORDER BY u.fecha_registro DESC
@@ -358,15 +314,7 @@ export const resolvers = {
     getCCT: async (_: unknown, { clave }: { clave: string }): Promise<CentroTrabajoRow | null> => {
       try {
         const result = await query(
-          `SELECT 
-            id,
-            clave_cct as "claveCCT",
-            nombre,
-            entidad,
-            municipio,
-            localidad,
-            nivel,
-            turno
+          `SELECT ${BASE_CCT_FIELDS}
           FROM centros_trabajo 
           WHERE clave_cct = $1`,
           [clave]
@@ -460,13 +408,8 @@ export const resolvers = {
           fechaCarga: row.fechaCarga instanceof Date ? row.fechaCarga.toISOString() : row.fechaCarga,
         }));
       } catch (error) {
-        logger.warn('Error fetching solicitudes from DB, using Mock Data instead', { error });
-
-        // En modo simulación, filtramos por CCT si se proporciona
-        if (cct) {
-          return MOCK_SOLICITUDES.filter(s => s.cct === cct);
-        }
-        return MOCK_SOLICITUDES;
+        logger.error('Error fetching solicitudes from DB', { error });
+        throw new Error('Error al obtener el historial de solicitudes');
       }
     },
 
@@ -560,34 +503,43 @@ export const resolvers = {
      * @use-case CU-14: Dashboard
      */
     getDashboardMetrics: async () => {
+      logger.debug('Dashboard metrics requested');
       try {
         const [
           usersRes,
+          usersActiveRes,
           ticketsRes,
           ticketsOpenRes,
           ticketsResolvedRes,
           solicitudesRes,
           solicitudesValidRes,
+          cctsRes,
         ] = await Promise.all([
           query('SELECT COUNT(*) as count FROM usuarios'),
+          query('SELECT COUNT(*) as count FROM usuarios WHERE activo = true'),
           query('SELECT COUNT(*) as count FROM tickets_soporte'),
           query(
-            "SELECT COUNT(*) as count FROM tickets_soporte WHERE estado = (SELECT id FROM cat_estado_ticket WHERE nombre = 'ABIERTO')"
+            "SELECT COUNT(*) as count FROM tickets_soporte WHERE estado = (SELECT id FROM cat_estado_ticket WHERE codigo = 'ABIERTO')"
           ),
           query(
-            "SELECT COUNT(*) as count FROM tickets_soporte WHERE estado = (SELECT id FROM cat_estado_ticket WHERE nombre = 'RESUELTO')"
+            "SELECT COUNT(*) as count FROM tickets_soporte WHERE estado = (SELECT id FROM cat_estado_ticket WHERE codigo = 'RESUELTO')"
           ),
           query('SELECT COUNT(*) as count FROM solicitudes_eia2'),
-          query('SELECT COUNT(*) as count FROM solicitudes_eia2 WHERE estado_validacion = 2'),
+          query(
+            "SELECT COUNT(*) as count FROM solicitudes_eia2 WHERE estado_validacion = (SELECT id FROM cat_estado_validacion_eia2 WHERE codigo = 'VALIDO')"
+          ),
+          query('SELECT COUNT(DISTINCT cct) as count FROM solicitudes_eia2'),
         ]);
 
         return {
           totalUsuarios: parseInt(usersRes.rows[0].count),
+          usuariosActivos: parseInt(usersActiveRes.rows[0].count),
           totalTickets: parseInt(ticketsRes.rows[0].count),
           ticketsAbiertos: parseInt(ticketsOpenRes.rows[0].count),
           ticketsResueltos: parseInt(ticketsResolvedRes.rows[0].count),
           totalSolicitudes: parseInt(solicitudesRes.rows[0].count),
           solicitudesValidadas: parseInt(solicitudesValidRes.rows[0].count),
+          totalCCTs: parseInt(cctsRes.rows[0].count),
         };
       } catch (error) {
         logger.error('Error fetching dashboard metrics', error);
@@ -726,23 +678,7 @@ export const resolvers = {
      * @psp Design Review - Validación completa de entrada
      */
     createUser: async (_: any, { input }: { input: CreateUserInput }) => {
-      const dbClient = await getClient().catch(() => null);
       const { email, nombre, apepaterno, apematerno, rol, password } = input;
-
-      if (!dbClient) {
-        logger.warn('⚠️ [SIN CONEXIÓN BD] Creando usuario mock para visualización');
-        return {
-          id: `mock-user-${Date.now()}`,
-          email: email || 'usuario.mock@sep.gob.mx',
-          nombre: nombre || 'Usuario',
-          apepaterno: apepaterno || 'Prueba',
-          apematerno: apematerno || 'SEP',
-          rol: rol || 'RESPONSABLE_CCT',
-          activo: true,
-          fechaRegistro: new Date().toISOString(),
-          centrosTrabajo: []
-        };
-      }
 
       try {
         const clavesCCT = Array.isArray((input as { clavesCCT?: string[] }).clavesCCT)
@@ -836,67 +772,6 @@ export const resolvers = {
     ): Promise<AuthPayload> => {
       try {
         const { email, password } = input;
-
-        // Bypass de autenticación para revisión de Frontend (Mock Mode)
-        // Aceptamos admin@sep.gob.mx con cualquier password que empiece por 'admin' para facilitar pruebas
-        if (email === 'admin@sep.gob.mx' && password.startsWith('admin')) {
-          logger.info(`Mock Login successful for ${email}`);
-          return {
-            ok: true,
-            message: 'Autenticación correcta (Modo Desarrollo)',
-            user: {
-              id: '00000000-0000-0000-0000-000000000000',
-              email: email,
-              nombre: 'Administrador',
-              apepaterno: 'Sistema',
-              apematerno: 'SEP',
-              rol: 'COORDINADOR_FEDERAL',
-              activo: true,
-              fechaRegistro: new Date(),
-              centrosTrabajo: []
-            } as any
-          };
-        }
-
-        // Bypass adicional para Rol 4 (Responsable CCT) - Para pruebas de interfaz
-        if (email === 'escuela@sep.gob.mx' && password.startsWith('admin')) {
-          logger.info(`Mock Login (CCT) successful for ${email}`);
-          return {
-            ok: true,
-            message: 'Autenticación correcta (Modo Desarrollo - Escuela)',
-            user: {
-              id: '11111111-1111-1111-1111-111111111111',
-              email: email,
-              nombre: 'Director',
-              apepaterno: 'Escuela',
-              apematerno: 'Mock',
-              rol: 'RESPONSABLE_CCT',
-              activo: true,
-              fechaRegistro: new Date(),
-              centrosTrabajo: [{ claveCCT: '09DPR0001A' }]
-            } as any
-          };
-        }
-
-        // Bypass para el usuario de recuperación pepe.arevalo74@gmail.com
-        if (email === 'pepe.arevalo74@gmail.com' && password === 'Pepe2026!') {
-          logger.info(`Mock Login successful for recovery user: ${email}`);
-          return {
-            ok: true,
-            message: 'Autenticación correcta (Bypass Recuperación)',
-            user: {
-              id: '22222222-2222-2222-2222-222222222222',
-              email: email,
-              nombre: 'Pepe',
-              apepaterno: 'Arévalo',
-              apematerno: 'SEP',
-              rol: 'RESPONSABLE_CCT',
-              activo: true,
-              fechaRegistro: new Date(),
-              centrosTrabajo: [{ claveCCT: '09DPR0005Z' }]
-            } as any
-          };
-        }
 
         const result = await query(
           `SELECT 
@@ -1208,30 +1083,7 @@ export const resolvers = {
      * @use-case CU-01: Autenticación
      */
     recoverPassword: async (_: any, { email }: { email: string }) => {
-      // Bypass para entorno de desarrollo / visualización local
-      const isMockUser = email.trim() === 'pepe.arevalo74@gmail.com' || email.trim() === 'admin@sep.gob.mx';
-
-      if (isMockUser) {
-        const newPassword = email.trim() === 'pepe.arevalo74@gmail.com' ? 'Pepe2026!' : `P${crypto.randomBytes(4).toString('hex')}!`;
-        logger.info(`[MOCK RECOVERY] Reseting password for ${email}. Manual: ${newPassword}`);
-        console.log(
-          `\n========================================\n` +
-          `🔑 [CONTRASEÑA GENERADA]\n` +
-          `Para: ${email}\n` +
-          `Nueva Contraseña: ${newPassword}\n` +
-          `========================================\n`
-        );
-        return true;
-      }
-
-      const client = await getClient().catch(() => null);
-      if (!client) {
-        // Si no hay BD, generamos una clave mock para cualquier correo para no bloquear pruebas
-        const newPassword = `P${crypto.randomBytes(4).toString('hex')}!`;
-        console.log(`\n⚠️  [SIN CONEXIÓN BD] Password generada para ${email}: ${newPassword}\n`);
-        return true;
-      }
-
+      const client = await getClient();
       try {
         await client.query('BEGIN');
 
@@ -1244,7 +1096,7 @@ export const resolvers = {
           // Por seguridad, no decimos que no existe, pero retornamos true simulado
           // O retornamos false si queremos ser explícitos en log pero opacos al usuario
           await client.query('ROLLBACK');
-          return true;
+          return '';
         }
 
         const userId = userRes.rows[0].id;
@@ -1275,13 +1127,13 @@ export const resolvers = {
         );
 
         await client.query('COMMIT');
-        return true;
+        return newPassword;
       } catch (error) {
-        await client.query('ROLLBACK');
+        if (client) await client.query('ROLLBACK');
         logger.error('Error recovering password', { email, error });
         throw new Error('Error procesando la solicitud');
       } finally {
-        client.release();
+        if (client) client.release();
       }
     },
 
@@ -1298,60 +1150,7 @@ export const resolvers = {
     uploadExcelAssessment: async (_: any, { input }: { input: any }) => {
       const { archivoBase64, nombreArchivo, confirmarReemplazo } = input;
 
-      // Bypass para modo sin base de datos o visualización local
-      const dbClient = await getClient().catch(() => null);
-
-      if (!dbClient) {
-        logger.warn('⚠️ [SIN CONEXIÓN BD] Ejecutando simulación de carga masiva');
-
-        // Subir a SFTP incluso en modo mock para persistencia local
-        try {
-          const buffer = Buffer.from(archivoBase64, 'base64');
-          // En modo mock usamos la raíz del SFTP porque storage/uploads podría no existir
-          const remotePath = `UPLOADED_${nombreArchivo}`;
-          const success = await sftpService.uploadBuffer(buffer, remotePath);
-          if (success) {
-            logger.info(`[SFTP MOCK] Archivo persistido con éxito: ${remotePath}`);
-          } else {
-            logger.error(`[SFTP MOCK] Falló la subida a SFTP: ${remotePath}`);
-          }
-        } catch (sftpError) {
-          logger.error('Error al subir a SFTP en modo Mock', { sftpError });
-        }
-
-        // Simulamos que el archivo se procesó correctamente aunque no lo guardemos en BD
-        const solicitudIdMock = `mock-upload-${Date.now()}`;
-
-        // Registrar en el historial mock para persistencia en sesión
-        MOCK_SOLICITUDES.unshift({
-          id: solicitudIdMock,
-          consecutivo: 0,
-          cct: '01DJN0001A', // CCT por defecto para pruebas
-          archivoOriginal: nombreArchivo,
-          fechaCarga: new Date().toISOString(),
-          estadoValidacion: 1, // RECIBIDO
-          nivelEducativo: 1, // Preescolar
-          archivoSize: Buffer.from(archivoBase64, 'base64').length,
-          procesadoExternamente: false,
-          errores: []
-        });
-
-        return {
-          success: true,
-          message: 'Archivo validado y procesado correctamente (Modo Simulación + SFTP Local)',
-          solicitudId: solicitudIdMock,
-          duplicadoDetectado: false,
-          detalles: {
-            cct: '09DPR0005Z',
-            nivel: 'PRIMARIA',
-            grado: 3,
-            alumnosProcesados: 2,
-            errores: []
-          },
-        };
-      }
-
-      const client = dbClient;
+      const client = await getClient();
       try {
         logger.info('Iniciando carga masiva con Worker', { nombreArchivo });
 

@@ -9,6 +9,7 @@ import {
 import { Router, RouterModule } from '@angular/router';
 import Swal from 'sweetalert2';
 import { UsuariosService } from '../../services/usuarios.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-recuperar-password',
@@ -32,7 +33,7 @@ export class RecuperarPasswordComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void { }
 
   async onSubmit(): Promise<void> {
     if (this.recuperarForm.invalid) {
@@ -44,16 +45,31 @@ export class RecuperarPasswordComponent implements OnInit {
     const email = this.recuperarForm.get('email')?.value;
 
     try {
-      await this.usuariosService.recuperarPassword(email).toPromise();
-      // Nota: toPromise es deprecated en RxJS 7, pero común. Mejor usar firstValueFrom si Angular version lo permite.
-      // Usaremos un enfoque compatible en el service luego.
+      const passwordRecuperada = await firstValueFrom(this.usuariosService.recuperarPassword(email));
 
-      await Swal.fire({
-        icon: 'success',
-        title: 'Correo enviado',
-        text: 'Si el correo está registrado, recibirás una nueva contraseña en breve.',
-        confirmButtonText: 'Ir al Login',
-      });
+      if (passwordRecuperada) {
+        console.log(`[DEBUG] Contraseña recuperada para ${email}: ${passwordRecuperada}`);
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Contraseña Generada',
+          html: `
+            <p>Se ha generado una nueva contraseña debido a que aún no hay servidor SMTP:</p>
+            <div style="background: #f1f5f9; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 1.2em; margin: 10px 0;">
+              <strong>${passwordRecuperada}</strong>
+            </div>
+            <p>Por favor, cópiala e inicia sesión.</p>
+          `,
+          confirmButtonText: 'Ir al Login',
+        });
+      } else {
+        await Swal.fire({
+          icon: 'success',
+          title: 'Solicitud procesada',
+          text: 'Si el correo está registrado, recibirás una nueva contraseña en breve.',
+          confirmButtonText: 'Ir al Login',
+        });
+      }
 
       void this.router.navigate(['/login']);
     } catch (error) {

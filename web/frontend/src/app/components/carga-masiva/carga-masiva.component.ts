@@ -15,6 +15,7 @@ import { EstadoCredencialesService } from '../../services/estado-credenciales.se
 import { MockPdfService } from '../../services/mock-pdf.service';
 import { UsuariosService } from '../../services/usuarios.service';
 import { EvaluacionesService } from '../../services/evaluaciones.service';
+import { timeout, catchError, throwError } from 'rxjs';
 
 interface ResultadoExito {
   mensaje: string;
@@ -30,7 +31,7 @@ interface ResultadoArchivo {
     lastModified: Date;
   };
   archivoOriginal: File;
-  estado: 'idle' | 'validando' | 'exito' | 'error';
+  estado: 'idle' | 'validando' | 'exito' | 'error' | 'guardando';
   errores: string[];
   erroresAgrupados: GrupoErrores[];
   advertencias: string[];
@@ -289,6 +290,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       return;
     }
 
+    resultado.estado = 'guardando';
     resultado.guardando = true;
     resultado.errorGuardado = null;
     resultado.rutaGuardado = null;
@@ -296,25 +298,33 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     resultado.notaGuardado = null;
 
     try {
-      // --- INTEGRACIÓN CON BACKEND ---
-      resultado.mensajeInformativo = 'Subiendo información a la base de datos...';
+      resultado.mensajeInformativo = 'Sincronizando con base de datos y SFTP institucional...';
       const base64 = await this.fileToBase64(resultado.archivoOriginal);
+
+      // Usamos timeout de 45 segundos para dar tiempo al procesamiento de worker threads y SFTP
       const respuestaApi = await firstValueFrom(
         this.evaluacionesService.subirExcel({
           archivoBase64: base64,
           nombreArchivo: resultado.archivo.name,
           cicloEscolar: '2025-2026',
-        }),
+        }).pipe(
+          timeout(45000),
+          catchError(err => {
+            if (err.name === 'TimeoutError') {
+              return throwError(() => new Error('La carga está tomando más tiempo de lo esperado (Timeout). Los archivos grandes pueden tardar, intenta de nuevo o revisa tu conexión.'));
+            }
+            return throwError(() => err);
+          })
+        ),
       );
 
       if (!respuestaApi.success) {
         throw new Error(respuestaApi.message);
       }
-      // -------------------------------
 
       resultado.guardado = true;
-      resultado.mensajeInformativo =
-        'El archivo se recibió correctamente en el servidor.';
+      resultado.estado = 'exito';
+      resultado.mensajeInformativo = 'El archivo se recibió correctamente en el servidor.';
 
       await Swal.fire({
         icon: 'success',
@@ -322,18 +332,12 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         text: 'La información se ha sincronizado correctamente con el servidor.',
       });
 
-      const credencialesListas = await this.registrarUsuarioYCredenciales(
-        resultado,
-      );
+      const credencialesListas = await this.registrarUsuarioYCredenciales(resultado);
       if (!credencialesListas) {
         return;
       }
 
-      if (
-        resultado.escDatos &&
-        resultado.resultadoExito &&
-        resultado.pdfTipo !== 'exito'
-      ) {
+      if (resultado.escDatos && resultado.resultadoExito && resultado.pdfTipo !== 'exito') {
         await this.generarPdfExito(
           resultado,
           resultado.escDatos,
@@ -342,10 +346,10 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         );
       }
     } catch (error: any) {
-      resultado.errorGuardado =
-        error instanceof Error
-          ? error.message
-          : 'No se pudo cargar el archivo al servidor. Inténtalo de nuevo.';
+      resultado.estado = 'error';
+      resultado.errorGuardado = error instanceof Error
+        ? error.message
+        : 'No se pudo cargar el archivo al servidor. Inténtalo de nuevo.';
       await Swal.fire({
         icon: 'error',
         title: 'Error de carga',

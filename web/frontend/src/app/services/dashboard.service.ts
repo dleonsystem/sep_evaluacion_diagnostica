@@ -5,11 +5,13 @@ import { GET_DASHBOARD_METRICS } from '../operations/query';
 
 export interface DashboardMetrics {
     totalUsuarios: number;
+    usuariosActivos: number;
     totalTickets: number;
     ticketsAbiertos: number;
     ticketsResueltos: number;
     totalSolicitudes: number;
     solicitudesValidadas: number;
+    totalCCTs: number;
 }
 
 @Injectable({ providedIn: 'root' })

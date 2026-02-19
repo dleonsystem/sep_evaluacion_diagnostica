@@ -12,6 +12,7 @@ import { AuthGuard } from './guards/auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 import { LoginGuard } from './guards/login.guard';
 import { RecuperarPasswordComponent } from './components/recuperar-password/recuperar-password.component';
+import { DashboardComponent } from './components/dashboard/dashboard.component';
 
 export const routes: Routes = [
   {
@@ -66,6 +67,12 @@ export const routes: Routes = [
   {
     path: 'admin/panel',
     component: AdminPanelComponent,
+    canActivate: [AdminGuard],
+    pathMatch: 'full',
+  },
+  {
+    path: 'admin/dashboard',
+    component: DashboardComponent,
     canActivate: [AdminGuard],
     pathMatch: 'full',
   },

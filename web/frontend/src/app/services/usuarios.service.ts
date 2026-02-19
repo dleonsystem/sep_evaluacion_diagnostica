@@ -12,10 +12,10 @@ export interface CreateUserInput {
   apepaterno?: string | null;
   apematerno?: string | null;
   rol:
-    | 'COORDINADOR_FEDERAL'
-    | 'COORDINADOR_ESTATAL'
-    | 'RESPONSABLE_CCT'
-    | 'CONSULTA';
+  | 'COORDINADOR_FEDERAL'
+  | 'COORDINADOR_ESTATAL'
+  | 'RESPONSABLE_CCT'
+  | 'CONSULTA';
   clavesCCT: string[];
   password: string;
 }
@@ -52,7 +52,7 @@ interface AuthenticateUserResponse {
 
 @Injectable({ providedIn: 'root' })
 export class UsuariosService {
-  constructor(private readonly graphqlService: GraphqlService) {}
+  constructor(private readonly graphqlService: GraphqlService) { }
 
   crearUsuario(input: CreateUserInput): Observable<UsuarioCreado> {
     return this.graphqlService
@@ -96,18 +96,18 @@ export class UsuariosService {
       );
   }
 
-  recuperarPassword(email: string): Observable<boolean> {
+  recuperarPassword(email: String): Observable<string> {
     const mutation = `
       mutation RecoverPassword($email: String!) {
         recoverPassword(email: $email)
       }
     `;
     return this.graphqlService
-      .execute<{ recoverPassword: boolean }>(mutation, { email })
+      .execute<{ recoverPassword: string }>(mutation, { email })
       .pipe(
         map((res) => {
           if (res.errors) throw new Error(res.errors[0].message);
-          return res.data?.recoverPassword || false;
+          return res.data?.recoverPassword || '';
         }),
       );
   }

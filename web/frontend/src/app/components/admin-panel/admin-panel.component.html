@@ -2,34 +2,6 @@
   <div class="admin-panel__card">
     <h2>Panel de administrador</h2>
 
-    <section class="admin-panel__metrics" *ngIf="metrics">
-      <div class="metrics-grid">
-        <div class="metric-card">
-          <span class="metric-card__label">Usuarios Totales</span>
-          <span class="metric-card__value">{{ metrics.totalUsuarios }}</span>
-        </div>
-        <div class="metric-card">
-          <span class="metric-card__label">Solicitudes EIA (Total)</span>
-          <span class="metric-card__value">{{ metrics.totalSolicitudes }}</span>
-        </div>
-        <div class="metric-card">
-          <span class="metric-card__label">Solicitudes Validadas</span>
-          <span class="metric-card__value">{{ metrics.solicitudesValidadas }}</span>
-        </div>
-        <div class="metric-card">
-          <span class="metric-card__label">Tickets Totales</span>
-          <span class="metric-card__value">{{ metrics.totalTickets }}</span>
-        </div>
-        <div class="metric-card metric-card--warning">
-          <span class="metric-card__label">Tickets Abiertos</span>
-          <span class="metric-card__value">{{ metrics.ticketsAbiertos }}</span>
-        </div>
-        <div class="metric-card metric-card--success">
-          <span class="metric-card__label">Tickets Resueltos</span>
-          <span class="metric-card__value">{{ metrics.ticketsResueltos }}</span>
-        </div>
-      </div>
-    </section>
     <!--  <p>Token activo para la carga de PDFs.</p> -->
 
     <!-- <div class="admin-panel__token" *ngIf="obtenerToken(); else sinSesion">

@@ -11,11 +11,13 @@ export const GET_DASHBOARD_METRICS = `
   query GetDashboardMetrics {
     getDashboardMetrics {
       totalUsuarios
+      usuariosActivos
       totalTickets
       ticketsAbiertos
       ticketsResueltos
       totalSolicitudes
       solicitudesValidadas
+      totalCCTs
     }
   }
 `;
