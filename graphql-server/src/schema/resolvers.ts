@@ -1452,17 +1452,18 @@ export const resolvers = {
       try {
         const result = await query(
           `SELECT 
-            ct.id,
-            ct.clave_cct as "claveCCT",
-            ct.nombre,
-            ct.entidad,
-            ct.municipio,
-            ct.localidad,
-            ct.nivel,
-            ct.turno
-          FROM centros_trabajo ct
-          INNER JOIN usuarios_centros_trabajo uct ON ct.id = uct.centro_trabajo_id
-          WHERE uct.usuario_id = $1`,
+            e.id,
+            e.cct as "claveCCT",
+            e.nombre,
+            e.estado as entidad,
+            e.municipio,
+            e.localidad,
+            ne.codigo as nivel,
+            t.nombre as turno
+          FROM escuelas e
+          LEFT JOIN cat_nivel_educativo ne ON e.id_nivel = ne.id
+          LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
+          WHERE e.id = (SELECT escuela_id FROM usuarios WHERE id = $1)`,
           [parent.id]
         );
 

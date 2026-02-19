@@ -8,6 +8,8 @@ import { AuthService } from '../../services/auth.service';
 import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
 import { UsuariosService } from '../../services/usuarios.service';
 
+import { AdminAuthService } from '../../services/admin-auth.service';
+
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -28,6 +30,7 @@ export class LoginComponent implements OnInit {
 
   constructor(
     private readonly authService: AuthService,
+    private readonly adminAuthService: AdminAuthService,
     private readonly estadoCredencialesService: EstadoCredencialesService,
     private readonly usuariosService: UsuariosService,
     private readonly router: Router,
@@ -55,6 +58,9 @@ export class LoginComponent implements OnInit {
   async iniciarSesion(): Promise<void> {
     this.error = null;
     this.autenticando = true;
+
+    // Asegurar limpieza de sesión administrativa previa
+    this.adminAuthService.cerrarSesion();
 
     try {
       const usuario = await firstValueFrom(
