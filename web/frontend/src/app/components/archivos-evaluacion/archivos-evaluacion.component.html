@@ -52,7 +52,26 @@
           </tr>
           <tr *ngIf="idRegistroExpandido === registro.id" class="archivos__resultados-row">
             <td colspan="7">
-              <div class="archivos__resultados">
+              <div class="archivos__seccion" *ngIf="registro.resultados && registro.resultados.length">
+                <h4>Resultados Disponibles:</h4>
+                <div class="archivos__grid-resultados">
+                  <div *ngFor="let res of registro.resultados" class="archivos__resultado-item">
+                    <div class="archivos__resultado-info">
+                      <i class="fas fa-file-download archivos__resultado-icon"></i>
+                      <div class="archivos__resultado-text">
+                        <span class="archivos__resultado-nombre">{{ res.nombre }}</span>
+                        <span class="archivos__resultado-size">{{ formatearTamano(res.size) }}</span>
+                      </div>
+                    </div>
+                    <button (click)="descargarArchivo(registro.id, res.nombre); $event.stopPropagation()"
+                      class="archivos__btn-descargar">
+                      Descargar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="archivos__seccion">
                 <h4>Detalles del procesamiento:</h4>
                 <ul *ngIf="registro.errores && registro.errores.length; else sinErrores">
                   <li *ngFor="let error of registro.errores" class="archivos__mensaje--error">
@@ -64,9 +83,10 @@
                     No se encontraron errores en este archivo. El procesamiento fue exitoso.
                   </p>
                 </ng-template>
-                <div class="archivos__resultados-meta">
-                  Ruta en servidor: <code>{{ registro.archivoPath || 'N/D' }}</code>
-                </div>
+              </div>
+
+              <div class="archivos__resultados-meta">
+                Ruta en servidor: <code>{{ registro.archivoPath || 'N/D' }}</code>
               </div>
             </td>
           </tr>

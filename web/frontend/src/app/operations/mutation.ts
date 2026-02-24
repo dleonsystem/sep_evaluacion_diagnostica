@@ -47,3 +47,16 @@ export const UPLOAD_EXCEL_MUTATION = `
     }
   }
 `;
+export const UPLOAD_RESULTS_MUTATION = `
+  mutation UploadResults($input: UploadResultsInput!) {
+    uploadAssessmentResults(input: $input) {
+      success
+      message
+      resultados {
+        nombre
+        url
+        size
+      }
+    }
+  }
+`;

@@ -28,6 +28,7 @@ export class AdminPanelComponent implements OnInit {
     '.jpeg',
     '.doc',
     '.docx',
+    '.zip',
   ];
   selectedFiles: File[] = [];
   selectedNivel = '';
@@ -69,7 +70,6 @@ export class AdminPanelComponent implements OnInit {
 
   ngOnInit(): void {
     this.uploadHistory = this.loadUploadHistory();
-    this.cargarExcelDisponibles();
     this.cargarExcelDisponibles();
     this.cargarTicketsSoporte();
     this.cargarUsuarios();
@@ -167,39 +167,48 @@ export class AdminPanelComponent implements OnInit {
     }
 
     try {
-      const nuevosArchivos = await this.convertirArchivosBase64(
+      const nuevosArchivosBase64 = await this.convertirArchivosBase64(
         this.selectedFiles,
       );
-      const metadata = {
-        excelKey,
-        archivos: [...existingFiles, ...nuevosArchivos],
-        fecha: new Date().toISOString(),
-      };
 
-      localStorage.setItem(
-        this.obtenerArchivosStorageKey(excelKey),
-        JSON.stringify(metadata),
+      const resultado = await firstValueFrom(
+        this.evaluacionesService.subirResultados(excelKey, nuevosArchivosBase64.map(a => ({
+          nombre: a.name,
+          base64: a.base64
+        })))
       );
 
-      const historyEntries = nuevosArchivos.map((archivo) => ({
-        name: archivo.name,
-        size: archivo.size,
-        uploadedAt: metadata.fecha,
-      }));
+      if (resultado.success) {
+        const historyEntries = nuevosArchivosBase64.map((archivo) => ({
+          name: archivo.name,
+          size: archivo.size,
+          uploadedAt: new Date().toISOString(),
+        }));
 
-      this.uploadHistory = [...historyEntries, ...this.uploadHistory].slice(
-        0,
-        5,
-      );
-      this.saveUploadHistory();
-      this.actualizarEstadoExcel(excelKey);
+        this.uploadHistory = [...historyEntries, ...this.uploadHistory].slice(0, 5);
+        this.saveUploadHistory();
+        this.actualizarEstadoExcel(excelKey);
 
-      this.uploadStatus = 'success';
-      this.feedbackMessage = 'Archivos cargados correctamente.';
-    } catch (error) {
+        this.uploadStatus = 'success';
+        this.feedbackMessage = 'Archivos cargados correctamente al servidor.';
+        this.selectedFiles = []; // Limpiar selección
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Carga exitosa',
+          text: 'Los archivos se han subido y asociado correctamente.',
+        });
+      } else {
+        throw new Error(resultado.message);
+      }
+    } catch (error: any) {
       this.uploadStatus = 'error';
-      this.feedbackMessage =
-        'No se pudieron leer los archivos. Intenta nuevamente.';
+      this.feedbackMessage = error.message || 'No se pudieron subir los archivos. Intenta nuevamente.';
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error de carga',
+        text: this.feedbackMessage,
+      });
     }
   }
 
@@ -467,7 +476,11 @@ export class AdminPanelComponent implements OnInit {
       descripcion: t.descripcion,
       fecha: t.fechaCreacion,
       estatus: this.mapEstatusDBToUI(t.estado),
-      respuestas: [], // TODO: Traer comentarios del backend
+      respuestas: (t.respuestas || []).map(r => ({
+        mensaje: r.mensaje,
+        fecha: r.fecha,
+        autor: 'admin' // Backend returns email, we map to 'admin' for UI logic if needed
+      })),
       evidencias: (t.evidencias || []).map((e) => ({
         nombre: e.nombre,
         tamano: e.size || 0,
@@ -480,7 +493,7 @@ export class AdminPanelComponent implements OnInit {
     switch (estado) {
       case 'ABIERTO':
         return 'pendiente';
-      case 'EN PROCESO':
+      case 'EN_PROCESO':
         return 'en-proceso';
       case 'RESUELTO':
       case 'CERRADO':
@@ -535,6 +548,7 @@ export class AdminPanelComponent implements OnInit {
           estatus: estatus as 'asignado' | 'pendiente',
           fecha,
           nivel,
+          resultados: registro.resultados || [],
         };
       });
 
@@ -620,44 +634,19 @@ export class AdminPanelComponent implements OnInit {
   private obtenerArchivosParaExcel(
     excelKey: string,
   ): Array<{ name: string; size: number; type: string; base64: string }> {
-    const stored = localStorage.getItem(
-      this.obtenerArchivosStorageKey(excelKey),
-    );
-    if (!stored) {
+    // Ahora usamos el estado sincronizado del backend en lugar de localStorage
+    const excel = this.excelDisponibles.find(e => e.key === excelKey);
+    if (!excel || !excel.resultados) {
       return [];
     }
 
-    try {
-      const parsed = JSON.parse(stored) as {
-        archivos?: Array<{
-          name: string;
-          size: number;
-          type: string;
-          base64: string;
-        }>;
-        pdfName?: string;
-        pdfBase64?: string;
-      };
-
-      if (Array.isArray(parsed.archivos)) {
-        return parsed.archivos;
-      }
-
-      if (parsed.pdfBase64 && parsed.pdfName) {
-        return [
-          {
-            name: parsed.pdfName,
-            size: 0,
-            type: 'application/pdf',
-            base64: parsed.pdfBase64,
-          },
-        ];
-      }
-
-      return [];
-    } catch (error) {
-      return [];
-    }
+    // Mapeamos al formato que espera el componente (aunque ya no necesitamos el base64 para los archivos previos)
+    return excel.resultados.map(r => ({
+      name: r.nombre,
+      size: r.size,
+      type: r.nombre.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg', // Estimación rápida
+      base64: '' // No tenemos el base64 de archivos ya subidos
+    }));
   }
 
 
@@ -733,7 +722,7 @@ export class AdminPanelComponent implements OnInit {
     const nombres = archivosInvalidos.map((archivo) => archivo.name).join(', ');
     return {
       esValida: false,
-      mensaje: `Tipo de archivo no permitido: ${nombres}. Solo PDF, XLSX, JPG o Word.`,
+      mensaje: `Tipo de archivo no permitido: ${nombres}. Solo PDF, XLSX, JPG, Word o ZIP.`,
     };
   }
 }
@@ -747,6 +736,7 @@ interface ExcelDisponible {
   estatus: 'asignado' | 'pendiente';
   fecha: string;
   nivel: string;
+  resultados?: Array<{ nombre: string; url: string; size: number }>;
 }
 
 interface TicketSoporte {

@@ -29,8 +29,11 @@ const poolConfig: PoolConfig = {
   password: String(process.env.DB_PASSWORD || ''),
   min: parseInt(process.env.DB_POOL_MIN || '2', 10),
   max: parseInt(process.env.DB_POOL_MAX || '10', 10),
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  idleTimeoutMillis: 60000,
+  connectionTimeoutMillis: 5000,
+  ssl: {
+    rejectUnauthorized: false
+  }
 };
 /**
  * Validación de configuración de base de datos

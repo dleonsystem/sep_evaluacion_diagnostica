@@ -113,10 +113,10 @@
       <p class="admin-panel__helper" *ngIf="!excelSeleccionado">
         Selecciona un registro de Excel para habilitar la carga de archivos.
       </p>
-      <input id="pdf-upload" class="admin-panel__upload-input" type="file" accept=".pdf,.xlsx,.jpg,.jpeg,.doc,.docx"
-        multiple (change)="seleccionarArchivo($event)" />
+      <input id="pdf-upload" class="admin-panel__upload-input" type="file"
+        accept=".pdf,.xlsx,.jpg,.jpeg,.doc,.docx,.zip" multiple (change)="seleccionarArchivo($event)" />
       <p class="admin-panel__helper">
-        Formatos permitidos: PDF, XLSX, JPG, Word. Máximo
+        Formatos permitidos: PDF, XLSX, JPG, Word, ZIP. Máximo
         {{ maxArchivos }} archivos.
       </p>
       <button class="admin-panel__upload-button" type="button" (click)="subirArchivos()"

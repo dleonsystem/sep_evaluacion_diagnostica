@@ -14,6 +14,7 @@ export interface Ticket {
   fechaCreacion: string;
   fechaActualizacion: string;
   evidencias?: Array<{ nombre: string; url: string; size?: number }>;
+  respuestas?: Array<{ id: string; mensaje: string; fecha: string; autor: string; esInterno: boolean }>;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -38,6 +39,13 @@ export class TicketsService {
             url
             size
           }
+          respuestas {
+            id
+            mensaje
+            fecha
+            autor
+            esInterno
+          }
         }
       }
     `;
@@ -45,6 +53,41 @@ export class TicketsService {
       map(res => {
         if (res.errors) throw new Error(res.errors[0].message);
         return res.data?.getAllTickets || [];
+      })
+    );
+  }
+
+  getMyTickets(correo?: string): Observable<Ticket[]> {
+    const query = `
+      query GetMyTickets($correo: String) {
+        getMyTickets(correo: $correo) {
+          id
+          numeroTicket
+          asunto
+          descripcion
+          estado
+          prioridad
+          fechaCreacion
+          fechaActualizacion
+          evidencias {
+            nombre
+            url
+            size
+          }
+          respuestas {
+            id
+            mensaje
+            fecha
+            autor
+            esInterno
+          }
+        }
+      }
+    `;
+    return this.graphqlService.execute<{ getMyTickets: Ticket[] }>(query, { correo }).pipe(
+      map(res => {
+        if (res.errors) throw new Error(res.errors[0].message);
+        return res.data?.getMyTickets || [];
       })
     );
   }
@@ -58,6 +101,13 @@ export class TicketsService {
           asunto
           estado
           fechaActualizacion
+          respuestas {
+            id
+            mensaje
+            fecha
+            autor
+            esInterno
+          }
         }
       }
     `;

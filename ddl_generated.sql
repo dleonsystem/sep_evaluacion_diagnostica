@@ -574,6 +574,8 @@ CREATE TABLE solicitudes_eia2 (
 	numero_estudiantes       INT,
 	nivel_educativo          SMALLINT REFERENCES cat_nivel_educativo(id),
 	hash_archivo             VARCHAR(64),
+	usuario_id               UUID REFERENCES usuarios(id),
+	resultados               JSONB DEFAULT '[]'::JSONB,
 	created_at               TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at               TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	UNIQUE (consecutivo)

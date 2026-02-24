@@ -44,11 +44,11 @@
       <div class="tickets__evidencias">
         <label class="tickets__evidencias-boton">
           Agregar evidencia
-          <input type="file" accept=".pdf,.xlsx,.xls,.doc,.docx,.jpg,.jpeg,.png"
-            (change)="onArchivoSeleccionado($event)" [disabled]="!puedeAgregarEvidencias" />
+          <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" (change)="onArchivoSeleccionado($event)"
+            [disabled]="!puedeAgregarEvidencias" />
         </label>
         <p class="tickets__evidencias-ayuda">
-          Sube archivos uno por uno (PDF, Excel, Word o imágenes).
+          Sube archivos uno por uno (PDF, Word o imágenes).
         </p>
       </div>
 

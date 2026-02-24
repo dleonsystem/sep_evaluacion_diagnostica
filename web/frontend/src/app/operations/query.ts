@@ -44,6 +44,21 @@ export const GET_SOLICITUDES = `
       archivoPath
       archivoSize
       procesadoExternamente
+      resultados {
+        nombre
+        url
+        size
+      }
+    }
+  }
+`;
+
+export const DOWNLOAD_ASSESSMENT_RESULT = `
+  query DownloadAssessmentResult($solicitudId: ID!, $fileName: String!) {
+    downloadAssessmentResult(solicitudId: $solicitudId, fileName: $fileName) {
+      success
+      fileName
+      contentBase64
     }
   }
 `;

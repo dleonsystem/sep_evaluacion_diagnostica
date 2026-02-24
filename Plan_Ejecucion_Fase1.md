@@ -20,6 +20,7 @@ El sistema se encuentra en una etapa avanzada de desarrollo de la Fase 1. La arq
 | **Tickets** | Crear Ticket, Adjuntar Evidencia, Responder (Admin), Listar | **Completo** | 🟢 Verde | Flujo completo implementado. Manejo de evidencias como rutas de archivo. |
 | **Dashboard** | Visualización métricas, Gráficas de avance, KPIs | **Completo** | 🟢 Verde | Implementado query `getDashboardMetrics` con conteos reales y visualización en AdminPanel. |
 | **Validación** | Reglas de negocio (CURP, Grados), Rechazo de duplicados | **Completo** | 🟢 Verde | Implementado hash SHA256 para detectar duplicados y validación de CCT/Nivel. |
+| **Privacidad** | Filtrado de cargas por usuario (solo dueño ve sus archivos) | **Completo** | 🟢 Verde | Se añadió `usuario_id` a `solicitudes_eia2` y se implementó filtro en GraphQL por rol. |
 | **Integración Legacy** | Exposición de API para consulta e inserción desde Legacy | **Completo** | 🟢 Verde | Endpoints REST expuestos y documentados con Swagger (`/api-docs`). |
 | **Infraestructura SFTP** | Servidor de archivos seguro y cliente en Node.js | **Completo** | 🟢 Verde | Servidor Docker configurado y servicio Backend (`SftpService`) probado exitosamente. |
 | **Descargas** | Generación de reportes, descarga de comprobantes | **Completo** | 🟢 Verde | Query `generateComprobante` implementada y retornando archivo Base64. |
@@ -51,7 +52,7 @@ El sistema se encuentra en una etapa avanzada de desarrollo de la Fase 1. La arq
 | **US-2.1** | Crear Query GraphQL `getDashboardMetrics` con métricas extendidas. | Backend | 8 Pts | ✅ **Completo** - Retorna: Usuarios (Activos/Totales), CCTs, Excel subidos/validados y Tickets. |
 | **US-2.2** | Implementar Widgets de Métricas Premium en `AdminPanelComponent`. | Frontend | 5 Pts | ✅ **Completo** - Diseño premium con iconos, gradientes y subtextos de KPI. |
 | **US-2.3** | Exportar listado de Tickets a CSV/Excel. | Front/Back | 5 Pts | ✅ **Completo** - Resolver `exportTicketsCSV` funcional. |
-| **US-2.4** | Vista de detalle de Solicitud de Carga. | Frontend | 5 Pts | ✅ **Completo** - Filas expandibles con lista de errores detallada. |
+| **US-2.4** | Vista de detalle de Solicitud de Carga y filtrado por usuario. | Fullstack | 5 Pts | ✅ **Completo** - Filas expandibles con lista de errores. Implementado filtrado por `usuario_id` para seguridad (US-2.5). |
 | **US-2.5** | Exponer Endpoints de API para consumo Legacy. | Backend | 8 Pts | ✅ **Completo** - Endpoints REST en `index.ts` (/stats/:cct). |
 | **US-2.6** | Implementar Servicio Cliente SFTP en Node.js. | Backend | 8 Pts | ✅ **Completo** - Servicio probado con contenedor local. |
 

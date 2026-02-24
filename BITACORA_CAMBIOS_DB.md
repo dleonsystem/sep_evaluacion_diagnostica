@@ -17,6 +17,9 @@ Este documento detalla todas las modificaciones realizadas a la base de datos `E
 | 2024-02-04 | `solicitudes_eia2` | Inclusión de metadatos | Se incluyeron `archivo_path` y `archivo_size` en la inserción para cumplir con los requerimientos de auditoría y almacenamiento. |
 | 2026-02-13 | `grupos` | Ajuste de unicidad | Se cambió la restricción `UNIQUE (escuela_id, nombre)` por `UNIQUE (escuela_id, grado_id, nombre)` para permitir grupos con el mismo nombre en diferentes grados (RF-02.7). |
 | 2026-02-13 | `solicitudes_eia2`, `evaluaciones` | Soporte de versiones y duplicados | Se agregó `hash_archivo` y `solicitud_id` para permitir carga de múltiples archivos y control de duplicados (RF-XX). |
+| 2026-02-23 | `solicitudes_eia2` | Adición de `usuario_id` (FK) | Se añadió el campo `usuario_id` para rastrear qué usuario realizó la carga y aplicar filtros de privacidad por rol (solo el autor puede ver sus cargas, excepto administradores). |
+| 2026-02-23 | `solicitudes_eia2` | Adición de `resultados` (JSONB) | Se añadió el campo `resultados` para almacenar el histórico de archivos de resultados (PDFs, imágenes) subidos al SFTP por el administrador. |
+| 2026-02-23 | `solicitudes_eia2` | Limpieza de registros huérfanos| Se vincularon retroactivamente todos los registros que tenían `usuario_id` NULL con los usuarios responsables de sus respectivos CCTs para mantener la integridad de la privacidad. |
 
 ### Notas Adicionales:
 - **Catálogos Duplicados:** Se detectó la coexistencia de `cat_nivel_educativo` (singular) y `cat_niveles_educativos` (plural). Se pobló el plural para cumplir con las referencias de la tabla `escuelas`.

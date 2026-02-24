@@ -373,9 +373,15 @@ export const resolvers = {
      */
     getSolicitudes: async (
       _: unknown,
-      { cct, limit = 10, offset = 0 }: { cct?: string; limit?: number; offset?: number }
+      { cct, limit = 10, offset = 0 }: { cct?: string; limit?: number; offset?: number },
+      context: GraphQLContext
     ) => {
+      if (!context.user) throw new Error('No autorizado');
+
       try {
+        const isAdmin = ['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol);
+
+        // US-2.5: Solo administradores ven todas las solicitudes, usuarios normales solo las suyas
         let sql = `SELECT 
             id,
             consecutivo,
@@ -387,20 +393,29 @@ export const resolvers = {
             archivo_path as "archivoPath",
             archivo_size as "archivoSize",
             procesado_externamente as "procesadoExternamente",
-            detalles_error as "errores"
+            detalles_error as "errores",
+            resultados
           FROM solicitudes_eia2`;
 
         const params: any[] = [];
+        const conditions: string[] = [];
 
         if (cct) {
-          sql += ` WHERE cct = $1`;
+          conditions.push(`cct = $${params.length + 1}`);
           params.push(cct);
-          sql += ` ORDER BY fecha_carga DESC LIMIT $2 OFFSET $3`;
-          params.push(limit, offset);
-        } else {
-          sql += ` ORDER BY fecha_carga DESC LIMIT $1 OFFSET $2`;
-          params.push(limit, offset);
         }
+
+        if (!isAdmin) {
+          conditions.push(`usuario_id = $${params.length + 1}`);
+          params.push(context.user.id);
+        }
+
+        if (conditions.length > 0) {
+          sql += ` WHERE ` + conditions.join(' AND ');
+        }
+
+        sql += ` ORDER BY fecha_carga DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        params.push(limit, offset);
 
         const result = await query(sql, params);
         return result.rows.map((row: any) => ({
@@ -446,7 +461,11 @@ export const resolvers = {
           WHERE t.deleted_at IS NULL
           ORDER BY t.created_at DESC
         `);
-        return result.rows;
+        return result.rows.map(row => ({
+          ...row,
+          fechaCreacion: row.fechaCreacion instanceof Date ? row.fechaCreacion.toISOString() : row.fechaCreacion,
+          fechaActualizacion: row.fechaActualizacion instanceof Date ? row.fechaActualizacion.toISOString() : row.fechaActualizacion
+        }));
       } catch (error) {
         logger.error('Error fetching all tickets', { error });
         throw new Error('Error al obtener los tickets');
@@ -593,7 +612,11 @@ export const resolvers = {
           [userId]
         );
 
-        return result.rows;
+        return result.rows.map(row => ({
+          ...row,
+          fechaCreacion: row.fechaCreacion instanceof Date ? row.fechaCreacion.toISOString() : row.fechaCreacion,
+          fechaActualizacion: row.fechaActualizacion instanceof Date ? row.fechaActualizacion.toISOString() : row.fechaActualizacion
+        }));
       } catch (error) {
         logger.error('Error fetching tickets', { error });
         throw new Error('Error al obtener los tickets');
@@ -670,6 +693,53 @@ export const resolvers = {
       } catch (error) {
         logger.error('Error generating comprobante', error);
         throw new Error('Error al generar comprobante');
+      }
+    },
+
+    /**
+     * Descargar un archivo de resultado desde SFTP
+     */
+    downloadAssessmentResult: async (_: any, { solicitudId, fileName }: { solicitudId: string, fileName: string }, context: GraphQLContext) => {
+      if (!context.user) throw new Error('No autorizado');
+
+      try {
+        const isAdmin = ['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol);
+
+        // 1. Verificar existencia y permisos
+        let queryStr = 'SELECT resultados, usuario_id FROM solicitudes_eia2 WHERE id = $1';
+        const params = [solicitudId];
+
+        const res = await query(queryStr, params);
+        if (res.rows.length === 0) throw new Error('Solicitud no encontrada');
+
+        const sol = res.rows[0];
+        if (!isAdmin && sol.usuario_id !== context.user.id) {
+          throw new Error('No tienes permiso para descargar estos resultados');
+        }
+
+        // 2. Buscar el archivo específico en el JSONB de resultados
+        const resultados = sol.resultados || [];
+        const archivoMetadata = resultados.find((r: any) => r.nombre === fileName);
+        if (!archivoMetadata) throw new Error('Archivo no encontrado en esta solicitud');
+
+        // 3. Descargar de SFTP
+        const buffer = await sftpService.downloadBuffer(archivoMetadata.url);
+        if (!buffer) throw new Error('No se pudo recuperar el archivo del servidor de almacenamiento');
+
+        return {
+          success: true,
+          fileName: fileName,
+          contentBase64: buffer.toString('base64')
+        };
+
+      } catch (error: any) {
+        logger.error('Error en downloadAssessmentResult', { solicitudId, fileName, error: error.message });
+        return {
+          success: false,
+          fileName: fileName,
+          contentBase64: '',
+          message: error.message
+        };
       }
     }
   },
@@ -964,6 +1034,12 @@ export const resolvers = {
         const evidenciasProcesadas = [];
         if (evidencias && evidencias.length > 0) {
           for (const evidencia of evidencias) {
+            // US-2.7: Restricción de archivos Excel en evidencias de tickets
+            const ext = evidencia.nombre.toLowerCase();
+            if (ext.endsWith('.xlsx') || ext.endsWith('.xls')) {
+              throw new Error(`El archivo ${evidencia.nombre} no está permitido como evidencia (Excel restringido).`);
+            }
+
             // En un entorno real, guardaríamos el base64 en disco/S3.
             // Aquí simularemos generando una ruta.
             const fileName = `ticket_${numeroTicket}_${Date.now()}_${evidencia.nombre}`;
@@ -1150,6 +1226,19 @@ export const resolvers = {
         const buffer = Buffer.from(archivoBase64, 'base64');
         const fileHash = crypto.createHash('sha256').update(buffer).digest('hex');
 
+        // Identificar usuario para la solicitud (PSP: Data Integrity)
+        let userToLink = context.user?.id;
+        if (!userToLink && email) {
+          try {
+            const userRes = await client.query('SELECT id FROM usuarios WHERE email = $1', [email.trim().toLowerCase()]);
+            if (userRes.rows.length > 0) {
+              userToLink = userRes.rows[0].id;
+            }
+          } catch (err) {
+            logger.error('Error buscando usuario para vinculación por email', err);
+          }
+        }
+
         // Verificar si existe una solicitud con el mismo hash
         const existingReq = await client.query(
           'SELECT id FROM solicitudes_eia2 WHERE hash_archivo = $1 LIMIT 1',
@@ -1169,15 +1258,16 @@ export const resolvers = {
             };
           } else {
             solicitudId = existingReq.rows[0].id;
-            await client.query('UPDATE solicitudes_eia2 SET updated_at = NOW() WHERE id = $1', [
+            await client.query('UPDATE solicitudes_eia2 SET updated_at = NOW(), usuario_id = $1 WHERE id = $2', [
+              userToLink || null,
               solicitudId,
             ]);
           }
         } else {
           const solicitudRes = await client.query(
             `INSERT INTO solicitudes_eia2 
-              (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, archivo_path, archivo_size, hash_archivo)
-            VALUES ($1, $2, NOW(), $3, $4, $5, $6, $7)
+              (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, archivo_path, archivo_size, hash_archivo, usuario_id)
+            VALUES ($1, $2, NOW(), $3, $4, $5, $6, $7, $8)
             RETURNING id`,
             [
               cct,
@@ -1187,6 +1277,7 @@ export const resolvers = {
               `storage/uploads/${nombreArchivo}`,
               buffer.length,
               fileHash,
+              userToLink || null
             ]
           );
           solicitudId = solicitudRes.rows[0].id;
@@ -1206,21 +1297,6 @@ export const resolvers = {
           escuelaId = defaultRes.rows[0].id;
         } else {
           escuelaId = escuelaRes.rows[0].id;
-        }
-
-        // Vinculación automática del usuario con la escuela si no está vinculado
-        let userToLink = context.user?.id;
-
-        // Si no hay sesión, intentar vincular por el email proporcionado en el input
-        if (!userToLink && email) {
-          try {
-            const userRes = await client.query('SELECT id FROM usuarios WHERE email = $1', [email.trim().toLowerCase()]);
-            if (userRes.rows.length > 0) {
-              userToLink = userRes.rows[0].id;
-            }
-          } catch (err) {
-            logger.error('Error buscando usuario para vinculación por email', err);
-          }
         }
 
         if (userToLink) {
@@ -1352,6 +1428,99 @@ export const resolvers = {
             alumnosProcesados: 0,
             errores: [error.message],
           },
+        };
+      } finally {
+        client.release();
+      }
+    },
+
+    /**
+     * Cargar archivos de resultados asociados a una evaluación (Admin)
+     * @use-case CU-17: Entrega de Resultados
+     */
+    uploadAssessmentResults: async (_: any, { input }: { input: any }, context: GraphQLContext) => {
+      const { solicitudId, archivos } = input;
+      const client = await getClient();
+
+      // Validar permisos de administrador
+      if (!context.user || !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)) {
+        throw new Error('No autorizado: Solo administradores pueden subir resultados');
+      }
+
+      try {
+        // 1. Verificar que la solicitud existe
+        const solRes = await client.query('SELECT cct, resultados FROM solicitudes_eia2 WHERE id = $1', [solicitudId]);
+        if (solRes.rows.length === 0) {
+          throw new Error('La solicitud de evaluación no existe');
+        }
+
+        const solicitud = solRes.rows[0];
+        const resultadosExistentes = solicitud.resultados || [];
+        const nuevosResultados = [];
+
+        // 2. Procesar cada archivo y subir a SFTP
+        for (const archivo of archivos) {
+          let { nombre, base64 } = archivo;
+
+          // Limpiar prefijo data URI si existe (ej. data:application/pdf;base64,...)
+          if (base64.includes(';base64,')) {
+            base64 = base64.split(';base64,').pop() || '';
+          }
+
+          const buffer = Buffer.from(base64, 'base64');
+
+          // Generar nombre único para evitar colisiones
+          const uniqueName = `res_${Date.now()}_${nombre}`;
+          const remotePath = `/upload/resultados/${solicitudId}/${uniqueName}`;
+
+          // Asegurar que el directorio existe (SFTP Service connect/mkdir si fuera necesario)
+          // El servicio actual no tiene mkdir recursivo, asumimos estructura base o lo añadimos si falla
+          await sftpService.connect();
+
+          try {
+            // Intentar crear el directorio por si no existe
+            await (sftpService as any).client.mkdir(`/upload/resultados/${solicitudId}`, true);
+          } catch (e) {
+            // Ya existe o error manejado por el cliente
+          }
+
+          const success = await sftpService.uploadBuffer(buffer, remotePath);
+          if (!success) {
+            throw new Error(`Error al subir el archivo ${nombre} al servidor SFTP`);
+          }
+
+          nuevosResultados.push({
+            nombre: nombre,
+            url: remotePath,
+            size: buffer.length
+          });
+        }
+
+        const resultadosFinales = [...resultadosExistentes, ...nuevosResultados];
+
+        // 3. Actualizar base de datos
+        await client.query(
+          `UPDATE solicitudes_eia2 
+           SET resultados = $1, 
+               estado_validacion = 2, -- Marcamos como VALIDADO/ASIGNADO
+               resultado_path = $2,
+               updated_at = NOW() 
+           WHERE id = $3`,
+          [JSON.stringify(resultadosFinales), `/upload/resultados/${solicitudId}/`, solicitudId]
+        );
+
+        return {
+          success: true,
+          message: `${nuevosResultados.length} archivos subidos correctamente`,
+          resultados: resultadosFinales
+        };
+
+      } catch (error: any) {
+        logger.error('Error en uploadAssessmentResults', { solicitudId, error: error.message });
+        return {
+          success: false,
+          message: error.message,
+          resultados: []
         };
       } finally {
         client.release();
@@ -1570,7 +1739,7 @@ export const resolvers = {
             id, 
             comentario as mensaje, 
             created_at as fecha,
-            (SELECT email FROM usuarios WHERE id = comentarios_ticket.usuario_id) as autor,
+            COALESCE((SELECT email FROM usuarios WHERE id = comentarios_ticket.usuario_id), 'Administrador') as autor,
             es_interno as "esInterno"
            FROM comentarios_ticket
            WHERE ticket_id = $1
@@ -1580,7 +1749,7 @@ export const resolvers = {
 
         return res.rows.map((r) => ({
           ...r,
-          fecha: r.fecha.toISOString(),
+          fecha: r.fecha instanceof Date ? r.fecha.toISOString() : r.fecha,
         }));
       } catch (error) {
         logger.error('Error fetching ticket responses', error);

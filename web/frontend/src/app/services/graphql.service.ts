@@ -51,7 +51,8 @@ export class GraphqlService {
 
     const enDev = window.location.port === '4200';
     if (enDev) {
-      return 'http://localhost:4000/graphql';
+      const hostname = window.location.hostname;
+      return `http://${hostname}:4000/graphql`;
     }
 
     return '/graphql';

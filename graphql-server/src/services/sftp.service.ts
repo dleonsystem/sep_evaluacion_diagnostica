@@ -94,6 +94,21 @@ export class SftpService {
     }
   }
 
+  async downloadBuffer(remotePath: string): Promise<Buffer | null> {
+    try {
+      if (!this.isConnected) {
+        const connected = await this.connect();
+        if (!connected) return null;
+      }
+      const buffer = await this.client.get(remotePath) as Buffer;
+      return buffer;
+    } catch (err: any) {
+      logger.error('SFTP Buffer Download Failed', { remotePath, error: err.message });
+      this.isConnected = false;
+      return null;
+    }
+  }
+
   async disconnect() {
     if (this.isConnected) {
       await this.client.end();

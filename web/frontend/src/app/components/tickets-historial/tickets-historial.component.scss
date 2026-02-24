@@ -65,6 +65,10 @@
   letter-spacing: 0.05em;
 }
 
+.tickets-historial__row--respondido {
+  background-color: #ddc9a3 !important;
+}
+
 .tickets-historial__badge {
   display: inline-flex;
   align-items: center;
@@ -134,44 +138,6 @@
   color: #611232;
 }
 
-.tickets-historial__detalle td {
-  padding: 0;
-  border-bottom: none;
-}
-
-.tickets-historial__detalle-contenido {
-  margin: 0 1rem 1rem;
-  padding: 1rem;
-  border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.tickets-historial__detalle-contenido h3 {
-  margin: 0;
-  font-size: 1rem;
-  color: #0f766e;
-}
-
-.tickets-historial__detalle-respuesta {
-  background: #ecfeff;
-  border-radius: 10px;
-  padding: 0.75rem;
-}
-
-.tickets-historial__detalle-respuesta p {
-  margin: 0 0 0.35rem;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.tickets-historial__detalle-respuesta small,
-.tickets-historial__detalle-contenido p {
-  color: #475569;
-}
 
 .tickets-historial__link {
   align-self: flex-start;
@@ -185,6 +151,7 @@
 }
 
 @media (max-width: 720px) {
+
   .tickets-historial table,
   .tickets-historial thead,
   .tickets-historial tbody,

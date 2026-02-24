@@ -38,7 +38,7 @@ export class TicketsComponent implements OnInit {
     'Otra'
   ];
   readonly maxEvidencias = 10;
-  readonly extensionesPermitidas = ['.pdf', '.xlsx', '.xls', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
+  readonly extensionesPermitidas = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
 
   readonly motivoControl = new FormControl('', { nonNullable: true, validators: [Validators.required] });
   readonly motivoOtroControl = new FormControl('', {
@@ -105,7 +105,7 @@ export class TicketsComponent implements OnInit {
     }
 
     if (!this.esExtensionPermitida(archivo.name)) {
-      this.mensajeError = 'Formato no permitido. Usa PDF, Excel, Word o imágenes.';
+      this.mensajeError = 'Formato no permitido. Usa PDF, Word o imágenes (Excel no permitido para evidencias).';
       return;
     }
 

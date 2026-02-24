@@ -88,6 +88,12 @@ export const typeDefs = `#graphql
     @use-case CU-16: Descarga de Comprobantes
     """
     generateComprobante(solicitudId: ID!): FileDownload!
+
+    """
+    Descargar un archivo de resultado específico (PDF, JPG, etc)
+    @use-case CU-17: Entrega de Resultados
+    """
+    downloadAssessmentResult(solicitudId: ID!, fileName: String!): FileDownload!
   }
 
   """
@@ -173,6 +179,37 @@ export const typeDefs = `#graphql
     @use-case CU-13: Mesa de ayuda
     """
     deleteTicket(ticketId: ID!): Boolean!
+
+    """
+    Cargar archivos de resultados asociados a una evaluación (Admin)
+    @use-case CU-17: Entrega de Resultados
+    """
+    uploadAssessmentResults(input: UploadResultsInput!): UploadResultsResponse!
+  }
+
+  """
+  Respuesta de carga de resultados
+  """
+  type UploadResultsResponse {
+    success: Boolean!
+    message: String!
+    resultados: [TicketEvidencia!]
+  }
+
+  """
+  Input para carga de resultados
+  """
+  input UploadResultsInput {
+    solicitudId: ID!
+    archivos: [ResultArchivoInput!]!
+  }
+
+  """
+  Input para archivo de resultado
+  """
+  input ResultArchivoInput {
+    nombre: String!
+    base64: String!
   }
   
   """
@@ -411,6 +448,7 @@ export const typeDefs = `#graphql
     archivoSize: Int
     procesadoExternamente: Boolean!
     errores: [String!]
+    resultados: [TicketEvidencia!]
   }
   """
   Ticket de Soporte

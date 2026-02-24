@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { EvaluacionesService, SolicitudEia2 } from '../../services/evaluaciones.service';
 import { firstValueFrom } from 'rxjs';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-archivos-evaluacion',
@@ -143,6 +144,47 @@ export class ArchivosEvaluacionComponent implements OnInit {
       case 3: return 'PROCESADO';
       case 0: return 'LOCAL';
       default: return 'PENDIENTE';
+    }
+  }
+
+  async descargarArchivo(solicitudId: string, nombre: string): Promise<void> {
+    try {
+      this.cargando = true;
+      const result = await firstValueFrom(this.evaluacionesService.descargarResultado(solicitudId, nombre));
+
+      if (result.success && result.contentBase64) {
+        // Crear un enlace temporal para descargar
+        const link = document.createElement('a');
+        const extension = nombre.split('.').pop()?.toLowerCase();
+        let mimeType = 'application/octet-stream';
+
+        if (extension === 'pdf') mimeType = 'application/pdf';
+        else if (['jpg', 'jpeg'].includes(extension!)) mimeType = 'image/jpeg';
+        else if (extension === 'png') mimeType = 'image/png';
+        else if (extension === 'xlsx') mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        else if (extension === 'zip') mimeType = 'application/zip';
+
+        link.href = `data:${mimeType};base64,${result.contentBase64}`;
+        link.download = nombre;
+        link.click();
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Descarga iniciada',
+          text: `El archivo ${nombre} se ha descargado correctamente.`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    } catch (error: any) {
+      console.error('Error al descargar:', error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error de descarga',
+        text: error.message || 'No se pudo descargar el archivo de resultados.'
+      });
+    } finally {
+      this.cargando = false;
     }
   }
 }

@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { GraphqlService } from './graphql.service';
-import { UPLOAD_EXCEL_MUTATION } from '../operations/mutation';
-import { GET_SOLICITUDES } from '../operations/query';
+import { UPLOAD_EXCEL_MUTATION, UPLOAD_RESULTS_MUTATION } from '../operations/mutation';
+import { GET_SOLICITUDES, DOWNLOAD_ASSESSMENT_RESULT } from '../operations/query';
 
 export interface UploadExcelInput {
     archivoBase64: string;
@@ -42,6 +42,15 @@ export interface SolicitudEia2 {
     archivoSize?: number;
     procesadoExternamente: boolean;
     errores?: string[];
+    resultados?: Array<{ nombre: string; url: string; size: number }>;
+}
+
+export interface UploadResultsResponse {
+    uploadAssessmentResults: {
+        success: boolean;
+        message: string;
+        resultados: Array<{ nombre: string; url: string; size: number }>;
+    };
 }
 
 export interface GetSolicitudesResponse {
@@ -77,6 +86,43 @@ export class EvaluacionesService {
                         throw new Error(response.errors[0].message ?? 'Error al obtener historial.');
                     }
                     return response.data?.getSolicitudes ?? [];
+                })
+            );
+    }
+
+    subirResultados(solicitudId: string, archivos: Array<{ nombre: string; base64: string }>): Observable<UploadResultsResponse['uploadAssessmentResults']> {
+        const input = { solicitudId, archivos };
+        return this.graphqlService
+            .execute<UploadResultsResponse>(UPLOAD_RESULTS_MUTATION, { input })
+            .pipe(
+                map((response) => {
+                    if (response.errors?.length) {
+                        throw new Error(response.errors[0].message ?? 'Error al subir resultados.');
+                    }
+                    if (!response.data?.uploadAssessmentResults) {
+                        throw new Error('No se recibió respuesta del servidor.');
+                    }
+                    return response.data.uploadAssessmentResults;
+                })
+            );
+    }
+
+    descargarResultado(solicitudId: string, fileName: string): Observable<{ success: boolean, fileName: string, contentBase64: string }> {
+        return this.graphqlService
+            .execute<{ downloadAssessmentResult: { success: boolean, fileName: string, contentBase64: string, message?: string } }>(
+                DOWNLOAD_ASSESSMENT_RESULT,
+                { solicitudId, fileName }
+            )
+            .pipe(
+                map((response) => {
+                    if (response.errors?.length) {
+                        throw new Error(response.errors[0].message ?? 'Error al descargar archivo.');
+                    }
+                    const data = response.data?.downloadAssessmentResult;
+                    if (!data || !data.success) {
+                        throw new Error(data?.message ?? 'No se pudo descargar el archivo.');
+                    }
+                    return data;
                 })
             );
     }

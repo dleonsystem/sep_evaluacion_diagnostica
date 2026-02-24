@@ -24,7 +24,7 @@
       </thead>
       <tbody>
         <ng-container *ngFor="let ticket of tickets">
-          <tr>
+          <tr [class.tickets-historial__row--respondido]="ticket.respuestas && ticket.respuestas.length > 0">
             <td data-label="Folio">{{ ticket.folio }}</td>
             <td data-label="Motivo">
               {{ ticket.motivo }}
@@ -41,15 +41,11 @@
             <td data-label="Fecha">{{ formatearFecha(ticket.fecha) }}</td>
             <td data-label="Evidencias">{{ ticket.evidencias.length }}</td>
             <td data-label="Estatus">
-              <button
-                type="button"
-                class="tickets-historial__badge tickets-historial__badge-button"
+              <button type="button" class="tickets-historial__badge tickets-historial__badge-button"
                 [class.tickets-historial__badge--pendiente]="ticket.estatus === 'pendiente'"
                 [class.tickets-historial__badge--proceso]="ticket.estatus === 'en-proceso'"
                 [class.tickets-historial__badge--respondido]="ticket.estatus === 'respondido'"
-                (click)="toggleDetalleRespuesta(ticket.id)"
-                [attr.aria-expanded]="esTicketExpandido(ticket.id)"
-              >
+                (click)="toggleDetalleRespuesta(ticket.id)" [attr.aria-expanded]="esTicketExpandido(ticket.id)">
                 {{ obtenerEtiquetaEstatus(ticket.estatus) }}
               </button>
             </td>
@@ -59,10 +55,7 @@
               <div class="tickets-historial__detalle-contenido">
                 <h3>Respuesta del administrador</h3>
                 <ng-container *ngIf="ticket.respuestas?.length; else sinRespuestas">
-                  <div
-                    class="tickets-historial__detalle-respuesta"
-                    *ngFor="let respuesta of ticket.respuestas"
-                  >
+                  <div class="tickets-historial__detalle-respuesta" *ngFor="let respuesta of ticket.respuestas">
                     <p>{{ respuesta.mensaje }}</p>
                     <small>{{ formatearFecha(respuesta.fecha) }}</small>
                   </div>
