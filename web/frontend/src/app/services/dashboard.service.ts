@@ -12,6 +12,12 @@ export interface DashboardMetrics {
     totalSolicitudes: number;
     solicitudesValidadas: number;
     totalCCTs: number;
+    tendenciaCargas: Array<{ fecha: string; cantidad: number }>;
+    distribucionNivel: Array<{ label: string; cantidad: number; porcentaje: number }>;
+    eficienciaSoporte: {
+        tiempoPromedioRespuestaHoras: number;
+        tasaResolucion: number;
+    };
 }
 
 @Injectable({ providedIn: 'root' })

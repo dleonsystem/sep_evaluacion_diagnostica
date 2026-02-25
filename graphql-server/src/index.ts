@@ -53,9 +53,10 @@ import helmet from 'helmet';
 import compression from 'compression';
 import dotenv from 'dotenv';
 import { typeDefs } from './schema/typeDefs.js';
-import { resolvers } from './schema/resolvers.js';
+import { resolvers, GraphQLContext } from './schema/resolvers.js';
 import { query, testConnection, closePool } from './config/database.js';
 import { logger, logPSPTime } from './utils/logger.js';
+import { createDataLoaders } from './utils/data-loaders.js';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -89,7 +90,7 @@ function configureMiddlewares(app: express.Application) {
  * @psp Process Script - Apollo Configuration
  */
 function createApolloServer(httpServer: http.Server) {
-  return new ApolloServer({
+  return new ApolloServer<GraphQLContext>({
     typeDefs,
     resolvers,
     plugins: [
@@ -253,9 +254,11 @@ async function startServer() {
         credentials: true,
       }),
       expressMiddleware(server, {
-        context: async ({ req }) => {
+        context: async ({ req }): Promise<GraphQLContext> => {
           const token = req.headers.authorization || '';
-          if (!token) return { user: null };
+          const loaders = createDataLoaders();
+
+          if (!token) return { user: undefined, loaders };
 
           try {
             // Formato esperado: "Bearer <base64>"
@@ -264,7 +267,7 @@ async function startServer() {
             const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
             const [email] = decoded.split(':');
 
-            if (!email) return { user: null };
+            if (!email) return { user: undefined, loaders };
 
             // Buscar usuario real en BD con su rol (codigo)
             const result = await query(
@@ -279,13 +282,16 @@ async function startServer() {
             );
 
             if (result.rows.length > 0) {
-              return { user: result.rows[0] };
+              return {
+                user: result.rows[0] as any,
+                loaders
+              };
             }
           } catch (error) {
             logger.error('Error procesando token de contexto', error);
           }
 
-          return { user: null };
+          return { user: undefined, loaders };
         },
       })
     );

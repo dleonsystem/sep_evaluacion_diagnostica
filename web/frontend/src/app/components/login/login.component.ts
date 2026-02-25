@@ -69,11 +69,8 @@ export class LoginComponent implements OnInit {
 
       // Detectar Roles Administrativos (Rol 2 o 3)
       if (usuario.rol === 'COORDINADOR_FEDERAL' || usuario.rol === 'COORDINADOR_ESTATAL') {
-        // Redirigir al flujo de AdminAuthService
-        // Simulamos el inicio de sesión admin para activar el menú correcto
-        localStorage.setItem('admin-session-token', btoa(`${usuario.email}:${Date.now()}`));
-        localStorage.setItem('admin-session-correo', usuario.email);
-        localStorage.setItem('admin-session-rol', usuario.rol);
+        // Redirigir al flujo de AdminAuthService unificado
+        await this.adminAuthService.iniciarSesion(this.correo, this.contrasena);
 
         await Swal.fire({
           icon: 'success',
@@ -83,7 +80,7 @@ export class LoginComponent implements OnInit {
           timerProgressBar: true
         });
 
-        await this.router.navigateByUrl('/admin/panel');
+        await this.router.navigateByUrl('/admin/dashboard');
         return;
       }
 

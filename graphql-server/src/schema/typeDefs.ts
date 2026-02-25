@@ -117,6 +117,25 @@ export const typeDefs = `#graphql
     totalSolicitudes: Int!
     solicitudesValidadas: Int!
     totalCCTs: Int!
+    tendenciaCargas: [TrendData!]!
+    distribucionNivel: [DistributionData!]!
+    eficienciaSoporte: SupportEfficiency!
+  }
+
+  type TrendData {
+    fecha: String!
+    cantidad: Int!
+  }
+
+  type DistributionData {
+    label: String!
+    cantidad: Int!
+    porcentaje: Float!
+  }
+
+  type SupportEfficiency {
+    tiempoPromedioRespuestaHoras: Float!
+    tasaResolucion: Float!
   }
   
   """

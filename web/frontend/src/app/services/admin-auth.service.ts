@@ -1,18 +1,25 @@
 import { Injectable } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, BehaviorSubject, Observable } from 'rxjs';
 import { UsuariosService } from './usuarios.service';
 import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class AdminAuthService {
-  private readonly tokenKey = 'admin-session-token';
-  private readonly correoKey = 'admin-session-correo';
-  private readonly rolKey = 'admin-session-rol';
+  private readonly tokenKey = 'eia-admin-token';
+  private readonly correoKey = 'eia-admin-email';
+  private readonly rolKey = 'eia-admin-role';
+
+  private autenticadoSubject = new BehaviorSubject<boolean>(this.estaAutenticadoInicial());
+  public autenticado$ = this.autenticadoSubject.asObservable();
 
   constructor(
     private readonly usuariosService: UsuariosService,
     private readonly authService: AuthService
   ) { }
+
+  private estaAutenticadoInicial(): boolean {
+    return !!localStorage.getItem(this.tokenKey);
+  }
 
   async iniciarSesion(correo: string, contrasena: string): Promise<void> {
     // 1. Autenticar con el backend
@@ -33,6 +40,7 @@ export class AdminAuthService {
     localStorage.setItem(this.tokenKey, tokenSimulado);
     localStorage.setItem(this.correoKey, usuario.email);
     localStorage.setItem(this.rolKey, usuario.rol);
+    this.autenticadoSubject.next(true);
   }
 
   obtenerToken(): string | null {
@@ -43,6 +51,7 @@ export class AdminAuthService {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.correoKey);
     localStorage.removeItem(this.rolKey);
+    this.autenticadoSubject.next(false);
   }
 
   estaAutenticado(): boolean {

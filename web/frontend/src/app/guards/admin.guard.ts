@@ -7,14 +7,14 @@ export class AdminGuard {
   constructor(
     private readonly adminAuthService: AdminAuthService,
     private readonly router: Router,
-  ) {}
+  ) { }
 
   canActivate(): boolean {
     if (this.adminAuthService.estaAutenticado()) {
       return true;
     }
 
-    void this.router.navigate(['/admin/login']);
+    void this.router.navigate(['/login']);
     return false;
   }
 }

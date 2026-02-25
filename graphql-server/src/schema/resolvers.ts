@@ -41,6 +41,7 @@ interface ContextUser {
 export interface GraphQLContext {
   user?: ContextUser;
   dataSources?: Record<string, unknown>;
+  loaders: ReturnType<typeof import('../utils/data-loaders.js').createDataLoaders>;
 }
 
 /**
@@ -488,6 +489,9 @@ export const resolvers = {
           solicitudesRes,
           solicitudesValidRes,
           cctsRes,
+          trendRes,
+          levelRes,
+          efficiencyRes
         ] = await Promise.all([
           query('SELECT COUNT(*) as count FROM usuarios'),
           query('SELECT COUNT(*) as count FROM usuarios WHERE activo = true'),
@@ -503,17 +507,61 @@ export const resolvers = {
             "SELECT COUNT(*) as count FROM solicitudes_eia2 WHERE estado_validacion = (SELECT id FROM cat_estado_validacion_eia2 WHERE codigo = 'VALIDO')"
           ),
           query('SELECT COUNT(DISTINCT cct) as count FROM solicitudes_eia2'),
+          query(`
+            SELECT TO_CHAR(fecha_carga, 'YYYY-MM-DD') as fecha, COUNT(*) as cantidad 
+            FROM solicitudes_eia2 
+            WHERE fecha_carga > NOW() - INTERVAL '30 days' 
+            GROUP BY TO_CHAR(fecha_carga, 'YYYY-MM-DD') 
+            ORDER BY fecha ASC
+          `),
+          query(`
+            SELECT ne.codigo as label, COUNT(*) as cantidad 
+            FROM solicitudes_eia2 s 
+            JOIN cat_nivel_educativo ne ON s.nivel_educativo = ne.id 
+            GROUP BY ne.codigo
+          `),
+          query(`
+            SELECT 
+              COALESCE(AVG(EXTRACT(EPOCH FROM (res.fecha_respuesta - t.created_at))/3600), 0) as avg_hours
+            FROM tickets_soporte t
+            CROSS JOIN LATERAL (
+              SELECT created_at as fecha_respuesta 
+              FROM comentarios_ticket 
+              WHERE ticket_id = t.id 
+              ORDER BY created_at ASC 
+              LIMIT 1
+            ) res
+          `)
         ]);
+
+        const totalSolicitudes = parseInt(solicitudesRes.rows[0].count);
+        const distribucionNivel = levelRes.rows.map(row => ({
+          label: row.label,
+          cantidad: parseInt(row.cantidad),
+          porcentaje: totalSolicitudes > 0 ? (parseInt(row.cantidad) / totalSolicitudes) * 100 : 0
+        }));
+
+        const totalTickets = parseInt(ticketsRes.rows[0].count);
+        const ticketsResueltos = parseInt(ticketsResolvedRes.rows[0].count);
 
         return {
           totalUsuarios: parseInt(usersRes.rows[0].count),
           usuariosActivos: parseInt(usersActiveRes.rows[0].count),
-          totalTickets: parseInt(ticketsRes.rows[0].count),
+          totalTickets,
           ticketsAbiertos: parseInt(ticketsOpenRes.rows[0].count),
-          ticketsResueltos: parseInt(ticketsResolvedRes.rows[0].count),
-          totalSolicitudes: parseInt(solicitudesRes.rows[0].count),
+          ticketsResueltos,
+          totalSolicitudes,
           solicitudesValidadas: parseInt(solicitudesValidRes.rows[0].count),
           totalCCTs: parseInt(cctsRes.rows[0].count),
+          tendenciaCargas: trendRes.rows.map(row => ({
+            fecha: row.fecha,
+            cantidad: parseInt(row.cantidad)
+          })),
+          distribucionNivel,
+          eficienciaSoporte: {
+            tiempoPromedioRespuestaHoras: parseFloat(parseFloat(efficiencyRes.rows[0].avg_hours || 0).toFixed(2)),
+            tasaResolucion: totalTickets > 0 ? (ticketsResueltos / totalTickets) * 100 : 0
+          }
         };
       } catch (error) {
         logger.error('Error fetching dashboard metrics', error);
@@ -1645,32 +1693,8 @@ export const resolvers = {
    * @psp DataLoader Pattern - Prevención de N+1 queries
    */
   User: {
-    centrosTrabajo: async (parent: ParentWithId) => {
-      logger.debug('Fetching centrosTrabajo for user', { userId: parent.id });
-      try {
-        const result = await query(
-          `SELECT 
-            e.id,
-            e.cct as "claveCCT",
-            e.nombre,
-            e.estado as entidad,
-            e.municipio,
-            e.localidad,
-            ne.codigo as nivel,
-            t.nombre as turno
-          FROM escuelas e
-          LEFT JOIN cat_nivel_educativo ne ON e.id_nivel = ne.id
-          LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
-          WHERE e.id = (SELECT escuela_id FROM usuarios WHERE id = $1)`,
-          [parent.id]
-        );
-
-        logger.debug('Found centrosTrabajo', { count: result.rows.length, userId: parent.id });
-        return result.rows as CentroTrabajoRow[];
-      } catch (error) {
-        logger.error('Error fetching user CCTs', { userId: parent.id, error });
-        return [];
-      }
+    centrosTrabajo: async (parent: ParentWithId, _: any, context: GraphQLContext) => {
+      return context.loaders.userCentrosTrabajo.load(parent.id);
     },
   },
 
@@ -1708,53 +1732,13 @@ export const resolvers = {
    * Field resolvers para Evaluacion
    */
   Evaluacion: {
-    estudiantes: async (parent: ParentWithId): Promise<EstudianteRow[]> => {
-      try {
-        const result = await query(
-          `SELECT 
-            id,
-            curp,
-            nombre,
-            apellido_paterno as "apellidoPaterno",
-            apellido_materno as "apellidoMaterno",
-            grado,
-            grupo
-          FROM estudiantes
-          WHERE evaluacion_id = $1`,
-          [parent.id]
-        );
-
-        return result.rows as EstudianteRow[];
-      } catch (error) {
-        logger.error('Error fetching evaluation students', { evaluacionId: parent.id, error });
-        return [];
-      }
+    estudiantes: async (parent: ParentWithId, _: any, context: GraphQLContext): Promise<EstudianteRow[]> => {
+      return context.loaders.evaluationStudents.load(parent.id);
     },
   },
   Ticket: {
-    respuestas: async (parent: any) => {
-      try {
-        const res = await query(
-          `SELECT 
-            id, 
-            comentario as mensaje, 
-            created_at as fecha,
-            COALESCE((SELECT email FROM usuarios WHERE id = comentarios_ticket.usuario_id), 'Administrador') as autor,
-            es_interno as "esInterno"
-           FROM comentarios_ticket
-           WHERE ticket_id = $1
-           ORDER BY created_at ASC`,
-          [parent.id]
-        );
-
-        return res.rows.map((r) => ({
-          ...r,
-          fecha: r.fecha instanceof Date ? r.fecha.toISOString() : r.fecha,
-        }));
-      } catch (error) {
-        logger.error('Error fetching ticket responses', error);
-        return [];
-      }
+    respuestas: async (parent: any, _: any, context: GraphQLContext) => {
+      return context.loaders.ticketResponses.load(parent.id);
     },
   },
 };

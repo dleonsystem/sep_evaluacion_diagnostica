@@ -88,19 +88,10 @@
           <li class="nav-item d-none d-md-block">
             <span class="nav-link subnav-link subnav-separator">|</span>
           </li>
-          <li class="nav-item" *ngIf="!isAdminAutenticado">
+          <li class="nav-item">
             <a class="nav-link subnav-link" href="javascript:void(0)" (click)="iniciarSesion()">
               <i class="bi bi-box-arrow-in-right mr-1" aria-hidden="true"></i>
               <strong>Login</strong>
-            </a>
-          </li>
-        </ng-template>
-
-        <ng-template #adminInvitado>
-          <li class="nav-item" *ngIf="!isUsuarioAutenticado && !isAdminAutenticado">
-            <a class="nav-link subnav-link" href="javascript:void(0)" (click)="iniciarSesionAdmin()">
-              <i class="bi bi-shield-check mr-1" aria-hidden="true"></i>
-              <strong>Admin login</strong>
             </a>
           </li>
         </ng-template>

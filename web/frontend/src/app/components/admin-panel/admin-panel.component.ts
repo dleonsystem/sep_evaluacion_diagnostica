@@ -48,6 +48,7 @@ export class AdminPanelComponent implements OnInit {
   filtroTicketEstatus: 'todos' | TicketSoporte['estatus'] = 'todos';
   paginaActual = 1;
   tamanioPagina = 10;
+  readonly opcionesTamanioPagina = [10, 20, 30, 50];
   private readonly uploadHistoryKey = 'adminPanelResultadosHistory';
   private readonly archivosStoragePrefix = 'archivos-resultados';
   private readonly ticketsStorageKey = 'tickets-soporte';
@@ -532,7 +533,8 @@ export class AdminPanelComponent implements OnInit {
 
   private async cargarExcelDisponibles(): Promise<void> {
     try {
-      const registros = await firstValueFrom(this.evaluacionesService.getSolicitudes());
+      // Aumentamos el límite para obtener más registros y manejarlos localmente
+      const registros = await firstValueFrom(this.evaluacionesService.getSolicitudes(undefined, 1000));
       this.excelDisponibles = registros.map((registro) => {
         const key = registro.id;
         const nivel = this.obtenerEtiquetaNivel(registro.nivelEducativo);

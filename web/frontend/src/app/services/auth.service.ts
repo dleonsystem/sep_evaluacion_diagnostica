@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 export interface CredencialesGuardadas {
   cct: string;
@@ -8,9 +9,16 @@ export interface CredencialesGuardadas {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly credencialesKey = 'credenciales-preescolar';
-  private readonly sesionKey = 'sesion-preescolar-activa';
-  private readonly sesionCorreoKey = 'sesion-preescolar-correo';
+  private readonly credencialesKey = 'eia-user-credentials';
+  private readonly sesionKey = 'eia-user-session-active';
+  private readonly sesionCorreoKey = 'eia-user-session-email';
+
+  private autenticadoSubject = new BehaviorSubject<boolean>(this.estaAutenticadoInicial());
+  public autenticado$ = this.autenticadoSubject.asObservable();
+
+  private estaAutenticadoInicial(): boolean {
+    return localStorage.getItem(this.sesionKey) === 'true';
+  }
 
   obtenerCredenciales(): CredencialesGuardadas | null {
     const guardadas = localStorage.getItem(this.credencialesKey);
@@ -97,7 +105,8 @@ export class AuthService {
   cerrarSesion(): void {
     localStorage.removeItem(this.sesionKey);
     localStorage.removeItem(this.sesionCorreoKey);
-    localStorage.removeItem(this.credencialesKey); // Limpiar credenciales persistentes del usuario anterior
+    localStorage.removeItem(this.credencialesKey);
+    this.autenticadoSubject.next(false);
   }
 
   estaAutenticado(): boolean {
@@ -123,6 +132,7 @@ export class AuthService {
 
   private marcarSesionActiva(): void {
     localStorage.setItem(this.sesionKey, 'true');
+    this.autenticadoSubject.next(true);
   }
 
   private normalizarCct(cct: string): string {

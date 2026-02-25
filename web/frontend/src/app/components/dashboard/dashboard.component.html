@@ -67,6 +67,61 @@
                 </div>
             </div>
 
+            <!-- Analytics Section (Advanced) -->
+            <div class="analytics-row mt-5">
+                <!-- Load Trends Chart -->
+                <div class="analytics-card">
+                    <h3 class="analytics-card__title">Tendencia de Cargas (30 días)</h3>
+                    <div class="chart-container">
+                        <div class="bar-chart">
+                            <div class="bar-wrapper" *ngFor="let day of metrics.tendenciaCargas">
+                                <div class="bar" [style.height.%]="(day.cantidad / maxCargas) * 100"
+                                    [attr.title]="day.fecha + ': ' + day.cantidad"></div>
+                                <span class="bar-label">{{ day.fecha | date:'dd' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Participation by Level -->
+                <div class="analytics-card">
+                    <h3 class="analytics-card__title">Participación por Nivel</h3>
+                    <div class="distribution-list">
+                        <div class="dist-item" *ngFor="let level of metrics.distribucionNivel">
+                            <div class="dist-header">
+                                <span class="dist-label text-capitalize">{{ level.label.toLowerCase() }}</span>
+                                <span class="dist-percentage">{{ level.porcentaje | number:'1.0-1' }}%</span>
+                            </div>
+                            <div class="progress-bg">
+                                <div class="progress-fill" [style.width.%]="level.porcentaje"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Support Efficiency -->
+            <div class="analytics-row mt-4">
+                <div class="efficiency-banner">
+                    <div class="eff-stat">
+                        <i class="bi bi-clock-history"></i>
+                        <div class="eff-info">
+                            <span class="eff-label">Tiempo de Respuesta</span>
+                            <span class="eff-value">{{ metrics.eficienciaSoporte.tiempoPromedioRespuestaHoras }}
+                                <small>hrs</small></span>
+                        </div>
+                    </div>
+                    <div class="eff-stat">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        <div class="eff-info">
+                            <span class="eff-label">Tasa de Resolución</span>
+                            <span class="eff-value">{{ metrics.eficienciaSoporte.tasaResolucion | number:'1.0-1'
+                                }}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Sección de ayuda o resumen extra -->
             <div class="dashboard__footer-info mt-5">
                 <div class="info-banner">

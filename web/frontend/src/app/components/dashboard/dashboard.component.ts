@@ -18,6 +18,11 @@ export class DashboardComponent implements OnInit {
 
     constructor(private readonly dashboardService: DashboardService) { }
 
+    get maxCargas(): number {
+        if (!this.metrics?.tendenciaCargas?.length) return 1;
+        return Math.max(...this.metrics.tendenciaCargas.map(d => d.cantidad), 5);
+    }
+
     ngOnInit(): void {
         this.cargarMetrics();
     }
@@ -26,7 +31,8 @@ export class DashboardComponent implements OnInit {
         this.cargandoMetrics = true;
         this.error = null;
         try {
-            this.metrics = await firstValueFrom(this.dashboardService.getMetrics());
+            const result = await firstValueFrom(this.dashboardService.getMetrics());
+            this.metrics = result;
         } catch (error) {
             console.error('Error cargando métricas:', error);
             this.error = 'No se pudieron cargar las estadísticas. Por favor, intenta de nuevo más tarde.';

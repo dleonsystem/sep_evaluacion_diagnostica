@@ -1,27 +1,16 @@
 <section class="admin-panel">
   <div class="admin-panel__card">
-    <h2>Panel de administrador</h2>
-
-    <!--  <p>Token activo para la carga de PDFs.</p> -->
-
-    <!-- <div class="admin-panel__token" *ngIf="obtenerToken(); else sinSesion">
-      <span>Token almacenado:</span>
-      <code>{{ obtenerToken() }}</code>
-    </div> -->
-
-    <ng-template #sinSesion>
-      <div class="admin-panel__token admin-panel__token--warning">
-        No hay sesión activa. Vuelve al login para obtener un token.
-      </div>
-    </ng-template>
+    <h2 class="font-display">Panel de Administrador</h2>
 
     <div class="admin-panel__upload">
-      <label class="admin-panel__upload-label" for="nivel-select">Selecciona el nivel</label>
+      <label class="admin-panel__upload-label" for="nivel-select">
+        <i class="bi bi-layers-fill"></i> Selecciona el nivel educativo
+      </label>
       <select id="nivel-select" class="admin-panel__upload-input" [(ngModel)]="selectedNivel">
         <option value="" disabled>Selecciona un nivel</option>
-        <option value="preescolar">Preescolar</option>
-        <option value="primaria">Primaria</option>
-        <option value="secundaria">Secundaria</option>
+        <option value="preescolar">Educación Preescolar</option>
+        <option value="primaria">Educación Primaria</option>
+        <option value="secundaria">Educación Secundaria</option>
       </select>
       <p class="admin-panel__helper">
         El listado de Excels depende del nivel seleccionado. Primero selecciona
@@ -56,6 +45,13 @@
             <span class="admin-panel__filters-label">Fecha</span>
             <input class="admin-panel__filters-input" type="date" [(ngModel)]="filtroFecha"
               (ngModelChange)="onFiltrosActualizados()" />
+          </label>
+          <label class="admin-panel__filters-field">
+            <span class="admin-panel__filters-label">Mostrar</span>
+            <select class="admin-panel__filters-input" [(ngModel)]="tamanioPagina"
+              (ngModelChange)="onFiltrosActualizados()">
+              <option *ngFor="let opt of opcionesTamanioPagina" [ngValue]="opt">{{ opt }} registros</option>
+            </select>
           </label>
         </div>
         <table class="admin-panel__table">

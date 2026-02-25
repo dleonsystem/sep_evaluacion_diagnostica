@@ -18,6 +18,19 @@ export const GET_DASHBOARD_METRICS = `
       totalSolicitudes
       solicitudesValidadas
       totalCCTs
+      tendenciaCargas {
+        fecha
+        cantidad
+      }
+      distribucionNivel {
+        label
+        cantidad
+        porcentaje
+      }
+      eficienciaSoporte {
+        tiempoPromedioRespuestaHoras
+        tasaResolucion
+      }
     }
   }
 `;
