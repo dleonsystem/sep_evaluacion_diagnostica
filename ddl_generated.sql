@@ -706,6 +706,18 @@ CREATE TABLE archivos_tickets (
 	CONSTRAINT chk_archivos_tickets_extension CHECK (extension IS NULL OR extension ~ '^[a-zA-Z0-9]{1,20}$')
 );
 
+CREATE TABLE preguntas_frecuentes (
+	id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	pregunta   TEXT NOT NULL,
+	respuesta  TEXT NOT NULL,
+	categoria  VARCHAR(100),
+	orden      INT NOT NULL DEFAULT 0,
+	activo     BOOLEAN NOT NULL DEFAULT TRUE,
+	created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	CONSTRAINT chk_preguntas_frecuentes_orden CHECK (orden >= 0)
+);
+
 CREATE TABLE sesiones (
 	id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 	usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -1111,6 +1123,8 @@ CREATE INDEX idx_reportes_tipo_generado ON reportes_generados(tipo_reporte, gene
 CREATE INDEX idx_tickets_estado_prioridad ON tickets_soporte(estado, prioridad);
 CREATE INDEX idx_log_usuario_fecha ON log_actividades(id_usuario, fecha_hora);
 CREATE INDEX idx_notificaciones_estado ON notificaciones_email(estado, prioridad, created_at);
+CREATE INDEX idx_preguntas_frecuentes_categoria ON preguntas_frecuentes(categoria);
+CREATE INDEX idx_preguntas_frecuentes_activo_orden ON preguntas_frecuentes(activo, orden);
 
 -- Crear índice parcial para reintentos utilizando el ID del catálogo
 DO $$
@@ -1417,6 +1431,9 @@ CREATE TRIGGER trg_touch_notificaciones
 	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
 CREATE TRIGGER trg_touch_evaluaciones
 	BEFORE UPDATE ON evaluaciones
+	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
+CREATE TRIGGER trg_touch_preguntas_frecuentes
+	BEFORE UPDATE ON preguntas_frecuentes
 	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
 
 -- =====================================================================

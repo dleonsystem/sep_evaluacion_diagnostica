@@ -30,3 +30,10 @@ Agrega aquí cada cambio relevante que realices en este branch, indicando fecha 
 ## [Fecha: 2026-02-11] Flujo de importación vía pgAdmin
 - Se creó `scripts/import/01_create_staging_escuelas.sql` para definir `staging.escuelas_csv`.
 - Se creó `scripts/import/02_transform_upsert_escuelas_from_staging.sql` para limpiar y hacer upsert a `public.escuelas` desde staging.
+
+## [Fecha: 2026-02-26] Nueva tabla `preguntas_frecuentes`
+- Se creó la migración `scripts/migrations/2026-02-26_create_preguntas_frecuentes.sql` para agregar la tabla en una BD existente.
+- Estructura incluida: `id`, `pregunta`, `respuesta`, `categoria`, `orden`, `activo`, `created_at`, `updated_at`.
+- Se añadieron índices por `categoria` y `(activo, orden)` y trigger para autogenerar `updated_at` en updates.
+- Se actualizó `ddl_generated.sql` para reflejar esta nueva tabla e índices.
+- Se creó `scripts/seeds/2026-02-26_seed_preguntas_frecuentes.sql` con carga inicial idempotente de preguntas frecuentes.
