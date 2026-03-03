@@ -30,7 +30,7 @@ const poolConfig: PoolConfig = {
   min: parseInt(process.env.DB_POOL_MIN || '2', 10),
   max: parseInt(process.env.DB_POOL_MAX || '10', 10),
   idleTimeoutMillis: 60000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 30000,
   ssl: {
     rejectUnauthorized: false
   }

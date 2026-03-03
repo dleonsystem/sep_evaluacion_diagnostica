@@ -15,6 +15,9 @@ const poolConfig = {
     database: process.env.DB_NAME || 'eia_db',
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || undefined,
+    ssl: {
+        rejectUnauthorized: false
+    }
 };
 
 console.log('Final password type in config:', typeof poolConfig.password);
