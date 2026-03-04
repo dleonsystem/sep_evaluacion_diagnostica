@@ -48,7 +48,7 @@
           </li>
         </ng-container>
 
-        <ng-container *ngIf="isUsuarioAutenticado && !isAdminAutenticado; else usuarioInvitado">
+        <ng-container *ngIf="isUsuarioAutenticado && !isAdminAutenticado">
           <li class="nav-item d-none d-md-block">
             <span class="nav-link subnav-link subnav-separator">|</span>
           </li>
@@ -84,7 +84,7 @@
           </li>
         </ng-container>
 
-        <ng-template #usuarioInvitado>
+        <ng-container *ngIf="!isUsuarioAutenticado && !isAdminAutenticado">
           <li class="nav-item d-none d-md-block">
             <span class="nav-link subnav-link subnav-separator">|</span>
           </li>
@@ -94,7 +94,7 @@
               <strong>Login</strong>
             </a>
           </li>
-        </ng-template>
+        </ng-container>
       </ul>
     </div>
   </div>
