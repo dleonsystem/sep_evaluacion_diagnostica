@@ -1,11 +1,33 @@
 <section class="carga">
+  <!-- USER SUB-NAV MENU (Only visible to logged-in Role 4 users) -->
+  <nav class="shared-subnav" *ngIf="sesionActiva">
+    <a routerLink="/carga-masiva" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
+      <i class="bi bi-cloud-upload"></i> Carga Masiva
+    </a>
+    <a routerLink="/archivos-evaluacion" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
+      <i class="bi bi-folder-check"></i> Cargas realizadas
+    </a>
+    <a routerLink="/tickets" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
+      <i class="bi bi-life-preserver"></i> Soporte
+    </a>
+    <a routerLink="/tickets-historial" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
+      <i class="bi bi-card-list"></i> Mis tickets
+    </a>
+    <!-- Log Out will continue appearing in the blue session card, but let's also give it here if needed -->
+    <button (click)="cerrarSesion()" class="shared-subnav-btn--logout">
+      <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+    </button>
+  </nav>
+
   <div class="carga__encabezado">
     <p class="carga__eyebrow">Módulo de carga de archivos</p>
     <h1 class="carga__titulo">Sube la plantilla oficial (.xlsx) sin iniciar sesión</h1>
-    <!-- <p class="carga__descripcion">
-      De acuerdo con la especificación del módulo de carga, puedes enviar el archivo de evaluación sin autenticación previa.
-      Toda la validación se realiza en el navegador: estructura de hojas, CCT, correo, turno y las 11 valoraciones por alumno de la hoja “TERCERO”.
-    </p> -->
+    <p class="carga__descripcion" style="display: none;">
+      De acuerdo con la especificación del módulo de carga, puedes enviar el archivo de evaluación sin autenticación
+      previa.
+      Toda la validación se realiza en el navegador: estructura de hojas, CCT, correo, turno y las 11 valoraciones por
+      alumno de la hoja “TERCERO”.
+    </p>
   </div>
 
   <div class="carga__sesion" [class.carga__sesion--activa]="sesionActiva"

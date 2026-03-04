@@ -1,4 +1,23 @@
 <section class="archivos">
+  <!-- USER SUB-NAV MENU -->
+  <nav class="shared-subnav">
+    <a routerLink="/carga-masiva" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
+      <i class="bi bi-cloud-upload"></i> Carga Masiva
+    </a>
+    <a routerLink="/archivos-evaluacion" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
+      <i class="bi bi-folder-check"></i> Cargas realizadas
+    </a>
+    <a routerLink="/tickets" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
+      <i class="bi bi-life-preserver"></i> Soporte
+    </a>
+    <a routerLink="/tickets-historial" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
+      <i class="bi bi-card-list"></i> Mis tickets
+    </a>
+    <button (click)="cerrarSesion()" class="shared-subnav-btn--logout">
+      <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+    </button>
+  </nav>
+
   <header class="archivos__encabezado">
     <p class="archivos__eyebrow">Cargas realizadas</p>
     <h1 class="archivos__titulo">Historial de archivos de evaluación</h1>

@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
 import Swal from 'sweetalert2';
@@ -27,7 +27,7 @@ interface TicketSoporte {
 @Component({
   selector: 'app-tickets',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule],
   templateUrl: './tickets.component.html',
   styleUrl: './tickets.component.scss'
 })
@@ -380,5 +380,10 @@ export class TicketsComponent implements OnInit {
       return null;
     }
     return correo.trim().toLowerCase();
+  }
+
+  cerrarSesion(): void {
+    this.authService.cerrarSesion();
+    void this.router.navigate(['/login']);
   }
 }

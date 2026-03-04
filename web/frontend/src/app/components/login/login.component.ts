@@ -104,7 +104,13 @@ export class LoginComponent implements OnInit {
         timer: 2500,
         timerProgressBar: true
       });
-      await this.router.navigateByUrl(this.redirect);
+
+      let destino = this.redirect;
+      if (usuario.rol === 'RESPONSABLE_CCT' && destino === '/carga-masiva') {
+        destino = '/archivos-evaluacion';
+      }
+
+      await this.router.navigateByUrl(destino);
     } catch (error) {
       const mensajeError = error instanceof Error ? error.message : 'Ocurrió un error inesperado.';
       this.error = `No se pudo iniciar sesión. ${mensajeError}`;

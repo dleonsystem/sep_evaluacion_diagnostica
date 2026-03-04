@@ -55,18 +55,31 @@
   padding: 0.85rem 1rem;
   border-bottom: 1px solid #e5e7eb;
   text-align: left;
+  font-size: 1.05rem;
+  /* Letra más pequeña y limpia */
 }
 
 .tickets-historial th {
-  background: #f8fafc;
-  color: #0f172a;
-  font-size: 0.85rem;
+  background: #f6eddc;
+  color: #13322e;
+  font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.tickets-historial tbody tr {
+  background-color: #ffffff;
+  transition: background-color 0.2s;
+}
+
+.tickets-historial tbody tr:hover {
+  background-color: #f8fafc;
 }
 
 .tickets-historial__row--respondido {
-  background-color: #ddc9a3 !important;
+  background-color: #fdfaf5 !important;
+  /* Un crema súper sutil en lugar del dorado fuerte */
 }
 
 .tickets-historial__badge {
@@ -109,7 +122,7 @@
   padding: 1rem;
   border-radius: 12px;
   background: #ffffff;
-  border: 1px solid #ddc9a3;
+  border: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -122,20 +135,24 @@
 }
 
 .tickets-historial__detalle-respuesta {
-  background: #ddc9a3;
+  background: #f8fafc;
+  /* Gris sutil en lugar del dorado */
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
-  padding: 0.75rem;
+  padding: 0.85rem;
 }
 
 .tickets-historial__detalle-respuesta p {
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.4rem;
   font-weight: 600;
-  color: #13322e;
+  color: #1f2937;
+  font-size: 1.05rem;
 }
 
 .tickets-historial__detalle-respuesta small,
 .tickets-historial__detalle-contenido p {
-  color: #611232;
+  color: #64748b;
+  font-size: 0.95rem;
 }
 
 

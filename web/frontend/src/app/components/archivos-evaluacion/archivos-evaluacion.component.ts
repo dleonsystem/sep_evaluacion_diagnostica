@@ -187,4 +187,9 @@ export class ArchivosEvaluacionComponent implements OnInit {
       this.cargando = false;
     }
   }
+
+  cerrarSesion(): void {
+    this.authService.cerrarSesion();
+    void this.router.navigate(['/login']);
+  }
 }

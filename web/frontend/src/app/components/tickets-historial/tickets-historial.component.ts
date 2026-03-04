@@ -147,4 +147,9 @@ export class TicketsHistorialComponent implements OnInit {
     }
     return correo.trim().toLowerCase();
   }
+
+  cerrarSesion(): void {
+    this.authService.cerrarSesion();
+    void this.router.navigate(['/login']);
+  }
 }
