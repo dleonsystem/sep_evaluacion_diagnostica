@@ -218,6 +218,45 @@ graph TD
   B4 --> B3
 ```
 
+### 8.1 Explicación y concepto del diagrama de componentes
+Este diagrama representa la **arquitectura por capas y responsabilidades** implementada en febrero:
+
+1. **Capa de presentación (Frontend Angular)**  
+   El `Router + Guards` controla navegación y seguridad de acceso. Cada componente atiende un caso de uso concreto (carga, historial, tickets, panel y dashboard).
+
+2. **Capa de servicios frontend**  
+   Los componentes no acceden directamente al backend; primero delegan en servicios de dominio (`EvaluacionesService`, `TicketsService`, `DashboardService`, `Auth/AdminAuth`). Esto mejora mantenibilidad y permite centralizar reglas de negocio del cliente.
+
+3. **Capa de integración (`GraphqlService`)**  
+   Actúa como punto unificado de comunicación, evitando acoplamiento directo entre cada componente y el esquema GraphQL.
+
+4. **Capa backend**  
+   `GraphQL Schema` define contrato, `Resolvers` ejecutan lógica y orquestan persistencia en PostgreSQL y archivos en SFTP. De forma paralela, la `REST Legacy API` cubre interoperabilidad con consumidores externos.
+
+5. **Capa de persistencia**  
+   PostgreSQL conserva datos transaccionales y SFTP concentra artefactos (evidencias/resultados), logrando trazabilidad integral.
+
+**Interpretación funcional:**
+- El flujo principal es: `Componente Angular -> Servicio de dominio -> GraphqlService -> Schema/Resolvers -> PostgreSQL/SFTP`.
+- El flujo complementario para integración externa es: `REST Legacy API -> PostgreSQL`.
+- La separación por capas permite escalar cada módulo sin romper el resto del sistema.
+
+## 8.2 Diagrama adicional sugerido: flujo de ciclo de vida de una solicitud
+Para complementar el diagrama de componentes, se agrega este diagrama de flujo del proceso operativo de febrero (carga, soporte y resultados):
+
+```mermaid
+flowchart LR
+  U[Usuario CCT] --> CARGA[Sube Excel]
+  CARGA --> VAL[Validación y hash de duplicado]
+  VAL --> SOL[Registro en solicitudes_eia2]
+  SOL --> TICK[Ticket de soporte opcional]
+  TICK --> ADM[Atención por Admin]
+  ADM --> RES[Subida de resultados]
+  RES --> SFTP[(SFTP)]
+  RES --> DB[(PostgreSQL resultados JSONB)]
+  DB --> DESC[Descarga de resultados por usuario]
+```
+
 ---
 
 ## 9) Trazabilidad de entregables técnicos de febrero
