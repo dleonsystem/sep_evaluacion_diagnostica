@@ -35,11 +35,13 @@ Este documento cubre la actividad registrada en Git para el periodo **2026-01-01
 
 ---
 
-## 4) Línea de tiempo de versiones (enero-febrero)
+## 4) Línea de tiempo de versiones (separada por mes)
+
+### 4.1 Enero 2026
 
 ```mermaid
 timeline
-  title Hitos técnicos y versiones integradas (Ene-Feb 2026)
+  title Hitos técnicos y versiones integradas (Enero 2026)
   section Enero
     07-ene : PRs #124-#136
            : Mejoras UI, carga y manejo de archivos/resultados
@@ -55,6 +57,13 @@ timeline
            : Alineación GraphQL-BD, createUser/login y endpoint frontend
     29-ene : PR #213
            : Integración de rama Dev-JGA-FrontEnd-FEB26
+```
+
+### 4.2 Febrero 2026
+
+```mermaid
+timeline
+  title Hitos técnicos y versiones integradas (Febrero 2026)
   section Febrero
     04-feb : 4e1818d
            : Subida Excel y ajustes de carga/BD
