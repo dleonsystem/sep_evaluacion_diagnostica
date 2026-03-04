@@ -37,6 +37,27 @@ En febrero se consolidó una arquitectura **híbrida y trazable**:
 - Filtro de historial por autor (`usuario_id`) para privacidad por rol.
 - Integración REST para consumo de estadísticas por sistemas legados.
 
+### 3.3 Cobertura por capa (validación explícita del alcance)
+Para evitar ambigüedad, este entregable **sí cubre las tres capas** del sistema, no únicamente Angular.
+
+| Capa | Cobertura en el documento | Evidencias incluidas |
+|---|---|---|
+| Frontend Angular | Completa | Rutas, componentes, guards y servicios de UI/negocio |
+| Backend GraphQL/REST | Completa | Queries, mutations, endpoint legado, health y Swagger |
+| Base de datos PostgreSQL | Completa | Campos/tablas nuevos, restricciones y soporte de trazabilidad |
+
+```mermaid
+flowchart LR
+  A[Angular] --> B[GraphQL / REST]
+  B --> C[PostgreSQL]
+  B --> D[SFTP]
+```
+
+**Conclusión de cobertura:**
+- **Angular:** cubierto.
+- **GraphQL/REST:** cubierto.
+- **PostgreSQL:** cubierto.
+
 ---
 
 ## 4) Arquitectura actualizada (febrero)
