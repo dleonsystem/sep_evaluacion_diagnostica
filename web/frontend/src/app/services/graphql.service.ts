@@ -22,13 +22,13 @@ export class GraphqlService {
     };
 
     // 1. Prioridad: Token de administrador
-    const adminToken = localStorage.getItem('admin-session-token');
+    const adminToken = localStorage.getItem('eia-admin-token');
     if (adminToken) {
       headers['Authorization'] = `Bearer ${adminToken}`;
     } else {
-      // 2. Fallback: Usuario regular (simulado para Phase 1)
-      const isUserAuth = localStorage.getItem('sesion-preescolar-activa') === 'true';
-      const userEmail = localStorage.getItem('sesion-preescolar-correo');
+      // 2. Fallback: Usuario regular
+      const isUserAuth = localStorage.getItem('eia-user-session-active') === 'true';
+      const userEmail = localStorage.getItem('eia-user-session-email');
 
       if (isUserAuth && userEmail) {
         // Generar token compatible con el backend (email:timestamp base64)

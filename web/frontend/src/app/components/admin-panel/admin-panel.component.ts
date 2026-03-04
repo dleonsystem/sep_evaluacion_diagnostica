@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core'; // Trigger rebuild
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AdminAuthService } from '../../services/admin-auth.service';
@@ -59,6 +59,8 @@ export class AdminPanelComponent implements OnInit {
   paginaUsuariosActual = 1;
   totalUsuarios = 0;
   cargandoUsuarios = false;
+  mostrarModalRespuesta = false;
+  ticketParaResponder: TicketSoporte | null = null;
 
 
   constructor(
@@ -242,8 +244,26 @@ export class AdminPanelComponent implements OnInit {
   }
 
   seleccionarTicket(ticket: TicketSoporte): void {
-    this.ticketSeleccionadoId = ticket.id;
+    if (this.ticketSeleccionadoId === ticket.id) {
+      this.ticketSeleccionadoId = null;
+    } else {
+      this.ticketSeleccionadoId = ticket.id;
+    }
     this.estatusTicketSeleccionado = ticket.estatus;
+  }
+
+  abrirModalRespuesta(ticket: TicketSoporte, event: Event): void {
+    event.stopPropagation();
+    this.ticketParaResponder = ticket;
+    this.ticketSeleccionadoId = ticket.id; // Expand the row too
+    this.estatusTicketSeleccionado = ticket.estatus;
+    this.respuestaAdmin = '';
+    this.mostrarModalRespuesta = true;
+  }
+
+  cerrarModalRespuesta(): void {
+    this.mostrarModalRespuesta = false;
+    this.ticketParaResponder = null;
     this.respuestaAdmin = '';
   }
 
@@ -277,6 +297,7 @@ export class AdminPanelComponent implements OnInit {
       });
 
       this.respuestaAdmin = '';
+      this.cerrarModalRespuesta();
       await this.cargarTicketsSoporte();
     } catch (error) {
       console.error('Error enviando respuesta:', error);

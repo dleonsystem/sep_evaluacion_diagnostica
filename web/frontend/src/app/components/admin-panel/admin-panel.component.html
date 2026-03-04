@@ -78,9 +78,8 @@
               <td>{{ (excel.size || 0) / 1024 | number:'1.0-1' }} KB</td>
               <td>{{ formatearFecha(excel.fecha) }}</td>
               <td>
-                <span class="admin-panel__badge" [class.admin-panel__badge--assigned]="
-                    excel.estatus === 'asignado'
-                  ">
+                <span class="admin-panel__badge" [class.admin-panel__badge--assigned]="excel.estatus === 'asignado'"
+                  [class.admin-panel__badge--pending]="excel.estatus === 'pendiente'">
                   {{ excel.estatus === "asignado" ? "Asignado" : "Pendiente" }}
                 </span>
               </td>
@@ -146,14 +145,15 @@
 
     <section class="admin-panel__tickets">
       <h3>Tickets de soporte</h3>
-      <div class="admin-panel__tickets-filters">
-        <label>
-          <span>Buscar</span>
-          <input type="text" [(ngModel)]="filtroTicketTexto" placeholder="Folio, correo o motivo" />
+      <div class="admin-panel__filters">
+        <label class="admin-panel__filters-field">
+          <span class="admin-panel__filters-label">Buscar</span>
+          <input class="admin-panel__filters-input" type="text" [(ngModel)]="filtroTicketTexto"
+            placeholder="Folio, correo o motivo" />
         </label>
-        <label>
-          <span>Estatus</span>
-          <select [(ngModel)]="filtroTicketEstatus">
+        <label class="admin-panel__filters-field">
+          <span class="admin-panel__filters-label">Estatus</span>
+          <select class="admin-panel__filters-input" [(ngModel)]="filtroTicketEstatus">
             <option value="todos">Todos</option>
             <option value="pendiente">Pendiente</option>
             <option value="en-proceso">En proceso</option>
@@ -161,8 +161,8 @@
           </select>
         </label>
         <div class="admin-panel__tickets-actions">
-          <button class="admin-panel__export-btn" (click)="exportarTickets()">
-            Exportar a CSV
+          <button class="admin-panel__upload-button" (click)="exportarTickets()">
+            <i class="bi bi-file-earmark-spreadsheet"></i> Exportar a CSV
           </button>
         </div>
       </div>
@@ -171,88 +171,127 @@
         No hay tickets registrados aún.
       </p>
 
-      <div class="admin-panel__tickets-grid" *ngIf="ticketsSoporteFiltrados.length"
-        [class.admin-panel__tickets-grid--details-open]="!!ticketSeleccionadoId">
-        <div class="admin-panel__tickets-list">
-          <button class="admin-panel__ticket-card" type="button" *ngFor="let ticket of ticketsSoporteFiltrados"
-            (click)="seleccionarTicket(ticket)" [class.admin-panel__ticket-card--active]="
-              ticket.id === ticketSeleccionadoId
-            ">
-            <div class="admin-panel__ticket-header">
-              <strong>{{ ticket.folio }}</strong>
-              <span class="admin-panel__ticket-status">{{
-                ticket.estatus
-                }}</span>
-            </div>
-            <p>{{ ticket.motivo }}</p>
-            <small>{{ ticket.correo }}</small>
-            <small>{{ formatearFecha(ticket.fecha) }}</small>
-            <small *ngIf="obtenerUltimaRespuesta(ticket) as respuesta">
-              Última respuesta: {{ formatearFecha(respuesta.fecha) }}
-            </small>
-          </button>
-        </div>
-
-        <div class="admin-panel__ticket-detail" *ngIf="ticketSeleccionadoId as ticketId">
-          <ng-container *ngFor="let ticket of ticketsSoporte">
-            <ng-container *ngIf="ticket.id === ticketId">
-              <h4>Detalle del ticket</h4>
-              <p><strong>Folio:</strong> {{ ticket.folio }}</p>
-              <p><strong>Correo:</strong> {{ ticket.correo }}</p>
-              <p><strong>Motivo:</strong> {{ ticket.motivo }}</p>
-              <p *ngIf="ticket.motivoDetalle">
-                <strong>Motivo detalle:</strong> {{ ticket.motivoDetalle }}
-              </p>
-              <p><strong>Descripción:</strong> {{ ticket.descripcion }}</p>
-              <p><strong>Fecha:</strong> {{ formatearFecha(ticket.fecha) }}</p>
-
-              <div class="admin-panel__ticket-evidencias" *ngIf="ticket.evidencias.length">
-                <strong>Evidencias:</strong>
-                <ul>
-                  <li *ngFor="let evidencia of ticket.evidencias">
-                    {{ evidencia.nombre }}
-                  </li>
-                </ul>
-              </div>
-
-              <div class="admin-panel__ticket-respuestas" *ngIf="ticket.respuestas?.length">
-                <strong>Respuestas previas:</strong>
-                <div class="admin-panel__ticket-respuesta" *ngFor="let respuesta of ticket.respuestas">
-                  <p>{{ respuesta.mensaje }}</p>
-                  <small>{{ formatearFecha(respuesta.fecha) }}</small>
-                </div>
-              </div>
-
-              <div class="admin-panel__ticket-actions">
-                <label>
-                  <span>Estatus</span>
-                  <select [(ngModel)]="estatusTicketSeleccionado">
-                    <option value="pendiente">Pendiente</option>
-                    <option value="en-proceso">En proceso</option>
-                    <option value="respondido">Respondido</option>
-                  </select>
-                </label>
-                <label>
-                  <span>Respuesta al usuario</span>
-                  <textarea rows="4" [(ngModel)]="respuestaAdmin"
-                    placeholder="Escribe la respuesta del administrador"></textarea>
-                </label>
-                <button class="admin-panel__ticket-save" type="button" (click)="guardarRespuesta()">
-                  Guardar respuesta
-                </button>
-              </div>
+      <div class="admin-panel__table-container" *ngIf="ticketsSoporteFiltrados.length">
+        <table class="admin-panel__table">
+          <thead>
+            <tr>
+              <th scope="col">Folio</th>
+              <th scope="col">Estatus</th>
+              <th scope="col">Correo</th>
+              <th scope="col">Motivo</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let ticket of ticketsSoporteFiltrados">
+              <tr [class.admin-panel__table-row--selected]="ticket.id === ticketSeleccionadoId"
+                (click)="seleccionarTicket(ticket)" style="cursor: pointer;">
+                <td><strong>{{ ticket.folio }}</strong></td>
+                <td>
+                  <span class="admin-panel__badge" [class.admin-panel__badge--pending]="ticket.estatus === 'pendiente'"
+                    [class.admin-panel__badge--processing]="ticket.estatus === 'en-proceso'"
+                    [class.admin-panel__badge--resolved]="ticket.estatus === 'respondido'">
+                    {{ ticket.estatus | titlecase }}
+                  </span>
+                </td>
+                <td>{{ ticket.correo }}</td>
+                <td>{{ ticket.motivo }}</td>
+                <td>{{ formatearFecha(ticket.fecha) }}</td>
+                <td>
+                  <div class="admin-panel__actions-cell">
+                    <button class="admin-panel__action-btn"
+                      (click)="$event.stopPropagation(); seleccionarTicket(ticket)" title="Ver detalle">
+                      <i class="bi" [class.bi-eye-fill]="ticket.id !== ticketSeleccionadoId"
+                        [class.bi-eye-slash-fill]="ticket.id === ticketSeleccionadoId"></i>
+                    </button>
+                    <button class="admin-panel__action-btn primary-guinda" (click)="abrirModalRespuesta(ticket, $event)"
+                      title="Responder ticket">
+                      <i class="bi bi-reply-fill"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <!-- Inline expansion row -->
+              <tr *ngIf="ticket.id === ticketSeleccionadoId" class="admin-panel__table-expanded-row">
+                <td colspan="6">
+                  <div class="admin-panel__expanded-content">
+                    <div class="admin-panel__detail-grid">
+                      <div class="admin-panel__detail-info">
+                        <p><strong>Descripción:</strong> {{ ticket.descripcion }}</p>
+                        <p *ngIf="ticket.motivoDetalle"><strong>Detalle del motivo:</strong> {{ ticket.motivoDetalle }}
+                        </p>
+                        <div class="admin-panel__ticket-evidencias" *ngIf="ticket.evidencias.length">
+                          <strong>Evidencias:</strong>
+                          <ul class="admin-panel__evidencia-list">
+                            <li *ngFor="let evidencia of ticket.evidencias">
+                              <i class="bi bi-file-earmark-arrow-down"></i> {{ evidencia.nombre }}
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                      <div class="admin-panel__detail-chat">
+                        <div class="admin-panel__ticket-respuestas" *ngIf="ticket.respuestas?.length">
+                          <strong>Historial de respuestas:</strong>
+                          <div class="admin-panel__ticket-respuesta" *ngFor="let respuesta of ticket.respuestas">
+                            <p>{{ respuesta.mensaje }}</p>
+                            <small>{{ formatearFecha(respuesta.fecha) }}</small>
+                          </div>
+                        </div>
+                        <div *ngIf="!ticket.respuestas?.length" class="admin-panel__helper">
+                          No hay respuestas previas.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
             </ng-container>
-          </ng-container>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Ticket Response Modal -->
+      <div class="admin-panel__modal-overlay" *ngIf="mostrarModalRespuesta" (click)="cerrarModalRespuesta()">
+        <div class="admin-panel__modal" (click)="$event.stopPropagation()">
+          <div class="admin-panel__modal-header">
+            <h3>Responder Ticket: {{ ticketParaResponder?.folio }}</h3>
+            <button class="admin-panel__close-btn" (click)="cerrarModalRespuesta()">&times;</button>
+          </div>
+          <div class="admin-panel__modal-body">
+            <div class="admin-panel__action-group">
+              <label for="modal-status">Cambiar Estatus</label>
+              <select id="modal-status" class="admin-panel__filters-input" [(ngModel)]="estatusTicketSeleccionado">
+                <option value="pendiente">Pendiente</option>
+                <option value="en-proceso">En proceso</option>
+                <option value="respondido">Respondido</option>
+              </select>
+            </div>
+            <div class="admin-panel__action-group">
+              <label for="modal-response">Respuesta al Usuario</label>
+              <textarea id="modal-response" class="admin-panel__filters-input" rows="6" [(ngModel)]="respuestaAdmin"
+                placeholder="Escribe la respuesta institucional..."></textarea>
+            </div>
+          </div>
+          <div class="admin-panel__modal-footer">
+            <button class="admin-panel__upload-button gray" type="button" (click)="cerrarModalRespuesta()">
+              Cancelar
+            </button>
+            <button class="admin-panel__upload-button" type="button" (click)="guardarRespuesta()">
+              Enviar Respuesta
+            </button>
+          </div>
         </div>
       </div>
     </section>
 
     <section class="admin-panel__users">
       <h3>Gestión de Usuarios</h3>
-      <div class="admin-panel__tickets-filters">
-        <label>
-          <span>Buscar usuario</span>
-          <input type="text" [(ngModel)]="filtroUsuarioTexto" placeholder="Nombre o correo" />
+      <div class="admin-panel__filters">
+        <label class="admin-panel__filters-field">
+          <span class="admin-panel__filters-label">Buscar usuario</span>
+          <input class="admin-panel__filters-input" type="text" [(ngModel)]="filtroUsuarioTexto"
+            placeholder="Nombre o correo" />
         </label>
       </div>
 
@@ -310,8 +349,10 @@
     </section>
 
     <!-- <a class="admin-panel__link" routerLink="/admin/login">Ir al login</a> -->
-    <button class="admin-panel__logout" type="button" (click)="cerrarSesion()">
-      Cerrar sesión
-    </button>
+    <div class="admin-panel__logout-container">
+      <button class="admin-panel__logout" type="button" (click)="cerrarSesion()">
+        <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+      </button>
+    </div>
   </div>
 </section>
