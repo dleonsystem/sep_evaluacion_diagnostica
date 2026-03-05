@@ -1,0 +1,50 @@
+[
+  {
+    "email": "prueba.usuario@sep.gob.mx",
+    "rol": 1
+  },
+  {
+    "email": "usuario.test1@gmail.com",
+    "rol": 4
+  },
+  {
+    "email": "usuario.test4@gmail.com",
+    "rol": 4
+  },
+  {
+    "email": "pepe.arevalo74@gmail.com",
+    "rol": 4
+  },
+  {
+    "email": "pepenauta09@gmail.com",
+    "rol": 4
+  },
+  {
+    "email": "joseg.gutierrez@nube.sep.gob.mx",
+    "rol": 2
+  },
+  {
+    "email": "saul.maronatti@gmail.com",
+    "rol": 4
+  },
+  {
+    "email": "victor.morejon@gmail.com",
+    "rol": 4
+  },
+  {
+    "email": "usuario.test2@gmail.com",
+    "rol": 4
+  },
+  {
+    "email": "usuario.test3@gmail.com",
+    "rol": 4
+  },
+  {
+    "email": "usuario.test5@gmail.com",
+    "rol": 4
+  },
+  {
+    "email": "admin@sep.gob.mx",
+    "rol": 2
+  }
+]

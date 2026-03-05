@@ -94,6 +94,24 @@ export const typeDefs = `#graphql
     @use-case CU-17: Entrega de Resultados
     """
     downloadAssessmentResult(solicitudId: ID!, fileName: String!): FileDownload!
+
+    """
+    Obtener lista de preguntas frecuentes
+    @use-case CU-18: Preguntas Frecuentes
+    """
+    getPreguntasFrecuentes: [PreguntaFrecuente!]!
+  }
+
+  """
+  Estructura de Pregunta Frecuente
+  """
+  type PreguntaFrecuente {
+    id: ID!
+    pregunta: String!
+    respuesta: String!
+    activo: Boolean!
+    orden: Int!
+    fecha_creacion: String!
   }
 
   """
@@ -459,6 +477,7 @@ export const typeDefs = `#graphql
     id: ID!
     consecutivo: Int!
     cct: String!
+    turno: String
     archivoOriginal: String!
     fechaCarga: String!
     estadoValidacion: Int!

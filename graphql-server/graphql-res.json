@@ -1,0 +1,91 @@
+{
+  "data": {
+    "getSolicitudes": [
+      {
+        "id": "0e52322c-db8f-49d7-bd4b-529e4fc932f1",
+        "cct": "07DJN1712E",
+        "turno": "MATUTINO"
+      },
+      {
+        "id": "0a3fba05-000c-4016-8444-a2dabe627e72",
+        "cct": "07DJN1710G",
+        "turno": "MATUTINO"
+      },
+      {
+        "id": "10ddbad3-8498-4e9a-92b5-446ec472b024",
+        "cct": "07DJN1710G",
+        "turno": "MATUTINO"
+      },
+      {
+        "id": "15a224a7-e549-4dac-a6c5-93cbf560133f",
+        "cct": "07DJN1710G",
+        "turno": "MATUTINO"
+      },
+      {
+        "id": "e3fa94ee-f5ec-4071-82bf-40bff1b5cf7a",
+        "cct": "07DJN1710G",
+        "turno": "MATUTINO"
+      },
+      {
+        "id": "dc7ad782-e976-4c3b-9c3d-e313e784e691",
+        "cct": "07DJN1710G",
+        "turno": "MATUTINO"
+      },
+      {
+        "id": "7441aabf-b3e9-40b4-bbc6-9fd04bc44342",
+        "cct": "07DJN1710G",
+        "turno": "MATUTINO"
+      },
+      {
+        "id": "7ff7f9b4-a573-4cf6-a2f8-6b3528fa22f4",
+        "cct": "07DJN1710G",
+        "turno": "MATUTINO"
+      },
+      {
+        "id": "13d11b8e-66f8-4a85-9af4-4b9be1d769fb",
+        "cct": "07DJN1710G",
+        "turno": "MATUTINO"
+      },
+      {
+        "id": "d8b3cca4-c735-486a-a30e-3e845211b9f0",
+        "cct": "01DJN0001A",
+        "turno": "MATUTINO"
+      },
+      {
+        "id": "f038c211-7984-4342-8529-6ed748c1a203",
+        "cct": "01DJN0001A",
+        "turno": "MATUTINO"
+      },
+      {
+        "id": "b0a98a64-46ce-445c-8601-c205516f4dd0",
+        "cct": "01DJN0001A",
+        "turno": "MATUTINO"
+      },
+      {
+        "id": "20515ebe-2f7d-4f3b-a53b-5f690ee76e8c",
+        "cct": "01DJN0001A",
+        "turno": "MATUTINO"
+      },
+      {
+        "id": "ec20f16a-2d25-427c-9483-710bf605e831",
+        "cct": "01DJN0001A",
+        "turno": "MATUTINO"
+      },
+      {
+        "id": "104e366f-646b-405e-af6c-85163048e2e4",
+        "cct": "01DJN0001A",
+        "turno": "MATUTINO"
+      },
+      {
+        "id": "0269275e-1bb4-42a1-8112-d408a5d32009",
+        "cct": "01DJN0001A",
+        "turno": "MATUTINO"
+      },
+      {
+        "id": "3980d068-6361-4efd-bcf6-73dbe9bef62b",
+        "cct": "01DJN0001A",
+        "turno": "MATUTINO"
+      }
+    ]
+  }
+}

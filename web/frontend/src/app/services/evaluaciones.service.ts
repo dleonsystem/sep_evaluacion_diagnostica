@@ -34,6 +34,7 @@ export interface SolicitudEia2 {
     id: string;
     consecutivo: number;
     cct: string;
+    turno?: string;
     archivoOriginal: string;
     fechaCarga: string;
     estadoValidacion: number;

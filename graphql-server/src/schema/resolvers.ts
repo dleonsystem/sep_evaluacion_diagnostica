@@ -245,6 +245,25 @@ export const resolvers = {
     },
 
     /**
+     * Obtener lista de preguntas frecuentes
+     * @use-case CU-18: Preguntas Frecuentes
+     */
+    getPreguntasFrecuentes: async () => {
+      try {
+        const result = await query(
+          `SELECT id, pregunta, respuesta, activo, orden, created_at::text as fecha_creacion
+           FROM preguntas_frecuentes
+           WHERE activo = true
+           ORDER BY orden ASC, created_at DESC`
+        );
+        return result.rows;
+      } catch (error) {
+        logger.error('Error fetching preguntas frecuentes', error);
+        throw new Error('Error al obtener preguntas frecuentes');
+      }
+    },
+
+    /**
      * Obtener usuario por ID
      * @use-case CU-01: Consulta de usuario
      * @psp Defect Prevention - Validación de ID
@@ -339,15 +358,15 @@ export const resolvers = {
     getEvaluacion: async (_: unknown, { id }: { id: string }): Promise<EvaluacionRow | null> => {
       try {
         const result = await query(
-          `SELECT 
-            id,
-            clave_cct as "claveCCT",
-            periodo,
-            grado,
-            grupo,
-            fecha_carga as "fechaCarga",
-            nombre_archivo as "nombreArchivo",
-            estado_validacion as "estadoValidacion"
+          `SELECT
+id,
+  clave_cct as "claveCCT",
+  periodo,
+  grado,
+  grupo,
+  fecha_carga as "fechaCarga",
+  nombre_archivo as "nombreArchivo",
+  estado_validacion as "estadoValidacion"
           FROM evaluaciones 
           WHERE id = $1`,
           [id]
@@ -383,31 +402,34 @@ export const resolvers = {
         const isAdmin = ['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol);
 
         // US-2.5: Solo administradores ven todas las solicitudes, usuarios normales solo las suyas
-        let sql = `SELECT 
-            id,
-            consecutivo,
-            cct,
-            archivo_original as "archivoOriginal",
-            fecha_carga as "fechaCarga",
-            estado_validacion as "estadoValidacion",
-            nivel_educativo as "nivelEducativo",
-            archivo_path as "archivoPath",
-            archivo_size as "archivoSize",
-            procesado_externamente as "procesadoExternamente",
-            detalles_error as "errores",
-            resultados
-          FROM solicitudes_eia2`;
+        let sql = `SELECT
+  s.id,
+  s.consecutivo,
+  s.cct,
+  s.archivo_original as "archivoOriginal",
+  s.fecha_carga as "fechaCarga",
+  s.estado_validacion as "estadoValidacion",
+  s.nivel_educativo as "nivelEducativo",
+  s.archivo_path as "archivoPath",
+  s.archivo_size as "archivoSize",
+  s.procesado_externamente as "procesadoExternamente",
+  s.detalles_error as "errores",
+  s.resultados,
+  t.nombre as turno
+          FROM solicitudes_eia2 s
+          LEFT JOIN escuelas e ON e.cct = s.cct
+          LEFT JOIN cat_turnos t ON t.id_turno = e.id_turno`;
 
         const params: any[] = [];
         const conditions: string[] = [];
 
         if (cct) {
-          conditions.push(`cct = $${params.length + 1}`);
+          conditions.push(`s.cct = $${params.length + 1} `);
           params.push(cct);
         }
 
         if (!isAdmin) {
-          conditions.push(`usuario_id = $${params.length + 1}`);
+          conditions.push(`s.usuario_id = $${params.length + 1} `);
           params.push(context.user.id);
         }
 
@@ -415,7 +437,7 @@ export const resolvers = {
           sql += ` WHERE ` + conditions.join(' AND ');
         }
 
-        sql += ` ORDER BY fecha_carga DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        sql += ` ORDER BY fecha_carga DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2} `;
         params.push(limit, offset);
 
         const result = await query(sql, params);
@@ -446,22 +468,22 @@ export const resolvers = {
 
       try {
         const result = await query(`
-          SELECT 
-            t.id,
-            t.numero_ticket as "numeroTicket",
-            t.asunto,
-            t.descripcion,
-            (SELECT codigo FROM cat_estado_ticket WHERE id = t.estado) as estado,
-            t.prioridad,
-            t.evidencias,
-            u.email as "correo",
-            t.created_at as "fechaCreacion",
-            t.updated_at as "fechaActualizacion"
+SELECT
+t.id,
+  t.numero_ticket as "numeroTicket",
+  t.asunto,
+  t.descripcion,
+  (SELECT codigo FROM cat_estado_ticket WHERE id = t.estado) as estado,
+    t.prioridad,
+    t.evidencias,
+    u.email as "correo",
+    t.created_at as "fechaCreacion",
+    t.updated_at as "fechaActualizacion"
           FROM tickets_soporte t
           LEFT JOIN usuarios u ON t.usuario_id = u.id
           WHERE t.deleted_at IS NULL
           ORDER BY t.created_at DESC
-        `);
+  `);
         return result.rows.map(row => ({
           ...row,
           fechaCreacion: row.fechaCreacion instanceof Date ? row.fechaCreacion.toISOString() : row.fechaCreacion,
@@ -513,25 +535,25 @@ export const resolvers = {
             WHERE fecha_carga > NOW() - INTERVAL '30 days' 
             GROUP BY TO_CHAR(fecha_carga, 'YYYY-MM-DD') 
             ORDER BY fecha ASC
-          `),
+  `),
           query(`
             SELECT ne.codigo as label, COUNT(*) as cantidad 
             FROM solicitudes_eia2 s 
             JOIN cat_nivel_educativo ne ON s.nivel_educativo = ne.id 
             GROUP BY ne.codigo
-          `),
+  `),
           query(`
-            SELECT 
-              COALESCE(AVG(EXTRACT(EPOCH FROM (res.fecha_respuesta - t.created_at))/3600), 0) as avg_hours
+SELECT
+COALESCE(AVG(EXTRACT(EPOCH FROM(res.fecha_respuesta - t.created_at)) / 3600), 0) as avg_hours
             FROM tickets_soporte t
-            CROSS JOIN LATERAL (
-              SELECT created_at as fecha_respuesta 
+            CROSS JOIN LATERAL(
+  SELECT created_at as fecha_respuesta 
               FROM comentarios_ticket 
               WHERE ticket_id = t.id 
               ORDER BY created_at ASC 
               LIMIT 1
-            ) res
-          `)
+) res
+  `)
         ]);
 
         const totalSolicitudes = parseInt(solicitudesRes.rows[0].count);
@@ -573,13 +595,13 @@ export const resolvers = {
       try {
         const client = await getClient();
         const res = await client.query(`
-          SELECT 
-            t.numero_ticket as "folio",
-            t.asunto,
-            u.email as "usuario",
-            (SELECT nombre FROM cat_estado_ticket WHERE id = t.estado) as estado,
-            t.prioridad,
-            t.created_at as "fecha"
+SELECT
+t.numero_ticket as "folio",
+  t.asunto,
+  u.email as "usuario",
+  (SELECT nombre FROM cat_estado_ticket WHERE id = t.estado) as estado,
+    t.prioridad,
+    t.created_at as "fecha"
           FROM tickets_soporte t
           LEFT JOIN usuarios u ON t.usuario_id = u.id
           ORDER BY t.created_at DESC

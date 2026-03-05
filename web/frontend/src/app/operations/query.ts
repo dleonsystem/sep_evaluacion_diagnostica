@@ -50,6 +50,7 @@ export const GET_SOLICITUDES = `
       id
       consecutivo
       cct
+      turno
       archivoOriginal
       fechaCarga
       estadoValidacion

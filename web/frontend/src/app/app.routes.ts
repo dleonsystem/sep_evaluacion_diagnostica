@@ -12,6 +12,7 @@ import { AdminGuard } from './guards/admin.guard';
 import { LoginGuard } from './guards/login.guard';
 import { RecuperarPasswordComponent } from './components/recuperar-password/recuperar-password.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
+import { PreguntasFrecuentesComponent } from './components/preguntas-frecuentes/preguntas-frecuentes.component';
 
 export const routes: Routes = [
   {
@@ -37,6 +38,11 @@ export const routes: Routes = [
   {
     path: 'carga-masiva',
     component: CargaMasivaComponent,
+    pathMatch: 'full',
+  },
+  {
+    path: 'preguntas-frecuentes',
+    component: PreguntasFrecuentesComponent,
     pathMatch: 'full',
   },
   {

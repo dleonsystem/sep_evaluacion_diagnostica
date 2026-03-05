@@ -60,6 +60,7 @@
               <th scope="col">Seleccionar</th>
               <th scope="col">Nombre del Archivo</th>
               <th scope="col">CCT</th>
+              <th scope="col">Turno</th>
               <th scope="col">Tamaño</th>
               <th scope="col">Fecha Carga</th>
               <th scope="col">Estatus</th>
@@ -75,6 +76,7 @@
               </td>
               <td>{{ excel.nombre }}</td>
               <td>{{ excel.cct }}</td>
+              <td>{{ excel.turno || 'ND' }}</td>
               <td>{{ (excel.size || 0) / 1024 | number:'1.0-1' }} KB</td>
               <td>{{ formatearFecha(excel.fecha) }}</td>
               <td>
