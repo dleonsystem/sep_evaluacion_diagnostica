@@ -898,6 +898,16 @@ t.numero_ticket as "folio",
 
         logger.info('User created successfully', { userId: createdUser.id });
 
+        // Enviar credenciales por correo
+        try {
+          // Si el usuario tiene un CCT asociado lo pasamos, si no el email
+          const cctLabel = (clavesCCT && clavesCCT.length > 0) ? clavesCCT[0] : email;
+          await mailingService.sendCredentials(email, cctLabel, password);
+          logger.info(`Credentials email sent to ${email}`);
+        } catch (mailErr) {
+          logger.error('Failed to send credentials email', { email, error: mailErr });
+        }
+
         return createdUser;
       } catch (error) {
         logger.error('Error creating user', { input, error });

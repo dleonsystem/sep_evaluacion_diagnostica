@@ -60,7 +60,22 @@ export class AdminPanelComponent implements OnInit {
   totalUsuarios = 0;
   cargandoUsuarios = false;
   mostrarModalRespuesta = false;
+
+  get esCoordinadorFederal(): boolean {
+    return this.adminAuthService.obtenerRol() === 'COORDINADOR_FEDERAL';
+  }
   ticketParaResponder: TicketSoporte | null = null;
+
+  // Nuevo Usuario
+  mostrarModalUsuario = false;
+  nuevoUsuario = {
+    email: '',
+    nombre: '',
+    apepaterno: '',
+    apematerno: '',
+    rol: 'CONSULTA' as any,
+    claveCCT: ''
+  };
 
 
   constructor(
@@ -467,6 +482,60 @@ export class AdminPanelComponent implements OnInit {
     if (pagina < 1 || pagina > totalPaginas) return;
     this.paginaUsuariosActual = pagina;
     this.cargarUsuarios();
+  }
+
+  abrirModalUsuario(): void {
+    this.nuevoUsuario = {
+      email: '',
+      nombre: '',
+      apepaterno: '',
+      apematerno: '',
+      rol: 'CONSULTA',
+      claveCCT: ''
+    };
+    this.mostrarModalUsuario = true;
+  }
+
+  cerrarModalUsuario(): void {
+    this.mostrarModalUsuario = false;
+  }
+
+  async crearUsuario(): Promise<void> {
+    if (!this.nuevoUsuario.email || !this.nuevoUsuario.nombre || !this.nuevoUsuario.rol) {
+      return;
+    }
+
+    this.cargandoUsuarios = true;
+    try {
+      // Generar contraseña aleatoria temporal
+      const password = Math.random().toString(36).slice(-10) + '!A1';
+
+      await firstValueFrom(
+        this.usuariosService.crearUsuario({
+          email: this.nuevoUsuario.email,
+          nombre: this.nuevoUsuario.nombre,
+          apepaterno: this.nuevoUsuario.apepaterno,
+          apematerno: this.nuevoUsuario.apematerno,
+          rol: this.nuevoUsuario.rol,
+          clavesCCT: this.nuevoUsuario.claveCCT ? [this.nuevoUsuario.claveCCT] : [],
+          password: password
+        })
+      );
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Usuario Creado',
+        text: `El usuario ${this.nuevoUsuario.email} ha sido creado. Se le han enviado sus credenciales por correo electrónico.`,
+      });
+
+      this.cerrarModalUsuario();
+      await this.cargarUsuarios();
+    } catch (error: any) {
+      console.error('Error creando usuario:', error);
+      await Swal.fire('Error', error.message || 'No se pudo crear el usuario', 'error');
+    } finally {
+      this.cargandoUsuarios = false;
+    }
   }
 
   get usuariosFiltrados(): UsuarioCreado[] {

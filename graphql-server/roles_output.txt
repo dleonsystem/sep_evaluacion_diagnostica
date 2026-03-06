@@ -1,0 +1,9 @@
+﻿Pager usage is off.
+ id_rol |       nombre        |       codigo        
+--------+---------------------+---------------------
+      1 | Consulta            | CONSULTA
+      2 | Coordinador Federal | COORDINADOR_FEDERAL
+      3 | Coordinador Estatal | COORDINADOR_ESTATAL
+      4 | Responsable CCT     | RESPONSABLE_CCT
+(4 rows)
+

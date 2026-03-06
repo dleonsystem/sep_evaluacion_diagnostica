@@ -95,6 +95,212 @@
   }
 }
 
+/* --- Premium Upload Status --- */
+.admin-panel__status {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin: 2rem 0;
+  border: 1px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &--idle {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #475569;
+
+    .admin-panel__status-icon {
+      background: #e2e8f0;
+      color: #64748b;
+    }
+  }
+
+  &--uploading {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1e40af;
+    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.08);
+
+    .admin-panel__status-icon {
+      background: #3b82f6;
+      color: white;
+      animation: spin 2s linear infinite;
+    }
+  }
+
+  &--success {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #166534;
+
+    .admin-panel__status-icon {
+      background: #22c55e;
+      color: white;
+    }
+  }
+
+  &--error {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+
+    .admin-panel__status-icon {
+      background: #ef4444;
+      color: white;
+    }
+  }
+}
+
+.admin-panel__status-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.admin-panel__status-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-panel__status-label {
+  font-weight: 800;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
+.admin-panel__status-message {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* --- Premium Upload History --- */
+.admin-panel__history {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.admin-panel__history-title {
+  font-size: 1.25rem;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 800;
+
+  i {
+    color: var(--color-primary-guinda);
+  }
+}
+
+.admin-panel__history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.admin-panel__history-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.2s ease;
+  cursor: default;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    border-color: #cbd5e1;
+  }
+}
+
+.admin-panel__history-file-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+
+  &.icon-pdf {
+    background: #fff1f2;
+    color: #e11d48;
+  }
+
+  &.icon-excel {
+    background: #f0fdf4;
+    color: #16a34a;
+  }
+
+  &.icon-image {
+    background: #eff6ff;
+    color: #2563eb;
+  }
+
+  &.icon-zip {
+    background: #faf5ff;
+    color: #9333ea;
+  }
+}
+
+.admin-panel__history-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-panel__history-name {
+  font-weight: 700;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 1.05rem;
+}
+
+.admin-panel__history-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+
+  span {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Filters Layout - Forced Column Labels */
 .admin-panel__filters {
   display: flex !important;
@@ -106,6 +312,13 @@
   border-radius: 12px !important;
   border: 1px solid #e2e8f0 !important;
   margin: 2rem 0 !important;
+}
+
+.admin-panel__users-actions {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  min-width: 200px;
 }
 
 .admin-panel__filters-field {
@@ -370,8 +583,7 @@
   gap: 2rem;
 }
 
-.admin-panel__ticket-evidencias ul,
-.admin-panel__history-list {
+.admin-panel__ticket-evidencias ul {
   padding-left: 0;
   list-style: none;
 }
@@ -426,6 +638,16 @@
 
 .admin-panel__action-group {
   margin-bottom: 1.5rem;
+}
+
+.admin-panel__form-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 1.5rem !important;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 .admin-panel__action-group label {
