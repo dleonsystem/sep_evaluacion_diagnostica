@@ -45,42 +45,34 @@ export class RecuperarPasswordComponent implements OnInit {
     const email = this.recuperarForm.get('email')?.value;
 
     try {
-      const passwordRecuperada = await firstValueFrom(this.usuariosService.recuperarPassword(email));
+      const response = await firstValueFrom(this.usuariosService.recuperarPassword(email));
 
-      if (passwordRecuperada) {
-        console.log(`[DEBUG] Contraseña recuperada para ${email}: ${passwordRecuperada}`);
+      // Ahora el backend devuelve 'Solicitud procesada' siempre que el flujo es correcto por seguridad.
+      await Swal.fire({
+        icon: 'success',
+        title: 'Solicitud Recibida',
+        text: 'Si el correo está registrado en nuestro sistema, recibirás una nueva contraseña de acceso en unos minutos. Por favor revisa tu bandeja de entrada y spam.',
+        confirmButtonText: 'Entendido',
+      });
 
+      void this.router.navigate(['/login']);
+    } catch (error: any) {
+      // Si el error contiene el mensaje de cooldown (tiempo de espera)
+      const errorMsg = error?.message || '';
+
+      if (errorMsg.includes('Espera')) {
         await Swal.fire({
-          icon: 'success',
-          title: 'Contraseña Generada',
-          html: `
-            <p>Se ha generado una nueva contraseña debido a que aún no hay servidor SMTP:</p>
-            <div style="background: #f1f5f9; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 1.2em; margin: 10px 0;">
-              <strong>${passwordRecuperada}</strong>
-            </div>
-            <p>Por favor, cópiala e inicia sesión.</p>
-          `,
-          confirmButtonText: 'Ir al Login',
+          icon: 'warning',
+          title: 'Demasiados Intentos',
+          text: errorMsg,
         });
       } else {
         await Swal.fire({
-          icon: 'success',
-          title: 'Solicitud procesada',
-          text: 'Si el correo está registrado, recibirás una nueva contraseña en breve.',
-          confirmButtonText: 'Ir al Login',
+          icon: 'error',
+          title: 'Error',
+          text: 'Ocurrió un problema al procesar tu solicitud. Intenta nuevamente más tarde.',
         });
       }
-
-      void this.router.navigate(['/login']);
-    } catch (error) {
-      // Por seguridad, no indicamos si el correo existe o no al usuario final en caso de error específico,
-      // salvo que sea un error de conexión.
-      // Pero para UX, mostraremos un mensaje genérico de error.
-      await Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Ocurrió un problema al procesar tu solicitud. Intenta nuevamente.',
-      });
     } finally {
       this.enviando = false;
     }

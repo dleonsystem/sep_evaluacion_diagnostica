@@ -125,23 +125,51 @@
         [class.admin-panel__status--uploading]="uploadStatus === 'uploading'"
         [class.admin-panel__status--success]="uploadStatus === 'success'"
         [class.admin-panel__status--error]="uploadStatus === 'error'">
-        <span class="admin-panel__status-label">Estado de carga:</span>
-        <span class="admin-panel__status-message">
-          {{ feedbackMessage || "Sin acciones por el momento." }}
-        </span>
+        <div class="admin-panel__status-icon">
+          <i class="bi" [class.bi-info-circle]="uploadStatus === 'idle'"
+            [class.bi-arrow-repeat]="uploadStatus === 'uploading'"
+            [class.bi-check-circle-fill]="uploadStatus === 'success'"
+            [class.bi-exclamation-triangle-fill]="uploadStatus === 'error'"></i>
+        </div>
+        <div class="admin-panel__status-content">
+          <span class="admin-panel__status-label">Estado del Sistema</span>
+          <p class="admin-panel__status-message">
+            {{ feedbackMessage || "Listo para procesar nuevos archivos." }}
+          </p>
+        </div>
       </div>
 
       <div class="admin-panel__history" *ngIf="uploadHistory.length">
-        <span class="admin-panel__history-title">Historial reciente</span>
-        <ul class="admin-panel__history-list">
-          <li class="admin-panel__history-item" *ngFor="let item of uploadHistory">
-            <span class="admin-panel__history-name">{{ item.name }}</span>
-            <span class="admin-panel__history-meta">
-              {{ item.size / 1024 | number: "1.0-0" }} KB ·
-              {{ item.uploadedAt | date: "short" }}
-            </span>
-          </li>
-        </ul>
+        <h3 class="admin-panel__history-title">
+          <i class="bi bi-clock-history"></i> Historial de Carga Reciente
+        </h3>
+        <div class="admin-panel__history-grid">
+          <div class="admin-panel__history-card" *ngFor="let item of uploadHistory">
+            <div class="admin-panel__history-file-icon" [ngClass]="{
+                'icon-pdf': item.name.toLowerCase().endsWith('.pdf'),
+                'icon-excel': item.name.toLowerCase().endsWith('.xlsx'),
+                'icon-image': item.name.toLowerCase().endsWith('.jpg') || item.name.toLowerCase().endsWith('.jpeg'),
+                'icon-zip': item.name.toLowerCase().endsWith('.zip')
+              }">
+              <i class="bi" [class.bi-file-earmark-pdf-fill]="item.name.toLowerCase().endsWith('.pdf')"
+                [class.bi-file-earmark-spreadsheet-fill]="item.name.toLowerCase().endsWith('.xlsx')"
+                [class.bi-file-earmark-image-fill]="item.name.toLowerCase().endsWith('.jpg') || item.name.toLowerCase().endsWith('.jpeg')"
+                [class.bi-file-zip-fill]="item.name.toLowerCase().endsWith('.zip')"
+                [class.bi-file-earmark-text-fill]="!item.name.toLowerCase().endsWith('.pdf') && !item.name.toLowerCase().endsWith('.xlsx') && !item.name.toLowerCase().endsWith('.zip')"></i>
+            </div>
+            <div class="admin-panel__history-details">
+              <span class="admin-panel__history-name" [title]="item.name">{{ item.name }}</span>
+              <div class="admin-panel__history-meta">
+                <span class="admin-panel__history-size">
+                  <i class="bi bi-hdd-fill"></i> {{ item.size / 1024 | number: "1.0-0" }} KB
+                </span>
+                <span class="admin-panel__history-date">
+                  <i class="bi bi-calendar3"></i> {{ item.uploadedAt | date: "short" }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -295,6 +323,11 @@
           <input class="admin-panel__filters-input" type="text" [(ngModel)]="filtroUsuarioTexto"
             placeholder="Nombre o correo" />
         </label>
+        <div class="admin-panel__users-actions" *ngIf="esCoordinadorFederal">
+          <button class="admin-panel__upload-button" (click)="abrirModalUsuario()">
+            <i class="bi bi-person-plus-fill"></i> Nuevo Usuario
+          </button>
+        </div>
       </div>
 
       <div class="admin-panel__table-container">
@@ -355,6 +388,63 @@
       <button class="admin-panel__logout" type="button" (click)="cerrarSesion()">
         <i class="bi bi-box-arrow-right"></i> Cerrar sesión
       </button>
+    </div>
+  </div>
+
+  <!-- New User Modal -->
+  <div class="admin-panel__modal-overlay" *ngIf="mostrarModalUsuario" (click)="cerrarModalUsuario()">
+    <div class="admin-panel__modal" (click)="$event.stopPropagation()">
+      <div class="admin-panel__modal-header">
+        <h3>Crear Nuevo Usuario</h3>
+        <button class="admin-panel__close-btn" (click)="cerrarModalUsuario()">&times;</button>
+      </div>
+      <div class="admin-panel__modal-body">
+        <div class="admin-panel__form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div class="admin-panel__action-group" style="grid-column: span 2;">
+            <label for="user-email">Correo Electrónico *</label>
+            <input id="user-email" type="email" class="admin-panel__filters-input" [(ngModel)]="nuevoUsuario.email"
+              placeholder="ejemplo@sep.gob.mx">
+          </div>
+          <div class="admin-panel__action-group">
+            <label for="user-nombre">Nombre(s) *</label>
+            <input id="user-nombre" type="text" class="admin-panel__filters-input" [(ngModel)]="nuevoUsuario.nombre">
+          </div>
+          <div class="admin-panel__action-group">
+            <label for="user-paterno">Apellido Paterno *</label>
+            <input id="user-paterno" type="text" class="admin-panel__filters-input"
+              [(ngModel)]="nuevoUsuario.apepaterno">
+          </div>
+          <div class="admin-panel__action-group">
+            <label for="user-materno">Apellido Materno</label>
+            <input id="user-materno" type="text" class="admin-panel__filters-input"
+              [(ngModel)]="nuevoUsuario.apematerno">
+          </div>
+          <div class="admin-panel__action-group">
+            <label for="user-rol">Rol del Sistema *</label>
+            <select id="user-rol" class="admin-panel__filters-input" [(ngModel)]="nuevoUsuario.rol">
+              <option value="CONSULTA">Consulta</option>
+              <option value="COORDINADOR_FEDERAL">Coordinador Federal</option>
+              <option value="COORDINADOR_ESTATAL">Coordinador Estatal</option>
+              <option value="RESPONSABLE_CCT">Responsable CCT</option>
+            </select>
+          </div>
+          <div class="admin-panel__action-group" style="grid-column: span 2;">
+            <label for="user-cct">Clave CCT (Opcional)</label>
+            <input id="user-cct" type="text" class="admin-panel__filters-input" [(ngModel)]="nuevoUsuario.claveCCT"
+              placeholder="CC12345678">
+            <small class="admin-panel__helper">Para vincular el usuario a una escuela específica.</small>
+          </div>
+        </div>
+      </div>
+      <div class="admin-panel__modal-footer">
+        <button class="admin-panel__upload-button gray" type="button" (click)="cerrarModalUsuario()">
+          Cancelar
+        </button>
+        <button class="admin-panel__upload-button" type="button" (click)="crearUsuario()"
+          [disabled]="!nuevoUsuario.email || !nuevoUsuario.nombre || !nuevoUsuario.rol">
+          <i class="bi bi-person-check-fill"></i> Crear y enviar accesos
+        </button>
+      </div>
     </div>
   </div>
 </section>
