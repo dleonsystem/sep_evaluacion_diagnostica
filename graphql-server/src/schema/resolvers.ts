@@ -14,6 +14,7 @@ import { logger } from '../utils/logger.js';
 import path from 'path';
 import fs from 'fs/promises';
 import { SftpService } from '../services/sftp.service.js';
+import { MailingService } from '../services/mailing.service.js';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 
@@ -23,6 +24,7 @@ const __dirname = path.dirname(__filename);
 import { query, getClient } from '../config/database.js';
 
 const sftpService = new SftpService();
+const mailingService = new MailingService();
 
 /**
  * User type for context
@@ -1165,22 +1167,38 @@ t.numero_ticket as "folio",
       try {
         await client.query('BEGIN');
 
-        // 1. Buscar usuario
-        const userRes = await client.query('SELECT id, email FROM usuarios WHERE email = $1', [
-          email.trim(),
-        ]);
+        // 1. Buscar usuario y verificar cooldown
+        const userRes = await client.query(
+          'SELECT id, email, updated_at FROM usuarios WHERE email = $1',
+          [email.trim()]
+        );
 
         if (userRes.rows.length === 0) {
           // Por seguridad, no decimos que no existe, pero retornamos true simulado
-          // O retornamos false si queremos ser explícitos en log pero opacos al usuario
           await client.query('ROLLBACK');
-          return '';
+          return 'OK';
         }
 
-        const userId = userRes.rows[0].id;
+        const user = userRes.rows[0];
+        const userId = user.id;
+        const lastUpdate = user.updated_at;
+
+        // Regla de Cooldown: 10 minutos (600,000 ms)
+        if (lastUpdate) {
+          const now = new Date();
+          const lastUpdateDate = new Date(lastUpdate);
+          const diffMs = now.getTime() - lastUpdateDate.getTime();
+          const cooldownMs = 10 * 60 * 1000;
+
+          if (diffMs < cooldownMs) {
+            const remainingMinutes = Math.ceil((cooldownMs - diffMs) / (60 * 1000));
+            logger.warn(`Cooldown active for ${email}. Remaining: ${remainingMinutes} min`);
+            await client.query('ROLLBACK');
+            throw new Error(`Espera ${remainingMinutes} minutos antes de solicitar otra contraseña.`);
+          }
+        }
 
         // 2. Generar nueva contraseña aleatoria
-        // Ejemplo: "P" + random(8 chars) + "!"
         const randomPart = crypto.randomBytes(4).toString('hex'); // 8 chars
         const newPassword = `P${randomPart}!`;
 
@@ -1195,21 +1213,23 @@ t.numero_ticket as "folio",
           [finalHash, userId]
         );
 
-        // 5. Enviar correo (Simulado por ahora)
-        // TODO: Integrar servicio de correo real (Nodemailer / SMTP SEP)
+        // 5. Enviar correo real
+        await mailingService.sendPasswordRecovery(email, newPassword);
+
         logger.info(
-          `[EMAIL SERVICE] Sending recovery email to ${email}. New Password: ${newPassword}`
-        );
-        console.log(
-          `\n========================================\n[EMAIL SIMULADO] Para: ${email}\nContraseña Nueva: ${newPassword}\n========================================\n`
+          `Recovery email sent to ${email}`
         );
 
         await client.query('COMMIT');
-        return newPassword;
-      } catch (error) {
+        return 'Solicitud procesada';
+      } catch (error: any) {
         if (client) await client.query('ROLLBACK');
-        logger.error('Error recovering password', { email, error });
-        throw new Error('Error procesando la solicitud');
+        logger.error('Error recovering password', { email, error: error.message });
+        // Si es un error de cooldown, pasamos el mensaje. Si es otro error, lanzamos uno genérico.
+        if (error.message.includes('espera')) {
+          throw new Error(error.message);
+        }
+        throw new Error('Error al procesar la solicitud. Intente más tarde.');
       } finally {
         if (client) client.release();
       }
