@@ -20,20 +20,25 @@
 --
 -- =====================================================================
 
-\echo ''
-\echo '======================================================================'
-\echo 'MIGRACIÓN: Implementar Modelo NIA'
-\echo 'Fecha: 11-mar-2026'
-\echo '======================================================================'
-\echo ''
+-- =====================================================================
+-- INICIO DE MIGRACIÓN: Implementar Modelo NIA
+-- Fecha: 11-mar-2026
+-- =====================================================================
+SELECT '======================================================================' as mensaje
+UNION ALL SELECT 'MIGRACIÓN: Implementar Modelo NIA'
+UNION ALL SELECT 'Fecha: 11-mar-2026'
+UNION ALL SELECT '======================================================================';
 
 -- =====================================================================
 -- PASO 0: VERIFICACIONES PREVIAS Y BACKUP
 -- =====================================================================
 
-\echo '----------------------------------------------------------------------'
-\echo 'PASO 0: Verificaciones Previas'
-\echo '----------------------------------------------------------------------'
+-- =====================================================================
+-- PASO 0: Verificaciones Previas
+-- =====================================================================
+SELECT '----------------------------------------------------------------------' as mensaje
+UNION ALL SELECT 'PASO 0: Verificaciones Previas'
+UNION ALL SELECT '----------------------------------------------------------------------';
 
 -- Verificar que las tablas dependientes existen
 DO $$
@@ -95,20 +100,30 @@ BEGIN
     END IF;
 END $$;
 
-\echo ''
-\echo '⚠️  ADVERTENCIA: Esta migración realizará cambios CRÍTICOS en la estructura'
-\echo '⚠️  Asegúrese de haber realizado un BACKUP COMPLETO antes de continuar'
-\echo ''
-\echo 'Para continuar, ejecute los siguientes pasos de esta migración.'
-\echo ''
+-- 
+-- ⚠️  ADVERTENCIA: Esta migración realizará cambios CRÍTICOS en la estructura
+-- ⚠️  Asegúrese de haber realizado un BACKUP COMPLETO antes de continuar
+-- 
+-- INSTRUCCIONES pgAdmin:
+-- 1. Haga backup desde: Click derecho en BD > Backup...
+-- 2. Ejecute este script completo en Query Tool (F5)
+-- 3. Revise los mensajes de salida para verificar éxito
+-- 
+
+SELECT '⚠️ ADVERTENCIA: Realizar BACKUP antes de continuar' as mensaje
+UNION ALL SELECT '⚠️ Esta migración modificará la tabla evaluaciones'
+UNION ALL SELECT 'Si está listo, continúe con la ejecución (F5)';
 
 -- =====================================================================
 -- PASO 1: CREAR CATÁLOGO DE CAMPOS FORMATIVOS
 -- =====================================================================
 
-\echo '----------------------------------------------------------------------'
-\echo 'PASO 1: Crear catálogo CAT_CAMPOS_FORMATIVOS'
-\echo '----------------------------------------------------------------------'
+-- =====================================================================
+-- PASO 1: Crear catálogo CAT_CAMPOS_FORMATIVOS
+-- =====================================================================
+SELECT '----------------------------------------------------------------------' as mensaje
+UNION ALL SELECT 'PASO 1: Crear catálogo CAT_CAMPOS_FORMATIVOS'
+UNION ALL SELECT '----------------------------------------------------------------------';
 
 BEGIN;
 
@@ -159,16 +174,19 @@ ORDER BY orden_visual;
 
 COMMIT;
 
-\echo 'PASO 1 COMPLETADO: Catálogo CAT_CAMPOS_FORMATIVOS creado exitosamente'
-\echo ''
+SELECT '✓ PASO 1 COMPLETADO: Catálogo CAT_CAMPOS_FORMATIVOS creado exitosamente' as resultado;
+
 
 -- =====================================================================
 -- PASO 2: CREAR CATÁLOGO DE NIVELES DE INTEGRACIÓN (NIA)
 -- =====================================================================
 
-\echo '----------------------------------------------------------------------'
-\echo 'PASO 2: Crear catálogo CAT_NIVELES_INTEGRACION'
-\echo '----------------------------------------------------------------------'
+-- =====================================================================
+-- PASO 2: Crear catálogo CAT_NIVELES_INTEGRACION
+-- =====================================================================
+SELECT '----------------------------------------------------------------------' as mensaje
+UNION ALL SELECT 'PASO 2: Crear catálogo CAT_NIVELES_INTEGRACION'
+UNION ALL SELECT '----------------------------------------------------------------------';
 
 BEGIN;
 
@@ -227,16 +245,19 @@ ORDER BY orden_visual;
 
 COMMIT;
 
-\echo 'PASO 2 COMPLETADO: Catálogo CAT_NIVELES_INTEGRACION creado exitosamente'
-\echo ''
+SELECT '✓ PASO 2 COMPLETADO: Catálogo CAT_NIVELES_INTEGRACION creado exitosamente' as resultado;
+
 
 -- =====================================================================
 -- PASO 3: CREAR TABLA NIVELES_INTEGRACION_ESTUDIANTE
 -- =====================================================================
 
-\echo '----------------------------------------------------------------------'
-\echo 'PASO 3: Crear tabla NIVELES_INTEGRACION_ESTUDIANTE'
-\echo '----------------------------------------------------------------------'
+-- =====================================================================
+-- PASO 3: Crear tabla NIVELES_INTEGRACION_ESTUDIANTE
+-- =====================================================================
+SELECT '----------------------------------------------------------------------' as mensaje
+UNION ALL SELECT 'PASO 3: Crear tabla NIVELES_INTEGRACION_ESTUDIANTE'
+UNION ALL SELECT '----------------------------------------------------------------------';
 
 BEGIN;
 
@@ -361,16 +382,19 @@ ORDER BY ordinal_position;
 
 COMMIT;
 
-\echo 'PASO 3 COMPLETADO: Tabla NIVELES_INTEGRACION_ESTUDIANTE creada exitosamente'
-\echo ''
+SELECT '✓ PASO 3 COMPLETADO: Tabla NIVELES_INTEGRACION_ESTUDIANTE creada exitosamente' as resultado;
+
 
 -- =====================================================================
 -- PASO 4: ELIMINAR TRIGGER DE CÁLCULO DEPRECADO
 -- =====================================================================
 
-\echo '----------------------------------------------------------------------'
-\echo 'PASO 4: Eliminar trigger deprecado de EVALUACIONES'
-\echo '----------------------------------------------------------------------'
+-- =====================================================================
+-- PASO 4: Eliminar trigger deprecado de EVALUACIONES
+-- =====================================================================
+SELECT '----------------------------------------------------------------------' as mensaje
+UNION ALL SELECT 'PASO 4: Eliminar trigger deprecado de EVALUACIONES'
+UNION ALL SELECT '----------------------------------------------------------------------';
 
 BEGIN;
 
@@ -386,16 +410,19 @@ DROP FUNCTION IF EXISTS set_nivel_integracion() CASCADE;
 
 COMMIT;
 
-\echo 'PASO 4 COMPLETADO: Triggers deprecados eliminados'
-\echo ''
+SELECT '✓ PASO 4 COMPLETADO: Triggers deprecados eliminados' as resultado;
+
 
 -- =====================================================================
 -- PASO 4.5: BACKUP DE DATOS HISTÓRICOS (PRESERVAR INFORMACIÓN)
 -- =====================================================================
 
-\echo '----------------------------------------------------------------------'
-\echo 'PASO 4.5: Crear backup de datos históricos de EVALUACIONES'
-\echo '----------------------------------------------------------------------'
+-- =====================================================================
+-- PASO 4.5: Crear backup de datos históricos de EVALUACIONES
+-- =====================================================================
+SELECT '----------------------------------------------------------------------' as mensaje
+UNION ALL SELECT 'PASO 4.5: Crear backup de datos históricos de EVALUACIONES'
+UNION ALL SELECT '----------------------------------------------------------------------';
 
 BEGIN;
 
@@ -450,17 +477,20 @@ LIMIT 5;
 
 COMMIT;
 
-\echo 'PASO 4.5 COMPLETADO: Backup de datos históricos creado'
-\echo 'Tabla: backup_evaluaciones_nia_historico'
-\echo ''
+SELECT '✓ PASO 4.5 COMPLETADO: Backup de datos históricos creado' as resultado
+UNION ALL SELECT '✓ Tabla: backup_evaluaciones_nia_historico';
+
 
 -- =====================================================================
 -- PASO 5: ELIMINAR CAMPOS DEPRECADOS DE EVALUACIONES
 -- =====================================================================
 
-\echo '----------------------------------------------------------------------'
-\echo 'PASO 5: Eliminar campos deprecados de EVALUACIONES'
-\echo '----------------------------------------------------------------------'
+-- =====================================================================
+-- PASO 5: Eliminar campos deprecados de EVALUACIONES
+-- =====================================================================
+SELECT '----------------------------------------------------------------------' as mensaje
+UNION ALL SELECT 'PASO 5: Eliminar campos deprecados de EVALUACIONES'
+UNION ALL SELECT '----------------------------------------------------------------------';
 
 BEGIN;
 
@@ -510,16 +540,19 @@ END $$;
 
 COMMIT;
 
-\echo 'PASO 5 COMPLETADO: Campos deprecados eliminados de EVALUACIONES'
-\echo ''
+SELECT '✓ PASO 5 COMPLETADO: Campos deprecados eliminados de EVALUACIONES' as resultado;
+
 
 -- =====================================================================
 -- PASO 6: CORREGIR CONSTRAINT UNIQUE EN GRUPOS
 -- =====================================================================
 
-\echo '----------------------------------------------------------------------'
-\echo 'PASO 6: Corregir constraint UNIQUE en GRUPOS'
-\echo '----------------------------------------------------------------------'
+-- =====================================================================
+-- PASO 6: Corregir constraint UNIQUE en GRUPOS
+-- =====================================================================
+SELECT '----------------------------------------------------------------------' as mensaje
+UNION ALL SELECT 'PASO 6: Corregir constraint UNIQUE en GRUPOS'
+UNION ALL SELECT '----------------------------------------------------------------------';
 
 BEGIN;
 
@@ -604,16 +637,19 @@ GROUP BY tc.constraint_name;
 
 COMMIT;
 
-\echo 'PASO 6 COMPLETADO: Constraint UNIQUE en GRUPOS corregido'
-\echo ''
+SELECT '✓ PASO 6 COMPLETADO: Constraint UNIQUE en GRUPOS corregido' as resultado;
+
 
 -- =====================================================================
 -- PASO 7: CORREGIR CONSTRAINT UNIQUE EN EVALUACIONES
 -- =====================================================================
 
-\echo '----------------------------------------------------------------------'
-\echo 'PASO 7: Corregir constraint UNIQUE en EVALUACIONES'
-\echo '----------------------------------------------------------------------'
+-- =====================================================================
+-- PASO 7: Corregir constraint UNIQUE en EVALUACIONES
+-- =====================================================================
+SELECT '----------------------------------------------------------------------' as mensaje
+UNION ALL SELECT 'PASO 7: Corregir constraint UNIQUE en EVALUACIONES'
+UNION ALL SELECT '----------------------------------------------------------------------';
 
 BEGIN;
 
@@ -685,16 +721,19 @@ GROUP BY tc.constraint_name;
 
 COMMIT;
 
-\echo 'PASO 7 COMPLETADO: Constraint UNIQUE en EVALUACIONES corregido'
-\echo ''
+SELECT '✓ PASO 7 COMPLETADO: Constraint UNIQUE en EVALUACIONES corregido' as resultado;
+
 
 -- =====================================================================
 -- PASO 8: VERIFICACIÓN FINAL
 -- =====================================================================
 
-\echo '======================================================================'
-\echo 'PASO 8: Verificación Final'
-\echo '======================================================================'
+-- =====================================================================
+-- PASO 8: Verificación Final
+-- =====================================================================
+SELECT '======================================================================' as mensaje
+UNION ALL SELECT 'PASO 8: Verificación Final'
+UNION ALL SELECT '======================================================================';
 
 -- Verificar que todas las tablas NIA existen
 SELECT '✓ Verificación de tablas NIA:' as resultado;
@@ -784,50 +823,43 @@ FROM information_schema.tables
 WHERE table_schema = 'public' 
     AND table_type = 'BASE TABLE';
 
-\echo ''
-\echo '======================================================================'
-\echo '✓ MIGRACIÓN COMPLETADA EXITOSAMENTE'
-\echo '======================================================================'
-\echo ''
-\echo 'Cambios aplicados:'
-\echo '  ✓ Tabla cat_campos_formativos creada (5 registros)'
-\echo '  ✓ Tabla cat_niveles_integracion creada (4 registros)'
-\echo '  ✓ Tabla niveles_integracion_estudiante creada'
-\echo '  ✓ Campos deprecados eliminados de evaluaciones'
-\echo '  ✓ Trigger deprecado eliminado'
-\echo '  ✓ Constraint UNIQUE en grupos corregido'
-\echo '  ✓ Constraint UNIQUE en evaluaciones corregido'
-\echo ''
-\echo 'DATOS PRESERVADOS:'
-\echo '  ✓ Todas las evaluaciones existentes se mantuvieron'
-\echo '  ✓ Backup histórico creado: backup_evaluaciones_nia_historico'
-\echo '  ✓ Todas las tablas relacionadas intactas (estudiantes, grupos, etc.)'
-\echo ''
-\echo 'PRÓXIMOS PASOS:'
-\echo '  1. REVISAR backup_evaluaciones_nia_historico (contiene datos eliminados)'
-\echo '  2. DESCOMENTAR y ejecutar Paso 8.5 si desea calcular NIAs iniciales'
-\echo '  3. Actualizar modelos ORM/TypeORM en código de aplicación'
-\echo '  4. Actualizar queries que referencien campos eliminados'
-\echo '  5. Implementar lógica de cálculo de NIAs por campo formativo'
-\echo '  6. Crear proceso batch para calcular NIAs de estudiantes existentes'
-\echo '  7. Actualizar tests unitarios e integración'
-\echo '  8. Actualizar documentación de API'
-\echo '  9. Comunicar cambios al equipo de desarrollo'
-\echo ''
-\echo 'TABLAS DE BACKUP CREADAS:'
-\echo '  • backup_evaluaciones_nia_historico - Datos de nivel_integracion y competencia_alcanzada'
-\echo '    (Puede eliminarse después de verificar que todo funciona correctamente)'
-\echo ''
-\echo 'Referencia: ESTRUCTURA_DE_DATOS.md, ANALISIS_CONSISTENCIA_BD_VS_DOCS.md'
-\echo ''
+
+SELECT '======================================================================' as mensaje
+UNION ALL SELECT '✓ MIGRACIÓN COMPLETADA EXITOSAMENTE'
+UNION ALL SELECT '======================================================================'
+UNION ALL SELECT ''
+UNION ALL SELECT 'Cambios aplicados:'
+UNION ALL SELECT '  ✓ Tabla cat_campos_formativos creada (5 registros)'
+UNION ALL SELECT '  ✓ Tabla cat_niveles_integracion creada (4 registros)'
+UNION ALL SELECT '  ✓ Tabla niveles_integracion_estudiante creada'
+UNION ALL SELECT '  ✓ Campos deprecados eliminados de evaluaciones'
+UNION ALL SELECT '  ✓ Trigger deprecado eliminado'
+UNION ALL SELECT '  ✓ Constraint UNIQUE en grupos corregido'
+UNION ALL SELECT '  ✓ Constraint UNIQUE en evaluaciones corregido'
+UNION ALL SELECT ''
+UNION ALL SELECT 'DATOS PRESERVADOS:'
+UNION ALL SELECT '  ✓ Todas las evaluaciones existentes se mantuvieron'
+UNION ALL SELECT '  ✓ Backup histórico: backup_evaluaciones_nia_historico'
+UNION ALL SELECT '  ✓ Todas las tablas relacionadas intactas'
+UNION ALL SELECT ''
+UNION ALL SELECT 'PRÓXIMOS PASOS:'
+UNION ALL SELECT '  1. REVISAR backup_evaluaciones_nia_historico'
+UNION ALL SELECT '  2. Actualizar código de aplicación'
+UNION ALL SELECT '  3. Implementar lógica de cálculo de NIAs'
+UNION ALL SELECT ''
+UNION ALL SELECT 'Ref: GUIA_EJECUCION_MIGRACION_NIA.md';
 
 -- =====================================================================
 -- PASO 8.5: MIGRACIÓN DE DATOS A NUEVA ESTRUCTURA (OPCIONAL)
 -- =====================================================================
 
-\echo '----------------------------------------------------------------------'
-\echo 'PASO 8.5: Migración de datos históricos (OPCIONAL - Comentado)'
-\echo '----------------------------------------------------------------------'
+-- =====================================================================
+-- PASO 8.5: Migración de datos históricos (OPCIONAL - Comentado)
+-- =====================================================================
+SELECT '----------------------------------------------------------------------' as mensaje
+UNION ALL SELECT 'PASO 8.5: Migración de datos históricos (OPCIONAL)'
+UNION ALL SELECT 'Esta sección está comentada - ver código para activarla'
+UNION ALL SELECT '----------------------------------------------------------------------';
 
 -- ⚠️ Esta sección está COMENTADA por defecto
 -- ⚠️ Solo descomentar si desea calcular NIAs iniciales desde evaluaciones existentes
@@ -906,8 +938,8 @@ WHERE table_schema = 'public'
 --     'Ingreso manual de ejemplo'
 -- );
 
-\echo 'PASO 8.5: Sección de migración de datos disponible (comentada)'
-\echo ''
+SELECT '⚠️ PASO 8.5: Código de migración de datos disponible (comentado)' as resultado;
+
 
 -- =====================================================================
 -- ROLLBACK (Solo en caso de emergencia)
@@ -944,8 +976,14 @@ WHERE table_schema = 'public'
 --
 -- =====================================================================
 
-\echo ''
-\echo 'Script de migración finalizado.'
-\echo 'Archivo: migration_implementar_modelo_nia.sql'
-\echo 'Fecha: 11-mar-2026'
-\echo ''
+
+-- =====================================================================
+-- FIN DEL SCRIPT DE MIGRACIÓN
+-- Archivo: migration_implementar_modelo_nia.sql
+-- Fecha: 11-mar-2026
+-- Ejecutado desde: pgAdmin Query Tool
+-- =====================================================================
+
+SELECT 'Script de migración finalizado exitosamente' as resultado
+UNION ALL SELECT 'Fecha: 11-mar-2026'
+UNION ALL SELECT 'Consulte GUIA_EJECUCION_MIGRACION_NIA.md para siguientes pasos';
