@@ -37,7 +37,38 @@ El área solicitante (DGTIC/DGADAE) identificó **contradicciones críticas** en
 
 ---
 
-## 📋 Guía Rápida de Documentos
+## � COMPARACIÓN DE BRANCHES (11 marzo 2026)
+
+### 📊 Análisis de Divergencia: DEV_VLP vs Pepenauta
+
+**CONTEXTO:** El proyecto tiene dos branches principales con desarrollos paralelos:
+- **DEV_VLP_EstructuraDeDatos:** Enfocado en estructura de base de datos, migraciones y consolidación técnica
+- **task/pepenautamx-001-correo-electronico:** Enfocado en funcionalidad de correo electrónico, dashboard y servicios
+
+**DOCUMENTOS DE COMPARACIÓN:**
+
+1. **[COMPARACION_BRANCHES_DEV_VLP_VS_PEPENAUTA.md](COMPARACION_BRANCHES_DEV_VLP_VS_PEPENAUTA.md)** ⭐ NUEVO 11-mar-2026
+   - ⏱️ Tiempo de lectura: 40-50 minutos
+   - 📊 Contiene: Análisis exhaustivo de 149 archivos modificados, 237K líneas añadidas
+   - 🎯 Objetivo: Entender diferencias técnicas entre branches antes de merge
+   - 🔍 Secciones: Base de datos, GraphQL, Frontend, Documentación, Infraestructura
+   - ⚠️ Crítico: Identifica conflictos potenciales y estrategias de integración
+
+2. **[RESUMEN_VISUAL_COMPARACION.md](RESUMEN_VISUAL_COMPARACION.md)** ⭐ NUEVO 11-mar-2026
+   - ⏱️ Tiempo de lectura: 5-10 minutos (lectura rápida)
+   - 📊 Contiene: Vista rápida con tablas comparativas y matriz de decisiones
+   - 🎯 Objetivo: Decisión rápida sobre estrategia de merge
+   - ✨ Especial: Checklist de integración y próximos pasos inmediatos
+
+**CUÁNDO USAR:**
+- ✅ Antes de hacer merge entre branches
+- ✅ Para entender el estado actual del proyecto
+- ✅ Para decidir qué funcionalidades priorizar
+- ✅ Para planificar integración de código
+
+---
+
+## �📋 Guía Rápida de Documentos
 
 Este repositorio contiene **documentación técnica exhaustiva** preparada bajo estándares PSP (Personal Software Process) y RUP (Rational Unified Process). A continuación se presenta una guía para navegar los documentos según tu perfil.
 
