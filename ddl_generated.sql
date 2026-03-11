@@ -394,7 +394,7 @@ CREATE TABLE grupos (
 	activo          BOOLEAN NOT NULL DEFAULT TRUE,
 	created_at      TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at      TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
-	UNIQUE (escuela_id, nombre)
+	UNIQUE (escuela_id, grado_id, nombre)
 );
 
 CREATE TABLE estudiantes (
@@ -590,6 +590,9 @@ CREATE TABLE solicitudes_eia2 (
 	resultado_disponible_desde TIMESTAMP WITHOUT TIME ZONE,
 	numero_estudiantes       INT,
 	nivel_educativo          SMALLINT REFERENCES cat_nivel_educativo(id),
+	hash_archivo             VARCHAR(64),
+	usuario_id               UUID REFERENCES usuarios(id),
+	resultados               JSONB DEFAULT '[]'::JSONB,
 	created_at               TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at               TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	UNIQUE (consecutivo)
@@ -731,10 +734,11 @@ CREATE TABLE evaluaciones (
 	validado              BOOLEAN NOT NULL DEFAULT FALSE,
 	validado_por          UUID REFERENCES usuarios(id),
 	validado_en           TIMESTAMP WITHOUT TIME ZONE,
+	solicitud_id          UUID REFERENCES solicitudes_eia2(id) ON DELETE CASCADE,
 	created_at            TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at            TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	CONSTRAINT chk_evaluaciones_valor CHECK (valoracion BETWEEN 0 AND 3),
-	CONSTRAINT uq_evaluaciones UNIQUE (estudiante_id, materia_id, periodo_id)
+	CONSTRAINT uq_evaluaciones_solicitud UNIQUE (estudiante_id, materia_id, periodo_id, solicitud_id)
 );
 
 CREATE TABLE resultados_competencias (
@@ -1083,7 +1087,7 @@ CREATE TABLE sec3 (
 
 CREATE UNIQUE INDEX idx_estudiantes_curp ON estudiantes(curp);
 CREATE UNIQUE INDEX idx_usuarios_email ON usuarios(email);
-CREATE UNIQUE INDEX idx_grupos_escuela_nombre ON grupos(escuela_id, nombre);
+CREATE INDEX idx_grupos_nombre_search ON grupos(escuela_id, nombre);
 CREATE UNIQUE INDEX idx_materias_codigo ON materias(codigo);
 CREATE UNIQUE INDEX idx_solicitudes_eia2_consecutivo ON solicitudes_eia2(consecutivo);
 CREATE INDEX idx_grupos_escuela_grado ON grupos(escuela_id, grado_id);

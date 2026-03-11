@@ -29,3 +29,34 @@ export const AUTHENTICATE_USER_MUTATION = `
     }
   }
 `;
+
+export const UPLOAD_EXCEL_MUTATION = `
+  mutation UploadExcel($input: UploadExcelInput!) {
+    uploadExcelAssessment(input: $input) {
+      success
+      message
+      solicitudId
+      duplicadoDetectado
+      detalles {
+        cct
+        nivel
+        grado
+        alumnosProcesados
+        errores
+      }
+    }
+  }
+`;
+export const UPLOAD_RESULTS_MUTATION = `
+  mutation UploadResults($input: UploadResultsInput!) {
+    uploadAssessmentResults(input: $input) {
+      success
+      message
+      resultados {
+        nombre
+        url
+        size
+      }
+    }
+  }
+`;

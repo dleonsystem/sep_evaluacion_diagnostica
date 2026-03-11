@@ -26,13 +26,15 @@ const poolConfig: PoolConfig = {
   port: parseInt(process.env.DB_PORT || '5432', 10),
   database: process.env.DB_NAME || 'eia_db',
   user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || '',
+  password: String(process.env.DB_PASSWORD || ''),
   min: parseInt(process.env.DB_POOL_MIN || '2', 10),
   max: parseInt(process.env.DB_POOL_MAX || '10', 10),
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  idleTimeoutMillis: 60000,
+  connectionTimeoutMillis: 30000,
+  ssl: {
+    rejectUnauthorized: false
+  }
 };
-
 /**
  * Validación de configuración de base de datos
  * @psp Code Review Checklist - Validar parámetros críticos
@@ -42,8 +44,8 @@ function validateDatabaseConfig(): void {
   const missingVars = requiredEnvVars.filter((varName) => !process.env[varName]);
 
   if (missingVars.length > 0) {
-    logger.error(`Missing required environment variables: ${missingVars.join(', ')}`);
-    throw new Error(`Database configuration error: Missing ${missingVars.join(', ')}`);
+    logger.warn(`Missing required environment variables: ${missingVars.join(', ')}`);
+    logger.warn('Server will continue in degraded mode (No Database)');
   }
 }
 
@@ -65,8 +67,8 @@ pool.on('connect', () => {
 });
 
 pool.on('error', (err) => {
-  logger.error('Unexpected error on idle PostgreSQL client', err);
-  process.exit(-1);
+  logger.error('Unexpected error on idle PostgreSQL client (Server will continue)', err);
+  // No cerrar el proceso en desarrollo si falla la conexión
 });
 
 pool.on('remove', () => {
@@ -137,6 +139,14 @@ export async function query(text: string, params?: any[]) {
     });
     throw error;
   }
+}
+
+/**
+ * Helper to get a single client from the pool (useful for transactions)
+ */
+export async function getClient() {
+  const client = await pool.connect();
+  return client;
 }
 
 export default pool;

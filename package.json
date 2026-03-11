@@ -5,7 +5,18 @@
   "scripts": {
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "husky",
+    "lint:all": "lint-staged"
+  },
+  "lint-staged": {
+    "graphql-server/src/**/*.{ts,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "web/frontend/src/**/*.{ts,js,html}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@nestjs/common": "^10.3.2",
@@ -26,8 +37,28 @@
     "@types/express": "^4.17.21",
     "@types/node": "^20.11.30",
     "@types/passport-jwt": "^3.0.12",
+    "@typescript-eslint/eslint-plugin": "^8.56.0",
+    "@typescript-eslint/parser": "^8.56.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.8.1",
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
-  }
+  },
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dleonsystem/sep_evaluacion_diagnostica.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues"
+  },
+  "homepage": "https://github.com/dleonsystem/sep_evaluacion_diagnostica#readme"
 }

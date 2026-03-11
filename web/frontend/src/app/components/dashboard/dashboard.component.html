@@ -1,0 +1,150 @@
+<section class="dashboard">
+    <div class="dashboard__card">
+        <div class="dashboard__header">
+            <h2>Estadísticas Generales</h2>
+            <p>Resumen detallado de la operación de la plataforma EIA.</p>
+        </div>
+
+        <div class="dashboard__metrics" *ngIf="metrics && !error; else loadingOrError">
+            <div class="metrics-grid">
+                <!-- Usuarios -->
+                <div class="metric-card">
+                    <div class="metric-card__content">
+                        <div class="metric-card__icon"><i class="bi bi-person-badge"></i></div>
+                        <div class="metric-card__info">
+                            <span class="metric-card__label">Número de Usuarios Registrados</span>
+                            <span class="metric-card__value">{{ metrics.totalUsuarios }}</span>
+                            <div class="metric-card__badge">
+                                <span class="dot active"></span>
+                                {{ metrics.usuariosActivos }} activos
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Archivos -->
+                <div class="metric-card">
+                    <div class="metric-card__content">
+                        <div class="metric-card__icon"><i class="bi bi-file-earmark-spreadsheet"></i></div>
+                        <div class="metric-card__info">
+                            <span class="metric-card__label">Archivos Excel cargados a la base de datos</span>
+                            <span class="metric-card__value">{{ metrics.totalSolicitudes }}</span>
+                            <div class="metric-card__badge">
+                                <i class="bi bi-check2-circle"></i>
+                                {{ metrics.solicitudesValidadas }} validados
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CCTs -->
+                <div class="metric-card">
+                    <div class="metric-card__content">
+                        <div class="metric-card__icon"><i class="bi bi-geo-alt"></i></div>
+                        <div class="metric-card__info">
+                            <span class="metric-card__label">Número de CCT registrados</span>
+                            <span class="metric-card__value">{{ metrics.totalCCTs }}</span>
+                            <div class="metric-card__badge gray">
+                                <i class="bi bi-database"></i>
+                                Sincronizados
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Soporte -->
+                <div class="metric-card warning">
+                    <div class="metric-card__content">
+                        <div class="metric-card__icon"><i class="bi bi-chat-dots"></i></div>
+                        <div class="metric-card__info">
+                            <span class="metric-card__label">Tickets de soporte pendientes</span>
+                            <span class="metric-card__value">{{ metrics.ticketsAbiertos }}</span>
+                            <div class="metric-card__badge orange">
+                                Total: {{ metrics.totalTickets }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Section (Advanced) -->
+            <div class="analytics-row mt-5">
+                <!-- Load Trends Chart -->
+                <div class="analytics-card">
+                    <h3 class="analytics-card__title">Tendencia de Cargas (30 días)</h3>
+                    <div class="chart-container">
+                        <div class="bar-chart">
+                            <div class="bar-wrapper" *ngFor="let day of metrics.tendenciaCargas">
+                                <div class="bar" [style.height.%]="(day.cantidad / maxCargas) * 100"
+                                    [attr.title]="day.fecha + ': ' + day.cantidad"></div>
+                                <span class="bar-label">{{ day.fecha | date:'dd' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Participation by Level -->
+                <div class="analytics-card">
+                    <h3 class="analytics-card__title">Participación por Nivel</h3>
+                    <div class="distribution-list">
+                        <div class="dist-item" *ngFor="let level of metrics.distribucionNivel">
+                            <div class="dist-header">
+                                <span class="dist-label text-capitalize">{{ level.label.toLowerCase() }}</span>
+                                <span class="dist-percentage">{{ level.porcentaje | number:'1.0-1' }}%</span>
+                            </div>
+                            <div class="progress-bg">
+                                <div class="progress-fill" [style.width.%]="level.porcentaje"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Support Efficiency -->
+            <div class="analytics-row mt-4">
+                <div class="efficiency-banner">
+                    <div class="eff-stat">
+                        <i class="bi bi-clock-history"></i>
+                        <div class="eff-info">
+                            <span class="eff-label">Tiempo de Respuesta</span>
+                            <span class="eff-value">{{ metrics.eficienciaSoporte.tiempoPromedioRespuestaHoras }}
+                                <small>hrs</small></span>
+                        </div>
+                    </div>
+                    <div class="eff-stat">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        <div class="eff-info">
+                            <span class="eff-label">Tasa de Resolución</span>
+                            <span class="eff-value">{{ metrics.eficienciaSoporte.tasaResolucion | number:'1.0-1'
+                                }}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección de ayuda o resumen extra -->
+            <div class="dashboard__footer-info mt-5">
+                <div class="info-banner">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <div>
+                        <strong>Información en tiempo real</strong>
+                        <p>Los datos mostrados se actualizan automáticamente con cada interacción en la base de datos
+                            institucional.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <ng-template #loadingOrError>
+            <div class="dashboard__error" *ngIf="error">
+                <i class="bi bi-exclamation-triangle"></i>
+                <p>{{ error }}</p>
+                <button class="retry-btn" (click)="cargarMetrics()">Reintentar</button>
+            </div>
+            <div class="dashboard__loading" *ngIf="!error">
+                <div class="spinner"></div>
+                <p>Cargando estadísticas...</p>
+            </div>
+        </ng-template>
+    </div>
+</section>

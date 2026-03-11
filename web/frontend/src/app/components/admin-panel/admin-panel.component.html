@@ -1,59 +1,41 @@
 <section class="admin-panel">
   <div class="admin-panel__card">
-    <h2>Panel de administrador</h2>
-   <!--  <p>Token activo para la carga de PDFs.</p> -->
-
-    <!-- <div class="admin-panel__token" *ngIf="obtenerToken(); else sinSesion">
-      <span>Token almacenado:</span>
-      <code>{{ obtenerToken() }}</code>
-    </div> -->
-
-    <ng-template #sinSesion>
-      <div class="admin-panel__token admin-panel__token--warning">
-        No hay sesión activa. Vuelve al login para obtener un token.
-      </div>
-    </ng-template>
+    <h2 class="font-display">Panel de Administrador</h2>
 
     <div class="admin-panel__upload">
-      <label class="admin-panel__upload-label" for="nivel-select">Selecciona el nivel</label>
-      <select
-        id="nivel-select"
-        class="admin-panel__upload-input"
-        [(ngModel)]="selectedNivel"
-      >
+      <label class="admin-panel__upload-label" for="nivel-select">
+        <i class="bi bi-layers-fill"></i> Selecciona el nivel educativo
+      </label>
+      <select id="nivel-select" class="admin-panel__upload-input" [(ngModel)]="selectedNivel">
         <option value="" disabled>Selecciona un nivel</option>
-        <option value="preescolar">Preescolar</option>
-        <option value="primaria">Primaria</option>
-        <option value="secundaria">Secundaria</option>
+        <option value="preescolar">Educación Preescolar</option>
+        <option value="primaria">Educación Primaria</option>
+        <option value="secundaria">Educación Secundaria</option>
       </select>
       <p class="admin-panel__helper">
-        El listado de Excels depende del nivel seleccionado. Primero selecciona un registro y luego
-        sube los archivos correspondientes.
+        El listado de Excels depende del nivel seleccionado. Primero selecciona
+        un registro y luego sube los archivos correspondientes.
       </p>
       <p class="admin-panel__helper" *ngIf="!excelDisponibles.length">
-        Aún no hay Excels disponibles para asociar. Valida un archivo desde el módulo de carga.
+        Aún no hay Excels disponibles para asociar. Valida un archivo desde el
+        módulo de carga.
       </p>
 
       <div class="admin-panel__excel-list" *ngIf="excelDisponibles.length">
-        <span class="admin-panel__history-title">Excels disponibles</span>
+        <h3>Archivos cargados en Base de Datos</h3>
+        <p class="admin-panel__helper">
+          Lista sincronizada de archivos Excel procesados por el sistema (EIA2).
+        </p>
         <div class="admin-panel__filters">
           <label class="admin-panel__filters-field">
             <span class="admin-panel__filters-label">Buscar</span>
-            <input
-              class="admin-panel__filters-input"
-              type="text"
-              placeholder="Nombre, CCT o correo"
-              [(ngModel)]="filtroTexto"
-              (ngModelChange)="onFiltrosActualizados()"
-            />
+            <input class="admin-panel__filters-input" type="text" placeholder="Nombre, CCT o correo"
+              [(ngModel)]="filtroTexto" (ngModelChange)="onFiltrosActualizados()" />
           </label>
           <label class="admin-panel__filters-field">
             <span class="admin-panel__filters-label">Estatus</span>
-            <select
-              class="admin-panel__filters-input"
-              [(ngModel)]="filtroEstatus"
-              (ngModelChange)="onFiltrosActualizados()"
-            >
+            <select class="admin-panel__filters-input" [(ngModel)]="filtroEstatus"
+              (ngModelChange)="onFiltrosActualizados()">
               <option value="todos">Todos</option>
               <option value="asignado">Asignado</option>
               <option value="pendiente">Pendiente</option>
@@ -61,21 +43,26 @@
           </label>
           <label class="admin-panel__filters-field">
             <span class="admin-panel__filters-label">Fecha</span>
-            <input
-              class="admin-panel__filters-input"
-              type="date"
-              [(ngModel)]="filtroFecha"
-              (ngModelChange)="onFiltrosActualizados()"
-            />
+            <input class="admin-panel__filters-input" type="date" [(ngModel)]="filtroFecha"
+              (ngModelChange)="onFiltrosActualizados()" />
+          </label>
+          <label class="admin-panel__filters-field">
+            <span class="admin-panel__filters-label">Mostrar</span>
+            <select class="admin-panel__filters-input" [(ngModel)]="tamanioPagina"
+              (ngModelChange)="onFiltrosActualizados()">
+              <option *ngFor="let opt of opcionesTamanioPagina" [ngValue]="opt">{{ opt }} registros</option>
+            </select>
           </label>
         </div>
         <table class="admin-panel__table">
           <thead>
             <tr>
               <th scope="col">Seleccionar</th>
-              <th scope="col">Nombre</th>
+              <th scope="col">Nombre del Archivo</th>
               <th scope="col">CCT</th>
-              <th scope="col">Correo</th>
+              <th scope="col">Turno</th>
+              <th scope="col">Tamaño</th>
+              <th scope="col">Fecha Carga</th>
               <th scope="col">Estatus</th>
             </tr>
           </thead>
@@ -83,53 +70,37 @@
             <tr *ngFor="let excel of excelDisponiblesPaginados">
               <td>
                 <label class="admin-panel__select">
-                  <input
-                    type="radio"
-                    name="excelSeleccionado"
-                    [checked]="excelSeleccionado?.key === excel.key"
-                    (change)="seleccionarExcel(excel)"
-                    aria-label="Seleccionar registro"
-                  />
+                  <input type="radio" name="excelSeleccionado" [checked]="excelSeleccionado?.key === excel.key"
+                    (change)="seleccionarExcel(excel)" aria-label="Seleccionar registro" />
                 </label>
               </td>
               <td>{{ excel.nombre }}</td>
               <td>{{ excel.cct }}</td>
-              <td>{{ excel.correo }}</td>
+              <td>{{ excel.turno || 'ND' }}</td>
+              <td>{{ (excel.size || 0) / 1024 | number:'1.0-1' }} KB</td>
+              <td>{{ formatearFecha(excel.fecha) }}</td>
               <td>
-                <span
-                  class="admin-panel__badge"
-                  [class.admin-panel__badge--assigned]="excel.estatus === 'asignado'"
-                >
-                  {{ excel.estatus === 'asignado' ? 'Asignado' : 'Pendiente' }}
+                <span class="admin-panel__badge" [class.admin-panel__badge--assigned]="excel.estatus === 'asignado'"
+                  [class.admin-panel__badge--pending]="excel.estatus === 'pendiente'">
+                  {{ excel.estatus === "asignado" ? "Asignado" : "Pendiente" }}
                 </span>
               </td>
             </tr>
           </tbody>
         </table>
         <div class="admin-panel__pagination" *ngIf="totalPaginas > 1">
-          <button
-            class="admin-panel__pagination-button"
-            type="button"
-            [disabled]="paginaActualDerivada === 1"
-            (click)="irAPagina(paginaActualDerivada - 1)"
-          >
+          <button class="admin-panel__pagination-button" type="button" [disabled]="paginaActualDerivada === 1"
+            (click)="irAPagina(paginaActualDerivada - 1)">
             Anterior
           </button>
-          <button
-            class="admin-panel__pagination-button"
-            type="button"
-            *ngFor="let pagina of paginasDisponibles"
-            [class.admin-panel__pagination-button--active]="pagina === paginaActualDerivada"
-            (click)="irAPagina(pagina)"
-          >
+          <button class="admin-panel__pagination-button" type="button" *ngFor="let pagina of paginasDisponibles"
+            [class.admin-panel__pagination-button--active]="
+              pagina === paginaActualDerivada
+            " (click)="irAPagina(pagina)">
             {{ pagina }}
           </button>
-          <button
-            class="admin-panel__pagination-button"
-            type="button"
-            [disabled]="paginaActualDerivada === totalPaginas"
-            (click)="irAPagina(paginaActualDerivada + 1)"
-          >
+          <button class="admin-panel__pagination-button" type="button"
+            [disabled]="paginaActualDerivada === totalPaginas" (click)="irAPagina(paginaActualDerivada + 1)">
             Siguiente
           </button>
         </div>
@@ -139,160 +110,341 @@
       <p class="admin-panel__helper" *ngIf="!excelSeleccionado">
         Selecciona un registro de Excel para habilitar la carga de archivos.
       </p>
-      <input
-        id="pdf-upload"
-        class="admin-panel__upload-input"
-        type="file"
-        accept=".pdf,.xlsx,.jpg,.jpeg,.doc,.docx"
-        multiple
-        (change)="seleccionarArchivo($event)"
-      />
+      <input id="pdf-upload" class="admin-panel__upload-input" type="file"
+        accept=".pdf,.xlsx,.jpg,.jpeg,.doc,.docx,.zip" multiple (change)="seleccionarArchivo($event)" />
       <p class="admin-panel__helper">
-        Formatos permitidos: PDF, XLSX, JPG, Word. Máximo {{ maxArchivos }} archivos.
+        Formatos permitidos: PDF, XLSX, JPG, Word, ZIP. Máximo
+        {{ maxArchivos }} archivos.
       </p>
-      <button
-        class="admin-panel__upload-button"
-        type="button"
-        (click)="subirArchivos()"
-        [disabled]="!selectedFiles.length"
-      >
+      <button class="admin-panel__upload-button" type="button" (click)="subirArchivos()"
+        [disabled]="!selectedFiles.length">
         Subir archivos
       </button>
 
-      <div
-        class="admin-panel__status"
-        [class.admin-panel__status--idle]="uploadStatus === 'idle'"
+      <div class="admin-panel__status" [class.admin-panel__status--idle]="uploadStatus === 'idle'"
         [class.admin-panel__status--uploading]="uploadStatus === 'uploading'"
         [class.admin-panel__status--success]="uploadStatus === 'success'"
-        [class.admin-panel__status--error]="uploadStatus === 'error'"
-      >
-        <span class="admin-panel__status-label">Estado de carga:</span>
-        <span class="admin-panel__status-message">
-          {{ feedbackMessage || 'Sin acciones por el momento.' }}
-        </span>
+        [class.admin-panel__status--error]="uploadStatus === 'error'">
+        <div class="admin-panel__status-icon">
+          <i class="bi" [class.bi-info-circle]="uploadStatus === 'idle'"
+            [class.bi-arrow-repeat]="uploadStatus === 'uploading'"
+            [class.bi-check-circle-fill]="uploadStatus === 'success'"
+            [class.bi-exclamation-triangle-fill]="uploadStatus === 'error'"></i>
+        </div>
+        <div class="admin-panel__status-content">
+          <span class="admin-panel__status-label">Estado del Sistema</span>
+          <p class="admin-panel__status-message">
+            {{ feedbackMessage || "Listo para procesar nuevos archivos." }}
+          </p>
+        </div>
       </div>
 
       <div class="admin-panel__history" *ngIf="uploadHistory.length">
-        <span class="admin-panel__history-title">Historial reciente</span>
-        <ul class="admin-panel__history-list">
-          <li class="admin-panel__history-item" *ngFor="let item of uploadHistory">
-            <span class="admin-panel__history-name">{{ item.name }}</span>
-            <span class="admin-panel__history-meta">
-              {{ item.size / 1024 | number : '1.0-0' }} KB ·
-              {{ item.uploadedAt | date : 'short' }}
-            </span>
-          </li>
-        </ul>
+        <h3 class="admin-panel__history-title">
+          <i class="bi bi-clock-history"></i> Historial de Carga Reciente
+        </h3>
+        <div class="admin-panel__history-grid">
+          <div class="admin-panel__history-card" *ngFor="let item of uploadHistory">
+            <div class="admin-panel__history-file-icon" [ngClass]="{
+                'icon-pdf': item.name.toLowerCase().endsWith('.pdf'),
+                'icon-excel': item.name.toLowerCase().endsWith('.xlsx'),
+                'icon-image': item.name.toLowerCase().endsWith('.jpg') || item.name.toLowerCase().endsWith('.jpeg'),
+                'icon-zip': item.name.toLowerCase().endsWith('.zip')
+              }">
+              <i class="bi" [class.bi-file-earmark-pdf-fill]="item.name.toLowerCase().endsWith('.pdf')"
+                [class.bi-file-earmark-spreadsheet-fill]="item.name.toLowerCase().endsWith('.xlsx')"
+                [class.bi-file-earmark-image-fill]="item.name.toLowerCase().endsWith('.jpg') || item.name.toLowerCase().endsWith('.jpeg')"
+                [class.bi-file-zip-fill]="item.name.toLowerCase().endsWith('.zip')"
+                [class.bi-file-earmark-text-fill]="!item.name.toLowerCase().endsWith('.pdf') && !item.name.toLowerCase().endsWith('.xlsx') && !item.name.toLowerCase().endsWith('.zip')"></i>
+            </div>
+            <div class="admin-panel__history-details">
+              <span class="admin-panel__history-name" [title]="item.name">{{ item.name }}</span>
+              <div class="admin-panel__history-meta">
+                <span class="admin-panel__history-size">
+                  <i class="bi bi-hdd-fill"></i> {{ item.size / 1024 | number: "1.0-0" }} KB
+                </span>
+                <span class="admin-panel__history-date">
+                  <i class="bi bi-calendar3"></i> {{ item.uploadedAt | date: "short" }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
     <section class="admin-panel__tickets">
       <h3>Tickets de soporte</h3>
-      <div class="admin-panel__tickets-filters">
-        <label>
-          <span>Buscar</span>
-          <input
-            type="text"
-            [(ngModel)]="filtroTicketTexto"
-            placeholder="Folio, correo o motivo"
-          />
+      <div class="admin-panel__filters">
+        <label class="admin-panel__filters-field">
+          <span class="admin-panel__filters-label">Buscar</span>
+          <input class="admin-panel__filters-input" type="text" [(ngModel)]="filtroTicketTexto"
+            placeholder="Folio, correo o motivo" />
         </label>
-        <label>
-          <span>Estatus</span>
-          <select [(ngModel)]="filtroTicketEstatus">
+        <label class="admin-panel__filters-field">
+          <span class="admin-panel__filters-label">Estatus</span>
+          <select class="admin-panel__filters-input" [(ngModel)]="filtroTicketEstatus">
             <option value="todos">Todos</option>
             <option value="pendiente">Pendiente</option>
             <option value="en-proceso">En proceso</option>
             <option value="respondido">Respondido</option>
           </select>
         </label>
+        <div class="admin-panel__tickets-actions">
+          <button class="admin-panel__upload-button" (click)="exportarTickets()">
+            <i class="bi bi-file-earmark-spreadsheet"></i> Exportar a CSV
+          </button>
+        </div>
       </div>
 
       <p class="admin-panel__tickets-empty" *ngIf="!ticketsSoporteFiltrados.length">
         No hay tickets registrados aún.
       </p>
 
-      <div class="admin-panel__tickets-grid" *ngIf="ticketsSoporteFiltrados.length">
-        <div class="admin-panel__tickets-list">
-          <button
-            class="admin-panel__ticket-card"
-            type="button"
-            *ngFor="let ticket of ticketsSoporteFiltrados"
-            (click)="seleccionarTicket(ticket)"
-            [class.admin-panel__ticket-card--active]="ticket.id === ticketSeleccionadoId"
-          >
-            <div class="admin-panel__ticket-header">
-              <strong>{{ ticket.folio }}</strong>
-              <span class="admin-panel__ticket-status">{{ ticket.estatus }}</span>
-            </div>
-            <p>{{ ticket.motivo }}</p>
-            <small>{{ ticket.correo }}</small>
-            <small>{{ formatearFecha(ticket.fecha) }}</small>
-            <small *ngIf="obtenerUltimaRespuesta(ticket) as respuesta">
-              Última respuesta: {{ formatearFecha(respuesta.fecha) }}
-            </small>
-          </button>
-        </div>
-
-        <div class="admin-panel__ticket-detail" *ngIf="ticketSeleccionadoId as ticketId">
-          <ng-container *ngFor="let ticket of ticketsSoporte">
-            <ng-container *ngIf="ticket.id === ticketId">
-              <h4>Detalle del ticket</h4>
-              <p><strong>Folio:</strong> {{ ticket.folio }}</p>
-              <p><strong>Correo:</strong> {{ ticket.correo }}</p>
-              <p><strong>Motivo:</strong> {{ ticket.motivo }}</p>
-              <p *ngIf="ticket.motivoDetalle">
-                <strong>Motivo detalle:</strong> {{ ticket.motivoDetalle }}
-              </p>
-              <p><strong>Descripción:</strong> {{ ticket.descripcion }}</p>
-              <p><strong>Fecha:</strong> {{ formatearFecha(ticket.fecha) }}</p>
-
-              <div class="admin-panel__ticket-evidencias" *ngIf="ticket.evidencias.length">
-                <strong>Evidencias:</strong>
-                <ul>
-                  <li *ngFor="let evidencia of ticket.evidencias">{{ evidencia.nombre }}</li>
-                </ul>
-              </div>
-
-              <div class="admin-panel__ticket-respuestas" *ngIf="ticket.respuestas?.length">
-                <strong>Respuestas previas:</strong>
-                <div
-                  class="admin-panel__ticket-respuesta"
-                  *ngFor="let respuesta of ticket.respuestas"
-                >
-                  <p>{{ respuesta.mensaje }}</p>
-                  <small>{{ formatearFecha(respuesta.fecha) }}</small>
-                </div>
-              </div>
-
-              <div class="admin-panel__ticket-actions">
-                <label>
-                  <span>Estatus</span>
-                  <select [(ngModel)]="estatusTicketSeleccionado">
-                    <option value="pendiente">Pendiente</option>
-                    <option value="en-proceso">En proceso</option>
-                    <option value="respondido">Respondido</option>
-                  </select>
-                </label>
-                <label>
-                  <span>Respuesta al usuario</span>
-                  <textarea
-                    rows="4"
-                    [(ngModel)]="respuestaAdmin"
-                    placeholder="Escribe la respuesta del administrador"
-                  ></textarea>
-                </label>
-                <button class="admin-panel__ticket-save" type="button" (click)="guardarRespuesta()">
-                  Guardar respuesta
-                </button>
-              </div>
+      <div class="admin-panel__table-container" *ngIf="ticketsSoporteFiltrados.length">
+        <table class="admin-panel__table">
+          <thead>
+            <tr>
+              <th scope="col">Folio</th>
+              <th scope="col">Estatus</th>
+              <th scope="col">Correo</th>
+              <th scope="col">Motivo</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let ticket of ticketsSoporteFiltrados">
+              <tr [class.admin-panel__table-row--selected]="ticket.id === ticketSeleccionadoId"
+                (click)="seleccionarTicket(ticket)" style="cursor: pointer;">
+                <td><strong>{{ ticket.folio }}</strong></td>
+                <td>
+                  <span class="admin-panel__badge" [class.admin-panel__badge--pending]="ticket.estatus === 'pendiente'"
+                    [class.admin-panel__badge--processing]="ticket.estatus === 'en-proceso'"
+                    [class.admin-panel__badge--resolved]="ticket.estatus === 'respondido'">
+                    {{ ticket.estatus | titlecase }}
+                  </span>
+                </td>
+                <td>{{ ticket.correo }}</td>
+                <td>{{ ticket.motivo }}</td>
+                <td>{{ formatearFecha(ticket.fecha) }}</td>
+                <td>
+                  <div class="admin-panel__actions-cell">
+                    <button class="admin-panel__action-btn"
+                      (click)="$event.stopPropagation(); seleccionarTicket(ticket)" title="Ver detalle">
+                      <i class="bi" [class.bi-eye-fill]="ticket.id !== ticketSeleccionadoId"
+                        [class.bi-eye-slash-fill]="ticket.id === ticketSeleccionadoId"></i>
+                    </button>
+                    <button class="admin-panel__action-btn primary-guinda" (click)="abrirModalRespuesta(ticket, $event)"
+                      title="Responder ticket">
+                      <i class="bi bi-reply-fill"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <!-- Inline expansion row -->
+              <tr *ngIf="ticket.id === ticketSeleccionadoId" class="admin-panel__table-expanded-row">
+                <td colspan="6">
+                  <div class="admin-panel__expanded-content">
+                    <div class="admin-panel__detail-grid">
+                      <div class="admin-panel__detail-info">
+                        <p><strong>Descripción:</strong> {{ ticket.descripcion }}</p>
+                        <p *ngIf="ticket.motivoDetalle"><strong>Detalle del motivo:</strong> {{ ticket.motivoDetalle }}
+                        </p>
+                        <div class="admin-panel__ticket-evidencias" *ngIf="ticket.evidencias.length">
+                          <strong>Evidencias:</strong>
+                          <ul class="admin-panel__evidencia-list">
+                            <li *ngFor="let evidencia of ticket.evidencias">
+                              <i class="bi bi-file-earmark-arrow-down"></i> {{ evidencia.nombre }}
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                      <div class="admin-panel__detail-chat">
+                        <div class="admin-panel__ticket-respuestas" *ngIf="ticket.respuestas?.length">
+                          <strong>Historial de respuestas:</strong>
+                          <div class="admin-panel__ticket-respuesta" *ngFor="let respuesta of ticket.respuestas">
+                            <p>{{ respuesta.mensaje }}</p>
+                            <small>{{ formatearFecha(respuesta.fecha) }}</small>
+                          </div>
+                        </div>
+                        <div *ngIf="!ticket.respuestas?.length" class="admin-panel__helper">
+                          No hay respuestas previas.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
             </ng-container>
-          </ng-container>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Ticket Response Modal -->
+      <div class="admin-panel__modal-overlay" *ngIf="mostrarModalRespuesta" (click)="cerrarModalRespuesta()">
+        <div class="admin-panel__modal" (click)="$event.stopPropagation()">
+          <div class="admin-panel__modal-header">
+            <h3>Responder Ticket: {{ ticketParaResponder?.folio }}</h3>
+            <button class="admin-panel__close-btn" (click)="cerrarModalRespuesta()">&times;</button>
+          </div>
+          <div class="admin-panel__modal-body">
+            <div class="admin-panel__action-group">
+              <label for="modal-status">Cambiar Estatus</label>
+              <select id="modal-status" class="admin-panel__filters-input" [(ngModel)]="estatusTicketSeleccionado">
+                <option value="pendiente">Pendiente</option>
+                <option value="en-proceso">En proceso</option>
+                <option value="respondido">Respondido</option>
+              </select>
+            </div>
+            <div class="admin-panel__action-group">
+              <label for="modal-response">Respuesta al Usuario</label>
+              <textarea id="modal-response" class="admin-panel__filters-input" rows="6" [(ngModel)]="respuestaAdmin"
+                placeholder="Escribe la respuesta institucional..."></textarea>
+            </div>
+          </div>
+          <div class="admin-panel__modal-footer">
+            <button class="admin-panel__upload-button gray" type="button" (click)="cerrarModalRespuesta()">
+              Cancelar
+            </button>
+            <button class="admin-panel__upload-button" type="button" (click)="guardarRespuesta()">
+              Enviar Respuesta
+            </button>
+          </div>
         </div>
       </div>
     </section>
 
+    <section class="admin-panel__users">
+      <h3>Gestión de Usuarios</h3>
+      <div class="admin-panel__filters">
+        <label class="admin-panel__filters-field">
+          <span class="admin-panel__filters-label">Buscar usuario</span>
+          <input class="admin-panel__filters-input" type="text" [(ngModel)]="filtroUsuarioTexto"
+            placeholder="Nombre o correo" />
+        </label>
+        <div class="admin-panel__users-actions" *ngIf="esCoordinadorFederal">
+          <button class="admin-panel__upload-button" (click)="abrirModalUsuario()">
+            <i class="bi bi-person-plus-fill"></i> Nuevo Usuario
+          </button>
+        </div>
+      </div>
+
+      <div class="admin-panel__table-container">
+        <table class="admin-panel__table">
+          <thead>
+            <tr>
+              <th>Correo</th>
+              <th>Nombre Completo</th>
+              <th>Rol</th>
+              <th class="text-center">Enviar contraseña</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let usuario of usuariosFiltrados">
+              <td>{{ usuario.email }}</td>
+              <td>
+                {{ usuario.nombre }} {{ usuario.apepaterno }}
+                {{ usuario.apematerno }}
+              </td>
+              <td>{{ usuario.rol }}</td>
+              <td class="text-center">
+                <button class="admin-panel__action-btn" type="button" (click)="enviarPassword(usuario)"
+                  title="Enviar contraseña por correo">
+                  <i class="bi bi-envelope-at-fill" style="font-size: 1.5rem;"></i>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="!usuariosFiltrados.length">
+              <td colspan="4" class="text-center">
+                No se encontraron usuarios.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="admin-panel__pagination" *ngIf="totalPaginasUsuarios > 1">
+        <button class="admin-panel__pagination-button" type="button" [disabled]="paginaUsuariosActual === 1"
+          (click)="irAPaginaUsuarios(paginaUsuariosActual - 1)">
+          Anterior
+        </button>
+        <button class="admin-panel__pagination-button" type="button" *ngFor="let p of paginasUsuariosDisponibles"
+          [class.admin-panel__pagination-button--active]="
+            p === paginaUsuariosActual
+          " (click)="irAPaginaUsuarios(p)">
+          {{ p }}
+        </button>
+        <button class="admin-panel__pagination-button" type="button"
+          [disabled]="paginaUsuariosActual === totalPaginasUsuarios"
+          (click)="irAPaginaUsuarios(paginaUsuariosActual + 1)">
+          Siguiente
+        </button>
+      </div>
+    </section>
+
     <!-- <a class="admin-panel__link" routerLink="/admin/login">Ir al login</a> -->
-    <button class="admin-panel__logout" type="button" (click)="cerrarSesion()">Cerrar sesión</button>
+    <div class="admin-panel__logout-container">
+      <button class="admin-panel__logout" type="button" (click)="cerrarSesion()">
+        <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+      </button>
+    </div>
+  </div>
+
+  <!-- New User Modal -->
+  <div class="admin-panel__modal-overlay" *ngIf="mostrarModalUsuario" (click)="cerrarModalUsuario()">
+    <div class="admin-panel__modal" (click)="$event.stopPropagation()">
+      <div class="admin-panel__modal-header">
+        <h3>Crear Nuevo Usuario</h3>
+        <button class="admin-panel__close-btn" (click)="cerrarModalUsuario()">&times;</button>
+      </div>
+      <div class="admin-panel__modal-body">
+        <div class="admin-panel__form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div class="admin-panel__action-group" style="grid-column: span 2;">
+            <label for="user-email">Correo Electrónico *</label>
+            <input id="user-email" type="email" class="admin-panel__filters-input" [(ngModel)]="nuevoUsuario.email"
+              placeholder="ejemplo@sep.gob.mx">
+          </div>
+          <div class="admin-panel__action-group">
+            <label for="user-nombre">Nombre(s) *</label>
+            <input id="user-nombre" type="text" class="admin-panel__filters-input" [(ngModel)]="nuevoUsuario.nombre">
+          </div>
+          <div class="admin-panel__action-group">
+            <label for="user-paterno">Apellido Paterno *</label>
+            <input id="user-paterno" type="text" class="admin-panel__filters-input"
+              [(ngModel)]="nuevoUsuario.apepaterno">
+          </div>
+          <div class="admin-panel__action-group">
+            <label for="user-materno">Apellido Materno</label>
+            <input id="user-materno" type="text" class="admin-panel__filters-input"
+              [(ngModel)]="nuevoUsuario.apematerno">
+          </div>
+          <div class="admin-panel__action-group">
+            <label for="user-rol">Rol del Sistema *</label>
+            <select id="user-rol" class="admin-panel__filters-input" [(ngModel)]="nuevoUsuario.rol">
+              <option value="CONSULTA">Consulta</option>
+              <option value="COORDINADOR_FEDERAL">Coordinador Federal</option>
+              <option value="COORDINADOR_ESTATAL">Coordinador Estatal</option>
+              <option value="RESPONSABLE_CCT">Responsable CCT</option>
+            </select>
+          </div>
+          <div class="admin-panel__action-group" style="grid-column: span 2;">
+            <label for="user-cct">Clave CCT (Opcional)</label>
+            <input id="user-cct" type="text" class="admin-panel__filters-input" [(ngModel)]="nuevoUsuario.claveCCT"
+              placeholder="CC12345678">
+            <small class="admin-panel__helper">Para vincular el usuario a una escuela específica.</small>
+          </div>
+        </div>
+      </div>
+      <div class="admin-panel__modal-footer">
+        <button class="admin-panel__upload-button gray" type="button" (click)="cerrarModalUsuario()">
+          Cancelar
+        </button>
+        <button class="admin-panel__upload-button" type="button" (click)="crearUsuario()"
+          [disabled]="!nuevoUsuario.email || !nuevoUsuario.nombre || !nuevoUsuario.rol">
+          <i class="bi bi-person-check-fill"></i> Crear y enviar accesos
+        </button>
+      </div>
+    </div>
   </div>
 </section>

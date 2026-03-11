@@ -31,6 +31,8 @@ export class NavComponent implements OnInit, AfterViewInit, OnDestroy {
   correoAdmin: string | null = null;
 
   private routerSubscription: Subscription | null = null;
+  private authSubscription: Subscription | null = null;
+  private adminAuthSubscription: Subscription | null = null;
   private readonly isBrowser: boolean;
   private removeLoadListener: (() => void) | null = null;
 
@@ -45,7 +47,10 @@ export class NavComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.sincronizarEstado();
+    // Sincronización reactiva (Arquitectura experta)
+    this.authSubscription = this.authService.autenticado$.subscribe(() => this.sincronizarEstado());
+    this.adminAuthSubscription = this.adminAuthService.autenticado$.subscribe(() => this.sincronizarEstado());
+
     this.routerSubscription = this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe(() => this.sincronizarEstado());
@@ -62,6 +67,8 @@ export class NavComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routerSubscription?.unsubscribe();
+    this.authSubscription?.unsubscribe();
+    this.adminAuthSubscription?.unsubscribe();
     if (this.removeLoadListener) {
       this.removeLoadListener();
       this.removeLoadListener = null;
@@ -73,21 +80,14 @@ export class NavComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cerrarMenus();
   }
 
-  iniciarSesionAdmin(): void {
-    void this.router.navigate(['/admin/login'], { queryParams: { redirect: '/admin/panel' } });
-    this.cerrarMenus();
-  }
-
   cerrarSesion(): void {
     this.authService.cerrarSesion();
-    this.sincronizarEstado();
     void this.router.navigate(['/inicio']);
     this.cerrarMenus();
   }
 
   cerrarSesionAdmin(): void {
     this.adminAuthService.cerrarSesion();
-    this.sincronizarEstado();
     void this.router.navigate(['/inicio']);
     this.cerrarMenus();
   }

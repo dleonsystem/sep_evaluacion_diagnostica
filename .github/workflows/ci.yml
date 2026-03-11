@@ -1,0 +1,59 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ "main", "develop", "feature/*" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  backend-check:
+    name: Backend Check (Lint & Build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./graphql-server
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js 18
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        cache: 'npm'
+        cache-dependency-path: graphql-server/package-lock.json
+
+    - name: Install Dependencies
+      run: npm ci
+
+    - name: Run Lint
+      run: npm run lint
+      continue-on-error: false
+
+    - name: Build Project
+      run: npm run build
+
+  frontend-check:
+    name: Frontend Check (Build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./web/frontend
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js 18
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        cache: 'npm'
+        cache-dependency-path: web/frontend/package-lock.json
+
+    - name: Install Dependencies
+      run: npm ci --legacy-peer-deps
+
+    - name: Build Project
+      run: npm run build -- --configuration production
+      continue-on-error: false

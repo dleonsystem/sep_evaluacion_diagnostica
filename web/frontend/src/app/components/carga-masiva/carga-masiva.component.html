@@ -1,27 +1,43 @@
 <section class="carga">
+  <!-- USER SUB-NAV MENU (Only visible to logged-in Role 4 users) -->
+  <nav class="shared-subnav" *ngIf="sesionActiva">
+    <a routerLink="/carga-masiva" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
+      <i class="bi bi-cloud-upload"></i> Carga Masiva
+    </a>
+    <a routerLink="/archivos-evaluacion" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
+      <i class="bi bi-folder-check"></i> Cargas realizadas
+    </a>
+    <a routerLink="/tickets" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
+      <i class="bi bi-life-preserver"></i> Soporte
+    </a>
+    <a routerLink="/tickets-historial" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
+      <i class="bi bi-card-list"></i> Mis tickets
+    </a>
+    <!-- Log Out will continue appearing in the blue session card, but let's also give it here if needed -->
+    <button (click)="cerrarSesion()" class="shared-subnav-btn--logout">
+      <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+    </button>
+  </nav>
+
   <div class="carga__encabezado">
     <p class="carga__eyebrow">Módulo de carga de archivos</p>
     <h1 class="carga__titulo">Sube la plantilla oficial (.xlsx) sin iniciar sesión</h1>
-    <!-- <p class="carga__descripcion">
-      De acuerdo con la especificación del módulo de carga, puedes enviar el archivo de evaluación sin autenticación previa.
-      Toda la validación se realiza en el navegador: estructura de hojas, CCT, correo, turno y las 11 valoraciones por alumno de la hoja “TERCERO”.
-    </p> -->
+    <p class="carga__descripcion" style="display: none;">
+      De acuerdo con la especificación del módulo de carga, puedes enviar el archivo de evaluación sin autenticación
+      previa.
+      Toda la validación se realiza en el navegador: estructura de hojas, CCT, correo, turno y las 11 valoraciones por
+      alumno de la hoja “TERCERO”.
+    </p>
   </div>
 
-  <div
-    class="carga__sesion"
-    [class.carga__sesion--activa]="sesionActiva"
-    [class.carga__sesion--inactiva]="!sesionActiva"
-  >
+  <div class="carga__sesion" [class.carga__sesion--activa]="sesionActiva"
+    [class.carga__sesion--inactiva]="!sesionActiva">
     <div class="carga__sesion-col">
       <div class="carga__sesion-cabecera">
         <div class="carga__sesion-icono" aria-hidden="true">{{ sesionActiva ? '🔒' : '🔓' }}</div>
         <div class="carga__sesion-estado">
-          <span
-            class="carga__sesion-pill"
-            [class.carga__sesion-pill--activa]="sesionActiva"
-            [class.carga__sesion-pill--inactiva]="!sesionActiva"
-          >
+          <span class="carga__sesion-pill" [class.carga__sesion-pill--activa]="sesionActiva"
+            [class.carga__sesion-pill--inactiva]="!sesionActiva">
             {{ sesionActiva ? 'Sesión activa' : 'Sesión no iniciada' }}
           </span>
           <span class="carga__sesion-correo" *ngIf="sesionActiva && correoSesion">{{ correoSesion }}</span>
@@ -34,22 +50,21 @@
           Estás autenticado. Continúa con tus cargas o consulta tus archivos guardados.
         </p>
         <p class="carga__sesion-detalle" *ngIf="!sesionActiva && tieneCredenciales">
-          Ya generaste credenciales con tu primer envío. Inicia sesión con tu correo y la contraseña generada para continuar con la siguiente carga.
+          Ya generaste credenciales con tu primer envío. Inicia sesión con tu correo y la contraseña generada para
+          continuar con la siguiente carga.
         </p>
         <p class="carga__sesion-detalle" *ngIf="!sesionActiva && !tieneCredenciales">
-          Es tu primera carga: valida el archivo y cárgalo para generar automáticamente tu contraseña y credenciales de acceso.
+          Es tu primera carga: valida el archivo y cárgalo para generar automáticamente tu contraseña y credenciales de
+          acceso.
         </p>
       </div>
     </div>
-    <a
-      *ngIf="!sesionActiva && tieneCredenciales"
-      class="carga__sesion-boton"
-      [routerLink]="['/login']"
-      [queryParams]="{ redirect: '/carga-masiva' }"
-    >
+    <a *ngIf="!sesionActiva && tieneCredenciales" class="carga__sesion-boton" [routerLink]="['/login']"
+      [queryParams]="{ redirect: '/carga-masiva' }">
       Ir a login
     </a>
-    <button *ngIf="sesionActiva" type="button" class="carga__sesion-boton carga__sesion-boton--secundario" (click)="cerrarSesion()">
+    <button *ngIf="sesionActiva" type="button" class="carga__sesion-boton carga__sesion-boton--secundario"
+      (click)="cerrarSesion()">
       Cerrar sesión
     </button>
   </div>
@@ -58,41 +73,28 @@
     <form class="carga__formulario" (submit)="$event.preventDefault()">
       <label class="carga__campo">
         <span class="carga__campo-label">Correo electrónico</span>
-        <input
-          type="email"
-          [formControl]="correoControl"
-          placeholder="usuario@dominio.com"
-          required
-        >
+        <input type="email" [formControl]="correoControl" placeholder="usuario@dominio.com" required>
         <small class="carga__campo-error" *ngIf="correoControl.invalid && correoControl.touched">
           Ingresa un correo electrónico válido.
         </small>
         <small class="carga__campo-aviso" *ngIf="credencialesAsociadas">
-          Ya existe una contraseña ligada a este correo. Se reutilizará para tus siguientes cargas y no se generará una nueva
+          Ya existe una contraseña ligada a este correo. Se reutilizará para tus siguientes cargas y no se generará una
+          nueva
           clave.
         </small>
       </label>
     </form>
 
-    <div
-      class="carga__drop"
-      [class.carga__drop--disabled]="correoControl.invalid"
-      [attr.aria-disabled]="correoControl.invalid"
-    >
+    <div class="carga__drop" [class.carga__drop--disabled]="correoControl.invalid"
+      [attr.aria-disabled]="correoControl.invalid">
       <div class="carga__instrucciones">
         <p class="carga__etiqueta">Arrastra y suelta tu archivo o selecciónalo desde tu equipo</p>
         <p class="carga__formatos">Solo se aceptan archivos XLSX. Máximo {{ pesoMaximoMb }} MB.</p>
       </div>
 
       <label class="carga__input" [class.carga__input--disabled]="!correoControl.valid">
-        <input
-          #archivoInput
-          type="file"
-          accept=".xlsx"
-          multiple
-          (change)="onArchivoSeleccionado($event)"
-          [disabled]="correoControl.invalid"
-        >
+        <input #archivoInput type="file" accept=".xlsx" multiple (change)="onArchivoSeleccionado($event)"
+          [disabled]="correoControl.invalid">
         <span class="carga__boton">{{ correoControl.invalid ? 'Ingresa un correo' : 'Elegir archivos' }}</span>
       </label>
     </div>
@@ -142,32 +144,34 @@
           <p class="carga__detalle-etiqueta">Archivo seleccionado</p>
           <h2>{{ resultado.archivo.name }}</h2>
           <p class="carga__detalle-metadata">
-            Peso: {{ resultado.archivo.sizeKb }} KB · Última modificación: {{ resultado.archivo.lastModified | date:'short' }}
+            Peso: {{ resultado.archivo.sizeKb }} KB · Última modificación: {{ resultado.archivo.lastModified |
+            date:'short' }}
           </p>
           <p class="carga__detalle-metadata" *ngIf="resultado.tipoDetectado">
             Archivo detectado: {{ obtenerEtiquetaTipo(resultado.tipoDetectado) }}
           </p>
         </div>
         <div class="carga__detalle-status">
-          <span
-            class="carga__estado-indicador"
+          <span class="carga__estado-indicador"
             [class.carga__estado-indicador--progreso]="resultado.estado === 'validando'"
             [class.carga__estado-indicador--error]="resultado.estado === 'error'"
-            [class.carga__estado-indicador--exito]="resultado.estado === 'exito'"
-          >
-            <span class="carga__estado-punto" aria-hidden="true"></span>
+            [class.carga__estado-indicador--exito]="resultado.estado === 'exito'">
+            <span *ngIf="resultado.estado !== 'validando' && resultado.estado !== 'guardando'"
+              class="carga__estado-punto" aria-hidden="true"></span>
+            <span *ngIf="resultado.estado === 'validando' || resultado.estado === 'guardando'" class="spinner"
+              aria-hidden="true"></span>
             <span class="carga__estado-texto">
-              {{ resultado.estado === 'validando' ? 'Validando' : resultado.estado === 'exito' ? 'Validado' : 'Con errores' }}
+              {{ resultado.estado === 'validando' ? 'Validando' : resultado.estado === 'guardando' ? 'Subiendo' :
+              resultado.estado === 'exito' ? 'Validado' : 'Con
+              errores' }}
             </span>
           </span>
         </div>
       </header>
 
-      <p
-        class="carga__mensaje"
+      <p class="carga__mensaje"
         [ngClass]="{ 'carga__mensaje--info': resultado.estado !== 'error', 'carga__mensaje--error': resultado.estado === 'error' }"
-        *ngIf="resultado.mensajeInformativo"
-      >
+        *ngIf="resultado.mensajeInformativo">
         {{ resultado.mensajeInformativo }}
       </p>
 
@@ -203,46 +207,41 @@
           <br>
           Ruta de referencia dentro del proyecto: <strong>{{ resultado.rutaGuardado }}</strong>
         </p>
-        <p class="carga__mensaje carga__mensaje--warning" *ngIf="resultado.notaGuardado">{{ resultado.notaGuardado }}</p>
-        <p class="carga__mensaje carga__mensaje--error" *ngIf="resultado.errorGuardado">{{ resultado.errorGuardado }}</p>
+        <p class="carga__mensaje carga__mensaje--warning" *ngIf="resultado.notaGuardado">{{ resultado.notaGuardado }}
+        </p>
+        <p class="carga__mensaje carga__mensaje--error" *ngIf="resultado.errorGuardado">{{ resultado.errorGuardado }}
+        </p>
       </div>
 
       <div class="carga__acciones">
-        <button
-          class="carga__boton-primario"
-          *ngIf="!mostrarCargaMasiva"
-          [class.carga__boton-guardado]="resultado.guardado"
-          (click)="guardarArchivo(resultado)"
-          [disabled]="resultado.estado !== 'exito' || resultado.guardando || !correoControl.valid || resultado.guardado"
-        >
+        <button class="carga__boton-primario" *ngIf="!mostrarCargaMasiva"
+          [class.carga__boton-guardado]="resultado.guardado" (click)="guardarArchivo(resultado)"
+          [disabled]="resultado.estado !== 'exito' || resultado.guardando || correoControl.invalid || resultado.guardado">
           {{
-            resultado.guardado
-              ? 'Archivo guardado'
-              : resultado.guardando
-                ? 'Guardando…'
-                : 'Cargar Archivo'
+          resultado.guardado
+          ? 'Archivo guardado'
+          : resultado.guardando
+          ? 'Guardando…'
+          : 'Cargar Archivo'
           }}
         </button>
         <button class="carga__boton-secundario" (click)="onEliminarResultado(resultado)">Quitar</button>
       </div>
 
       <div class="carga__pdf" *ngIf="resultado.pdfTipo">
-        <div
-          class="carga__pdf-estado"
-          [ngClass]="{
+        <div class="carga__pdf-estado" [ngClass]="{
             'carga__pdf-estado--cargando': resultado.pdfEstado === 'generando' || resultado.pdfEstado === 'descargando',
             'carga__pdf-estado--ok': resultado.pdfEstado === 'listo',
             'carga__pdf-estado--error': resultado.pdfEstado === 'error'
-          }"
-        >
+          }">
           {{
-            resultado.pdfEstado === 'generando'
-              ? 'Generando PDF mock (FastAPI)'
-              : resultado.pdfEstado === 'descargando'
-                ? 'Descargando PDF'
-                : resultado.pdfEstado === 'listo'
-                  ? 'PDF descargado'
-                  : 'No se pudo descargar'
+          resultado.pdfEstado === 'generando'
+          ? 'Generando PDF mock (FastAPI)'
+          : resultado.pdfEstado === 'descargando'
+          ? 'Descargando PDF'
+          : resultado.pdfEstado === 'listo'
+          ? 'PDF descargado'
+          : 'No se pudo descargar'
           }}
         </div>
         <p class="carga__pdf-detalle" *ngIf="resultado.pdfMensaje">{{ resultado.pdfMensaje }}</p>
@@ -250,29 +249,21 @@
         <p class="carga__pdf-detalle" *ngIf="resultado.pdfNombre && resultado.pdfEstado === 'listo'">
           Archivo descargado: <strong>{{ resultado.pdfNombre }}</strong>
         </p>
-        <button
-          type="button"
-          class="carga__boton-secundario carga__pdf-boton"
-          *ngIf="resultado.pdfEstado === 'error'"
-          (click)="reintentarDescargaPdf(resultado)"
-        >
+        <button type="button" class="carga__boton-secundario carga__pdf-boton" *ngIf="resultado.pdfEstado === 'error'"
+          (click)="reintentarDescargaPdf(resultado)">
           Reintentar descarga de PDF
         </button>
       </div>
     </article>
 
     <div class="carga__acciones carga__acciones--totales" *ngIf="mostrarCargaMasiva">
-      <button
-        class="carga__boton-primario"
-        (click)="guardarTodo()"
-        [disabled]="!puedeCargarTodo"
-      >
+      <button class="carga__boton-primario" (click)="guardarTodo()" [disabled]="!puedeCargarTodo">
         {{ guardandoTodo ? 'Guardando…' : 'CARGAR TODO' }}
       </button>
     </div>
 
     <p class="carga__historial">
-      ¿Ya guardaste un archivo? <a routerLink="/archivos-preescolar">Consulta tus cargas anteriores</a>.
+      ¿Ya guardaste un archivo? <a routerLink="/archivos-evaluacion">Consulta tus cargas anteriores</a>.
     </p>
   </div>
 
@@ -283,7 +274,8 @@
         <h3>Hoja ESC (datos de la escuela)</h3>
         <ul>
           <li>CCT de 10 caracteres (ej. 01DJN0000A) en la celda junto a la etiqueta “CCT”.</li>
-          <li>Turno seleccionado de la lista: Matutino, Vespertino, Nocturno, Discontinuo, Tiempo Completo o Jornada Ampliada.</li>
+          <li>Turno seleccionado de la lista: Matutino, Vespertino, Nocturno, Discontinuo, Tiempo Completo o Jornada
+            Ampliada.</li>
           <li>Nombre de la escuela en mayúsculas.</li>
           <li>Correo electrónico de contacto válido.</li>
         </ul>
@@ -300,7 +292,8 @@
         <h3>Estatus de validación</h3>
         <ul>
           <li>Al seleccionar el archivo se muestra “Validando tu archivo…”.</li>
-          <li>Si las reglas se cumplen, se confirma la fecha disponible (hoy + 4 días) y al cargar se generan las credenciales.</li>
+          <li>Si las reglas se cumplen, se confirma la fecha disponible (hoy + 4 días) y al cargar se generan las
+            credenciales.</li>
           <li>Si hay errores, revisa la lista anterior, corrige en Excel y vuelve a cargar.</li>
         </ul>
       </div>

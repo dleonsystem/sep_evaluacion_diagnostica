@@ -1,12 +1,9 @@
-
-
-
 <!-- ✅ BANNER PRINCIPAL -->
 <div class="banner-container">
   <picture class="banner-wrapper">
     <source srcset="/assets/images/bannerMuses.jpg" type="image/jpeg">
-    <img src="/assets/images/Banner_MUSES.png" alt="Banner Reuniones de Actualización Curricular"
-      class="banner-image" loading="lazy">
+    <img src="/assets/images/Banner_MUSES.png" alt="Banner Reuniones de Actualización Curricular" class="banner-image"
+      loading="lazy">
   </picture>
 </div>
 
@@ -51,27 +48,43 @@
     </p>
 
 
-      <ul class="objective__list">
-        <li>
-          Captura guiada de resultados diagnósticos con validaciones en tiempo
-          real.
-        </li>
-        <li>
-          Carga masiva con reportes descargables para corregir y reenviar.
-        </li>
-        <li>
-          Catálogos institucionales y bitácora de acciones para garantizar
-          coherencia y trazabilidad.
-        </li>
-        <li>
-          Indicadores claros para dar seguimiento al avance de cada escuela.
-        </li>
-      </ul>
+    <ul class="objective__list">
+      <li>
+        Captura guiada de resultados diagnósticos con validaciones en tiempo
+        real.
+      </li>
+      <li>
+        Carga masiva con reportes descargables para corregir y reenviar.
+      </li>
+      <li>
+        Catálogos institucionales y bitácora de acciones para garantizar
+        coherencia y trazabilidad.
+      </li>
+      <li>
+        Indicadores claros para dar seguimiento al avance de cada escuela.
+      </li>
+    </ul>
 
 
   </section>
 
-  <section class="flujo-rapido mt-4 mb-5">
+  <!-- ✅ SECCIÓN DE PREGUNTAS FRECUENTES -->
+  <section class="inicio-faq text-center mb-5">
+    <div class="inicio-faq__card bg-white p-5 rounded border border-light shadow-sm">
+      <i class="bi bi-question-circle text-verde" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+      <h3 class="h4 font-weight-bold text-dark mb-3">¿Tienes dudas sobre el proceso?</h3>
+      <p class="text-secondary mb-4" style="font-size: 1.1rem;">
+        Consulta nuestra sección de preguntas frecuentes para resolver cualquier duda sobre cómo subir tu plantilla,
+        los formatos soportados y las validaciones de tu escuela.
+      </p>
+      <a routerLink="/preguntas-frecuentes" class="btn btn-lg btn-outline-guinda"
+        style="color: #9d2449; border-color: #9d2449; border-width: 2px; font-weight: 600; transition: all 0.2sease;">
+        Ir a Preguntas Frecuentes
+      </a>
+    </div>
+  </section>
+
+  <!-- <section class="flujo-rapido mt-4 mb-5">
     <div class="flujo-rapido__encabezado">
       <h3 class="flujo-rapido__titulo">Flujo rápido para subir y descargar resultados</h3>
       <p class="flujo-rapido__descripcion">
@@ -87,8 +100,8 @@
       <a class="flujo-rapido__boton flujo-rapido__boton--primario" routerLink="/carga-masiva">
         Cargar archivo
       </a>
-      <a class="flujo-rapido__boton flujo-rapido__boton--secundario" routerLink="/archivos-preescolar">
-        Ver archivos guardados
+      <a class="flujo-rapido__boton flujo-rapido__boton--secundario" routerLink="/archivos-evaluacion">
+        Ver cargas realizadas
       </a>
     </div>
     <div class="flujo-rapido__estado">
@@ -101,7 +114,7 @@
         <p class="flujo-rapido__detalle">{{ resumenDescarga.detalle }}</p>
       </div>
     </div>
-  </section>
+  </section> -->
 
   <!-- <section class="acciones-captura mt-5 mb-10">
     <h3 class="acciones-captura__titulo">Elige cómo registrar tus movimientos</h3>

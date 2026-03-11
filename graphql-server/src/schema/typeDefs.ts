@@ -48,6 +48,112 @@ export const typeDefs = `#graphql
     @use-case CU-10: Consulta de evaluaciones
     """
     getEvaluacion(id: ID!): Evaluacion
+
+    """
+    Listar solicitudes de carga EIA2
+    @use-case CU-05: Historial de cargas
+    """
+    getSolicitudes(
+      cct: String
+      limit: Int = 10
+      offset: Int = 0
+    ): [SolicitudEia2!]!
+
+    """
+    Listar tickets del usuario autenticado o por correo
+    @use-case CU-13: Mesa de ayuda
+    """
+    getMyTickets(correo: String): [Ticket!]!
+    
+    """
+    Obtener métricas para el dashboard administrativo
+    @use-case CU-14: Dashboard
+    """
+    getDashboardMetrics: DashboardMetrics!
+
+    """
+    Exportar tickets a formato CSV (Base64)
+    @use-case CU-15: Reportes
+    """
+    exportTicketsCSV: ExportResponse!
+
+    """
+    Listar todos los tickets del sistema (Admin)
+    @use-case CU-13: Mesa de ayuda
+    """
+    getAllTickets: [Ticket!]!
+
+    """
+    Generar comprobante de recepción (PDF)
+    @use-case CU-16: Descarga de Comprobantes
+    """
+    generateComprobante(solicitudId: ID!): FileDownload!
+
+    """
+    Descargar un archivo de resultado específico (PDF, JPG, etc)
+    @use-case CU-17: Entrega de Resultados
+    """
+    downloadAssessmentResult(solicitudId: ID!, fileName: String!): FileDownload!
+
+    """
+    Obtener lista de preguntas frecuentes
+    @use-case CU-18: Preguntas Frecuentes
+    """
+    getPreguntasFrecuentes: [PreguntaFrecuente!]!
+  }
+
+  """
+  Estructura de Pregunta Frecuente
+  """
+  type PreguntaFrecuente {
+    id: ID!
+    pregunta: String!
+    respuesta: String!
+    activo: Boolean!
+    orden: Int!
+    fecha_creacion: String!
+  }
+
+  """
+  Respuesta de exportación de archivos
+  """
+  type ExportResponse {
+    success: Boolean!
+    fileName: String!
+    contentBase64: String!
+  }
+
+  """
+  Métricas para el dashboard
+  """
+  type DashboardMetrics {
+    totalUsuarios: Int!
+    usuariosActivos: Int!
+    totalTickets: Int!
+    ticketsAbiertos: Int!
+    ticketsResueltos: Int!
+    totalSolicitudes: Int!
+    solicitudesValidadas: Int!
+    totalCCTs: Int!
+    tendenciaCargas: [TrendData!]!
+    distribucionNivel: [DistributionData!]!
+    eficienciaSoporte: SupportEfficiency!
+  }
+
+  type TrendData {
+    fecha: String!
+    cantidad: Int!
+  }
+
+  type DistributionData {
+    label: String!
+    cantidad: Int!
+    porcentaje: Float!
+  }
+
+  type SupportEfficiency {
+    tiempoPromedioRespuestaHoras: Float!
+    tasaResolucion: Float!
   }
   
   """
@@ -82,10 +188,65 @@ export const typeDefs = `#graphql
     
     """
     Cargar archivo de evaluación
-    @use-case CU-05: Carga de archivos DBF
-    @psp Code Review - Validación de formato
+    @use-case CU-05: Recepción de archivos (EIA2)
+    @psp Code Review - Validación de formato Excel
     """
-    uploadEvaluacion(input: UploadEvaluacionInput!): Evaluacion!
+    uploadExcelAssessment(input: UploadExcelInput!): UploadExcelResponse!
+    
+    """
+    Recuperar contraseña (envío de email)
+    @use-case CU-01: Autenticación
+    """
+    recoverPassword(email: String!): String!
+
+    """
+    Crear nuevo ticket de soporte
+    @use-case CU-13: Mesa de ayuda
+    """
+    createTicket(input: CreateTicketInput!): Ticket!
+
+    """
+    Responder a un ticket de soporte (Admin)
+    @use-case CU-13: Mesa de ayuda
+    """
+    respondToTicket(ticketId: ID!, respuesta: String!, cerrar: Boolean!): Ticket!
+
+    """
+    Borrar lógicamente un ticket (Usuario/Admin)
+    @use-case CU-13: Mesa de ayuda
+    """
+    deleteTicket(ticketId: ID!): Boolean!
+
+    """
+    Cargar archivos de resultados asociados a una evaluación (Admin)
+    @use-case CU-17: Entrega de Resultados
+    """
+    uploadAssessmentResults(input: UploadResultsInput!): UploadResultsResponse!
+  }
+
+  """
+  Respuesta de carga de resultados
+  """
+  type UploadResultsResponse {
+    success: Boolean!
+    message: String!
+    resultados: [TicketEvidencia!]
+  }
+
+  """
+  Input para carga de resultados
+  """
+  input UploadResultsInput {
+    solicitudId: ID!
+    archivos: [ResultArchivoInput!]!
+  }
+
+  """
+  Input para archivo de resultado
+  """
+  input ResultArchivoInput {
+    nombre: String!
+    base64: String!
   }
   
   """
@@ -274,6 +435,121 @@ export const typeDefs = `#graphql
   type DeleteResponse {
     success: Boolean!
     message: String!
+  }
+
+  """
+  Input para carga de Excel Universal
+  """
+  input UploadExcelInput {
+    archivoBase64: String!
+    nombreArchivo: String!
+    cicloEscolar: String!
+    email: String
+    confirmarReemplazo: Boolean
+  }
+
+  """
+  Respuesta de carga de Excel
+  """
+  type UploadExcelResponse {
+    success: Boolean!
+    message: String!
+    solicitudId: ID
+    detalles: ExcelUploadResult
+    duplicadoDetectado: Boolean
+  }
+
+  """
+  Detalles del resultado del procesamiento Excel
+  """
+  type ExcelUploadResult {
+    cct: String
+    nivel: String
+    grado: Int
+    alumnosProcesados: Int
+    errores: [String!]
+  }
+
+  """
+  Solicitud de carga EIA2
+  """
+  type SolicitudEia2 {
+    id: ID!
+    consecutivo: Int!
+    cct: String!
+    turno: String
+    archivoOriginal: String!
+    fechaCarga: String!
+    estadoValidacion: Int!
+    nivelEducativo: Int
+    archivoPath: String
+    archivoSize: Int
+    procesadoExternamente: Boolean!
+    errores: [String!]
+    resultados: [TicketEvidencia!]
+  }
+  """
+  Ticket de Soporte
+  """
+  type Ticket {
+    id: ID!
+    numeroTicket: String!
+    asunto: String!
+    descripcion: String!
+    estado: String!
+    prioridad: String!
+    evidencias: [TicketEvidencia!]
+    respuestas: [TicketRespuesta!]
+    correo: String
+    fechaCreacion: String!
+    fechaActualizacion: String!
+  }
+
+  """
+  Respuesta de Ticket (Comentario)
+  """
+  type TicketRespuesta {
+    id: ID!
+    mensaje: String!
+    fecha: String!
+    autor: String!
+    esInterno: Boolean!
+  }
+
+  """
+  Evidencia de Ticket
+  """
+  type TicketEvidencia {
+    nombre: String!
+    url: String!
+    size: Int
+  }
+
+  """
+  Input para crear Ticket
+  """
+  input CreateTicketInput {
+    motivo: String!
+    descripcion: String!
+    correo: String
+    evidencias: [TicketEvidenciaInput!]
+  }
+
+  """
+  Input para evidencia de Ticket
+  """
+  input TicketEvidenciaInput {
+    nombre: String!
+    base64: String!
+  }
+
+  """
+  Respuesta para descarga de archivos
+  """
+  type FileDownload {
+    success: Boolean!
+    fileName: String!
+    contentBase64: String!
   }
 `;
 

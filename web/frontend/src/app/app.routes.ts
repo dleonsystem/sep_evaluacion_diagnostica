@@ -1,14 +1,18 @@
 import { Routes } from '@angular/router';
 import { InicioComponent } from './components/inicio/inicio.component';
 import { CargaMasivaComponent } from './components/carga-masiva/carga-masiva.component';
-import { ArchivosGuardadosComponent } from './components/archivos-guardados/archivos-guardados.component';
+import { ArchivosEvaluacionComponent } from './components/archivos-evaluacion/archivos-evaluacion.component';
 import { LoginComponent } from './components/login/login.component';
 import { DescargasComponent } from './components/descargas/descargas.component';
-import { AdminLoginComponent } from './components/admin-login/admin-login.component';
 import { AdminPanelComponent } from './components/admin-panel/admin-panel.component';
 import { TicketsComponent } from './components/tickets/tickets.component';
 import { TicketsHistorialComponent } from './components/tickets-historial/tickets-historial.component';
-
+import { AuthGuard } from './guards/auth.guard';
+import { AdminGuard } from './guards/admin.guard';
+import { LoginGuard } from './guards/login.guard';
+import { RecuperarPasswordComponent } from './components/recuperar-password/recuperar-password.component';
+import { DashboardComponent } from './components/dashboard/dashboard.component';
+import { PreguntasFrecuentesComponent } from './components/preguntas-frecuentes/preguntas-frecuentes.component';
 
 export const routes: Routes = [
   {
@@ -37,39 +41,57 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
-    path: 'archivos-preescolar',
-    component: ArchivosGuardadosComponent,
-    pathMatch: 'full'
+    path: 'preguntas-frecuentes',
+    component: PreguntasFrecuentesComponent,
+    pathMatch: 'full',
+  },
+  {
+    path: 'archivos-evaluacion',
+    component: ArchivosEvaluacionComponent,
+    canActivate: [AuthGuard],
+    pathMatch: 'full',
   },
   {
     path: 'login',
     component: LoginComponent,
-    pathMatch: 'full'
+    canActivate: [LoginGuard],
+    pathMatch: 'full',
   },
   {
-    path: 'admin/login',
-    component: AdminLoginComponent,
-    pathMatch: 'full'
+    path: 'recuperar-password',
+    component: RecuperarPasswordComponent,
+    canActivate: [LoginGuard],
+    pathMatch: 'full',
   },
   {
     path: 'admin/panel',
     component: AdminPanelComponent,
-    pathMatch: 'full'
+    canActivate: [AdminGuard],
+    pathMatch: 'full',
+  },
+  {
+    path: 'admin/dashboard',
+    component: DashboardComponent,
+    canActivate: [AdminGuard],
+    pathMatch: 'full',
   },
   {
     path: 'descargas',
     component: DescargasComponent,
-    pathMatch: 'full'
+    canActivate: [AuthGuard],
+    pathMatch: 'full',
   },
   {
     path: 'tickets',
     component: TicketsComponent,
-    pathMatch: 'full'
+    canActivate: [AuthGuard],
+    pathMatch: 'full',
   },
   {
     path: 'tickets-historial',
     component: TicketsHistorialComponent,
-    pathMatch: 'full'
+    canActivate: [AuthGuard],
+    pathMatch: 'full',
   },
   /* {
     path: 'carga-masiva/detalle',

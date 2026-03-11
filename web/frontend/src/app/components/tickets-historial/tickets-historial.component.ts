@@ -3,6 +3,8 @@ import { Component, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
+import { TicketsService, Ticket as TicketDB } from '../../services/tickets.service';
+import { firstValueFrom } from 'rxjs';
 
 interface TicketSoporte {
   id: string;
@@ -33,8 +35,9 @@ export class TicketsHistorialComponent implements OnInit {
   constructor(
     private readonly authService: AuthService,
     private readonly estadoCredencialesService: EstadoCredencialesService,
+    private readonly ticketsService: TicketsService,
     private readonly router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     if (!this.authService.estaAutenticado()) {
@@ -48,20 +51,56 @@ export class TicketsHistorialComponent implements OnInit {
     this.cargarTickets();
   }
 
-  cargarTickets(): void {
-    const data = localStorage.getItem('tickets-soporte');
-    const tickets = data ? (JSON.parse(data) as TicketSoporte[]) : [];
-    const correoActivo = this.normalizarCorreo(this.correoActivo);
-    this.tickets = correoActivo
-      ? tickets.filter((ticket) => this.normalizarCorreo(ticket.correo) === correoActivo)
-      : tickets;
+  async cargarTickets(): Promise<void> {
+    try {
+      const ticketsDB = await firstValueFrom(
+        this.ticketsService.getMyTickets(this.correoActivo ?? undefined)
+      );
 
-    if (!this.tickets.length) {
-      this.mensajeInfo = 'Aún no has enviado tickets de soporte.';
-      return;
+      this.tickets = ticketsDB.map(t => ({
+        id: t.id,
+        folio: t.numeroTicket,
+        correo: t.correo || this.correoActivo || 'Anónimo',
+        motivo: t.asunto,
+        motivoDetalle: t.asunto,
+        descripcion: t.descripcion,
+        fecha: t.fechaCreacion,
+        estatus: this.mapEstatusDBToUI(t.estado),
+        respuestas: (t.respuestas || []).map(r => ({
+          mensaje: r.mensaje,
+          fecha: r.fecha,
+          autor: 'admin'
+        })),
+        evidencias: (t.evidencias || []).map(e => ({
+          nombre: e.nombre,
+          tamano: e.size || 0,
+          tipo: 'archivo'
+        }))
+      }));
+
+      if (!this.tickets.length) {
+        this.mensajeInfo = 'Aún no has enviado tickets de soporte.';
+      } else {
+        this.mensajeInfo = null;
+      }
+    } catch (error) {
+      console.error('Error cargando tickets:', error);
+      this.mensajeInfo = 'Error al cargar tus tickets. Intenta más tarde.';
     }
+  }
 
-    this.mensajeInfo = null;
+  private mapEstatusDBToUI(estado: string): TicketSoporte['estatus'] {
+    switch (estado) {
+      case 'ABIERTO':
+        return 'pendiente';
+      case 'EN_PROCESO':
+        return 'en-proceso';
+      case 'RESUELTO':
+      case 'CERRADO':
+        return 'respondido';
+      default:
+        return 'pendiente';
+    }
   }
 
   obtenerEtiquetaEstatus(estatus: TicketSoporte['estatus']): string {
@@ -107,5 +146,10 @@ export class TicketsHistorialComponent implements OnInit {
       return null;
     }
     return correo.trim().toLowerCase();
+  }
+
+  cerrarSesion(): void {
+    this.authService.cerrarSesion();
+    void this.router.navigate(['/login']);
   }
 }

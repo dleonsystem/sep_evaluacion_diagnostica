@@ -8,6 +8,8 @@ import { AuthService } from '../../services/auth.service';
 import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
 import { UsuariosService } from '../../services/usuarios.service';
 
+import { AdminAuthService } from '../../services/admin-auth.service';
+
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -28,11 +30,12 @@ export class LoginComponent implements OnInit {
 
   constructor(
     private readonly authService: AuthService,
+    private readonly adminAuthService: AdminAuthService,
     private readonly estadoCredencialesService: EstadoCredencialesService,
     private readonly usuariosService: UsuariosService,
     private readonly router: Router,
     private readonly route: ActivatedRoute
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     const credencialesPersistidas = this.authService.obtenerCredenciales();
@@ -56,10 +59,30 @@ export class LoginComponent implements OnInit {
     this.error = null;
     this.autenticando = true;
 
+    // Asegurar limpieza de sesión administrativa previa
+    this.adminAuthService.cerrarSesion();
+
     try {
       const usuario = await firstValueFrom(
         this.usuariosService.autenticarUsuario(this.correo, this.contrasena)
       );
+
+      // Detectar Roles Administrativos (Rol 2 o 3)
+      if (usuario.rol === 'COORDINADOR_FEDERAL' || usuario.rol === 'COORDINADOR_ESTATAL') {
+        // Redirigir al flujo de AdminAuthService unificado
+        await this.adminAuthService.iniciarSesion(this.correo, this.contrasena);
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Sesión administrativa',
+          text: 'Bienvenido al panel de administración.',
+          timer: 2000,
+          timerProgressBar: true
+        });
+
+        await this.router.navigateByUrl('/admin/dashboard');
+        return;
+      }
 
       const cct = usuario.centrosTrabajo?.[0]?.claveCCT ?? null;
       if (cct) {
@@ -81,7 +104,13 @@ export class LoginComponent implements OnInit {
         timer: 2500,
         timerProgressBar: true
       });
-      await this.router.navigateByUrl(this.redirect);
+
+      let destino = this.redirect;
+      if (usuario.rol === 'RESPONSABLE_CCT' && destino === '/carga-masiva') {
+        destino = '/archivos-evaluacion';
+      }
+
+      await this.router.navigateByUrl(destino);
     } catch (error) {
       const mensajeError = error instanceof Error ? error.message : 'Ocurrió un error inesperado.';
       this.error = `No se pudo iniciar sesión. ${mensajeError}`;

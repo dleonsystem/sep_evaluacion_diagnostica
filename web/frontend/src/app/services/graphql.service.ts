@@ -14,13 +14,33 @@ export interface GraphQlResponse<T> {
 export class GraphqlService {
   private readonly graphqlEndpoint = this.resolverEndpoint();
 
-  constructor(private readonly http: HttpClient) {}
+  constructor(private readonly http: HttpClient) { }
 
   execute<T>(query: string, variables?: Record<string, unknown>): Observable<GraphQlResponse<T>> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // 1. Prioridad: Token de administrador
+    const adminToken = localStorage.getItem('eia-admin-token');
+    if (adminToken) {
+      headers['Authorization'] = `Bearer ${adminToken}`;
+    } else {
+      // 2. Fallback: Usuario regular
+      const isUserAuth = localStorage.getItem('eia-user-session-active') === 'true';
+      const userEmail = localStorage.getItem('eia-user-session-email');
+
+      if (isUserAuth && userEmail) {
+        // Generar token compatible con el backend (email:timestamp base64)
+        const mockToken = btoa(`${userEmail}:${Date.now()}`);
+        headers['Authorization'] = `Bearer ${mockToken}`;
+      }
+    }
+
     return this.http.post<GraphQlResponse<T>>(this.graphqlEndpoint, {
       query,
       variables
-    });
+    }, { headers });
   }
 
   private resolverEndpoint(): string {
@@ -31,7 +51,8 @@ export class GraphqlService {
 
     const enDev = window.location.port === '4200';
     if (enDev) {
-      return 'http://localhost:4000/graphql';
+      const hostname = window.location.hostname;
+      return `http://${hostname}:4000/graphql`;
     }
 
     return '/graphql';

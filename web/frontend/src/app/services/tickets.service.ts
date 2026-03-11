@@ -1,0 +1,131 @@
+import { Injectable } from '@angular/core';
+import { map, Observable } from 'rxjs';
+import { GraphqlService } from './graphql.service';
+import { EXPORT_TICKETS_CSV } from '../operations/query';
+
+export interface Ticket {
+  id: string;
+  numeroTicket: string;
+  asunto: string;
+  descripcion: string;
+  estado: string;
+  prioridad: string;
+  correo?: string;
+  fechaCreacion: string;
+  fechaActualizacion: string;
+  evidencias?: Array<{ nombre: string; url: string; size?: number }>;
+  respuestas?: Array<{ id: string; mensaje: string; fecha: string; autor: string; esInterno: boolean }>;
+}
+
+@Injectable({ providedIn: 'root' })
+export class TicketsService {
+  constructor(private readonly graphqlService: GraphqlService) { }
+
+  getAllTickets(): Observable<Ticket[]> {
+    const query = `
+      query GetAllTickets {
+        getAllTickets {
+          id
+          numeroTicket
+          asunto
+          descripcion
+          estado
+          prioridad
+          correo
+          fechaCreacion
+          fechaActualizacion
+          evidencias {
+            nombre
+            url
+            size
+          }
+          respuestas {
+            id
+            mensaje
+            fecha
+            autor
+            esInterno
+          }
+        }
+      }
+    `;
+    return this.graphqlService.execute<{ getAllTickets: Ticket[] }>(query).pipe(
+      map(res => {
+        if (res.errors) throw new Error(res.errors[0].message);
+        return res.data?.getAllTickets || [];
+      })
+    );
+  }
+
+  getMyTickets(correo?: string): Observable<Ticket[]> {
+    const query = `
+      query GetMyTickets($correo: String) {
+        getMyTickets(correo: $correo) {
+          id
+          numeroTicket
+          asunto
+          descripcion
+          estado
+          prioridad
+          fechaCreacion
+          fechaActualizacion
+          evidencias {
+            nombre
+            url
+            size
+          }
+          respuestas {
+            id
+            mensaje
+            fecha
+            autor
+            esInterno
+          }
+        }
+      }
+    `;
+    return this.graphqlService.execute<{ getMyTickets: Ticket[] }>(query, { correo }).pipe(
+      map(res => {
+        if (res.errors) throw new Error(res.errors[0].message);
+        return res.data?.getMyTickets || [];
+      })
+    );
+  }
+
+  respondToTicket(ticketId: string, respuesta: string, cerrar: boolean): Observable<Ticket> {
+    const mutation = `
+      mutation RespondToTicket($ticketId: ID!, $respuesta: String!, $cerrar: Boolean!) {
+        respondToTicket(ticketId: $ticketId, respuesta: $respuesta, cerrar: $cerrar) {
+          id
+          numeroTicket
+          asunto
+          estado
+          fechaActualizacion
+          respuestas {
+            id
+            mensaje
+            fecha
+            autor
+            esInterno
+          }
+        }
+      }
+    `;
+    return this.graphqlService.execute<{ respondToTicket: Ticket }>(mutation, { ticketId, respuesta, cerrar }).pipe(
+      map(res => {
+        if (res.errors) throw new Error(res.errors[0].message);
+        if (!res.data?.respondToTicket) throw new Error('No se pudo responder al ticket');
+        return res.data.respondToTicket;
+      })
+    );
+  }
+
+  exportTicketsCSV(): Observable<{ success: boolean; fileName: string; contentBase64: string }> {
+    return this.graphqlService.execute<{ exportTicketsCSV: any }>(EXPORT_TICKETS_CSV).pipe(
+      map(res => {
+        if (res.errors) throw new Error(res.errors[0].message);
+        return res.data?.exportTicketsCSV;
+      })
+    );
+  }
+}

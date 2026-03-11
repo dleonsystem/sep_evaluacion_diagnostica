@@ -7,6 +7,8 @@
   font-size: 1.5rem;
 }
 
+
+
 .archivos__encabezado {
   margin-bottom: 1.5rem;
 }
@@ -251,6 +253,95 @@
 .archivos__resultados-meta {
   color: #64748b;
   font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.archivos__seccion {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+
+  h4 {
+    margin-bottom: 0.8rem;
+    color: #13322e;
+    font-weight: 700;
+    font-size: 1.1rem;
+    border-left: 4px solid #9d2449;
+    padding-left: 0.8rem;
+  }
+}
+
+.archivos__grid-resultados {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.archivos__resultado-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: #fdfaf5;
+  border: 1px solid #f6eddc;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    background: white;
+  }
+}
+
+.archivos__resultado-info {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.archivos__resultado-icon {
+  font-size: 1.5rem;
+  color: #9d2449;
+}
+
+.archivos__resultado-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.archivos__resultado-nombre {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #1e293b;
+  word-break: break-all;
+}
+
+.archivos__resultado-size {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.archivos__btn-descargar {
+  padding: 0.5rem 1rem;
+  background: #611232;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #9d2449;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 }
 
 .archivos__vacio {
@@ -271,6 +362,41 @@
 
 .archivos__link:hover {
   text-decoration: underline;
+}
+
+.archivos__badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: #f2f2f2;
+  color: #666;
+
+  &[data-estado="0"] {
+    background: #fff3e0;
+    color: #ef6c00;
+    border: 1px solid #ffe0b2;
+  }
+
+  &[data-estado="1"] {
+    background: #e1f5fe;
+    color: #0288d1;
+    border: 1px solid #b3e5fc;
+  }
+
+  &[data-estado="2"] {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+  }
+
+  &[data-estado="3"] {
+    background: #f3e5f5;
+    color: #7b1fa2;
+    border: 1px solid #e1bee7;
+  }
 }
 
 @media (max-width: 720px) {

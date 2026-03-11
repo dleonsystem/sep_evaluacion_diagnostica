@@ -1,4 +1,23 @@
 <section class="tickets">
+  <!-- USER SUB-NAV MENU -->
+  <nav class="shared-subnav">
+    <a routerLink="/carga-masiva" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
+      <i class="bi bi-cloud-upload"></i> Carga Masiva
+    </a>
+    <a routerLink="/archivos-evaluacion" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
+      <i class="bi bi-folder-check"></i> Cargas realizadas
+    </a>
+    <a routerLink="/tickets" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
+      <i class="bi bi-life-preserver"></i> Soporte
+    </a>
+    <a routerLink="/tickets-historial" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
+      <i class="bi bi-card-list"></i> Mis tickets
+    </a>
+    <button (click)="cerrarSesion()" class="shared-subnav-btn--logout">
+      <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+    </button>
+  </nav>
+
   <header class="tickets__encabezado">
     <p class="tickets__eyebrow">Mesa de ayuda</p>
     <h1 class="tickets__titulo">Crear ticket de soporte</h1>
@@ -24,12 +43,7 @@
 
     <label class="tickets__campo" *ngIf="mostrarMotivoOtro">
       <span>Describe el motivo</span>
-      <input
-        type="text"
-        [formControl]="motivoOtroControl"
-        placeholder="Escribe el motivo específico"
-        maxlength="200"
-      />
+      <input type="text" [formControl]="motivoOtroControl" placeholder="Escribe el motivo específico" maxlength="200" />
       <small class="tickets__error" *ngIf="motivoOtroControl.invalid && motivoOtroControl.touched">
         Ingresa un motivo válido.
       </small>
@@ -37,12 +51,8 @@
 
     <label class="tickets__campo">
       <span>Describe tu problema</span>
-      <textarea
-        [formControl]="descripcionControl"
-        rows="6"
-        placeholder="Incluye detalles como fecha, nivel, CCT o mensajes de error."
-        maxlength="1500"
-      ></textarea>
+      <textarea [formControl]="descripcionControl" rows="6"
+        placeholder="Incluye detalles como fecha, nivel, CCT o mensajes de error." maxlength="1500"></textarea>
       <small class="tickets__error" *ngIf="descripcionControl.invalid && descripcionControl.touched">
         Este campo es obligatorio.
       </small>
@@ -53,15 +63,11 @@
       <div class="tickets__evidencias">
         <label class="tickets__evidencias-boton">
           Agregar evidencia
-          <input
-            type="file"
-            accept=".pdf,.xlsx,.xls,.doc,.docx,.jpg,.jpeg,.png"
-            (change)="onArchivoSeleccionado($event)"
-            [disabled]="!puedeAgregarEvidencias"
-          />
+          <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" (change)="onArchivoSeleccionado($event)"
+            [disabled]="!puedeAgregarEvidencias" />
         </label>
         <p class="tickets__evidencias-ayuda">
-          Sube archivos uno por uno (PDF, Excel, Word o imágenes).
+          Sube archivos uno por uno (PDF, Word o imágenes).
         </p>
       </div>
 
@@ -74,7 +80,6 @@
     </div>
 
     <p class="tickets__mensaje tickets__mensaje--error" *ngIf="mensajeError">{{ mensajeError }}</p>
-    <p class="tickets__mensaje tickets__mensaje--exito" *ngIf="mensajeExito">{{ mensajeExito }}</p>
 
     <button class="tickets__boton" type="submit">Enviar ticket</button>
   </form>
@@ -109,8 +114,4 @@
     </div>
   </section>
 
-  <section class="tickets__debug">
-    <h2>LocalStorage: tickets-soporte</h2>
-    <pre>{{ ticketsStorageJson }}</pre>
-  </section>
 </section>

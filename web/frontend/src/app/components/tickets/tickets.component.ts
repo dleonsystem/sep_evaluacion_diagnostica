@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
+import Swal from 'sweetalert2';
 
 interface EvidenciaArchivo {
   id: string;
@@ -26,7 +27,7 @@ interface TicketSoporte {
 @Component({
   selector: 'app-tickets',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule],
   templateUrl: './tickets.component.html',
   styleUrl: './tickets.component.scss'
 })
@@ -37,7 +38,7 @@ export class TicketsComponent implements OnInit {
     'Otra'
   ];
   readonly maxEvidencias = 10;
-  readonly extensionesPermitidas = ['.pdf', '.xlsx', '.xls', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
+  readonly extensionesPermitidas = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
 
   readonly motivoControl = new FormControl('', { nonNullable: true, validators: [Validators.required] });
   readonly motivoOtroControl = new FormControl('', {
@@ -59,7 +60,7 @@ export class TicketsComponent implements OnInit {
     private readonly authService: AuthService,
     private readonly estadoCredencialesService: EstadoCredencialesService,
     private readonly router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     if (!this.authService.estaAutenticado()) {
@@ -104,7 +105,7 @@ export class TicketsComponent implements OnInit {
     }
 
     if (!this.esExtensionPermitida(archivo.name)) {
-      this.mensajeError = 'Formato no permitido. Usa PDF, Excel, Word o imágenes.';
+      this.mensajeError = 'Formato no permitido. Usa PDF, Word o imágenes (Excel no permitido para evidencias).';
       return;
     }
 
@@ -118,7 +119,7 @@ export class TicketsComponent implements OnInit {
     this.evidencias = this.evidencias.filter((item) => item.id !== id);
   }
 
-  enviarTicket(event?: Event): void {
+  async enviarTicket(event?: Event): Promise<void> {
     event?.preventDefault();
     this.mensajeError = null;
     this.mensajeExito = null;
@@ -139,39 +140,102 @@ export class TicketsComponent implements OnInit {
       return;
     }
 
-    if (!this.authService.estaAutenticado() || !this.correoActivo) {
-      this.mensajeError = 'Inicia sesión para registrar un ticket.';
-      return;
+    // Aunque no tengamos token real, necesitamos el correo
+    if (!this.correoActivo) {
+      // Intentar recuperar de auth service, o pedir login
+      if (!this.authService.estaAutenticado()) {
+        this.mensajeError = 'Inicia sesión para registrar un ticket.';
+        return;
+      }
     }
 
-    const tickets = this.obtenerTickets();
-    const nuevoTicket: TicketSoporte = {
-      id: this.generarId(),
-      folio: this.generarFolio(),
-      correo: this.correoActivo,
-      motivo: this.motivoControl.value,
-      motivoDetalle: this.mostrarMotivoOtro ? this.motivoOtroControl.value.trim() : '',
-      descripcion: this.descripcionControl.value.trim(),
-      fecha: new Date().toISOString(),
-      estatus: 'pendiente',
-      respuestas: [],
-      evidencias: this.evidencias.map((item) => ({
+    try {
+      // 1. Convertir evidencias a Base64
+      const evidenciasPromises = this.evidencias.map(async (item) => ({
         nombre: item.archivo.name,
-        tamano: item.archivo.size,
-        tipo: item.archivo.type
-      }))
-    };
+        base64: await this.fileToBase64(item.archivo)
+      }));
+      const evidenciasToSend = await Promise.all(evidenciasPromises);
 
-    tickets.push(nuevoTicket);
-    localStorage.setItem('tickets-soporte', JSON.stringify(tickets));
-    this.ticketsCreados = this.filtrarTicketsPorCorreo(tickets);
+      // 2. Preparar Payload GraphQL
+      const query = `
+        mutation CreateTicket($input: CreateTicketInput!) {
+          createTicket(input: $input) {
+            id
+            numeroTicket
+            asunto
+            descripcion
+            estado
+            fechaCreacion
+            evidencias {
+              nombre
+              url
+              size
+            }
+          }
+        }
+      `;
 
-    this.mensajeExito =
-      'Tu ticket se registró correctamente. En breve te contactaremos por correo.';
-    this.motivoControl.reset('');
-    this.motivoOtroControl.reset('');
-    this.descripcionControl.reset('');
-    this.evidencias = [];
+      const variables = {
+        input: {
+          motivo: this.motivoControl.value,
+          descripcion: this.descripcionControl.value,
+          correo: this.correoActivo, // Enviamos correo para identificar usuario (Auth Mock)
+          evidencias: evidenciasToSend
+        }
+      };
+
+      // 3. Enviar Petición
+      const response = await fetch('http://localhost:4000/graphql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ query, variables })
+      });
+
+      const result = await response.json();
+
+      if (result.errors) {
+        throw new Error(result.errors[0].message);
+      }
+
+      // 4. Éxito y actualización de lista desde DB
+      await Swal.fire({
+        title: '¡Ticket enviado!',
+        text: `Tu ticket se registró correctamente con el folio: ${result.data.createTicket.numeroTicket}`,
+        icon: 'success',
+        confirmButtonText: 'Entendido',
+        confirmButtonColor: '#00695c'
+      });
+
+      this.motivoControl.reset('');
+      this.motivoOtroControl.reset('');
+      this.descripcionControl.reset('');
+      this.evidencias = [];
+
+      // Recargar la lista real desde la base de datos
+      await this.cargarTickets();
+
+    } catch (error: any) {
+      this.mensajeError = error.message || 'Ocurrió un error al enviar el ticket.';
+      console.error('Error enviando ticket:', error);
+    }
+  }
+
+  private fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Eliminar prefijo data:tipo;base64,
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
   }
 
   private esExtensionPermitida(nombre: string): boolean {
@@ -210,9 +274,77 @@ export class TicketsComponent implements OnInit {
     }
   }
 
-  private cargarTickets(): void {
-    const tickets = this.obtenerTickets();
-    this.ticketsCreados = this.filtrarTicketsPorCorreo(tickets);
+  private async cargarTickets(): Promise<void> {
+    if (!this.correoActivo) return;
+
+    try {
+      const query = `
+        query GetMyTickets($correo: String) {
+          getMyTickets(correo: $correo) {
+            id
+            numeroTicket
+            asunto
+            descripcion
+            estado
+            fechaCreacion
+            evidencias {
+              nombre
+              url
+              size
+            }
+          }
+        }
+      `;
+
+      const response = await fetch('http://localhost:4000/graphql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          query,
+          variables: { correo: this.correoActivo }
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.errors) {
+        throw new Error(result.errors[0].message);
+      }
+
+      const ticketsDB = result.data.getMyTickets;
+
+      // Mapear al modelo de la UI
+      this.ticketsCreados = ticketsDB.map((t: any) => ({
+        id: t.id,
+        folio: t.numeroTicket,
+        correo: this.correoActivo!,
+        motivo: t.asunto,
+        descripcion: t.descripcion,
+        fecha: t.fechaCreacion,
+        estatus: this.mapEstatus(t.estado),
+        respuestas: [],
+        evidencias: (t.evidencias || []).map((e: any) => ({
+          nombre: e.nombre,
+          tamano: e.size || 0,
+          tipo: 'archivo'
+        }))
+      }));
+
+    } catch (error) {
+      console.error('Error cargando tickets:', error);
+    }
+  }
+
+  private mapEstatus(estado: string): 'pendiente' | 'en-proceso' | 'respondido' {
+    switch (estado) {
+      case 'ABIERTO': return 'pendiente';
+      case 'EN PROCESO': return 'en-proceso';
+      case 'CERRADO': case 'RESUELTO': return 'respondido';
+      default: return 'pendiente';
+    }
   }
 
   private filtrarTicketsPorCorreo(tickets: TicketSoporte[]): TicketSoporte[] {
@@ -248,5 +380,10 @@ export class TicketsComponent implements OnInit {
       return null;
     }
     return correo.trim().toLowerCase();
+  }
+
+  cerrarSesion(): void {
+    this.authService.cerrarSesion();
+    void this.router.navigate(['/login']);
   }
 }

@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 export interface CredencialesGuardadas {
   cct: string;
@@ -8,9 +9,16 @@ export interface CredencialesGuardadas {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly credencialesKey = 'credenciales-preescolar';
-  private readonly sesionKey = 'sesion-preescolar-activa';
-  private readonly sesionCorreoKey = 'sesion-preescolar-correo';
+  private readonly credencialesKey = 'eia-user-credentials';
+  private readonly sesionKey = 'eia-user-session-active';
+  private readonly sesionCorreoKey = 'eia-user-session-email';
+
+  private autenticadoSubject = new BehaviorSubject<boolean>(this.estaAutenticadoInicial());
+  public autenticado$ = this.autenticadoSubject.asObservable();
+
+  private estaAutenticadoInicial(): boolean {
+    return localStorage.getItem(this.sesionKey) === 'true';
+  }
 
   obtenerCredenciales(): CredencialesGuardadas | null {
     const guardadas = localStorage.getItem(this.credencialesKey);
@@ -42,16 +50,11 @@ export class AuthService {
     const cctNormalizado = this.normalizarCct(cct);
     const correoNormalizado = this.normalizarCorreo(correo);
 
-    if (
-      credencialesActuales &&
-      (credencialesActuales.cct !== cctNormalizado || credencialesActuales.correo !== correoNormalizado)
-    ) {
-      throw new Error('Ya existe un acceso asociado a otro CCT o correo. Usa las credenciales originales.');
-    }
-
-    const esNueva = !credencialesActuales;
+    const esNueva = !credencialesActuales || credencialesActuales.correo !== correoNormalizado;
     const contrasena =
-      credencialesActuales?.contrasena ?? contrasenaPersonalizada ?? this.generarContrasena();
+      (credencialesActuales?.correo === correoNormalizado ? credencialesActuales?.contrasena : null) ??
+      contrasenaPersonalizada ??
+      this.generarContrasena();
 
     localStorage.setItem(
       this.credencialesKey,
@@ -71,9 +74,8 @@ export class AuthService {
       return true;
     }
 
-    return (
-      guardadas.cct === this.normalizarCct(cct) && guardadas.correo === this.normalizarCorreo(correo)
-    );
+    // Solo verificamos el correo. El usuario puede subir cualquier CCT.
+    return guardadas.correo === this.normalizarCorreo(correo);
   }
 
   iniciarSesion(correo: string, contrasena: string): void {
@@ -90,6 +92,11 @@ export class AuthService {
     localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
   }
 
+  iniciarSesionTrasCarga(correo: string): void {
+    this.marcarSesionActiva();
+    localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
+  }
+
   iniciarSesionSinCredenciales(correo: string): void {
     this.marcarSesionActiva();
     localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
@@ -98,14 +105,24 @@ export class AuthService {
   cerrarSesion(): void {
     localStorage.removeItem(this.sesionKey);
     localStorage.removeItem(this.sesionCorreoKey);
+    localStorage.removeItem(this.credencialesKey);
+    this.autenticadoSubject.next(false);
   }
 
   estaAutenticado(): boolean {
     return localStorage.getItem(this.sesionKey) === 'true';
   }
 
-  requiereLoginParaNuevaCarga(): boolean {
-    return !!this.obtenerCredenciales() && !this.estaAutenticado();
+  requiereLoginParaNuevaCarga(correo?: string): boolean {
+    const credenciales = this.obtenerCredenciales();
+    if (!credenciales || this.estaAutenticado()) {
+      return false;
+    }
+    // Solo requerir login si el correo que se intenta usar es el mismo que ya tiene credenciales guardadas
+    if (correo && credenciales.correo !== this.normalizarCorreo(correo)) {
+      return false;
+    }
+    return true;
   }
 
   obtenerCorreoSesion(): string | null {
@@ -115,13 +132,14 @@ export class AuthService {
 
   private marcarSesionActiva(): void {
     localStorage.setItem(this.sesionKey, 'true');
+    this.autenticadoSubject.next(true);
   }
 
   private normalizarCct(cct: string): string {
     return (cct ?? '').trim().toUpperCase();
   }
 
-  private normalizarCorreo(correo: string): string {
+  public normalizarCorreo(correo: string): string {
     return (correo ?? '').trim().toLowerCase();
   }
 

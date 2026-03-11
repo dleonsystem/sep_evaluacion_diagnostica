@@ -133,14 +133,47 @@ input:focus {
   transform: translateY(1px);
 }
 
+.login__actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 .login__link {
-  display: inline-block;
-  margin-top: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   color: #2e7d32;
   text-decoration: none;
   font-weight: 600;
+  font-size: 0.95rem;
+  transition: color 0.2s ease;
+
+  i {
+    font-size: 1.1rem;
+  }
 }
 
 .login__link:hover {
   text-decoration: underline;
+  color: #1d5130;
+}
+
+.login__link--back {
+  color: #4a5568;
+
+  &:hover {
+    color: #2d3748;
+  }
+}
+
+.login__link--forgot {
+  color: #c53030;
+
+  &:hover {
+    color: #9b2c2c;
+  }
 }

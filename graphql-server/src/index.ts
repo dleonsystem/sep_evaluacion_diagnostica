@@ -10,7 +10,39 @@
  * @cmmi CMMI Level 3 - Integrated Project Management
  */
 
-import 'reflect-metadata';
+// Imports de Swagger
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
+
+// ... (después de imports)
+
+/**
+ * Configura Swagger UI
+ */
+function configureSwagger(app: express.Application) {
+  const options = {
+    definition: {
+      openapi: '3.0.0',
+      info: {
+        title: 'API Sistema de Evaluación Diagnóstica EIA',
+        version: '1.0.0',
+        description: 'Documentación de API REST para integración con sistemas legados.',
+      },
+      servers: [
+        {
+          url: `http://${HOST}:${PORT}/api`,
+        },
+      ],
+    },
+    apis: ['./src/config/swagger.def.js', './src/index.ts'], // Path to files with annotations
+  };
+
+  const specs = swaggerJsdoc(options);
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+  logger.info(`📚 Documentación Swagger disponible en http://${HOST}:${PORT}/api-docs`);
+}
+
+// 8. Iniciar servidor HTTP
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
@@ -21,9 +53,10 @@ import helmet from 'helmet';
 import compression from 'compression';
 import dotenv from 'dotenv';
 import { typeDefs } from './schema/typeDefs.js';
-import { resolvers } from './schema/resolvers.js';
-import { testConnection, closePool } from './config/database.js';
+import { resolvers, GraphQLContext } from './schema/resolvers.js';
+import { query, testConnection, closePool } from './config/database.js';
 import { logger, logPSPTime } from './utils/logger.js';
+import { createDataLoaders } from './utils/data-loaders.js';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -48,8 +81,8 @@ function configureMiddlewares(app: express.Application) {
     })
   );
   app.use(compression());
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 }
 
 /**
@@ -57,7 +90,7 @@ function configureMiddlewares(app: express.Application) {
  * @psp Process Script - Apollo Configuration
  */
 function createApolloServer(httpServer: http.Server) {
-  return new ApolloServer({
+  return new ApolloServer<GraphQLContext>({
     typeDefs,
     resolvers,
     plugins: [
@@ -123,6 +156,55 @@ function configureRoutes(app: express.Application) {
 }
 
 /**
+ * Rutas de API REST para sistemas legados
+ * @use-case CU-15: Integración con Sistemas Legados
+ */
+function configureLegacyApi(app: express.Application) {
+  const router = express.Router();
+
+  // Endpoint para obtener estadísticas por CCT
+  router.get('/stats/:cct', async (req, res) => {
+    const { cct } = req.params;
+    try {
+      const dbRes = await query(`
+        SELECT 
+          COUNT(DISTINCT e.id) as total_estudiantes,
+          COUNT(v.id) as total_evaluaciones
+        FROM escuelas esc
+        JOIN grupos g ON g.escuela_id = esc.id
+        JOIN estudiantes e ON e.grupo_id = g.id
+        LEFT JOIN evaluaciones v ON v.estudiante_id = e.id
+        WHERE esc.cct = $1
+      `, [cct]);
+
+      if (dbRes.rows.length === 0) {
+        return res.status(404).json({ error: 'CCT no encontrada' });
+      }
+
+      const stats = dbRes.rows[0];
+      res.json({
+        cct,
+        success: true,
+        data: {
+          total_estudiantes: parseInt(stats.total_estudiantes),
+          total_evaluaciones: parseInt(stats.total_evaluaciones),
+          porcentaje_completado: stats.total_estudiantes > 0
+            ? (stats.total_evaluaciones / (stats.total_estudiantes * 4) * 100).toFixed(2) + '%'
+            : '0%'
+        }
+      });
+      return; // Added return to match code path expectation
+    } catch (error) {
+      logger.error('Legacy API Error:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+      return;
+    }
+  });
+
+  app.use('/api/legacy', router);
+}
+
+/**
  * Función principal para iniciar el servidor
  * @psp Process Script - Startup Sequence
  * @rup Iteration Planning - Bootstrap Phase
@@ -139,8 +221,8 @@ async function startServer() {
     if (dbConnected) {
       logger.info('✓ Conexión a PostgreSQL establecida');
     } else {
-      logger.warn('⚠️  PostgreSQL no disponible - ejecutando en modo sin BD');
-      logger.warn('   Para habilitar BD, configura PostgreSQL y actualiza .env');
+      logger.error('❌ Falló la conexión a PostgreSQL. El servidor requiere una BD activa.');
+      process.exit(1);
     }
 
     // 2. Crear aplicación Express
@@ -161,18 +243,63 @@ async function startServer() {
     app.use(
       GRAPHQL_PATH,
       cors<cors.CorsRequest>({
-        origin: process.env.CORS_ORIGIN || '*',
+        origin: (origin, callback) => {
+          // En desarrollo, permitimos cualquier origen para evitar problemas de CORS
+          if (!origin || process.env.NODE_ENV === 'development') {
+            callback(null, true);
+          } else {
+            callback(null, process.env.CORS_ORIGIN || '*');
+          }
+        },
         credentials: true,
       }),
       expressMiddleware(server, {
-        context: async ({ req }) => ({
-          user: req.headers.authorization ? { id: 'test-user' } : null,
-        }),
+        context: async ({ req }): Promise<GraphQLContext> => {
+          const token = req.headers.authorization || '';
+          const loaders = createDataLoaders();
+
+          if (!token) return { user: undefined, loaders };
+
+          try {
+            // Formato esperado: "Bearer <base64>"
+            // Base64 decodificado: "email:timestamp" (Generado por AdminAuthService)
+            const encoded = token.replace('Bearer ', '');
+            const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+            const [email] = decoded.split(':');
+
+            if (!email) return { user: undefined, loaders };
+
+            // Buscar usuario real en BD con su rol (codigo)
+            const result = await query(
+              `SELECT 
+                u.id, 
+                u.email, 
+                r.codigo as rol 
+               FROM usuarios u
+               INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
+               WHERE u.email = $1 AND u.activo = true`,
+              [email]
+            );
+
+            if (result.rows.length > 0) {
+              return {
+                user: result.rows[0] as any,
+                loaders
+              };
+            }
+          } catch (error) {
+            logger.error('Error procesando token de contexto', error);
+          }
+
+          return { user: undefined, loaders };
+        },
       })
     );
 
     // 7. Configurar rutas
     configureRoutes(app);
+    configureLegacyApi(app);
+    configureSwagger(app);
 
     // 8. Iniciar servidor HTTP
     await new Promise<void>((resolve) => {
