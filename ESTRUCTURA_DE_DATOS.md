@@ -334,15 +334,15 @@ Centros educativos del sistema.
 | estado | VARCHAR(50) | Estado (texto libre) |
 | cp | VARCHAR(10) | Código postal |
 | telefono | VARCHAR(15) | Teléfono de contacto |
-| email | VARCHAR(100) | Email institucional |
+| email | VARCHAR(255) | Email institucional |
 | director | VARCHAR(150) | Nombre del director |
 | municipio | VARCHAR(100) | Municipio |
 | localidad | VARCHAR(100) | Localidad |
-| calle | VARCHAR(100) | Nombre de la calle |
+| calle | VARCHAR(300) | Nombre de la calle |
 | num_exterior | VARCHAR(20) | Número exterior |
-| entre_la_calle | VARCHAR(100) | Entre la calle (referencia) |
-| y_la_calle | VARCHAR(100) | Y la calle (referencia) |
-| calle_posterior | VARCHAR(100) | Calle posterior (referencia) |
+| entre_la_calle | VARCHAR(300) | Entre la calle (referencia) |
+| y_la_calle | VARCHAR(300) | Y la calle (referencia) |
+| calle_posterior | VARCHAR(300) | Calle posterior (referencia) |
 | colonia | VARCHAR(100) | Colonia |
 | fecha_registro | TIMESTAMP | Fecha de registro DEFAULT NOW() |
 | activo | BOOLEAN | Indica si está activa DEFAULT TRUE |
@@ -440,6 +440,7 @@ Usuarios del sistema (consolidado: incluye preferencias de notificación).
 | apepaterno | VARCHAR(60) | Apellido paterno |
 | apematerno | VARCHAR(60) | Apellido materno |
 | email | VARCHAR(100) | Email único UNIQUE |
+| email_excel | VARCHAR(255) | Email alternativo de Excel |
 | password_hash | VARCHAR(255) | Hash bcrypt de la contraseña |
 | rol | INT | FK a `cat_roles_usuario(id_rol)` |
 | escuela_id | UUID | FK a `escuelas(id)` (NULL para admin) |
@@ -624,7 +625,7 @@ Registro de intentos de login (exitosos y fallidos).
 |-------|------|-------------|
 | id | UUID | PK DEFAULT gen_random_uuid() |
 | usuario_id | UUID | FK a `usuarios(id)` (NULL si usuario no existe) |
-| email | VARCHAR(100) | Email intentado |
+| email | VARCHAR(255) | Email intentado |
 | ip_address | INET | IP del intento |
 | user_agent | TEXT | User agent |
 | exito | BOOLEAN | Indica si fue exitoso |
@@ -750,7 +751,7 @@ Credenciales de acceso al sistema externo EIA2 por CCT.
 |-------|------|-------------|
 | id | UUID | PK DEFAULT gen_random_uuid() |
 | cct | VARCHAR(10) | CCT UNIQUE |
-| correo_validado | VARCHAR(100) | Email validado para acceso |
+| correo_validado | VARCHAR(255) | Email validado para acceso |
 | password_hash | VARCHAR(255) | Hash de la contraseña |
 | primera_carga_valida_fecha | TIMESTAMP | Fecha de primera carga válida |
 | generado_en | TIMESTAMP | Fecha de generación DEFAULT NOW() |
@@ -789,6 +790,7 @@ Solicitudes de procesamiento de archivos EIA2 (plataforma externa).
 | hash_archivo | VARCHAR(64) | Hash SHA256 del archivo |
 | usuario_id | UUID | FK a `usuarios(id)` |
 | resultados | JSONB | Resultados procesados DEFAULT '[]' |
+| detalles_error | JSONB | Detalles adicionales de errores |
 | created_at | TIMESTAMP | Fecha de creación DEFAULT NOW() |
 | updated_at | TIMESTAMP | Fecha de actualización DEFAULT NOW() |
 
@@ -962,7 +964,7 @@ Cola de notificaciones por email con reintentos automáticos.
 |-------|------|-------------|
 | id | UUID | PK DEFAULT gen_random_uuid() |
 | usuario_id | UUID | FK a `usuarios(id)` |
-| destinatario | VARCHAR(100) | Email del destinatario |
+| destinatario | VARCHAR(255) | Email del destinatario |
 | asunto | VARCHAR(200) | Asunto del email |
 | cuerpo | TEXT | Cuerpo del email |
 | tipo | SMALLINT | FK a `cat_tipo_notificacion(id)` |
@@ -1029,11 +1031,11 @@ FAQ (Preguntas Frecuentes) del sistema.
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | UUID | PK DEFAULT gen_random_uuid() |
-| pregunta | VARCHAR(500) | Pregunta |
+| pregunta | TEXT | Pregunta |
 | respuesta | TEXT | Respuesta |
 | categoria | VARCHAR(100) | Categoría de la pregunta |
 | activo | BOOLEAN | Indica si está activa DEFAULT TRUE |
-| orden | SMALLINT | Orden de visualización DEFAULT 0 |
+| orden | INTEGER | Orden de visualización DEFAULT 0 |
 | created_at | TIMESTAMP | Fecha de creación DEFAULT NOW() |
 | updated_at | TIMESTAMP | Fecha de actualización DEFAULT NOW() |
 
@@ -1072,6 +1074,8 @@ Tickets de soporte técnico gestionados por operadores SEP.
 | resolucion | TEXT | Descripción de la resolución |
 | resuelto_en | TIMESTAMP | Fecha de resolución |
 | cerrado_en | TIMESTAMP | Fecha de cierre |
+| evidencias | JSONB | Evidencias adjuntas DEFAULT '[]' |
+| deleted_at | TIMESTAMP | Fecha de eliminación lógica (soft delete) |
 | created_at | TIMESTAMP | Fecha de creación DEFAULT NOW() |
 | updated_at | TIMESTAMP | Fecha de actualización DEFAULT NOW() |
 
@@ -1135,8 +1139,8 @@ Las siguientes 10 tablas almacenan datos raw importados desde archivos DBF del s
 | nivel | VARCHAR(20) | Nivel educativo |
 | fase | VARCHAR(20) | Fase de evaluación |
 | grado | VARCHAR(20) | Grado escolar |
-| correo1 | VARCHAR(100) | Email primario |
-| correo2 | VARCHAR(100) | Email secundario |
+| correo1 | VARCHAR(255) | Email primario |
+| correo2 | VARCHAR(255) | Email secundario |
 | matricula_ | VARCHAR(30) | Matrícula del alumno |
 | nlista | VARCHAR(20) | Número de lista |
 | estudiante | VARCHAR(100) | Nombre del estudiante |
