@@ -86,6 +86,13 @@ El área solicitante (DGTIC/DGADAE) identificó **contradicciones críticas** en
    - ✨ Especial: Checklist pre-merge, queries de validación de BD, alertas críticas
    - 🚨 Alertas: NO ejecutar migration_implementar_modelo_nia.sql sin coordinación
 
+3. **[MERGE_REPORT_QA_TO_DEV_VLP_20260312.md](MERGE_REPORT_QA_TO_DEV_VLP_20260312.md)** ⭐ NUEVO 12-mar-2026
+   - ⏱️ Tiempo de lectura: 10-15 minutos
+   - 📊 Contiene: Reporte completo del merge de qa → DEV_VLP_EstructuraDeDatos
+   - 🎯 Objetivo: Documentar integración exitosa de políticas de desarrollo desde QA
+   - ✅ Resultado: Merge exitoso sin conflictos - 1 archivo integrado (politicas_desarrollo_software.md)
+   - 📋 Incluye: Timeline, validaciones post-merge, impacto del merge, próximos pasos
+
 **CUÁNDO USAR:**
 - ✅ **OBLIGATORIO** antes de mergear DEV_VLP a QA
 - ✅ Para verificar estado de base de datos en QA antes de aplicar migraciones
