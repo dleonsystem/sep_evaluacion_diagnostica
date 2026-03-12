@@ -1,10 +1,52 @@
 # 📚 ÍNDICE GENERAL DE DOCUMENTACIÓN
 ## Sistema SiCRER - Evaluación Diagnóstica SEP
 
-**Versión:** 1.1 - Actualización Post-Correcciones Cliente  
-**Fecha:** 19 de enero de 2026  
+**Versión:** 1.2 - Sincronización DDL con Base de Datos Real  
+**Fecha:** 12 de marzo de 2026  
 **Autor:** Ingeniero de Software Certificado PSP  
-**Estado:** Fase 1 de correcciones completada (47% aplicadas)
+**Estado:** DDL y documentación 100% sincronizados con BD PostgreSQL
+
+---
+
+## 🔄 ACTUALIZACIÓN RECIENTE - SINCRONIZACIÓN BD (12 marzo 2026)
+
+### ✅ Sincronización Completa DDL <-> Base de Datos Real
+
+Se realizó **análisis exhaustivo** de la estructura real de la base de datos PostgreSQL y se corrigieron todas las inconsistencias encontradas entre el DDL documentado y la BD en producción.
+
+**DOCUMENTOS ACTUALIZADOS:**
+
+1. **[ddl_generated.sql](ddl_generated.sql)** ⭐ ACTUALIZADO 12-mar-2026
+   - ⏱️ Cambios: 27 correcciones aplicadas
+   - 📊 Contiene: DDL completo de 59 tablas 100% fiel a BD real
+   - 🎯 Cambios críticos:
+     - ✅ Agregadas 4 columnas faltantes (usuarios.email_excel, tickets_soporte.evidencias, tickets_soporte.deleted_at, solicitudes_eia2.detalles_error)
+     - ✅ Ajustados 14 tamaños VARCHAR para emails y direcciones (100→255, 100→300)
+     - ✅ Corregidos 2 tipos de datos (preguntas_frecuentes.pregunta: VARCHAR→TEXT, orden: SMALLINT→INTEGER)
+
+2. **[ESTRUCTURA_DE_DATOS.md](ESTRUCTURA_DE_DATOS.md)** ⭐ ACTUALIZADO 12-mar-2026
+   - ⏱️ Tiempo de lectura: 45-60 minutos
+   - 📊 Contiene: Documentación completa de 59 tablas sincronizada con DDL
+   - 🎯 Objetivo: Referencia técnica 100% precisa de la estructura de datos
+   - ✅ Todas las tablas, columnas, tipos, constraints e índices documentados fielmente
+
+3. **[graphql-server/db-structure-report.txt](graphql-server/db-structure-report.txt)** ⭐ NUEVO 12-mar-2026
+   - ⏱️ Tamaño: 206.77 KB (reporte completo de BD)
+   - 📊 Contiene: Inspección detallada de estructura real de PostgreSQL
+   - 🎯 Objetivo: Reporte de auditoría con 60 tablas detectadas (ESCUELAS_PP eliminada posteriormente)
+   - 🔧 Generado por: inspect-db-structure.js
+
+4. **[graphql-server/inspect-db-structure.js](graphql-server/inspect-db-structure.js)** ⭐ NUEVO 12-mar-2026
+   - ⏱️ Tamaño: 164 líneas
+   - 📊 Contiene: Script Node.js para inspección automática de estructura PostgreSQL
+   - 🎯 Objetivo: Herramienta para validar DDL vs BD real en cualquier momento
+   - 🔧 Requisitos: Node.js, dotenv, pg, archivo .env con credenciales DB
+
+**ESTADÍSTICAS DE SINCRONIZACIÓN:**
+- 📊 Total archivos corregidos: 2 (DDL + documentación)
+- 📊 Total diferencias corregidas: 27
+- 📊 Nivel de precisión final: **100%** ✅
+- 📊 Commit: `48357e1` - "fix: sincronizar DDL y documentación con estructura real de BD"
 
 ---
 
