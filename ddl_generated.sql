@@ -694,6 +694,33 @@ CREATE TABLE comentarios_ticket (
 	CONSTRAINT chk_comentario_longitud CHECK (char_length(trim(comentario)) BETWEEN 10 AND 5000)
 );
 
+CREATE TABLE archivos_tickets (
+	id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	numero_ticket  VARCHAR(20) NOT NULL REFERENCES tickets_soporte(numero_ticket) ON DELETE CASCADE,
+	nombre_archivo VARCHAR(255) NOT NULL,
+	tamanio        BIGINT NOT NULL,
+	extension      VARCHAR(20),
+	ruta           VARCHAR(500) NOT NULL,
+	estado         SMALLINT NOT NULL DEFAULT fn_catalogo_id('cat_estado_archivo_ticket','ACTIVO') REFERENCES cat_estado_archivo_ticket(id),
+	created_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	updated_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	CONSTRAINT chk_archivos_tickets_tamanio CHECK (tamanio > 0),
+	CONSTRAINT chk_archivos_tickets_extension CHECK (extension IS NULL OR extension ~ '^[A-Za-z0-9]{1,20}$')
+);
+
+CREATE TABLE preguntas_frecuentes (
+	id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	pregunta   VARCHAR(500) NOT NULL,
+	respuesta  TEXT NOT NULL,
+	categoria  VARCHAR(100),
+	activo     BOOLEAN NOT NULL DEFAULT TRUE,
+	orden      SMALLINT NOT NULL DEFAULT 0,
+	created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	CONSTRAINT chk_preguntas_pregunta CHECK (char_length(trim(pregunta)) >= 10),
+	CONSTRAINT chk_preguntas_respuesta CHECK (char_length(trim(respuesta)) >= 20)
+);
+
 CREATE TABLE sesiones (
 	id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 	usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -1098,6 +1125,8 @@ CREATE INDEX idx_archivos_frv_escuela_ciclo ON archivos_frv(escuela_id, ciclo_es
 CREATE INDEX idx_reportes_escuela_ciclo ON reportes_generados(escuela_id, ciclo_escolar, periodo_id);
 CREATE INDEX idx_reportes_tipo_generado ON reportes_generados(tipo_reporte, generado_en DESC);
 CREATE INDEX idx_tickets_estado_prioridad ON tickets_soporte(estado, prioridad);
+CREATE INDEX idx_archivos_tickets_numero ON archivos_tickets(numero_ticket);
+CREATE INDEX idx_archivos_tickets_estado ON archivos_tickets(estado);
 CREATE INDEX idx_log_usuario_fecha ON log_actividades(id_usuario, fecha_hora);
 CREATE INDEX idx_notificaciones_estado ON notificaciones_email(estado, prioridad, created_at);
 CREATE INDEX idx_preguntas_frecuentes_categoria ON preguntas_frecuentes(categoria);
@@ -1402,6 +1431,9 @@ CREATE TRIGGER trg_touch_tickets
 	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
 CREATE TRIGGER trg_touch_comentarios
 	BEFORE UPDATE ON comentarios_ticket
+	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
+CREATE TRIGGER trg_touch_archivos_tickets
+	BEFORE UPDATE ON archivos_tickets
 	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
 CREATE TRIGGER trg_touch_notificaciones
 	BEFORE UPDATE ON notificaciones_email
