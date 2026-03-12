@@ -93,11 +93,23 @@ El área solicitante (DGTIC/DGADAE) identificó **contradicciones críticas** en
    - ✅ Resultado: Merge exitoso sin conflictos - 1 archivo integrado (politicas_desarrollo_software.md)
    - 📋 Incluye: Timeline, validaciones post-merge, impacto del merge, próximos pasos
 
+4. **[REPORTE_VALIDACION_MERGE_QA_DEV_VLP.md](REPORTE_VALIDACION_MERGE_QA_DEV_VLP.md)** ⭐ NUEVO 12-mar-2026
+   - ⏱️ Tiempo de lectura: 20-25 minutos
+   - 📊 Contiene: Validación completa del merge + Inventario exhaustivo de diferencias DEV_VLP vs QA
+   - 🎯 Objetivo: Confirmar integridad del merge y documentar estado divergente de DEV_VLP
+   - ✅ Validación: 100% del contenido de QA integrado en DEV_VLP
+   - 📋 Inventario: 52 commits exclusivos, 28 archivos diferentes, ~238K líneas adicionales
+   - 🔍 Análisis detallado: Categorización de 25 archivos nuevos por tipo y criticidad
+   - ⚠️ Incluye: Riesgos, alertas críticas, recomendaciones para sincronización inversa
+
 **CUÁNDO USAR:**
 - ✅ **OBLIGATORIO** antes de mergear DEV_VLP a QA
+- ✅ **POST-MERGE:** Para validar que el merge qa → DEV_VLP fue completo
 - ✅ Para verificar estado de base de datos en QA antes de aplicar migraciones
+- ✅ Para entender QUÉ tiene DEV_VLP que QA no tiene (inventario completo)
 - ✅ Para coordinar deployment de cambios estructurales con equipo de QA
 - ✅ Para planificar ventanas de mantenimiento en ambiente QA
+- ✅ Para evaluar impacto de sincronización inversa (DEV_VLP → QA)
 
 **DIFERENCIAS CLAVE vs Comparación Pepenauta:**
 - ❗ Enfoque en **base de datos**: 5 scripts de migración, incluyendo modelo NIA
