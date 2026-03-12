@@ -65,7 +65,38 @@ El área solicitante (DGTIC/DGADAE) identificó **contradicciones críticas** en
 - ✅ Para entender el estado actual del proyecto
 - ✅ Para decidir qué funcionalidades priorizar
 - ✅ Para planificar integración de código
+### 📊 Análisis de Integración: DEV_VLP vs QA
 
+**CONTEXTO:** Análisis de diferencias entre la rama de desarrollo `DEV_VLP_EstructuraDeDatos` y la rama de control de calidad `qa`, identificando impactos en base de datos, código y migraciones.
+
+**DOCUMENTOS DE COMPARACIÓN CON QA:**
+
+1. **[COMPARACION_DEV_VLP_VS_QA.md](COMPARACION_DEV_VLP_VS_QA.md)** ⭐ NUEVO 12-mar-2026
+   - ⏱️ Tiempo de lectura: 35-45 minutos
+   - 📊 Contiene: Análisis exhaustivo de 25 archivos modificados, 32 commits adelante de QA
+   - 🎯 Objetivo: Planificar integración segura de DEV_VLP hacia QA
+   - 🔍 Secciones: Comparación de commits, archivos críticos, estrategias de merge, checklist pre-merge
+   - ⚠️ CRÍTICO: Identifica migration_implementar_modelo_nia.sql como cambio destructivo
+   - 📋 Incluye: Orden recomendado de migraciones, comandos SQL de verificación
+
+2. **[RESUMEN_VISUAL_DEV_VLP_VS_QA.md](RESUMEN_VISUAL_DEV_VLP_VS_QA.md)** ⭐ NUEVO 12-mar-2026
+   - ⏱️ Tiempo de lectura: 5-10 minutos (lectura rápida)
+   - 📊 Contiene: Vista rápida de diferencias, archivos por prioridad (críticos/importantes/informativos)
+   - 🎯 Objetivo: Decisión rápida sobre estrategia de integración con QA
+   - ✨ Especial: Checklist pre-merge, queries de validación de BD, alertas críticas
+   - 🚨 Alertas: NO ejecutar migration_implementar_modelo_nia.sql sin coordinación
+
+**CUÁNDO USAR:**
+- ✅ **OBLIGATORIO** antes de mergear DEV_VLP a QA
+- ✅ Para verificar estado de base de datos en QA antes de aplicar migraciones
+- ✅ Para coordinar deployment de cambios estructurales con equipo de QA
+- ✅ Para planificar ventanas de mantenimiento en ambiente QA
+
+**DIFERENCIAS CLAVE vs Comparación Pepenauta:**
+- ❗ Enfoque en **base de datos**: 5 scripts de migración, incluyendo modelo NIA
+- ❗ Análisis de **esquema de BD**: Requiere verificación de DDL en QA vs DEV_VLP
+- ❗ **Cambios destructivos**: Eliminación de campos, modificación de constraints
+- ❗ **Datos masivos**: CSV de 232K líneas de escuelas
 ---
 
 ## �📋 Guía Rápida de Documentos
