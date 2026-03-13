@@ -13,6 +13,8 @@ import { LoginGuard } from './guards/login.guard';
 import { RecuperarPasswordComponent } from './components/recuperar-password/recuperar-password.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { PreguntasFrecuentesComponent } from './components/preguntas-frecuentes/preguntas-frecuentes.component';
+import { MaterialesAdminComponent } from './components/admin-panel/materiales/materiales.component';
+import { MaterialesPublicosComponent } from './components/materiales-publicos/materiales-publicos.component';
 
 export const routes: Routes = [
   {
@@ -23,6 +25,11 @@ export const routes: Routes = [
   {
     path: 'inicio',
     component: InicioComponent,
+    pathMatch: 'full',
+  },
+  {
+    path: 'materiales',
+    component: MaterialesPublicosComponent,
     pathMatch: 'full',
   },
   /*  {
@@ -72,6 +79,12 @@ export const routes: Routes = [
   {
     path: 'admin/dashboard',
     component: DashboardComponent,
+    canActivate: [AdminGuard],
+    pathMatch: 'full',
+  },
+  {
+    path: 'admin/materiales',
+    component: MaterialesAdminComponent,
     canActivate: [AdminGuard],
     pathMatch: 'full',
   },

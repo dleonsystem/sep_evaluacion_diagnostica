@@ -264,6 +264,49 @@ export const resolvers = {
         throw new Error('Error al obtener preguntas frecuentes');
       }
     },
+    
+    /**
+     * Listar materiales de evaluación
+     * @use-case CU-01
+     */
+    getMateriales: async (_: any, { nivel, ciclo }: { nivel?: string, ciclo?: string }) => {
+      try {
+        let sql = `
+          SELECT 
+            m.id, m.nombre, m.tipo, 
+            ne.codigo as "nivelEducativo", 
+            m.ruta_archivo as "rutaArchivo", 
+            m.ciclo_escolar as "cicloEscolar", 
+            m.fecha_publicacion as "fechaPublicacion", 
+            m.activo
+          FROM materiales_evaluacion m
+          JOIN cat_nivel_educativo ne ON m.nivel_educativo = ne.id
+          WHERE m.activo = true
+        `;
+        const params: any[] = [];
+        
+        if (nivel) {
+          sql += ` AND ne.codigo = $${params.length + 1}`;
+          params.push(nivel);
+        }
+        
+        if (ciclo) {
+          sql += ` AND m.ciclo_escolar = $${params.length + 1}`;
+          params.push(ciclo);
+        }
+        
+        sql += ` ORDER BY m.fecha_publicacion DESC`;
+        
+        const result = await query(sql, params);
+        return result.rows.map(row => ({
+          ...row,
+          fechaPublicacion: row.fechaPublicacion instanceof Date ? row.fechaPublicacion.toISOString() : row.fechaPublicacion
+        }));
+      } catch (error) {
+        logger.error('Error fetching materiales', error);
+        throw new Error('Error al obtener materiales');
+      }
+    },
 
     /**
      * Obtener usuario por ID
@@ -811,6 +854,69 @@ t.numero_ticket as "folio",
           fileName: fileName,
           contentBase64: '',
           message: error.message
+        };
+      }
+    },
+
+    /**
+     * Descargar un material de evaluación
+     * @use-case CU-02: Descargar Materiales
+     */
+    downloadMaterial: async (_: any, { id }: { id: string }, context: GraphQLContext) => {
+      // Los materiales son públicos para descarga
+
+      try {
+        const res = await query('SELECT nombre, tipo, ruta_archivo FROM materiales_evaluacion WHERE id = $1', [id]);
+        if (res.rows.length === 0) throw new Error('Material no encontrado');
+        
+        const material = res.rows[0];
+        const buffer = await sftpService.downloadBuffer(material.ruta_archivo);
+        
+        if (!buffer) throw new Error('No se pudo descargar el archivo del servidor');
+
+        // Obtener extensión desde la ruta original si existe, sino asignar por tipo
+        let extension = '';
+        const pathParts = material.ruta_archivo.split('.');
+        if (pathParts.length > 1) {
+          extension = '.' + pathParts.pop();
+        } else {
+          extension = material.tipo === 'FRV' ? '.xlsx' : '.pdf';
+        }
+
+        // Asegurarse de que el nombre no la tenga ya
+        let finalFileName = material.nombre;
+        if (!finalFileName.toLowerCase().endsWith(extension.toLowerCase())) {
+          finalFileName += extension;
+        }
+
+        // Registrar la descarga para trazabilidad (RNF-04.10)
+        try {
+          await query(
+            'INSERT INTO log_actividades (id_usuario, accion, tabla, registro_id, detalle, modulo) VALUES ($1, $2, $3, $4, $5, $6)',
+            [
+              context.user?.id || null,
+              'DESCARGA_MATERIAL',
+              'materiales_evaluacion',
+              id,
+              JSON.stringify({ nombre: finalFileName, tipo: material.tipo }),
+              'PORTAL_PUBLICO'
+            ]
+          );
+        } catch (logError) {
+          logger.warn('No se pudo registrar log de descarga', logError);
+        }
+
+        return {
+          success: true,
+          fileName: finalFileName,
+          contentBase64: buffer.toString('base64')
+        };
+      } catch (error: any) {
+        logger.error('Error en downloadMaterial', { id, error: error.message });
+        return {
+          success: false,
+          fileName: '',
+          contentBase64: ''
         };
       }
     }
@@ -1627,7 +1733,90 @@ t.numero_ticket as "folio",
       }
     },
 
+    /**
+     * Publicar un nuevo material de evaluación
+     * @use-case CU-01
+     */
+    publicarMaterial: async (_: any, { input }: { input: any }, context: GraphQLContext) => {
+      if (!context.user || !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)) {
+        throw new Error('No autorizado');
+      }
 
+      const client = await getClient();
+      try {
+        let { nombre, tipo, nivelEducativo, cicloEscolar, periodoId, archivoBase64, nombreArchivo, overwrite } = input;
+
+        // 1. Obtener ID del nivel educativo
+        const levelRes = await client.query('SELECT id FROM cat_nivel_educativo WHERE codigo = $1', [nivelEducativo]);
+        if (levelRes.rows.length === 0) throw new Error('Nivel educativo no encontrado');
+        const nivelId = levelRes.rows[0].id;
+
+        // 2. Verificar duplicados por metadatos (Nombre, Tipo, Nivel, Ciclo)
+        const checkDuplicate = await client.query(`
+          SELECT id, ruta_archivo 
+          FROM materiales_evaluacion 
+          WHERE nombre = $1 AND tipo = $2 AND nivel_educativo = $3 AND ciclo_escolar = $4 AND activo = true
+        `, [nombre, tipo, nivelId, cicloEscolar]);
+
+        if (checkDuplicate.rows.length > 0 && !overwrite) {
+          return {
+            success: false,
+            message: 'Ya existe un material publicado con estos mismos datos. ¿Desea sobrescribirlo?',
+            requiresConfirmation: true
+          };
+        }
+
+        if (archivoBase64.includes(';base64,')) {
+          archivoBase64 = archivoBase64.split(';base64,').pop() || '';
+        }
+        const buffer = Buffer.from(archivoBase64, 'base64');
+
+        const uniqueName = `${tipo}_${Date.now()}_${nombreArchivo}`;
+        const remoteDir = `/upload/materiales/${cicloEscolar}`;
+        const remotePath = `${remoteDir}/${uniqueName}`;
+        
+        await sftpService.connect();
+        await sftpService.ensureDir(remoteDir);
+
+        const uploadSuccess = await sftpService.uploadBuffer(buffer, remotePath);
+        if (!uploadSuccess) throw new Error('Error al subir el archivo al servidor');
+
+        await client.query('BEGIN');
+
+        // Si es sobreescritura, desactivamos el anterior
+        if (checkDuplicate.rows.length > 0 && overwrite) {
+          await client.query('UPDATE materiales_evaluacion SET activo = false WHERE id = $1', [checkDuplicate.rows[0].id]);
+        }
+
+        const result = await client.query(`
+          INSERT INTO materiales_evaluacion (
+            nombre, tipo, nivel_educativo, ruta_archivo, ciclo_escolar, periodo_id, usuario_id
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+          RETURNING id, nombre, tipo, ciclo_escolar as "cicloEscolar", fecha_publicacion as "fechaPublicacion", activo
+        `, [nombre, tipo, nivelId, remotePath, cicloEscolar, periodoId, context.user.id]);
+
+        await client.query('COMMIT');
+
+        return {
+          success: true,
+          message: overwrite ? 'Material actualizado correctamente.' : 'Material publicado correctamente.',
+          material: {
+            ...result.rows[0],
+            nivelEducativo: nivelEducativo,
+            rutaArchivo: remotePath
+          }
+        };
+
+      } catch (error: any) {
+        logger.error('Error en publicarMaterial', error);
+        return {
+          success: false,
+          message: error.message
+        };
+      } finally {
+        client.release();
+      }
+    },
 
     /**
      * Responder a un ticket de soporte (Admin)

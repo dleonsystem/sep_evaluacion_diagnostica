@@ -100,6 +100,18 @@ export const typeDefs = `#graphql
     @use-case CU-18: Preguntas Frecuentes
     """
     getPreguntasFrecuentes: [PreguntaFrecuente!]!
+
+    """
+    Listar materiales de evaluación disponibles
+    @use-case CU-01: Publicar Materiales de Evaluación
+    """
+    getMateriales(nivel: NivelEducativo, ciclo: String): [MaterialEvaluacion!]!
+
+    """
+    Descargar un material de evaluación (EIA, FRV, Rúbrica)
+    @use-case CU-01: Publicar Materiales de Evaluación
+    """
+    downloadMaterial(id: ID!): FileDownload!
   }
 
   """
@@ -222,6 +234,12 @@ export const typeDefs = `#graphql
     @use-case CU-17: Entrega de Resultados
     """
     uploadAssessmentResults(input: UploadResultsInput!): UploadResultsResponse!
+
+    """
+    Publicar un nuevo material de evaluación (Admin)
+    @use-case CU-01: Publicar Materiales de Evaluación
+    """
+    publicarMaterial(input: PublicarMaterialInput!): PublicarMaterialResponse!
   }
 
   """
@@ -550,6 +568,45 @@ export const typeDefs = `#graphql
     success: Boolean!
     fileName: String!
     contentBase64: String!
+  }
+
+  """
+  Material de Evaluación (EIA, FRV, Rúbrica)
+  @use-case CU-01
+  """
+  type MaterialEvaluacion {
+    id: ID!
+    nombre: String!
+    tipo: String!
+    nivelEducativo: NivelEducativo!
+    rutaArchivo: String!
+    cicloEscolar: String!
+    fechaPublicacion: String!
+    activo: Boolean!
+  }
+
+  """
+  Input para publicar material
+  """
+  input PublicarMaterialInput {
+    nombre: String!
+    tipo: String!
+    nivelEducativo: NivelEducativo!
+    cicloEscolar: String!
+    periodoId: ID!
+    archivoBase64: String!
+    nombreArchivo: String!
+    overwrite: Boolean
+  }
+
+  """
+  Respuesta de publicación de material
+  """
+  type PublicarMaterialResponse {
+    success: Boolean!
+    message: String!
+    requiresConfirmation: Boolean
+    material: MaterialEvaluacion
   }
 `;
 

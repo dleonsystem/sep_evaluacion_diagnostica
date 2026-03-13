@@ -12,28 +12,32 @@
       <div class="estado estado-error" *ngIf="error && !cargandoVersiones">{{ error }}</div>
 
       <div *ngIf="!cargandoVersiones && !error">
-        <table class="tabla" *ngIf="versiones.length; else sinVersiones">
+        <table class="tabla" *ngIf="materiales.length; else sinVersiones">
           <thead>
             <tr>
-              <th>#</th>
-              <th>Versión</th>
-              <th>Fecha de publicación</th>
-              <th>Descarga</th>
+              <th>Nombre del Material</th>
+              <th>Tipo</th>
+              <th>Nivel Educativo</th>
+              <th>Publicación</th>
+              <th>Acción</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let version of versiones">
-              <td>{{ version.numero }}</td>
-              <td>{{ version.nombre }}</td>
-              <td>{{ version.fechaPublicacion | date: 'dd/MM/yyyy' }}</td>
+            <tr *ngFor="let material of materiales">
+              <td><strong>{{ material.nombre }}</strong></td>
+              <td>{{ material.tipo }}</td>
+              <td>{{ material.nivelEducativo }}</td>
+              <td>{{ material.fechaPublicacion | date: 'dd/MM/yyyy' }}</td>
               <td>
-                <button class="btn" type="button" (click)="descargar(version)">Descargar</button>
+                <button class="btn" type="button" (click)="descargar(material)">
+                  <i class="bi bi-download"></i> Descargar
+                </button>
               </td>
             </tr>
           </tbody>
         </table>
         <ng-template #sinVersiones>
-          <p class="estado">No hay versiones disponibles por el momento.</p>
+          <p class="estado">No hay materiales de evaluación disponibles por el momento.</p>
         </ng-template>
       </div>
     </div>

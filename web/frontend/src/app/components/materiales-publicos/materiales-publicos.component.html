@@ -1,0 +1,75 @@
+<section class="public-materiales py-5">
+  <div class="container inicio-width">
+    <header class="mb-5 text-center">
+      <h1 class="font-display text-guinda mb-3">Materiales de Evaluación Diagnóstica</h1>
+      <p class="lead text-secondary">Descargue los cuadernillos, plantillas y rúbricas oficiales para el proceso de evaluación.</p>
+    </header>
+
+    <!-- Filtros -->
+    <div class="filters-card bg-white p-4 rounded shadow-sm mb-4 border border-light">
+      <div class="row align-items-end">
+        <div class="col-md-4 mb-3 mb-md-0">
+          <label class="form-label font-weight-bold">Nivel Educativo</label>
+          <select class="form-select" [(ngModel)]="filtroNivel" (change)="cargarMateriales()">
+            <option value="">Todos los niveles</option>
+            <option value="PREESCOLAR">Preescolar</option>
+            <option value="PRIMARIA">Primaria</option>
+            <option value="SECUNDARIA">Secundaria</option>
+          </select>
+        </div>
+        <div class="col-md-4 mb-3 mb-md-0">
+          <label class="form-label font-weight-bold">Ciclo Escolar</label>
+          <input type="text" class="form-control" [(ngModel)]="filtroCiclo" (change)="cargarMateriales()" placeholder="Ej: 2024-2025">
+        </div>
+        <div class="col-md-4 text-md-end">
+          <button class="btn btn-outline-guinda" (click)="cargarMateriales()">
+            <i class="bi bi-filter"></i> Aplicar Filtros
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de Materiales -->
+    <div class="materials-grid">
+      <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-guinda" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-3 text-secondary">Buscando materiales...</p>
+      </div>
+
+      <div *ngIf="!loading && materiales.length === 0" class="text-center py-5 bg-light rounded">
+        <i class="bi bi-folder-x text-muted" style="font-size: 3rem;"></i>
+        <p class="mt-3 text-muted">No se encontraron materiales con los filtros seleccionados.</p>
+      </div>
+
+      <div class="row" *ngIf="!loading && materiales.length > 0">
+        <div class="col-lg-4 col-md-6 mb-4" *ngFor="let mat of materiales">
+          <div class="material-card h-100 shadow-sm border-0">
+            <div class="material-card__icon-wrap" [style.backgroundColor]="getColorForTipo(mat.tipo) + '15'">
+              <i class="bi" [ngClass]="getIconForTipo(mat.tipo)" [style.color]="getColorForTipo(mat.tipo)"></i>
+            </div>
+            <div class="card-body p-4">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="badge" [ngClass]="'badge--' + mat.tipo.toLowerCase()">{{ mat.tipo }}</span>
+                <small class="text-muted">{{ mat.cicloEscolar }}</small>
+              </div>
+              <h5 class="card-title font-weight-bold mb-2">{{ mat.nombre }}</h5>
+              <p class="text-secondary small mb-3">
+                <i class="bi bi-geo-alt"></i> {{ mat.nivelEducativo }}
+              </p>
+              <button class="btn btn-guinda w-100 mt-auto" (click)="descargar(mat.id)">
+                <i class="bi bi-cloud-arrow-down"></i> Descargar Archivo
+              </button>
+            </div>
+            <div class="card-footer bg-transparent border-0 text-center pb-3 pt-0">
+              <small class="text-muted" style="font-size: 0.75rem;">
+                Publicado: {{ mat.fechaPublicacion | date:'dd/MM/yyyy' }}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
