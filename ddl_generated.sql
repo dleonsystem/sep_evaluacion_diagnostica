@@ -732,6 +732,24 @@ CREATE TABLE resultados_competencias (
 	UNIQUE (id_evaluacion, id_competencia)
 );
 
+CREATE TABLE materiales_evaluacion (
+	id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	nombre            VARCHAR(255) NOT NULL,
+	tipo              VARCHAR(50) NOT NULL CHECK (tipo IN ('EIA', 'FRV', 'RUBRICA')),
+	nivel_educativo   SMALLINT NOT NULL REFERENCES cat_nivel_educativo(id),
+	ruta_archivo      TEXT NOT NULL,
+	ciclo_escolar     VARCHAR(10) NOT NULL,
+	periodo_id        UUID NOT NULL REFERENCES periodos_evaluacion(id),
+	fecha_publicacion TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
+	usuario_id        UUID REFERENCES usuarios(id),
+	activo            BOOLEAN DEFAULT true,
+	created_at        TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	updated_at        TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE materiales_evaluacion IS 'Materiales oficiales de evaluación (EIA, FRV, Rúbricas) subidos por administración';
+COMMENT ON COLUMN materiales_evaluacion.tipo IS 'Tipo de material: EIA (Cuadernillo), FRV (Excel), RUBRICA (Guía)';
+
 -- Staging tables for DBF imports
 
 CREATE TABLE pre3 (

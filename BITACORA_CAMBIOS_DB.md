@@ -20,6 +20,7 @@ Este documento detalla todas las modificaciones realizadas a la base de datos `E
 | 2026-02-23 | `solicitudes_eia2` | Adición de `usuario_id` (FK) | Se añadió el campo `usuario_id` para rastrear qué usuario realizó la carga y aplicar filtros de privacidad por rol (solo el autor puede ver sus cargas, excepto administradores). |
 | 2026-02-23 | `solicitudes_eia2` | Adición de `resultados` (JSONB) | Se añadió el campo `resultados` para almacenar el histórico de archivos de resultados (PDFs, imágenes) subidos al SFTP por el administrador. |
 | 2026-02-23 | `solicitudes_eia2` | Limpieza de registros huérfanos| Se vincularon retroactivamente todos los registros que tenían `usuario_id` NULL con los usuarios responsables de sus respectivos CCTs para mantener la integridad de la privacidad. |
+| 2026-03-12 | `materiales_evaluacion` | Creación de tabla | Implementación de CU-01 para la publicación de materiales EIA, FRV y Rúbricas por parte de administración. |
 
 ### Notas Adicionales:
 - **Catálogos Duplicados:** Se detectó la coexistencia de `cat_nivel_educativo` (singular) y `cat_niveles_educativos` (plural). Se pobló el plural para cumplir con las referencias de la tabla `escuelas`.
