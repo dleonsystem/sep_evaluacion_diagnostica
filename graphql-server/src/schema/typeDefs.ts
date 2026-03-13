@@ -455,6 +455,7 @@ export const typeDefs = `#graphql
     success: Boolean!
     message: String!
     solicitudId: ID
+    consecutivo: String
     detalles: ExcelUploadResult
     duplicadoDetectado: Boolean
   }
