@@ -9,8 +9,11 @@
 }
 
 .admin-panel__card {
-  background: white;
+  background: #e6e6c8;
+  background: linear-gradient(180deg,rgba(230, 230, 200, 1) 0%, rgba(225, 211, 151, 0.34) 0%, rgba(225, 219, 250, 0.17) 39%, rgba(199, 201, 89, 0.5) 67%, rgba(173, 39, 16, 0.13) 100%);
   border: 1px solid #e2e8f0;
+  -webkit-box-shadow: 5px 5px 15px 5px #000000;
+  box-shadow: 5px 5px 15px 5px #000000;
   border-radius: 16px;
   padding: 3rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);

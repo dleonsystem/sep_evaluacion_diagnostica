@@ -1,6 +1,6 @@
 <nav class="navbar navbar-expand-xl navbar-dark bg-sep-guinda sub-navbar fixed-top">
   <div class="container-fluid px-3">
-    <a class="navbar-brand" [routerLink]="['/inicio']">Evaluación diagnóstica</a>
+    <a class="navbar-brand" [routerLink]="['/inicio']">Ejercicios Integradores del Aprendizaje SiRVER</a>
     <button type="button" class="navbar-toggler" (click)="toggleMenu()" aria-label="Abrir menú">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -14,11 +14,13 @@
           </a>
         </li>
         <li class="nav-item" *ngIf="!isAdminAutenticado">
-          <a class="nav-link subnav-link" [routerLink]="['/carga-masiva']">
-            <i class="bi bi-upload mr-1" aria-hidden="true"></i>
-            <strong>Carga masiva</strong>
+          <a class="nav-link subnav-link" [routerLink]="['/preguntas-frecuentes']">
+            <i class="bi bi-person-raised-hand mr-1" aria-hidden="true"></i>
+            <strong>Preguntas Frecuentes</strong>
           </a>
         </li>
+
+        
 
         <ng-container *ngIf="isAdminAutenticado">
           <li class="nav-item d-none d-md-block">
@@ -26,7 +28,7 @@
           </li>
           <li class="nav-item dropdown">
             <a class="nav-link subnav-link dropdown-toggle" href="javascript:void(0)" id="adminDropdown" role="button"
-              (click)="toggleUserMenu()" aria-expanded="false">
+               (click)="toggleUserMenu()" aria-expanded="false">
               <i class="bi bi-shield-lock mr-1" aria-hidden="true"></i>
               <strong>{{ correoAdmin || 'Administrador' }}</strong>
             </a>
@@ -54,7 +56,7 @@
           </li>
           <li class="nav-item dropdown">
             <a class="nav-link subnav-link dropdown-toggle" href="javascript:void(0)" id="userDropdown" role="button"
-              (click)="toggleUserMenu()" aria-expanded="false">
+               (click)="toggleUserMenu()" aria-expanded="false">
               <i class="bi bi-person-circle mr-1" aria-hidden="true"></i>
               <strong>{{ getNombreUsuario() }}</strong>
             </a>

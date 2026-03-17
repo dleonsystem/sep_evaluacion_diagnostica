@@ -26,6 +26,7 @@ $sep-gray-700: #4a4a4a;
   height: auto;
   display: flex !important;
   align-items: center;
+  
 }
 
 .sub-navbar {
@@ -55,9 +56,10 @@ $sep-gray-700: #4a4a4a;
 
 .navbar-brand {
   color: #fff !important;
-  font-size: 1.1rem;
+  font-size: 2rem;
   font-weight: 700;
   text-decoration: none;
+  text-transform: none !important;
 
   &:hover {
     color: $sep-guinda-light !important;
@@ -231,7 +233,7 @@ $sep-gray-700: #4a4a4a;
 
   .navbar-nav .nav-link {
     padding: 0.75rem 0 !important;
-    font-size: 1rem;
+    font-size: 2rem;
     text-align: center;
   }
 }

@@ -1,59 +1,191 @@
 <section class="faq">
-    <div class="faq__encabezado">
-        <p class="faq__eyebrow">Dudas y Consultas</p>
-        <h1 class="faq__titulo">Preguntas Frecuentes</h1>
-        <p class="faq__descripcion">
-            Encuentra respuestas rápidas a las dudas comunes acerca del módulo de carga y validación.
+
+  <div class="faq__encabezado">
+    <p class="faq__eyebrow">Dudas y Consultas</p>
+    <h1 class="faq__titulo">Preguntas Frecuentes</h1>
+    <p class="faq__descripcion">
+      Encuentra respuestas rápidas a las dudas comunes acerca del módulo de carga y validación.
+    </p>
+  </div>
+
+  <div class="faq__wrapper">
+
+    <div class="faq__back-nav">
+      <button (click)="volver()" class="faq__btn-back">
+        <i class="bi bi-arrow-left"></i> Volver
+      </button>
+    </div>
+
+
+
+    <!-- Pregunta 1 -->
+    <div class="faq__item">
+      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
+        ¿Por qué el SiRVER me solicita un correo electrónico cuando ingreso?
+      </button>
+      <div class="faq__respuesta">
+        <p>
+          Cuando ingresa por primera vez al <strong>SiRVER</strong>, le solicita un correo electrónico que será su usuario. para próximos
+          ingresos. La cantraseña la genera el SiRVER una vez que au FRV resté validado.
         </p>
+      </div>
     </div>
 
-    <div class="faq__wrapper">
-        <div class="faq__back-nav">
-            <button (click)="volver()" class="faq__btn-back">
-                <i class="bi bi-arrow-left"></i> Volver
-            </button>
-        </div>
-
-        <!-- Buscador -->
-        <div class="faq__buscador" *ngIf="!cargando && !error && preguntas.length > 0">
-            <i class="bi bi-search faq__buscador-icon"></i>
-            <input type="text" [(ngModel)]="terminoBusqueda" placeholder="Buscar por palabra clave..."
-                class="faq__buscador-input" />
-        </div>
-
-        <!-- Spinner Loading -->
-        <div class="faq__cargando" *ngIf="cargando">
-            <div class="spinner"></div>
-            <p>Cargando información...</p>
-        </div>
-
-        <!-- Error message -->
-        <div class="faq__error" *ngIf="error">
-            <p>{{ error }}</p>
-        </div>
-
-        <!-- Empty state -->
-        <div class="faq__vacio" *ngIf="!cargando && !error && preguntas.length === 0">
-            <p>Aún no hay preguntas frecuentes publicadas.</p>
-        </div>
-
-        <!-- Content -->
-        <div class="faq__acordeon" *ngIf="!cargando && !error && preguntas.length > 0">
-            <div class="faq__item" *ngFor="let item of preguntasFiltradas"
-                [class.faq__item--activo]="preguntaActiva === item.id">
-                <button class="faq__pregunta" (click)="togglePregunta(item.id)">
-                    <h3>{{ item.pregunta }}</h3>
-                    <i class="bi" [ngClass]="preguntaActiva === item.id ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-                </button>
-                <div class="faq__respuesta" *ngIf="preguntaActiva === item.id">
-                    <p>{{ item.respuesta }}</p>
-                </div>
-            </div>
-
-            <!-- Empty result for search -->
-            <div class="faq__vacio-busqueda" *ngIf="preguntasFiltradas.length === 0 && terminoBusqueda !== ''">
-                <p>No se encontraron resultados para "<strong>{{ terminoBusqueda }}</strong>".</p>
-            </div>
-        </div>
+    <!-- Pregunta 2 -->
+    <div class="faq__item">
+      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
+        ¿Por qué se rechaza mi archivo?
+      </button>
+      <div class="faq__respuesta">
+        <p>
+          El <strong>SiRVER</strong> valida la información registrada en su FRV, si está incompleta o con errores, el SiRVER
+          emitea un reporte con las inconsistencias encontradas en su información..
+        </p>
+      </div>
     </div>
+
+    <!-- Pregunta 3 -->
+    <div class="faq__item">
+      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
+        ¿Cómo solicitar el archivo prellenado cuando no se recibe?
+      </button>
+      <div class="faq__respuesta">
+        <p>
+          Tiene que verificar las bandejas de entrada de los correos que proporcionó en el Formato de la primera Aplicación, si no lo ha recibido proceda
+          a solicitar el prellenado proporcionando CCT, turno, entidad federativa y sus datos
+          de contacto a: <a href="mailto:dudas.ejercicios@nube.sep.gob.mx">dudas.ejercicios&#64;nube.sep.gob.mx</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- Pregunta 55 -->
+    <div class="faq__item">
+      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
+       ¿Qué hacer al enviar por error valoraciones de la segunda aplicación en formato de la primera aplicación?
+      </button>
+      <div class="faq__respuesta">
+        <p>
+          Solicitar el formato correcto a su Área de Evaluación, migrar la información, validar datos y reenviar la
+          versión corregida a:  <a href="mailto:valoraciones.ejercicios@nube.sep.gob.mx">valoraciones.ejercicios&#64;nube.sep.gob.mx</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- Pregunta 4 -->
+    <div class="faq__item">
+      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
+        ¿Cómo solicitar aclaración sobre un archivo recibido con datos equivocados, o inconsistencias?
+      </button>
+      <div class="faq__respuesta">
+        <p>
+          Enviar una descripción de la duda, incluir evidencia y proporcionar CCT, entidad federativa y turno. Remitir la solicitud al correo indicado.
+        </p>
+      </div>
+    </div>
+
+    <!-- Pregunta 5 -->
+    <div class="faq__item">
+      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
+        ¿Cómo proceder cuando no se puede abrir un archivo de resultados?
+      </button>
+
+      <div class="faq__respuesta">
+        <p>
+          · Desactivar temporalmente el antivirus en caso de contar con uno para intentar nuevamente la descarga.
+        </p>
+
+        <p>
+          · Verificar si se cuenta con un programa de descompresión de archivos; en caso de no tenerlo, instalar alguno de los siguientes:
+        </p>
+
+        <div class="faq__links">
+          <p>
+            <a href="https://www.winzip.com/es/download/winzip/" target="_blank">
+              www.winzip.com
+            </a>
+          </p>
+
+          <p>
+            <a href="https://7-zip.softonic.com/descargar" target="_blank">
+              7-zip.softonic.com
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pregunta 6 -->
+    <div class="faq__item">
+      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
+        ¿Cómo utilizar los resultados comparativos de ambas aplicaciones?
+      </button>
+      <div class="faq__respuesta">
+        <p>
+          Revise los resultados comparativos de ambas aplicaciones para identificar
+          avances, retrocesos o permanencias en los niveles de logro de las y los estudiantes.
+        </p>
+
+        <ul>
+          <li>
+            <strong>Identificar:</strong> Los aprendizajes, habilidades o áreas en las que el grupo
+            muestra mayores dificultades o menores niveles de desempeño.
+          </li>
+
+          <li>
+            <strong>Ajustar:</strong> La planificación didáctica con base en la información obtenida,
+            priorizando los contenidos, habilidades o procesos que requieren mayor atención.
+          </li>
+        </ul>
+
+      </div>
+    </div>
+
+    <!-- Pregunta 7 -->
+    <div class="faq__item">
+      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
+        ¿Por qué algunos alumnos aparecen con NP en archivo de Resultados
+        de la segunda aplicación, si realizaron la primera aplicación y sus resultados fueron enviados previamente?
+      </button>
+      <div class="faq__respuesta">
+        <p>
+          Los alumnos que en los resultados comparativos aparecen con <strong>NP</strong>, significa que NO PRESENTÓ la primera
+          aplicación, por lo cual no tiene un resultado antecedente en nuestras bases de datos.
+        </p>
+        <br />
+        <p>
+          Otra razón por la cual aparece <strong>NP</strong>, es debido a que el nombre se escribió diferente en ambas aplicaciones y el Sistema
+          no realizó vínculo entre ambas aplicaciones. Todo lo anterior se corrige al utilizar el formato prellenado.
+        </p>
+
+
+      </div>
+    </div>
+
+    <!-- Pregunta 8 -->
+    <div class="faq__item">
+      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
+        ¿Cómo solicitar o consultar el FRV correspondiente a la segunda aplicación?
+      </button>
+      <div class="faq__respuesta">
+        <p>
+          La SEP envió el FRV prellenado por correo electrónico a todas las escuelas
+          que participaron en la primera aplicación. Verifique la
+          <strong>bandeja de entrada</strong> de su correo.
+        </p>
+        <br />
+        <p>
+          Si no ha recibido el FRV prellenado, proceda a solicitarlo proporcionando
+          <strong>CCT, turno, entidad federativa y datos de contacto</strong> al correo:
+          <a href="mailto:dudas.ejercicios&#64;nube.sep.gob.mx">
+            dudas.ejercicios&#64;nube.sep.gob.mx
+          </a>.
+        </p>
+      </div>
+    </div>
+
+
+
+
+  </div>
+
 </section>

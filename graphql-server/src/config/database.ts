@@ -31,9 +31,7 @@ const poolConfig: PoolConfig = {
   max: parseInt(process.env.DB_POOL_MAX || '10', 10),
   idleTimeoutMillis: 60000,
   connectionTimeoutMillis: 30000,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl: process.env.PGSSLMODE === 'require' ? { rejectUnauthorized: false } : false
 };
 /**
  * Validación de configuración de base de datos
