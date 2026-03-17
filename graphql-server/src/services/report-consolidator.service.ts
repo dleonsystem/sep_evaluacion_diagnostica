@@ -79,8 +79,8 @@ export class ReportConsolidatorService {
       const filesArgs = foundFiles.map(f => `"${path.join(this.rawPath, f)}"`).join(' ');
       const command = `"${this.zipBinary}" a "${packagePath}" ${filesArgs}`;
 
-      await new Promise((resolve, reject) => {
-        exec(command, (error, stdout, stderr) => {
+      await new Promise((resolve) => {
+        exec(command, (error, stdout) => {
           if (error) {
             logger.warn('7-Zip failed or not found, falling back to basic metadata registry', error);
             // In a real environment without 7z we'd use a Node library here.
