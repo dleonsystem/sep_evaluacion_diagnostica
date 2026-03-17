@@ -11,6 +11,7 @@
 
 import { logger } from '../utils/logger.js';
 import { query } from '../config/database.js';
+import { MailingService } from './mailing.service.js';
 import path from 'path';
 import fs from 'fs/promises';
 import { existsSync } from 'fs';
@@ -26,8 +27,11 @@ export class ReportConsolidatorService {
   private packagesPath = path.join(this.baseStoragePath, 'packages');
   private zipBinary = 'C:\\Program Files\\7-Zip\\7z.exe';
 
+  private mailingService: MailingService;
+
   constructor() {
     this.ensureDirectories();
+    this.mailingService = new MailingService();
   }
 
   private async ensureDirectories() {
@@ -114,7 +118,28 @@ export class ReportConsolidatorService {
         [JSON.stringify(resultsMetadata), solicitudId]
       );
 
-      logger.info(`Consolidation complete for CCT: ${cct}`);
+      // 4. Log Traceability (RF-15.5)
+      // Nota: Asumimos que la tabla bitacora_sincronizacion existe o se creará.
+      try {
+        await query(
+          'INSERT INTO bitacora_sincronizacion (solicitud_id, cct, archivos, estado) VALUES ($1, $2, $3, $4)',
+          [solicitudId, cct, foundFiles.join(', '), 'COMPLETADO']
+        );
+      } catch (dbErr) {
+        logger.warn('Could not log to bitacora_sincronizacion, table might be missing', dbErr);
+      }
+
+      // 5. Notificar al usuario (RF-12.1)
+      const userRes = await query(
+        'SELECT email FROM solicitudes_eia2 WHERE id = $1',
+        [solicitudId]
+      );
+      if (userRes.rows.length > 0) {
+        const email = userRes.rows[0].email;
+        await this.mailingService.sendResultsNotification(email, cct, solicitudId);
+      }
+
+      logger.info(`Consolidation and notification complete for CCT: ${cct}`);
       return true;
 
     } catch (err) {
