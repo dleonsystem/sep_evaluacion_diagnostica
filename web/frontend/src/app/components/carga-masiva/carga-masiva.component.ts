@@ -22,6 +22,7 @@ interface ResultadoExito {
   fechaDisponible: Date;
   credenciales: { usuario: string; contrasena: string; esNueva: boolean };
   totalAlumnos: number;
+  consecutivo: string; // Trazabilidad
 }
 
 interface ResultadoArchivo {
@@ -349,12 +350,20 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
       resultado.guardado = true;
       resultado.estado = 'exito';
-      resultado.mensajeInformativo = 'El archivo se recibió correctamente en el servidor.';
+      resultado.mensajeInformativo = `El archivo se recibió correctamente. Folio de seguimiento: ${respuestaApi.consecutivo || 'Pendiente'}`;
+
+      const textoExito = respuestaApi.consecutivo 
+        ? `La información se ha sincronizado. Tu folio de seguimiento es: ${respuestaApi.consecutivo}`
+        : 'La información se ha sincronizado correctamente con el servidor.';
+
+      if (resultado.resultadoExito && respuestaApi.consecutivo) {
+        resultado.resultadoExito.consecutivo = respuestaApi.consecutivo;
+      }
 
       await Swal.fire({
         icon: 'success',
         title: 'Archivo cargado',
-        text: 'La información se ha sincronizado correctamente con el servidor.',
+        text: textoExito,
       });
 
       if (resultado.escDatos && resultado.resultadoExito && resultado.pdfTipo !== 'exito') {
@@ -578,7 +587,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         contrasena: '',
         esNueva: false
       },
-      totalAlumnos: resultado.alumnos?.length ?? 0
+      totalAlumnos: resultado.alumnos?.length ?? 0,
+      consecutivo: '0' // Se actualizará al guardar
     };
   }
 
@@ -705,7 +715,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         fechaDisponible: fechaDisponible.toLocaleDateString(),
         alumnosValidados: totalAlumnos,
         cct: esc.cct,
-        fechaValidacion: new Date().toLocaleString()
+        fechaValidacion: new Date().toLocaleString(),
+        consecutivo: resultadoArchivo.resultadoExito?.consecutivo ?? 'N/D'
       });
       resultadoArchivo.pdfEstado = 'descargando';
       this.mockPdfService.descargarPdf(blob, resultadoArchivo.pdfNombre);

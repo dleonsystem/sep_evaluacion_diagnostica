@@ -25,6 +25,7 @@ export interface UploadExcelResponse {
         success: boolean;
         message: string;
         solicitudId?: string;
+        consecutivo?: string;
         detalles?: ExcelUploadResult;
         duplicadoDetectado?: boolean;
     };

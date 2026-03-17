@@ -1378,115 +1378,102 @@ t.numero_ticket as "folio",
         // Simulating the worker execution promise
         const runWorker = () =>
           new Promise<any>((resolve, reject) => {
-            // Dynamic import to avoid build issues if types are missing
             import('worker_threads')
               .then(({ Worker }) => {
-                // Dynamic worker path resolution
                 const isTsNode = path.extname(__filename) === '.ts';
                 const workerFileName = isTsNode ? 'worker-excel.ts' : 'worker-excel.js';
-                // If TS-Node, look in src/workers. If JS (dist), look in dist/workers.
-                // resolvers is in schema/ (src or dist). So ../workers/ is correct for both.
                 const wPath = path.resolve(__dirname, '../workers/', workerFileName);
 
-                logger.debug('Worker Path resolved', { wPath, isTsNode });
-
                 const worker = new Worker(wPath);
-
                 worker.on('message', (message) => {
                   if (message.success) resolve(message.data);
-                  else reject(new Error(message.error));
+                  else reject(new Error(message.error)); // Detailed errors from checklist
                 });
                 worker.on('error', reject);
                 worker.on('exit', (code) => {
                   if (code !== 0) reject(new Error(`Worker stopped with exit code ${code}`));
                 });
-
                 worker.postMessage({ archivoBase64, nombreArchivo });
               })
               .catch(reject);
           });
 
-        const workerResult = await runWorker();
-        const { cct, nivel, grado, alumnos, metadata } = workerResult;
-
-        const nivelMap: Record<string, number> = {
-          PREESCOLAR: 1,
-          PRIMARIA: 2,
-          SECUNDARIA: 3,
-          TELESECUNDARIA: 4,
-        };
-        const nivelNormalizado = (nivel || '').trim().toUpperCase();
-        const foundKey = Object.keys(nivelMap).find(
-          (k) => FoundKeyMatch(k, nivelNormalizado)
-        );
-
-        function FoundKeyMatch(key: string, normalized: string): boolean {
-          return key === normalized || normalized.includes(key) || key.includes(normalized);
+        // 1. Identificar usuario y Hash ANTES del worker para trazabilidad inicial
+        const buffer = Buffer.from(archivoBase64, 'base64');
+        const fileHash = crypto.createHash('sha256').update(buffer).digest('hex');
+        let userToLink = context.user?.id;
+        if (!userToLink && email) {
+          const uRes = await client.query('SELECT id FROM usuarios WHERE email = $1', [email.trim().toLowerCase()]);
+          if (uRes.rows.length > 0) userToLink = uRes.rows[0].id;
         }
 
-        const nivelId = foundKey ? nivelMap[foundKey] : 2;
+        let workerResult;
+        try {
+          workerResult = await runWorker();
+        } catch (workerError: any) {
+          // Trazabilidad de RECHAZO (Punto 3 de Criterios de Aceptación)
+          // Si el worker falla, intentamos extraer el CCT del nombre o metadata si es posible, 
+          // pero al menos registramos el intento fallido.
+          const errorMsg = workerError.message || 'Error de validación desconocido';
+          
+          const rejRes = await client.query(
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, archivo_path, archivo_size, hash_archivo, usuario_id, errores_validacion)
+             VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7) RETURNING consecutivo`,
+            ['Desconocido', nombreArchivo, `storage/uploads/failed/${nombreArchivo}`, buffer.length, fileHash, userToLink || null, JSON.stringify([errorMsg])]
+          );
+          const rejectedConsecutivo = rejRes.rows[0]?.consecutivo;
+
+          // Log de auditoría para rechazo
+          await client.query(
+            "INSERT INTO log_actividades (id_usuario, accion, tabla, detalle, modulo) VALUES ($1, $2, $3, $4, $5)",
+            [userToLink || '00000000-0000-0000-0000-000000000000', 'UPLOAD_REJECTED', 'solicitudes_eia2', `Archivo ${nombreArchivo} rechazado (Folio: ${rejectedConsecutivo}): ${errorMsg}`, 'CARGA_MASIVA']
+          );
+
+          return {
+            success: false,
+            message: `Archivo rechazado por validación (Folio: ${rejectedConsecutivo}): ${errorMsg}`,
+            consecutivo: rejectedConsecutivo?.toString(),
+            detalles: { errores: [errorMsg] }
+          };
+        }
+
+        const { cct, nivel, grado, alumnos, metadata } = workerResult;
+
+        // Verificar duplicado por hash antes de proceder (Punto 6 Checklist)
+        const existingReq = await client.query('SELECT id FROM solicitudes_eia2 WHERE hash_archivo = $1 LIMIT 1', [fileHash]);
+        if (existingReq.rows.length > 0 && !confirmarReemplazo) {
+          return {
+            success: false,
+            message: 'El archivo ya existe en el sistema. ¿Desea reemplazarlo?',
+            duplicadoDetectado: true
+          };
+        }
+
+        const nivelMap: Record<string, number> = { PREESCOLAR: 1, PRIMARIA: 2, SECUNDARIA: 3, TELESECUNDARIA: 4 };
+        const nivelId = nivelMap[nivel.toUpperCase()] || 2;
 
         await client.query('BEGIN');
 
-        // Calcular Hash (podemos hacerlo aquí o el worker puede devolverlo, pero mejor aquí para consistencia rápida)
-        const buffer = Buffer.from(archivoBase64, 'base64');
-        const fileHash = crypto.createHash('sha256').update(buffer).digest('hex');
+        // Buscar Vinculación con Credenciales EIA2
+        const credRes = await client.query('SELECT id FROM credenciales_eia2 WHERE cct = $1', [cct]);
+        const credencialId = credRes.rows.length > 0 ? credRes.rows[0].id : null;
 
-        // Identificar usuario para la solicitud (PSP: Data Integrity)
-        let userToLink = context.user?.id;
-        if (!userToLink && email) {
-          try {
-            const userRes = await client.query('SELECT id FROM usuarios WHERE email = $1', [email.trim().toLowerCase()]);
-            if (userRes.rows.length > 0) {
-              userToLink = userRes.rows[0].id;
-            }
-          } catch (err) {
-            logger.error('Error buscando usuario para vinculación por email', err);
-          }
-        }
-
-        // Verificar si existe una solicitud con el mismo hash
-        const existingReq = await client.query(
-          'SELECT id FROM solicitudes_eia2 WHERE hash_archivo = $1 LIMIT 1',
-          [fileHash]
-        );
-
-        let solicitudId: string;
-
+        let solicitudId;
+        let consecutivo;
         if (existingReq.rows.length > 0) {
-          if (!confirmarReemplazo) {
-            await client.query('ROLLBACK');
-            return {
-              success: false,
-              message: 'El archivo ya existe en el sistema. ¿Desea reemplazarlo?',
-              duplicadoDetectado: true,
-              detalles: null,
-            };
-          } else {
-            solicitudId = existingReq.rows[0].id;
-            await client.query('UPDATE solicitudes_eia2 SET updated_at = NOW(), usuario_id = $1 WHERE id = $2', [
-              userToLink || null,
-              solicitudId,
-            ]);
-          }
+          solicitudId = existingReq.rows[0].id;
+          const upRes = await client.query('UPDATE solicitudes_eia2 SET updated_at = NOW(), usuario_id = $1, cct = $2, errores_validacion = NULL WHERE id = $3 RETURNING consecutivo', [
+            userToLink || null, cct, solicitudId,
+          ]);
+          consecutivo = upRes.rows[0].consecutivo;
         } else {
-          const solicitudRes = await client.query(
-            `INSERT INTO solicitudes_eia2 
-              (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, archivo_path, archivo_size, hash_archivo, usuario_id)
-            VALUES ($1, $2, NOW(), $3, $4, $5, $6, $7, $8)
-            RETURNING id`,
-            [
-              cct,
-              nombreArchivo,
-              1,
-              nivelId,
-              `storage/uploads/${nombreArchivo}`,
-              buffer.length,
-              fileHash,
-              userToLink || null
-            ]
+          const solRes = await client.query(
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, archivo_path, archivo_size, hash_archivo, usuario_id, credencial_id)
+             VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7, $8) RETURNING id, consecutivo`,
+            [cct, nombreArchivo, nivelId, `storage/uploads/${nombreArchivo}`, buffer.length, fileHash, userToLink || null, credencialId]
           );
-          solicitudId = solicitudRes.rows[0].id;
+          solicitudId = solRes.rows[0].id;
+          consecutivo = solRes.rows[0].consecutivo;
         }
 
         // Procesar Escuela, Grupos, Estudiantes y Evaluaciones (Database I/O)
@@ -1614,10 +1601,17 @@ t.numero_ticket as "folio",
         // Ejecutar en segundo plano para no demorar la respuesta GraphQL
         syncSftp().catch((e) => logger.error('Unhandled SFTP sync error', e));
 
+        // Log de auditoría para éxito
+        await client.query(
+          "INSERT INTO log_actividades (id_usuario, accion, tabla, registro_id, detalle, modulo) VALUES ($1, $2, $3, $4, $5, $6)",
+          [userToLink || '00000000-0000-0000-0000-000000000000', 'UPLOAD_SUCCESS', 'solicitudes_eia2', solicitudId, `Archivo ${nombreArchivo} procesado exitosamente para CCT ${cct}`, 'CARGA_MASIVA']
+        );
+
         return {
           success: true,
-          message: 'Archivo procesado exitosamente (Worker Thread) y en proceso de sincronización SFTP',
+          message: 'Archivo procesado exitosamente y en proceso de sincronización SFTP',
           solicitudId,
+          consecutivo: consecutivo?.toString(),
           detalles: { cct, nivel: metadata.nivelDetectado, grado, alumnosProcesados, errores: [] },
         };
       } catch (error: any) {
