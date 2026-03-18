@@ -17,6 +17,7 @@ import fs from 'fs/promises';
 import { SftpService } from '../services/sftp.service.js';
 import { MailingService } from '../services/mailing.service.js';
 import { ReportConsolidatorService } from '../services/report-consolidator.service.js';
+import { DistributionService } from '../services/distribution.service.js';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 
@@ -47,6 +48,7 @@ export interface GraphQLContext {
   user?: ContextUser;
   dataSources?: Record<string, unknown>;
   loaders: ReturnType<typeof import('../utils/data-loaders.js').createDataLoaders>;
+  distributionService?: DistributionService;
 }
 
 /**
@@ -1540,6 +1542,18 @@ t.numero_ticket as "folio",
           );
           solicitudId = solRes.rows[0].id;
           consecutivo = solRes.rows[0].consecutivo;
+        }
+
+        // Asignar equipo de validación automáticamente (CU-06)
+        if (context.distributionService) {
+          try {
+            const team = context.distributionService.getTeamForCCT(cct);
+            await context.distributionService.logDistribution(solicitudId, team.id);
+            logger.info(`Validación asignada automáticamente al equipo: ${team.nombre} para CCT: ${cct}`);
+          } catch (distErr) {
+            logger.error('Error en distribución automática', distErr);
+            // No bloqueamos el flujo principal si falla la distribución
+          }
         }
 
         // Procesar Escuela, Grupos, Estudiantes y Evaluaciones (Database I/O)
