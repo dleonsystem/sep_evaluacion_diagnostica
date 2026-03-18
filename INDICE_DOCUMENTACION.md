@@ -1,14 +1,56 @@
 # 📚 ÍNDICE GENERAL DE DOCUMENTACIÓN
 ## Sistema SiCRER - Evaluación Diagnóstica SEP
 
-**Versión:** 1.2 - Sincronización DDL con Base de Datos Real  
-**Fecha:** 12 de marzo de 2026  
+**Versión:** 1.3 - Guía Operativa Tablas Staging  
+**Fecha:** 17 de marzo de 2026  
 **Autor:** Ingeniero de Software Certificado PSP  
 **Estado:** DDL y documentación 100% sincronizados con BD PostgreSQL
 
 ---
 
-## 🔄 ACTUALIZACIÓN RECIENTE - SINCRONIZACIÓN BD (12 marzo 2026)
+## � ACTUALIZACIÓN RECIENTE - GUÍA OPERATIVA (17 marzo 2026)
+
+### ✅ Nueva Documentación para Personal Operativo
+
+Se generó documentación operativa en **lenguaje no técnico** orientada a personal que monitorea cargas de archivos DBF, validadores y supervisores de operaciones.
+
+**DOCUMENTO NUEVO:**
+
+1. **[GUIA_OPERATIVA_TABLAS_STAGING.md](GUIA_OPERATIVA_TABLAS_STAGING.md)** ⭐ NUEVO 17-mar-2026
+   - ⏱️ Tiempo de lectura: 20-30 minutos
+   - 📊 Contiene: Guía operativa completa de 10 tablas staging (PRE3, PRI1-6, SEC1-3)
+   - 🎯 Objetivo: Documentar qué hacer y qué NO hacer con tablas de importación DBF
+   - 📋 Incluye:
+     - ✅ Explicación en lenguaje sencillo de tablas temporales
+     - ✅ Diagrama visual del flujo ETL (Carga → Validación → Procesamiento → Limpieza)
+     - ✅ Procedimientos operativos paso a paso
+     - ✅ FAQ con 8 preguntas frecuentes
+     - ✅ Troubleshooting para 4 problemas comunes
+     - ✅ Checklist de inicio de operaciones
+     - ✅ Formato de bitácora de registro
+     - ✅ Glosario de términos técnicos simplificados
+     - ⚠️ Lista de prohibiciones (acciones peligrosas)
+
+**MOTIVACIÓN:**
+- Información técnica sobre tablas staging estaba fragmentada en 7 archivos diferentes
+- Documentación existente demasiado técnica para personal operativo
+- Se requería guía práctica con procedimientos claros para operaciones diarias
+
+**AUDIENCIA:**
+- 👥 Personal operativo que monitorea cargas de archivos
+- 👥 Validadores que revisan errores en importaciones
+- 👥 Supervisores que coordinan proceso de carga
+
+**COMMIT:** `a74c976` - "docs: agregar guía operativa para tablas staging DBF"
+
+**ÍNDICE ACTUALIZADO:**
+- ✅ Nueva sección "🔧 Personal Operativo y Validadores" en perfiles de usuario
+- ✅ Nueva entrada "4. GUIA_OPERATIVA_TABLAS_STAGING.md" en desglose de documentos
+- ✅ Historial de documentación actualizado a versión 1.3
+
+---
+
+## 🔄 ACTUALIZACIÓN ANTERIOR - SINCRONIZACIÓN BD (12 marzo 2026)
 
 ### ✅ Sincronización Completa DDL <-> Base de Datos Real
 
@@ -217,6 +259,30 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 
 ---
 
+### 🔧 Personal Operativo y Validadores
+
+**LEER PRIMERO:**
+
+1. **[GUIA_OPERATIVA_TABLAS_STAGING.md](GUIA_OPERATIVA_TABLAS_STAGING.md)** ⭐ NUEVO 17-mar-2026
+   - ⏱️ Tiempo de lectura: 20-30 minutos
+   - 📊 Contiene: Guía operativa completa de tablas de importación DBF
+   - 🎯 Objetivo: Entender qué hacer y qué NO hacer con tablas staging
+   - ✅ Incluye: Procedimientos operativos, FAQ, troubleshooting
+   - 👥 Destinado a: Monitores de carga, validadores, supervisores
+
+2. **[FLUJO_OPERATIVO_OFICIAL.md](FLUJO_OPERATIVO_OFICIAL.md)**
+   - Sección: Flujo de Información Completo
+   - Sección: Volumetría y Capacidad
+   - 🎯 Objetivo: Entender contexto completo del proceso de evaluación
+
+**CONSULTAR SI ES NECESARIO:**
+
+3. **[ESTRUCTURA_DE_DATOS.md](ESTRUCTURA_DE_DATOS.md)** - Solo sección de tablas staging
+   - Líneas 1124-1175: Documentación técnica de tablas PRE3, PRI1-6, SEC1-3
+   - 🎯 Objetivo: Información técnica detallada (para escalamiento a IT)
+
+---
+
 ## 📄 DESGLOSE DE DOCUMENTOS
 
 ### 1. README.md
@@ -345,7 +411,58 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 
 ---
 
-### 3. ANALISIS_DETALLADO_PSP_RUP.md
+### 4. GUIA_OPERATIVA_TABLAS_STAGING.md ⭐ NUEVO
+
+**Audiencia:** Personal operativo, validadores, supervisores de carga  
+**Nivel Técnico:** Básico - No técnico  
+**Tamaño:** ~500 líneas orientadas a operaciones
+
+**Contenido Principal:**
+
+#### ¿QUÉ SON LAS TABLAS STAGING?
+- 📦 Explicación de 10 tablas temporales (PRE3, PRI1-6, SEC1-3)
+- 🔄 Función como "sala de espera" para archivos DBF
+- 📊 Información que contienen (estudiantes, evaluaciones, escuelas)
+
+#### FLUJO DE TRABAJO COMPLETO
+- 📈 Diagrama visual del proceso ETL
+- ⏱️ Tiempos de cada fase (carga, validación, procesamiento, limpieza)
+- ✅ Indicadores de éxito y señales de alerta
+
+#### QUÉ HACER Y QUÉ NO HACER
+- ✅ Monitoreo diario y verificaciones básicas
+- ✅ Procedimientos de verificación de carga exitosa
+- ✅ Procedimientos de atención a errores de validación
+- ❌ Prohibiciones críticas (NO modificar, NO borrar, NO ejecutar SQL)
+
+#### TROUBLESHOOTING
+- 🆘 Problemas comunes y soluciones
+- ⚠️ Escalamiento de incidencias (3 niveles)
+- 📋 Procedimientos operativos paso a paso
+
+#### RECURSOS ADICIONALES
+- ❓ FAQ (8 preguntas frecuentes)
+- 📚 Glosario de términos técnicos
+- 📞 Contactos y soporte
+- 📝 Bitácora de operaciones (formato de registro)
+
+**Cuándo leerlo:**
+- Eres personal operativo nuevo y necesitas entender las tablas staging
+- Necesitas saber qué hacer ante una carga de archivos DBF
+- Tienes que reportar un problema o incidencia
+- Quieres entender el flujo diario de validación
+- Necesitas procedimientos claros de monitoreo
+
+**Características especiales:**
+- 🎯 Lenguaje sencillo sin jerga técnica
+- 📊 Diagramas visuales del flujo de trabajo
+- ⚠️ Advertencias claras sobre acciones peligrosas
+- ✅ Checklist de inicio de operaciones
+- 📋 Formatos de bitácora listos para usar
+
+---
+
+### 5. ANALISIS_DETALLADO_PSP_RUP.md
 
 **Audiencia:** Arquitectos, Desarrolladores Senior, Directivos Técnicos  
 **Nivel Técnico:** Avanzado  
@@ -713,6 +830,9 @@ R: Usa RESUMEN_EJECUTIVO_STAKEHOLDERS.md como base para tu presentación.
 
 | Versión | Fecha | Autor | Cambios |
 |---------|-------|-------|---------|
+| 1.3 | 17/03/2026 | Ingeniero PSP | Agregada guía operativa para tablas staging (GUIA_OPERATIVA_TABLAS_STAGING.md) |
+| 1.2 | 12/03/2026 | Ingeniero PSP | Sincronización completa DDL con BD real (27 correcciones) |
+| 1.1 | 19/01/2026 | Ingeniero PSP | Correcciones del cliente (RESUMEN_CORRECCIONES_CLIENTE.md, CORRECCIONES_MODELO_NIA.md) |
 | 1.0 | 21/11/2025 | Ingeniero PSP | Creación inicial de toda la documentación |
 
 ---
