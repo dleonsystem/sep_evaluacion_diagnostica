@@ -80,4 +80,42 @@ export class MailingService {
     `;
     return this.sendEmail(email, 'Tus Credenciales de Acceso - SiCRER', html);
   }
+
+  /**
+   * Envía notificación de resultados disponibles (CU-09v2).
+   */
+  async sendResultsNotification(email: string, cct: string, solicitudId: string): Promise<boolean> {
+    const html = `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <div style="text-align: center; padding-bottom: 20px;">
+          <div style="display: inline-block; background: #dcfce7; color: #166534; padding: 8px 16px; border-radius: 20px; font-size: 0.85em; font-weight: 600; margin-bottom: 12px;">Resultados Listos</div>
+          <h2 style="color: #1e293b; margin: 0;">¡Tus Reportes están Disponibles!</h2>
+          <p style="color: #64748b; font-size: 0.9em;">CCT: ${cct} | Solicitud: ${solicitudId}</p>
+        </div>
+        <div style="color: #334155; line-height: 1.6;">
+          <p>Estimado Director/a,</p>
+          <p>Le informamos que el procesamiento de sus archivos FRV ha finalizado. Los reportes por campo formativo y el archivo de resultados para su escuela ya se encuentran disponibles en el portal.</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.APP_URL || 'http://localhost:4200'}/descargas" 
+               style="display: inline-block; background: #2563eb; color: #ffffff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">
+               Acceder a Módulo de Descargas
+            </a>
+          </div>
+          
+          <p style="font-size: 0.9em; color: #64748b;">Podrá encontrar:</p>
+          <ul style="font-size: 0.9em; color: #475569;">
+            <li>Reportes por Campo Formativo (ENS, HYC, LEN, SPC)</li>
+            <li>Reporte de Resultados por Grupo (F5)</li>
+            <li>Paquete consolidado (.7z)</li>
+          </ul>
+        </div>
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 0.8em; color: #94a3b8; text-align: center;">
+          <p>Este es un correo automático, por favor no responda a este mensaje.</p>
+          <p>&copy; 2026 SEP - Secretaría de Educación Pública</p>
+        </div>
+      </div>
+    `;
+    return this.sendEmail(email, `Resultados de Evaluación Listos - ${cct}`, html);
+  }
 }
