@@ -264,12 +264,12 @@ export const resolvers = {
         throw new Error('Error al obtener preguntas frecuentes');
       }
     },
-    
+
     /**
      * Listar materiales de evaluación
      * @use-case CU-01
      */
-    getMateriales: async (_: any, { nivel, ciclo }: { nivel?: string, ciclo?: string }) => {
+    getMateriales: async (_: any, { nivel, ciclo }: { nivel?: string; ciclo?: string }) => {
       try {
         let sql = `
           SELECT 
@@ -284,23 +284,26 @@ export const resolvers = {
           WHERE m.activo = true
         `;
         const params: any[] = [];
-        
+
         if (nivel) {
           sql += ` AND ne.codigo = $${params.length + 1}`;
           params.push(nivel);
         }
-        
+
         if (ciclo) {
           sql += ` AND m.ciclo_escolar = $${params.length + 1}`;
           params.push(ciclo);
         }
-        
+
         sql += ` ORDER BY m.fecha_publicacion DESC`;
-        
+
         const result = await query(sql, params);
-        return result.rows.map(row => ({
+        return result.rows.map((row) => ({
           ...row,
-          fechaPublicacion: row.fechaPublicacion instanceof Date ? row.fechaPublicacion.toISOString() : row.fechaPublicacion
+          fechaPublicacion:
+            row.fechaPublicacion instanceof Date
+              ? row.fechaPublicacion.toISOString()
+              : row.fechaPublicacion,
         }));
       } catch (error) {
         logger.error('Error fetching materiales', error);
@@ -424,7 +427,8 @@ id,
         const row = result.rows[0];
         return {
           ...row,
-          fechaCarga: row.fechaCarga instanceof Date ? row.fechaCarga.toISOString() : row.fechaCarga,
+          fechaCarga:
+            row.fechaCarga instanceof Date ? row.fechaCarga.toISOString() : row.fechaCarga,
         } as EvaluacionRow;
       } catch (error) {
         logger.error('Error fetching evaluation', { id, error });
@@ -488,15 +492,14 @@ id,
         const result = await query(sql, params);
         return result.rows.map((row: any) => ({
           ...row,
-          fechaCarga: row.fechaCarga instanceof Date ? row.fechaCarga.toISOString() : row.fechaCarga,
+          fechaCarga:
+            row.fechaCarga instanceof Date ? row.fechaCarga.toISOString() : row.fechaCarga,
         }));
       } catch (error) {
         logger.error('Error fetching solicitudes from DB', { error });
         throw new Error('Error al obtener el historial de solicitudes');
       }
     },
-
-
 
     /**
      * Listar todos los tickets del sistema (Admin)
@@ -529,10 +532,14 @@ t.id,
           WHERE t.deleted_at IS NULL
           ORDER BY t.created_at DESC
   `);
-        return result.rows.map(row => ({
+        return result.rows.map((row) => ({
           ...row,
-          fechaCreacion: row.fechaCreacion instanceof Date ? row.fechaCreacion.toISOString() : row.fechaCreacion,
-          fechaActualizacion: row.fechaActualizacion instanceof Date ? row.fechaActualizacion.toISOString() : row.fechaActualizacion
+          fechaCreacion:
+            row.fechaCreacion instanceof Date ? row.fechaCreacion.toISOString() : row.fechaCreacion,
+          fechaActualizacion:
+            row.fechaActualizacion instanceof Date
+              ? row.fechaActualizacion.toISOString()
+              : row.fechaActualizacion,
         }));
       } catch (error) {
         logger.error('Error fetching all tickets', { error });
@@ -558,7 +565,7 @@ t.id,
           cctsRes,
           trendRes,
           levelRes,
-          efficiencyRes
+          efficiencyRes,
         ] = await Promise.all([
           query('SELECT COUNT(*) as count FROM usuarios'),
           query('SELECT COUNT(*) as count FROM usuarios WHERE activo = true'),
@@ -598,14 +605,14 @@ COALESCE(AVG(EXTRACT(EPOCH FROM(res.fecha_respuesta - t.created_at)) / 3600), 0)
               ORDER BY created_at ASC 
               LIMIT 1
 ) res
-  `)
+  `),
         ]);
 
         const totalSolicitudes = parseInt(solicitudesRes.rows[0].count);
-        const distribucionNivel = levelRes.rows.map(row => ({
+        const distribucionNivel = levelRes.rows.map((row) => ({
           label: row.label,
           cantidad: parseInt(row.cantidad),
-          porcentaje: totalSolicitudes > 0 ? (parseInt(row.cantidad) / totalSolicitudes) * 100 : 0
+          porcentaje: totalSolicitudes > 0 ? (parseInt(row.cantidad) / totalSolicitudes) * 100 : 0,
         }));
 
         const totalTickets = parseInt(ticketsRes.rows[0].count);
@@ -620,15 +627,17 @@ COALESCE(AVG(EXTRACT(EPOCH FROM(res.fecha_respuesta - t.created_at)) / 3600), 0)
           totalSolicitudes,
           solicitudesValidadas: parseInt(solicitudesValidRes.rows[0].count),
           totalCCTs: parseInt(cctsRes.rows[0].count),
-          tendenciaCargas: trendRes.rows.map(row => ({
+          tendenciaCargas: trendRes.rows.map((row) => ({
             fecha: row.fecha,
-            cantidad: parseInt(row.cantidad)
+            cantidad: parseInt(row.cantidad),
           })),
           distribucionNivel,
           eficienciaSoporte: {
-            tiempoPromedioRespuestaHoras: parseFloat(parseFloat(efficiencyRes.rows[0].avg_hours || 0).toFixed(2)),
-            tasaResolucion: totalTickets > 0 ? (ticketsResueltos / totalTickets) * 100 : 0
-          }
+            tiempoPromedioRespuestaHoras: parseFloat(
+              parseFloat(efficiencyRes.rows[0].avg_hours || 0).toFixed(2)
+            ),
+            tasaResolucion: totalTickets > 0 ? (ticketsResueltos / totalTickets) * 100 : 0,
+          },
         };
       } catch (error) {
         logger.error('Error fetching dashboard metrics', error);
@@ -727,10 +736,14 @@ t.numero_ticket as "folio",
           [userId]
         );
 
-        return result.rows.map(row => ({
+        return result.rows.map((row) => ({
           ...row,
-          fechaCreacion: row.fechaCreacion instanceof Date ? row.fechaCreacion.toISOString() : row.fechaCreacion,
-          fechaActualizacion: row.fechaActualizacion instanceof Date ? row.fechaActualizacion.toISOString() : row.fechaActualizacion
+          fechaCreacion:
+            row.fechaCreacion instanceof Date ? row.fechaCreacion.toISOString() : row.fechaCreacion,
+          fechaActualizacion:
+            row.fechaActualizacion instanceof Date
+              ? row.fechaActualizacion.toISOString()
+              : row.fechaActualizacion,
         }));
       } catch (error) {
         logger.error('Error fetching tickets', { error });
@@ -738,12 +751,17 @@ t.numero_ticket as "folio",
       }
     },
 
-    generateComprobante: async (_: any, { solicitudId }: { solicitudId: string }, context: GraphQLContext) => {
+    generateComprobante: async (
+      _: any,
+      { solicitudId }: { solicitudId: string },
+      context: GraphQLContext
+    ) => {
       if (!context.user) throw new Error('No autorizado');
 
       try {
         // Obtener datos de la solicitud
-        const res = await query(`
+        const res = await query(
+          `
            SELECT 
              s.folio,
              s.fecha_carga,
@@ -754,7 +772,9 @@ t.numero_ticket as "folio",
            FROM solicitudes_eia2 s
            JOIN usuarios u ON s.usuario_id = u.id
            WHERE s.id = $1
-         `, [solicitudId]);
+         `,
+          [solicitudId]
+        );
 
         if (res.rows.length === 0) throw new Error('Solicitud no encontrada');
         const sol = res.rows[0];
@@ -803,7 +823,7 @@ t.numero_ticket as "folio",
         return {
           success: true,
           fileName: `Comprobante_${sol.folio}.txt`, // Cambiar a .pdf cuando se integre libreria completa
-          contentBase64: base64
+          contentBase64: base64,
         };
       } catch (error) {
         logger.error('Error generating comprobante', error);
@@ -814,7 +834,11 @@ t.numero_ticket as "folio",
     /**
      * Descargar un archivo de resultado desde SFTP
      */
-    downloadAssessmentResult: async (_: any, { solicitudId, fileName }: { solicitudId: string, fileName: string }, context: GraphQLContext) => {
+    downloadAssessmentResult: async (
+      _: any,
+      { solicitudId, fileName }: { solicitudId: string; fileName: string },
+      context: GraphQLContext
+    ) => {
       if (!context.user) throw new Error('No autorizado');
 
       try {
@@ -839,21 +863,25 @@ t.numero_ticket as "folio",
 
         // 3. Descargar de SFTP
         const buffer = await sftpService.downloadBuffer(archivoMetadata.url);
-        if (!buffer) throw new Error('No se pudo recuperar el archivo del servidor de almacenamiento');
+        if (!buffer)
+          throw new Error('No se pudo recuperar el archivo del servidor de almacenamiento');
 
         return {
           success: true,
           fileName: fileName,
-          contentBase64: buffer.toString('base64')
+          contentBase64: buffer.toString('base64'),
         };
-
       } catch (error: any) {
-        logger.error('Error en downloadAssessmentResult', { solicitudId, fileName, error: error.message });
+        logger.error('Error en downloadAssessmentResult', {
+          solicitudId,
+          fileName,
+          error: error.message,
+        });
         return {
           success: false,
           fileName: fileName,
           contentBase64: '',
-          message: error.message
+          message: error.message,
         };
       }
     },
@@ -866,12 +894,15 @@ t.numero_ticket as "folio",
       // Los materiales son públicos para descarga
 
       try {
-        const res = await query('SELECT nombre, tipo, ruta_archivo FROM materiales_evaluacion WHERE id = $1', [id]);
+        const res = await query(
+          'SELECT nombre, tipo, ruta_archivo FROM materiales_evaluacion WHERE id = $1',
+          [id]
+        );
         if (res.rows.length === 0) throw new Error('Material no encontrado');
-        
+
         const material = res.rows[0];
         const buffer = await sftpService.downloadBuffer(material.ruta_archivo);
-        
+
         if (!buffer) throw new Error('No se pudo descargar el archivo del servidor');
 
         // Obtener extensión desde la ruta original si existe, sino asignar por tipo
@@ -899,7 +930,7 @@ t.numero_ticket as "folio",
               'materiales_evaluacion',
               id,
               JSON.stringify({ nombre: finalFileName, tipo: material.tipo }),
-              'PORTAL_PUBLICO'
+              'PORTAL_PUBLICO',
             ]
           );
         } catch (logError) {
@@ -909,17 +940,17 @@ t.numero_ticket as "folio",
         return {
           success: true,
           fileName: finalFileName,
-          contentBase64: buffer.toString('base64')
+          contentBase64: buffer.toString('base64'),
         };
       } catch (error: any) {
         logger.error('Error en downloadMaterial', { id, error: error.message });
         return {
           success: false,
           fileName: '',
-          contentBase64: ''
+          contentBase64: '',
         };
       }
-    }
+    },
   },
 
   Mutation: {
@@ -987,15 +1018,14 @@ t.numero_ticket as "folio",
 
         if (clavesCCT && clavesCCT.length > 0) {
           try {
-            const escuelas = await query(
-              `SELECT id FROM escuelas WHERE cct = $1 LIMIT 1`,
-              [clavesCCT[0]]
-            );
+            const escuelas = await query(`SELECT id FROM escuelas WHERE cct = $1 LIMIT 1`, [
+              clavesCCT[0],
+            ]);
             if (escuelas.rows.length > 0) {
-              await query(
-                'UPDATE usuarios SET escuela_id = $1 WHERE id = $2',
-                [escuelas.rows[0].id, createdUser.id]
-              );
+              await query('UPDATE usuarios SET escuela_id = $1 WHERE id = $2', [
+                escuelas.rows[0].id,
+                createdUser.id,
+              ]);
             }
           } catch (err) {
             logger.error('Error vinculando escuela al crear usuario', err);
@@ -1007,7 +1037,7 @@ t.numero_ticket as "folio",
         // Enviar credenciales por correo
         try {
           // Si el usuario tiene un CCT asociado lo pasamos, si no el email
-          const cctLabel = (clavesCCT && clavesCCT.length > 0) ? clavesCCT[0] : email;
+          const cctLabel = clavesCCT && clavesCCT.length > 0 ? clavesCCT[0] : email;
           await mailingService.sendCredentials(email, cctLabel, password);
           logger.info(`Credentials email sent to ${email}`);
         } catch (mailErr) {
@@ -1225,7 +1255,9 @@ t.numero_ticket as "folio",
             // US-2.7: Restricción de archivos Excel en evidencias de tickets
             const ext = evidencia.nombre.toLowerCase();
             if (ext.endsWith('.xlsx') || ext.endsWith('.xls')) {
-              throw new Error(`El archivo ${evidencia.nombre} no está permitido como evidencia (Excel restringido).`);
+              throw new Error(
+                `El archivo ${evidencia.nombre} no está permitido como evidencia (Excel restringido).`
+              );
             }
 
             // En un entorno real, guardaríamos el base64 en disco/S3.
@@ -1272,8 +1304,6 @@ t.numero_ticket as "folio",
       }
     },
 
-
-
     /**
      * Recuperar contraseña (envío de email con nueva contraseña)
      * @use-case CU-01: Autenticación
@@ -1310,7 +1340,9 @@ t.numero_ticket as "folio",
             const remainingMinutes = Math.ceil((cooldownMs - diffMs) / (60 * 1000));
             logger.warn(`Cooldown active for ${email}. Remaining: ${remainingMinutes} min`);
             await client.query('ROLLBACK');
-            throw new Error(`Espera ${remainingMinutes} minutos antes de solicitar otra contraseña.`);
+            throw new Error(
+              `Espera ${remainingMinutes} minutos antes de solicitar otra contraseña.`
+            );
           }
         }
 
@@ -1332,9 +1364,7 @@ t.numero_ticket as "folio",
         // 5. Enviar correo real
         await mailingService.sendPasswordRecovery(email, newPassword);
 
-        logger.info(
-          `Recovery email sent to ${email}`
-        );
+        logger.info(`Recovery email sent to ${email}`);
 
         await client.query('COMMIT');
         return 'Solicitud procesada';
@@ -1403,7 +1433,9 @@ t.numero_ticket as "folio",
         const fileHash = crypto.createHash('sha256').update(buffer).digest('hex');
         let userToLink = context.user?.id;
         if (!userToLink && email) {
-          const uRes = await client.query('SELECT id FROM usuarios WHERE email = $1', [email.trim().toLowerCase()]);
+          const uRes = await client.query('SELECT id FROM usuarios WHERE email = $1', [
+            email.trim().toLowerCase(),
+          ]);
           if (uRes.rows.length > 0) userToLink = uRes.rows[0].id;
         }
 
@@ -1412,65 +1444,99 @@ t.numero_ticket as "folio",
           workerResult = await runWorker();
         } catch (workerError: any) {
           // Trazabilidad de RECHAZO (Punto 3 de Criterios de Aceptación)
-          // Si el worker falla, intentamos extraer el CCT del nombre o metadata si es posible, 
+          // Si el worker falla, intentamos extraer el CCT del nombre o metadata si es posible,
           // pero al menos registramos el intento fallido.
           const errorMsg = workerError.message || 'Error de validación desconocido';
-          
+
           const rejRes = await client.query(
             `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, archivo_path, archivo_size, hash_archivo, usuario_id, errores_validacion)
              VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7) RETURNING consecutivo`,
-            ['Desconocido', nombreArchivo, `storage/uploads/failed/${nombreArchivo}`, buffer.length, fileHash, userToLink || null, JSON.stringify([errorMsg])]
+            [
+              'Desconocido',
+              nombreArchivo,
+              `storage/uploads/failed/${nombreArchivo}`,
+              buffer.length,
+              fileHash,
+              userToLink || null,
+              JSON.stringify([errorMsg]),
+            ]
           );
           const rejectedConsecutivo = rejRes.rows[0]?.consecutivo;
 
           // Log de auditoría para rechazo
           await client.query(
-            "INSERT INTO log_actividades (id_usuario, accion, tabla, detalle, modulo) VALUES ($1, $2, $3, $4, $5)",
-            [userToLink || '00000000-0000-0000-0000-000000000000', 'UPLOAD_REJECTED', 'solicitudes_eia2', `Archivo ${nombreArchivo} rechazado (Folio: ${rejectedConsecutivo}): ${errorMsg}`, 'CARGA_MASIVA']
+            'INSERT INTO log_actividades (id_usuario, accion, tabla, detalle, modulo) VALUES ($1, $2, $3, $4, $5)',
+            [
+              userToLink || '00000000-0000-0000-0000-000000000000',
+              'UPLOAD_REJECTED',
+              'solicitudes_eia2',
+              `Archivo ${nombreArchivo} rechazado (Folio: ${rejectedConsecutivo}): ${errorMsg}`,
+              'CARGA_MASIVA',
+            ]
           );
 
           return {
             success: false,
             message: `Archivo rechazado por validación (Folio: ${rejectedConsecutivo}): ${errorMsg}`,
             consecutivo: rejectedConsecutivo?.toString(),
-            detalles: { errores: [errorMsg] }
+            detalles: { errores: [errorMsg] },
           };
         }
 
         const { cct, nivel, grado, alumnos, metadata } = workerResult;
 
         // Verificar duplicado por hash antes de proceder (Punto 6 Checklist)
-        const existingReq = await client.query('SELECT id FROM solicitudes_eia2 WHERE hash_archivo = $1 LIMIT 1', [fileHash]);
+        const existingReq = await client.query(
+          'SELECT id FROM solicitudes_eia2 WHERE hash_archivo = $1 LIMIT 1',
+          [fileHash]
+        );
         if (existingReq.rows.length > 0 && !confirmarReemplazo) {
           return {
             success: false,
             message: 'El archivo ya existe en el sistema. ¿Desea reemplazarlo?',
-            duplicadoDetectado: true
+            duplicadoDetectado: true,
           };
         }
 
-        const nivelMap: Record<string, number> = { PREESCOLAR: 1, PRIMARIA: 2, SECUNDARIA: 3, TELESECUNDARIA: 4 };
+        const nivelMap: Record<string, number> = {
+          PREESCOLAR: 1,
+          PRIMARIA: 2,
+          SECUNDARIA: 3,
+          TELESECUNDARIA: 4,
+        };
         const nivelId = nivelMap[nivel.toUpperCase()] || 2;
 
         await client.query('BEGIN');
 
         // Buscar Vinculación con Credenciales EIA2
-        const credRes = await client.query('SELECT id FROM credenciales_eia2 WHERE cct = $1', [cct]);
+        const credRes = await client.query('SELECT id FROM credenciales_eia2 WHERE cct = $1', [
+          cct,
+        ]);
         const credencialId = credRes.rows.length > 0 ? credRes.rows[0].id : null;
 
         let solicitudId;
         let consecutivo;
         if (existingReq.rows.length > 0) {
           solicitudId = existingReq.rows[0].id;
-          const upRes = await client.query('UPDATE solicitudes_eia2 SET updated_at = NOW(), usuario_id = $1, cct = $2, errores_validacion = NULL WHERE id = $3 RETURNING consecutivo', [
-            userToLink || null, cct, solicitudId,
-          ]);
+          const upRes = await client.query(
+            'UPDATE solicitudes_eia2 SET updated_at = NOW(), usuario_id = $1, cct = $2, errores_validacion = NULL WHERE id = $3 RETURNING consecutivo',
+            [userToLink || null, cct, solicitudId]
+          );
           consecutivo = upRes.rows[0].consecutivo;
         } else {
           const solRes = await client.query(
             `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, archivo_path, archivo_size, hash_archivo, usuario_id, credencial_id)
              VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7, $8) RETURNING id, consecutivo`,
-            [cct, nombreArchivo, nivelId, `storage/uploads/${nombreArchivo}`, buffer.length, fileHash, userToLink || null, credencialId]
+            [
+              cct,
+              nombreArchivo,
+              nivelId,
+              `storage/uploads/${nombreArchivo}`,
+              buffer.length,
+              fileHash,
+              userToLink || null,
+              credencialId,
+            ]
           );
           solicitudId = solRes.rows[0].id;
           consecutivo = solRes.rows[0].consecutivo;
@@ -1479,17 +1545,38 @@ t.numero_ticket as "folio",
         // Procesar Escuela, Grupos, Estudiantes y Evaluaciones (Database I/O)
 
         // 1. Escuela
+        const turnosMap: Record<string, number> = {
+          MATUTINO: 1,
+          VESPERTINO: 2,
+          NOCTURNO: 3,
+          DISCONTINUO: 4,
+          'TIEMPO COMPLETO': 5,
+          'JORNADA AMPLIADA': 6,
+        };
+        const turnoId = turnosMap[metadata.turno?.toUpperCase() || ''] || 1;
+        const nombreEscuela = metadata.nombreEscuela?.trim() || 'Escuela sin nombre (Importada)';
+
         const escuelaRes = await client.query('SELECT id FROM escuelas WHERE cct = $1', [cct]);
         let escuelaId;
         if (escuelaRes.rows.length === 0) {
           const defaultRes = await client.query(
-            `INSERT INTO escuelas (cct, nombre, id_turno, id_nivel, id_entidad, id_ciclo)
-             VALUES ($1, $2, 1, $3, 14, 1) RETURNING id`,
-            [cct, 'Escuela sin nombre (Importada)', nivelId]
+            `INSERT INTO escuelas (cct, nombre, id_turno, id_nivel, id_entidad, id_ciclo, email)
+             VALUES ($1, $2, $3, $4, 14, 1, $5) RETURNING id`,
+            [cct, nombreEscuela, turnoId, nivelId, metadata.correo || null]
           );
           escuelaId = defaultRes.rows[0].id;
         } else {
           escuelaId = escuelaRes.rows[0].id;
+          await client.query(
+            `UPDATE escuelas
+             SET nombre = COALESCE(NULLIF($1, ''), nombre),
+                 id_turno = $2,
+                 id_nivel = $3,
+                 email = COALESCE(NULLIF($4, ''), email),
+                 updated_at = NOW()
+             WHERE id = $5`,
+            [nombreEscuela, turnoId, nivelId, metadata.correo || null, escuelaId]
+          );
         }
 
         if (userToLink) {
@@ -1500,7 +1587,7 @@ t.numero_ticket as "folio",
             );
             logger.info('Vinculación automática de usuario con escuela exitosa', {
               userId: userToLink,
-              escuelaId
+              escuelaId,
             });
           } catch (err) {
             logger.error('Error en vinculación automática', err);
@@ -1594,7 +1681,9 @@ t.numero_ticket as "folio",
             logger.error('Error durante la sincronización SFTP', err);
           } finally {
             // Limpiar archivo temporal
-            try { await fs.unlink(tempPath); } catch { }
+            try {
+              await fs.unlink(tempPath);
+            } catch {}
           }
         };
 
@@ -1603,8 +1692,15 @@ t.numero_ticket as "folio",
 
         // Log de auditoría para éxito
         await client.query(
-          "INSERT INTO log_actividades (id_usuario, accion, tabla, registro_id, detalle, modulo) VALUES ($1, $2, $3, $4, $5, $6)",
-          [userToLink || '00000000-0000-0000-0000-000000000000', 'UPLOAD_SUCCESS', 'solicitudes_eia2', solicitudId, `Archivo ${nombreArchivo} procesado exitosamente para CCT ${cct}`, 'CARGA_MASIVA']
+          'INSERT INTO log_actividades (id_usuario, accion, tabla, registro_id, detalle, modulo) VALUES ($1, $2, $3, $4, $5, $6)',
+          [
+            userToLink || '00000000-0000-0000-0000-000000000000',
+            'UPLOAD_SUCCESS',
+            'solicitudes_eia2',
+            solicitudId,
+            `Archivo ${nombreArchivo} procesado exitosamente para CCT ${cct}`,
+            'CARGA_MASIVA',
+          ]
         );
 
         return {
@@ -1643,13 +1739,19 @@ t.numero_ticket as "folio",
       const client = await getClient();
 
       // Validar permisos de administrador
-      if (!context.user || !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)) {
+      if (
+        !context.user ||
+        !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)
+      ) {
         throw new Error('No autorizado: Solo administradores pueden subir resultados');
       }
 
       try {
         // 1. Verificar que la solicitud existe
-        const solRes = await client.query('SELECT cct, resultados FROM solicitudes_eia2 WHERE id = $1', [solicitudId]);
+        const solRes = await client.query(
+          'SELECT cct, resultados FROM solicitudes_eia2 WHERE id = $1',
+          [solicitudId]
+        );
         if (solRes.rows.length === 0) {
           throw new Error('La solicitud de evaluación no existe');
         }
@@ -1692,7 +1794,7 @@ t.numero_ticket as "folio",
           nuevosResultados.push({
             nombre: nombre,
             url: remotePath,
-            size: buffer.length
+            size: buffer.length,
           });
         }
 
@@ -1712,15 +1814,14 @@ t.numero_ticket as "folio",
         return {
           success: true,
           message: `${nuevosResultados.length} archivos subidos correctamente`,
-          resultados: resultadosFinales
+          resultados: resultadosFinales,
         };
-
       } catch (error: any) {
         logger.error('Error en uploadAssessmentResults', { solicitudId, error: error.message });
         return {
           success: false,
           message: error.message,
-          resultados: []
+          resultados: [],
         };
       } finally {
         client.release();
@@ -1732,31 +1833,50 @@ t.numero_ticket as "folio",
      * @use-case CU-01
      */
     publicarMaterial: async (_: any, { input }: { input: any }, context: GraphQLContext) => {
-      if (!context.user || !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)) {
+      if (
+        !context.user ||
+        !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)
+      ) {
         throw new Error('No autorizado');
       }
 
       const client = await getClient();
       try {
-        let { nombre, tipo, nivelEducativo, cicloEscolar, periodoId, archivoBase64, nombreArchivo, overwrite } = input;
+        let {
+          nombre,
+          tipo,
+          nivelEducativo,
+          cicloEscolar,
+          periodoId,
+          archivoBase64,
+          nombreArchivo,
+          overwrite,
+        } = input;
 
         // 1. Obtener ID del nivel educativo
-        const levelRes = await client.query('SELECT id FROM cat_nivel_educativo WHERE codigo = $1', [nivelEducativo]);
+        const levelRes = await client.query(
+          'SELECT id FROM cat_nivel_educativo WHERE codigo = $1',
+          [nivelEducativo]
+        );
         if (levelRes.rows.length === 0) throw new Error('Nivel educativo no encontrado');
         const nivelId = levelRes.rows[0].id;
 
         // 2. Verificar duplicados por metadatos (Nombre, Tipo, Nivel, Ciclo)
-        const checkDuplicate = await client.query(`
+        const checkDuplicate = await client.query(
+          `
           SELECT id, ruta_archivo 
           FROM materiales_evaluacion 
           WHERE nombre = $1 AND tipo = $2 AND nivel_educativo = $3 AND ciclo_escolar = $4 AND activo = true
-        `, [nombre, tipo, nivelId, cicloEscolar]);
+        `,
+          [nombre, tipo, nivelId, cicloEscolar]
+        );
 
         if (checkDuplicate.rows.length > 0 && !overwrite) {
           return {
             success: false,
-            message: 'Ya existe un material publicado con estos mismos datos. ¿Desea sobrescribirlo?',
-            requiresConfirmation: true
+            message:
+              'Ya existe un material publicado con estos mismos datos. ¿Desea sobrescribirlo?',
+            requiresConfirmation: true,
           };
         }
 
@@ -1768,7 +1888,7 @@ t.numero_ticket as "folio",
         const uniqueName = `${tipo}_${Date.now()}_${nombreArchivo}`;
         const remoteDir = `/upload/materiales/${cicloEscolar}`;
         const remotePath = `${remoteDir}/${uniqueName}`;
-        
+
         await sftpService.connect();
         await sftpService.ensureDir(remoteDir);
 
@@ -1779,33 +1899,39 @@ t.numero_ticket as "folio",
 
         // Si es sobreescritura, desactivamos el anterior
         if (checkDuplicate.rows.length > 0 && overwrite) {
-          await client.query('UPDATE materiales_evaluacion SET activo = false WHERE id = $1', [checkDuplicate.rows[0].id]);
+          await client.query('UPDATE materiales_evaluacion SET activo = false WHERE id = $1', [
+            checkDuplicate.rows[0].id,
+          ]);
         }
 
-        const result = await client.query(`
+        const result = await client.query(
+          `
           INSERT INTO materiales_evaluacion (
             nombre, tipo, nivel_educativo, ruta_archivo, ciclo_escolar, periodo_id, usuario_id
           ) VALUES ($1, $2, $3, $4, $5, $6, $7)
           RETURNING id, nombre, tipo, ciclo_escolar as "cicloEscolar", fecha_publicacion as "fechaPublicacion", activo
-        `, [nombre, tipo, nivelId, remotePath, cicloEscolar, periodoId, context.user.id]);
+        `,
+          [nombre, tipo, nivelId, remotePath, cicloEscolar, periodoId, context.user.id]
+        );
 
         await client.query('COMMIT');
 
         return {
           success: true,
-          message: overwrite ? 'Material actualizado correctamente.' : 'Material publicado correctamente.',
+          message: overwrite
+            ? 'Material actualizado correctamente.'
+            : 'Material publicado correctamente.',
           material: {
             ...result.rows[0],
             nivelEducativo: nivelEducativo,
-            rutaArchivo: remotePath
-          }
+            rutaArchivo: remotePath,
+          },
         };
-
       } catch (error: any) {
         logger.error('Error en publicarMaterial', error);
         return {
           success: false,
-          message: error.message
+          message: error.message,
         };
       } finally {
         client.release();
@@ -1910,10 +2036,9 @@ t.numero_ticket as "folio",
         }
 
         // 3. Soft Delete
-        await query(
-          'UPDATE tickets_soporte SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1',
-          [ticketId]
-        );
+        await query('UPDATE tickets_soporte SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1', [
+          ticketId,
+        ]);
 
         return true;
       } catch (error) {
@@ -1967,7 +2092,11 @@ t.numero_ticket as "folio",
    * Field resolvers para Evaluacion
    */
   Evaluacion: {
-    estudiantes: async (parent: ParentWithId, _: any, context: GraphQLContext): Promise<EstudianteRow[]> => {
+    estudiantes: async (
+      parent: ParentWithId,
+      _: any,
+      context: GraphQLContext
+    ): Promise<EstudianteRow[]> => {
       return context.loaders.evaluationStudents.load(parent.id);
     },
   },
