@@ -12,6 +12,7 @@
       <div class="estado estado-error" *ngIf="error && !cargandoVersiones">{{ error }}</div>
 
       <div *ngIf="!cargandoVersiones && !error">
+        <h3 class="seccion-titulo">Materiales de Apoyo</h3>
         <table class="tabla" *ngIf="materiales.length; else sinVersiones">
           <thead>
             <tr>
@@ -38,6 +39,42 @@
         </table>
         <ng-template #sinVersiones>
           <p class="estado">No hay materiales de evaluación disponibles por el momento.</p>
+        </ng-template>
+
+        <hr class="separador">
+        
+        <h3 class="seccion-titulo">Resultados de Evaluación</h3>
+        <div class="estado" *ngIf="cargandoReportes">Cargando resultados generados...</div>
+        
+        <table class="tabla" *ngIf="!cargandoReportes && reportes.length; else sinReportes">
+          <thead>
+            <tr>
+              <th>Nombre del Reporte</th>
+              <th>Tipo</th>
+              <th>Fecha Generación</th>
+              <th>Tamaño</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let reporte of reportes">
+              <td><strong>{{ reporte.nombre }}</strong></td>
+              <td>{{ reporte.tipo }}</td>
+              <td>{{ reporte.fechaGeneracion | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ reporte.size ? (reporte.size / 1024 / 1024 | number: '1.2-2') + ' MB' : 'N/A' }}</td>
+              <td>
+                <button class="btn primario" type="button" (click)="descargarReporte(reporte)">
+                  <i class="bi bi-file-earmark-arrow-down"></i> Descargar
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <ng-template #sinReportes>
+          <div class="aviso-vacio" *ngIf="!cargandoReportes">
+            <p>Aún no se han generado reportes para tu centro de trabajo.</p>
+            <p class="nota">Asegúrate de haber completado la carga de tus archivos FRV en la sección de inicio.</p>
+          </div>
         </ng-template>
       </div>
     </div>
