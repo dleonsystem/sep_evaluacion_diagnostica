@@ -1452,7 +1452,7 @@ t.numero_ticket as "folio",
             `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, archivo_path, archivo_size, hash_archivo, usuario_id, errores_validacion)
              VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7) RETURNING consecutivo`,
             [
-              'Desconocido',
+              'DESC',
               nombreArchivo,
               `storage/uploads/failed/${nombreArchivo}`,
               buffer.length,
@@ -1470,7 +1470,7 @@ t.numero_ticket as "folio",
               userToLink || '00000000-0000-0000-0000-000000000000',
               'UPLOAD_REJECTED',
               'solicitudes_eia2',
-              `Archivo ${nombreArchivo} rechazado (Folio: ${rejectedConsecutivo}): ${errorMsg}`,
+              JSON.stringify({ mensaje: `Archivo ${nombreArchivo} rechazado (Folio: ${rejectedConsecutivo}): ${errorMsg}` }),
               'CARGA_MASIVA',
             ]
           );
@@ -1665,6 +1665,39 @@ t.numero_ticket as "folio",
 
         await client.query('COMMIT');
 
+        // CU-16: Generación automática de Credenciales en la primera carga válida
+        let generatedCredentials = false;
+        if (!credencialId && email) {
+          try {
+            // Generar contraseña aleatoria de 8 caracteres (igual que en createUser)
+            const password = Math.random().toString(36).slice(-8).toUpperCase();
+            
+            // Insertar en credenciales_eia2 usando pgcrypto (crypt + gen_salt)
+            const credResInsert = await client.query(
+              `INSERT INTO credenciales_eia2 (cct, correo_validado, password_hash, primera_carga_valida_fecha)
+               VALUES ($1, $2, crypt($3, gen_salt('bf')), NOW())
+               RETURNING id`,
+              [cct, email, password]
+            );
+            
+            const newCredId = credResInsert.rows[0].id;
+            
+            // Actualizar la solicitud con la nueva vinculación
+            await client.query('UPDATE solicitudes_eia2 SET credencial_id = $1 WHERE id = $2', [
+              newCredId,
+              solicitudId,
+            ]);
+            
+            // Enviar notificación por correo
+            await mailingService.sendCredentials(email, cct, password);
+            generatedCredentials = true;
+            logger.info(`Credenciales generadas automáticamente para CCT ${cct} y enviadas a ${email}`);
+          } catch (err) {
+            logger.error('Error generando credenciales automáticas post-carga', err);
+            // No fallamos la carga si el correo falla, pero lo logueamos
+          }
+        }
+
         // US-2.6: Sincronización con SFTP (Asíncrono, no bloqueante para el usuario)
         const syncSftp = async () => {
           const tempPath = path.resolve(__dirname, `../../temp_${nombreArchivo}`);
@@ -1698,14 +1731,16 @@ t.numero_ticket as "folio",
             'UPLOAD_SUCCESS',
             'solicitudes_eia2',
             solicitudId,
-            `Archivo ${nombreArchivo} procesado exitosamente para CCT ${cct}`,
+            JSON.stringify({ mensaje: `Archivo ${nombreArchivo} procesado exitosamente para CCT ${cct}` }),
             'CARGA_MASIVA',
           ]
         );
 
         return {
           success: true,
-          message: 'Archivo procesado exitosamente y en proceso de sincronización SFTP',
+          message: generatedCredentials 
+            ? 'Archivo procesado exitosamente. Se han generado y enviado las credenciales de acceso al correo proporcionado.'
+            : 'Archivo procesado exitosamente y en proceso de sincronización SFTP',
           solicitudId,
           consecutivo: consecutivo?.toString(),
           detalles: { cct, nivel: metadata.nivelDetectado, grado, alumnosProcesados, errores: [] },

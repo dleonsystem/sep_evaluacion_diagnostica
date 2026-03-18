@@ -132,18 +132,20 @@ function extractEscData(sheet: XLSX.WorkSheet, errors: string[]) {
 }
 
 function detectLevel(sheetNames: string[], escSheet: XLSX.WorkSheet): string | null {
-  const explicit = normalizeCellValue(escSheet.C6?.v);
-  if (
-    explicit === 'PREESCOLAR' ||
-    explicit === 'PRIMARIA' ||
-    explicit === 'SECUNDARIA' ||
-    explicit === 'TELESECUNDARIA'
-  ) {
-    return explicit;
+  const possibleCells = ['B6', 'C6', 'D6', 'B5', 'C5', 'D5'];
+  for (const cell of possibleCells) {
+    const val = normalizeCellValue(escSheet[cell]?.v).toUpperCase();
+    if (['PREESCOLAR', 'PRIMARIA', 'SECUNDARIA', 'TELESECUNDARIA'].includes(val)) {
+      return val;
+    }
   }
 
   const normalized = sheetNames.map((name) => name.toUpperCase());
   if (normalized.includes('PREESCOLAR')) return 'PREESCOLAR';
+  
+  // Fallback: Si solo está la hoja TERCERO y no hay PRIMERO, es Preescolar
+  if (normalized.includes('TERCERO') && !normalized.includes('PRIMERO')) return 'PREESCOLAR';
+
   const primariaSheets = ['PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO'];
   if (primariaSheets.every((sheet) => normalized.includes(sheet))) return 'PRIMARIA';
   if (['PRIMERO', 'SEGUNDO', 'TERCERO'].every((sheet) => normalized.includes(sheet)))
