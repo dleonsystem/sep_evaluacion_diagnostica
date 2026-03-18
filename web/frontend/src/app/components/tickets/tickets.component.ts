@@ -341,7 +341,7 @@ export class TicketsComponent implements OnInit {
   private mapEstatus(estado: string): 'pendiente' | 'en-proceso' | 'respondido' {
     switch (estado) {
       case 'ABIERTO': return 'pendiente';
-      case 'EN PROCESO': return 'en-proceso';
+      case 'EN_PROCESO': return 'en-proceso';
       case 'CERRADO': case 'RESUELTO': return 'respondido';
       default: return 'pendiente';
     }

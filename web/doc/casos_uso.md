@@ -106,7 +106,8 @@ graph TB
 | CU-02 | ✅ Completado | Página pública con filtros por nivel educativo y logs de descarga. |
 | CU-03 | ✅ Completado | Flujo manual documentado. Considera campos formativos y NIA. |
 | CU-04v2 | 🏗️ En proceso | Lógica de validación backend en desarrollo. |
-| CU-09v2 | 🏗️ En proceso | Integración con Sync pendiente. |
+| CU-08 | ✅ Completado | Implementada consolidación de 5 reportes oficiales y empaquetado 7z (Fase 1 Híbrida). |
+| CU-09v2 | ✅ Completado | Portal de descarga habilitado con soporte para resultados locales y vía SFTP. |
 
 ---
 **Nota:** Este documento se alinea con el archivo maestro `REQUERIMIENTOS_Y_CASOS_DE_USO.md` versión 2.0.

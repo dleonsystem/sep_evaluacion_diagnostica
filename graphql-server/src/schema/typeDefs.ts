@@ -112,6 +112,25 @@ export const typeDefs = `#graphql
     @use-case CU-01: Publicar Materiales de Evaluación
     """
     downloadMaterial(id: ID!): FileDownload!
+
+    """
+    Listar reportes consolidados por escuela (CCT)
+    @use-case CU-17: Entrega de Resultados
+    """
+    getSchoolReports(cct: String!): [SchoolReport!]!
+  }
+
+  """
+  Reporte consolidado por escuela
+  """
+  type SchoolReport {
+    id: ID!
+    nombre: String!
+    tipo: String!
+    fechaGeneracion: String!
+    url: String!
+    size: Int
+    solicitudId: ID
   }
 
   """
@@ -240,6 +259,12 @@ export const typeDefs = `#graphql
     @use-case CU-01: Publicar Materiales de Evaluación
     """
     publicarMaterial(input: PublicarMaterialInput!): PublicarMaterialResponse!
+
+    """
+    Simular la generación de reportes para una solicitud (Demo/Phase 1)
+    @use-case CU-08: Generar Reportes
+    """
+    simulateReportGeneration(solicitudId: ID!): Boolean!
   }
 
   """

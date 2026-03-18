@@ -12,9 +12,12 @@
 
 import { logger } from '../utils/logger.js';
 import path from 'path';
+import { existsSync } from 'fs';
 import fs from 'fs/promises';
 import { SftpService } from '../services/sftp.service.js';
 import { MailingService } from '../services/mailing.service.js';
+import { ReportConsolidatorService } from '../services/report-consolidator.service.js';
+import { DistributionService } from '../services/distribution.service.js';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 
@@ -25,6 +28,7 @@ import { query, getClient } from '../config/database.js';
 
 const sftpService = new SftpService();
 const mailingService = new MailingService();
+const reportConsolidatorService = new ReportConsolidatorService();
 
 /**
  * User type for context
@@ -44,6 +48,7 @@ export interface GraphQLContext {
   user?: ContextUser;
   dataSources?: Record<string, unknown>;
   loaders: ReturnType<typeof import('../utils/data-loaders.js').createDataLoaders>;
+  distributionService?: DistributionService;
 }
 
 /**
@@ -861,10 +866,18 @@ t.numero_ticket as "folio",
         const archivoMetadata = resultados.find((r: any) => r.nombre === fileName);
         if (!archivoMetadata) throw new Error('Archivo no encontrado en esta solicitud');
 
-        // 3. Descargar de SFTP
-        const buffer = await sftpService.downloadBuffer(archivoMetadata.url);
-        if (!buffer)
-          throw new Error('No se pudo recuperar el archivo del servidor de almacenamiento');
+        // 3. Obtener el archivo (desde SFTP o disk)
+        let buffer: Buffer | null = null;
+        if (archivoMetadata.url.startsWith('storage/')) {
+          const fullPath = path.resolve(__dirname, '../../', archivoMetadata.url);
+          if (existsSync(fullPath)) {
+            buffer = await fs.readFile(fullPath);
+          }
+        } else {
+          buffer = await sftpService.downloadBuffer(archivoMetadata.url);
+        }
+
+        if (!buffer) throw new Error('No se pudo recuperar el archivo del servidor de almacenamiento');
 
         return {
           success: true,
@@ -883,6 +896,60 @@ t.numero_ticket as "folio",
           contentBase64: '',
           message: error.message,
         };
+      }
+    },
+
+    getSchoolReports: async (_: any, { cct }: { cct: string }, context: GraphQLContext) => {
+      if (!context.user) throw new Error('No autorizado');
+
+      try {
+        const res = await query(`
+          SELECT 
+            id, 
+            archivo_original as "nombre", 
+            'FRV' as tipo, 
+            fecha_carga as "fechaGeneracion",
+            archivo_path as url,
+            archivo_size as size,
+            id as "solicitudId",
+            resultados
+          FROM solicitudes_eia2 
+          WHERE cct = $1
+          ORDER BY fecha_carga DESC
+        `, [cct]);
+
+        const reports: any[] = [];
+        res.rows.forEach(row => {
+          // Reporte original de carga
+          reports.push({
+            id: row.id,
+            nombre: row.nombre,
+            tipo: 'CARGA_ORIGINAL',
+            fechaGeneracion: row.fechaGeneracion instanceof Date ? row.fechaGeneracion.toISOString() : row.fechaGeneracion,
+            url: row.url,
+            size: row.size,
+            solicitudId: row.id
+          });
+
+          // Resultados procesados
+          const resultados = row.resultados || [];
+          resultados.forEach((r: any) => {
+            reports.push({
+              id: `${row.id}_${r.nombre}`,
+              nombre: r.nombre,
+              tipo: r.tipo || 'RESULTADO_PDF',
+              fechaGeneracion: row.fechaGeneracion instanceof Date ? row.fechaGeneracion.toISOString() : row.fechaGeneracion,
+              url: r.url,
+              size: r.size || 0,
+              solicitudId: row.id
+            });
+          });
+        });
+
+        return reports;
+      } catch (err) {
+        logger.error('Error in getSchoolReports', err);
+        throw new Error('Error al obtener reportes de la escuela');
       }
     },
 
@@ -1542,6 +1609,18 @@ t.numero_ticket as "folio",
           consecutivo = solRes.rows[0].consecutivo;
         }
 
+        // Asignar equipo de validación automáticamente (CU-06)
+        if (context.distributionService) {
+          try {
+            const team = context.distributionService.getTeamForCCT(cct);
+            await context.distributionService.logDistribution(solicitudId, team.id);
+            logger.info(`Validación asignada automáticamente al equipo: ${team.nombre} para CCT: ${cct}`);
+          } catch (distErr) {
+            logger.error('Error en distribución automática', distErr);
+            // No bloqueamos el flujo principal si falla la distribución
+          }
+        }
+
         // Procesar Escuela, Grupos, Estudiantes y Evaluaciones (Database I/O)
 
         // 1. Escuela
@@ -2050,6 +2129,10 @@ t.numero_ticket as "folio",
      * Borrar lógicamente un ticket (Usuario/Admin)
      * @use-case CU-13: Mesa de ayuda
      */
+    /**
+     * Borrar lógicamente un ticket (Usuario/Admin)
+     * @use-case CU-13: Mesa de ayuda
+     */
     deleteTicket: async (_: any, { ticketId }: { ticketId: string }, context: GraphQLContext) => {
       // 1. Validar autenticación
       if (!context.user) throw new Error('No autorizado');
@@ -2081,6 +2164,15 @@ t.numero_ticket as "folio",
         throw new Error('No se pudo eliminar el ticket');
       }
     },
+
+    /**
+     * Simular la generación de reportes para una solicitud (Demo/Phase 1)
+     * @use-case CU-08: Generar Reportes
+     */
+    simulateReportGeneration: async (_: any, { solicitudId }: { solicitudId: string }, context: GraphQLContext) => {
+      if (!context.user) throw new Error('No autorizado');
+      return reportConsolidatorService.simulateProcessing(solicitudId);
+    }
   },
 
   /**
