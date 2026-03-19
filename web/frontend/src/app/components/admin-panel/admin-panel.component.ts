@@ -472,8 +472,9 @@ export class AdminPanelComponent implements OnInit {
         `Se ha enviado la nueva contraseña a ${usuario.email}`,
         'success',
       );
-    } catch (error) {
-      await Swal.fire('Error', 'No se pudo enviar la contraseña.', 'error');
+    } catch (error: any) {
+      const msg = error.message || 'No se pudo enviar la contraseña.';
+      await Swal.fire('Error', msg, 'error');
     }
   }
 
