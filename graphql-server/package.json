@@ -34,6 +34,7 @@
   "dependencies": {
     "@apollo/server": "^4.10.0",
     "@types/imap-simple": "^4.2.10",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/mailparser": "^3.4.6",
     "@types/nodemailer": "^7.0.11",
     "@types/swagger-jsdoc": "^6.0.4",
@@ -47,6 +48,7 @@
     "graphql": "^16.8.1",
     "helmet": "^7.1.0",
     "imap-simple": "^5.1.0",
+    "jsonwebtoken": "^9.0.3",
     "mailparser": "^3.9.4",
     "nodemailer": "^8.0.1",
     "pdfmake": "^0.3.4",

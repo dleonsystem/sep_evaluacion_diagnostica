@@ -25,6 +25,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 import { query, getClient } from '../config/database.js';
+import { generateToken } from '../config/jwt.js';
 
 const sftpService = new SftpService();
 const mailingService = new MailingService();
@@ -63,6 +64,9 @@ interface UserRow {
   apematerno: string;
   rol: string;
   activo: boolean;
+  primerLogin: boolean;
+  intentosFallidos: number;
+  bloqueadoHasta?: Date;
   fechaRegistro: Date;
   fechaUltimoAcceso?: Date;
 }
@@ -146,6 +150,7 @@ interface CreateUserResult {
 interface AuthPayload {
   ok: boolean;
   message?: string | null;
+  token?: string | null;
   user?: UserRow | null;
 }
 
@@ -1140,7 +1145,10 @@ t.numero_ticket as "folio",
             u.password_hash,
             u.activo,
             u.fecha_registro as "fechaRegistro",
-            u.updated_at as "fechaUltimoAcceso"
+            u.updated_at as "fechaUltimoAcceso",
+            u.bloqueado_hasta as "bloqueadoHasta",
+            u.intentos_fallidos as "intentosFallidos",
+            u.primer_login as "primerLogin"
           FROM usuarios u
           INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
           WHERE u.email = $1`,
@@ -1152,6 +1160,19 @@ t.numero_ticket as "folio",
         }
 
         const usuario = result.rows[0] as UserRow & { password_hash: string | null };
+
+        // 1. Verificar si el usuario está bloqueado
+        if (usuario.bloqueadoHasta && new Date(usuario.bloqueadoHasta) > new Date()) {
+          const minutosRestantes = Math.ceil(
+            (new Date(usuario.bloqueadoHasta).getTime() - new Date().getTime()) / (60 * 1000)
+          );
+          return {
+            ok: false,
+            message: `Esta cuenta está temporalmente bloqueada. Intente de nuevo en ${minutosRestantes} minutos.`,
+            user: null,
+          };
+        }
+
         if (!usuario.activo) {
           return { ok: false, message: 'Usuario inactivo', user: null };
         }
@@ -1159,7 +1180,7 @@ t.numero_ticket as "folio",
         const hashGuardado = usuario.password_hash ?? '';
         const [salt, hash] = hashGuardado.split(':');
         if (!salt || !hash) {
-          return { ok: false, message: 'Credenciales inválidas', user: null };
+          return { ok: false, message: 'Falla en la configuración de seguridad de la cuenta', user: null };
         }
 
         const hashCalculado = crypto.scryptSync(password, salt, 64).toString('hex');
@@ -1167,13 +1188,49 @@ t.numero_ticket as "folio",
           Buffer.from(hash, 'hex'),
           Buffer.from(hashCalculado, 'hex')
         );
+
         if (!coincide) {
-          return { ok: false, message: 'Credenciales inválidas', user: null };
+          const nuevosIntentos = (usuario.intentosFallidos || 0) + 1;
+          
+          if (nuevosIntentos >= 5) {
+            // Bloqueo tras 5 intentos (RN-18)
+            await query(
+              'UPDATE usuarios SET intentos_fallidos = $1, bloqueado_hasta = NOW() + INTERVAL \'1 hour\' WHERE id = $2',
+              [nuevosIntentos, usuario.id]
+            );
+            return {
+              ok: false,
+              message: 'Demasiados intentos fallidos. Su cuenta ha sido bloqueada por 1 hora.',
+              user: null,
+            };
+          } else {
+            await query('UPDATE usuarios SET intentos_fallidos = $1 WHERE id = $2', [
+              nuevosIntentos,
+              usuario.id,
+            ]);
+            return {
+              ok: false,
+              message: `Credenciales inválidas. Intento ${nuevosIntentos} de 5.`,
+              user: null,
+            };
+          }
         }
 
-        await query('UPDATE usuarios SET updated_at = NOW() WHERE id = $1', [usuario.id]);
+        // Login exitoso: resetear intentos fallidos y actualizar último acceso
+        await query(
+          'UPDATE usuarios SET intentos_fallidos = 0, bloqueado_hasta = NULL, updated_at = NOW() WHERE id = $1',
+          [usuario.id]
+        );
 
-        return { ok: true, message: 'Autenticación correcta', user: usuario };
+        // Emitir JWT (RF-18)
+        const token = generateToken(usuario);
+
+        return {
+          ok: true,
+          message: 'Autenticación correcta',
+          token,
+          user: usuario,
+        };
       } catch (error) {
         logger.error('Error authenticating user', { input, error });
         throw error;

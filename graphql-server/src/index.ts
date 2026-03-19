@@ -59,6 +59,7 @@ import { logger, logPSPTime } from './utils/logger.js';
 import { createDataLoaders } from './utils/data-loaders.js';
 import { DistributionService } from './services/distribution.service.js';
 import { EmailWatcherService } from './services/email-watcher.service.js';
+import { verifyToken } from './config/jwt.js';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -270,21 +271,24 @@ async function startServer() {
       }),
       expressMiddleware(server, {
         context: async ({ req }): Promise<GraphQLContext> => {
-          const token = req.headers.authorization || '';
+          const authHeader = req.headers.authorization || '';
           const loaders = createDataLoaders();
 
-          if (!token) return { user: undefined, loaders, distributionService };
+          if (!authHeader) return { user: undefined, loaders, distributionService };
 
           try {
-            // Formato esperado: "Bearer <base64>"
-            // Base64 decodificado: "email:timestamp" (Generado por AdminAuthService)
-            const encoded = token.replace('Bearer ', '');
-            const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
-            const [email] = decoded.split(':');
+            const token = authHeader.replace('Bearer ', '');
+            let email = '';
+
+            // 1. Intentar verificar como JWT (Estándar RF-18)
+            const decodedJwt = verifyToken(token);
+            if (decodedJwt && decodedJwt.email) {
+              email = decodedJwt.email;
+            }
 
             if (!email) return { user: undefined, loaders, distributionService };
 
-            // Buscar usuario real en BD con su rol (codigo)
+            // Buscar usuario real en BD
             const result = await query(
               `SELECT 
                 u.id, 
@@ -300,7 +304,7 @@ async function startServer() {
               return {
                 user: result.rows[0] as any,
                 loaders,
-                distributionService
+                distributionService,
               };
             }
           } catch (error) {
