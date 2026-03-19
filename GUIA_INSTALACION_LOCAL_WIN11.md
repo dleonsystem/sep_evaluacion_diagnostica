@@ -1,9 +1,15 @@
 # 🚀 GUÍA DE INSTALACIÓN LOCAL - WINDOWS 11
 ## Sistema de Evaluación Diagnóstica SEP - SiCRER
 
-**Última actualización:** 18 de marzo de 2026  
+**Última actualización:** 18 de marzo de 2026 (18:00 hrs)  
 **Sistema Operativo:** Windows 11  
 **Propósito:** Instalación completa para desarrollo y pruebas locales
+
+**✨ Incluye:**
+- 📜 Scripts PowerShell automatizados para iniciar/detener servicios
+- 🔧 Soluciones a problemas comunes encontrados en desarrollo
+- 📊 Comandos de diagnóstico y verificación de estado
+- 🎯 Guía paso a paso con ejemplos de salida esperada
 
 ---
 
@@ -676,40 +682,68 @@ ORDER BY tgrelid::regclass::text, tgname;
 
 ## ▶️ EJECUCIÓN DE LA APLICACIÓN
 
-### 1. Iniciar el Backend (GraphQL Server)
+### 🎯 OPCIÓN 1: Usar Scripts Automatizados (RECOMENDADO)
 
-**Opción A: Modo Desarrollo (con auto-reload)**
+La forma más sencilla es usar los scripts PowerShell que se incluyen en el proyecto:
 
 ```powershell
-# Abrir una nueva ventana de PowerShell
+# Ir al directorio raíz del proyecto
+cd C:\VLP\GitHub\sep_evaluacion_diagnostica
+
+# Iniciar todo el sistema (Backend + Frontend)
+.\start-dev.ps1
+
+# Ver el estado de los servicios
+.\status-dev.ps1
+
+# Detener todo
+.\stop-dev.ps1
+
+# Reiniciar todo
+.\restart-dev.ps1
+```
+
+Estos scripts manejan automáticamente:
+- ✅ Verificación de PostgreSQL
+- ✅ Compilación del backend si es necesario
+- ✅ Inicio de Backend GraphQL (puerto 4000)
+- ✅ Inicio de Frontend Angular (puerto 4200)
+- ✅ Apertura automática del navegador
+- ✅ Verificación de estado de servicios
+
+---
+
+### 🔧 OPCIÓN 2: Iniciar Manualmente Paso a Paso
+
+Si prefieres más control sobre cada componente:
+
+#### Paso 1: Iniciar el Backend (GraphQL Server)
+
+```powershell
+# Abrir una ventana de PowerShell
 # Navegar al backend:
 cd C:\VLP\GitHub\sep_evaluacion_diagnostica\graphql-server
 
-# Iniciar en modo desarrollo:
-npm run dev
-
-# Esto ejecuta: nodemon o ts-node-dev con auto-reload
-```
-
-**Opción B: Modo Producción (compilado)**
-
-```powershell
-# Compilar primero:
+# IMPORTANTE: Compilar primero (solo necesario la primera vez o al cambiar código)
 npm run build
 
-# Iniciar:
+# Iniciar servidor:
 npm start
 ```
 
 **Salida esperada:**
 ```
-🚀 GraphQL Server ready at http://localhost:4000/graphql
-🗄️  Database connected successfully
-📧 Mail service configured
-📁 SFTP service configured
+2026-03-18 10:30:00 info: === Iniciando servidor GraphQL EIA ===
+2026-03-18 10:30:00 info: ✓ Conexión a PostgreSQL establecida
+2026-03-18 10:30:00 info: ✓ Servidor Apollo GraphQL iniciado
+2026-03-18 10:30:00 info: 🚀 Servidor GraphQL listo en http://localhost:4000/graphql
+2026-03-18 10:30:00 info: 📊 Health check disponible en http://localhost:4000/health
+2026-03-18 10:30:00 info: ⏱️  Tiempo de inicio: 273ms
 ```
 
 **Si hay errores:**
+
+**Si hay errores comunes:**
 
 - **"Error: connect ECONNREFUSED 127.0.0.1:5432"**
   - PostgreSQL no está corriendo
@@ -724,63 +758,48 @@ npm start
 
 - **"Error: password authentication failed for user"**
   - Contraseña incorrecta en `.env`
-  - Verifica `DB_PASSWORD` en el archivo `.env`
+  - Verifica `DB_PASSWORD` en el archivo `graphql-server/.env`
 
 - **"Error: database 'eia_db' does not exist"**
   - No creaste la base de datos
-  - Vuelve a la sección de PostgreSQL
+  - Vuelve a la sección de PostgreSQL e inicializa la BD
 
-### 2. Verificar Backend con GraphQL Playground
+- **"Error: Cannot find module 'C:\...\dist\index.js'"**
+  - No compilaste el backend
+  - Ejecuta: `npm run build`
 
-1. Abre tu navegador
-2. Ve a: [http://localhost:4000/graphql](http://localhost:4000/graphql)
-3. Deberías ver **Apollo Sandbox** o **GraphQL Playground**
-4. Ejecuta una query de prueba:
+#### Paso 2: Verificar Backend
 
-```graphql
-query HealthCheck {
-  healthCheck {
-    status
-    timestamp
-    database {
-      connected
-      latency
-    }
-  }
-}
+Abre tu navegador y verifica que el backend responde:
+
+```powershell
+# Opción 1: Abrir en navegador
+Start-Process "http://localhost:4000/graphql"
+
+# Opción 2: Verificar desde PowerShell
+Invoke-WebRequest -Uri "http://localhost:4000/health" -UseBasicParsing
 ```
 
-**Respuesta esperada:**
-```json
-{
-  "data": {
-    "healthCheck": {
-      "status": "OK",
-      "timestamp": "2026-03-18T10:30:00.000Z",
-      "database": {
-        "connected": true,
-        "latency": 5
-      }
-    }
-  }
-}
-```
+Deberías ver el **Apollo Sandbox** en [http://localhost:4000/graphql](http://localhost:4000/graphql)
 
-### 3. Iniciar el Frontend (Angular)
+#### Paso 3: Iniciar el Frontend (Angular)
+
+**⚠️ IMPORTANTE:** El proyecto Angular está en `web/frontend/`, no en `web/`
 
 **Abrir OTRA ventana de PowerShell** (mantén la del backend abierta):
 
 ```powershell
-# Navegar al frontend:
-cd C:\VLP\GitHub\sep_evaluacion_diagnostica\web
+# Navegar al frontend (NOTA: es web/frontend, no solo web)
+cd C:\VLP\GitHub\sep_evaluacion_diagnostica\web\frontend
+
+# Instalar dependencias (solo primera vez o al cambiar package.json)
+npm install
 
 # Iniciar servidor de desarrollo:
 ng serve
 
-# O con puerto específico:
-ng serve --port 4200 --open
-
-# --open abre el navegador automáticamente
+# O con apertura automática del navegador:
+ng serve --open
 ```
 
 **Salida esperada:**
@@ -792,21 +811,35 @@ main.js               | main          |  XXX kB
 polyfills.js          | polyfills     |  XXX kB
 styles.css            | styles        |  XXX kB
 
-                      | Initial Total |  XXX kB
+Build at: 2026-03-18T10:35:00.000Z
 
-Build at: 2026-03-18T10:35:00.000Z - Hash: xxxxx - Time: 5000ms
-
-** Angular Live Development Server is listening on localhost:4200, open your browser on http://localhost:4200/ **
-
+** Angular Live Development Server is listening on localhost:4200 **
 
 √ Compiled successfully.
 ```
 
-### 4. Abrir la Aplicación en el Navegador
+**Si hay errores comunes:**
+
+- **"Error: TS6053: File 'main.ts' not found"**
+  - Estás en el directorio incorrecto
+  - Solución: Asegúrate de estar en `web/frontend/`, no en `web/`
+  ```powershell
+  cd C:\VLP\GitHub\sep_evaluacion_diagnostica\web\frontend
+  ```
+
+- **"ng: The term 'ng' is not recognized..."**
+  - Angular CLI no está instalado
+  - Solución:
+  ```powershell
+  npm install -g @angular/cli
+  ```
+
+#### Paso 4: Abrir la Aplicación en el Navegador
 
 1. Abre tu navegador (Chrome, Edge, Firefox)
 2. Ve a: [http://localhost:4200](http://localhost:4200)
 3. Deberías ver la **página de inicio** de la aplicación EIA
+4. Para probar la carga de archivos: [http://localhost:4200/carga-masiva](http://localhost:4200/carga-masiva)
 
 ---
 
@@ -942,7 +975,89 @@ SELECT COUNT(*) FROM cat_nivel_educativo;  -- Debe tener catálogos
 
 ## 🔧 SOLUCIÓN DE PROBLEMAS COMUNES
 
-### Problema 1: "Puerto 4000 ya está en uso"
+### ⭐ Problema 1: Botón "Cargar Archivo" no aparece o está deshabilitado
+
+**Síntomas:**
+- Subiste un archivo Excel correctamente
+- Ves el mensaje "Se validaron X estudiantes en la hoja..."
+- Pero NO ves el botón "Cargar Archivo" o aparece en gris (deshabilitado)
+- Tampoco ves las credenciales de acceso (usuario/contraseña)
+
+**Causa raíz:**
+El campo de correo electrónico no está validado correctamente. Angular requiere que presiones **Tab** o hagas clic fuera del campo para activar la validación.
+
+**Solución rápida:**
+
+1. **Asegúrate de que el campo de correo tiene borde VERDE con ✓**
+   - Si está gris o rojo: La validación no pasó
+   
+2. **Vuelve a hacer clic en el campo de correo**
+   - Presiona **Tab** o haz clic fuera del campo
+   - Debe cambiar a verde con un check (✓)
+
+3. **Orden correcto de acciones:**
+   ```
+   ✅ Paso 1: Escribir correo electrónico
+   ✅ Paso 2: Presionar TAB (para validar)
+   ✅ Paso 3: Seleccionar archivo Excel
+   → Ahora SÍ aparece el botón "Cargar Archivo" activo
+   ```
+
+4. **Si el problema persiste, refresca la página:**
+   ```powershell
+   # Presionar F5 en el navegador
+   # O forzar recarga: Ctrl+Shift+R
+   ```
+
+**Diagnóstico avanzado (DevTools):**
+
+Si el problema persiste, abre la consola del navegador (F12) y ejecuta:
+
+```javascript
+const app = ng.getComponent(document.querySelector('app-carga-masiva'));
+console.log('Correo válido:', app?.correoControl?.valid);
+console.log('Total archivos:', app?.resultados?.length);
+```
+
+Debe mostrar:
+```
+Correo válido: true   ← Si es false, el correo no está validado
+Total archivos: 1     ← Si es 0, refresh la página y vuelve a subir
+```
+
+---
+
+### Problema 2: Backend muestra "ERR_CONNECTION_REFUSED"
+
+**Síntomas:**
+- La aplicación frontend cargó correctamente
+- Al hacer clic en "Cargar Archivo" aparece error en consola roja
+- Mensaje: `POST http://localhost:4000/graphql net::ERR_CONNECTION_REFUSED`
+
+**Causa:**
+El servidor backend GraphQL NO está corriendo.
+
+**Solución:**
+
+```powershell
+# Opción 1: Usar el script automático
+cd C:\VLP\GitHub\sep_evaluacion_diagnostica
+.\start-dev.ps1
+
+# Opción 2: Manual
+cd C:\VLP\GitHub\sep_evaluacion_diagnostica\graphql-server
+npm run build    # Solo si no está compilado
+npm start        # Iniciar servidor
+
+# Verificar que responde:
+Invoke-WebRequest -Uri "http://localhost:4000/health"
+```
+
+Si obtienes HTTP 200, el backend está funcionando.
+
+---
+
+### Problema 3: "Puerto 4000 ya está en uso"
 
 ```powershell
 # Encontrar proceso usando el puerto 4000:
@@ -1197,144 +1312,211 @@ SMTP_PASSWORD=tu-password-mailtrap
 
 ## 📜 SCRIPTS ÚTILES
 
-### Script 1: Iniciar Todo (Backend + Frontend)
+El proyecto incluye **4 scripts PowerShell** en la raíz del proyecto para facilitar las operaciones comunes:
 
-Crea un archivo `start-all.ps1` en la raíz del proyecto:
-
-```powershell
-# C:\VLP\GitHub\sep_evaluacion_diagnostica\start-all.ps1
-
-Write-Host "🚀 Iniciando Sistema EIA..." -ForegroundColor Green
-
-# Verificar PostgreSQL
-$pgService = Get-Service *postgres* -ErrorAction SilentlyContinue
-if ($pgService.Status -ne 'Running') {
-    Write-Host "⚠️  Iniciando PostgreSQL..." -ForegroundColor Yellow
-    Start-Service $pgService.Name
-    Start-Sleep -Seconds 3
-}
-
-# Iniciar Backend en nueva ventana
-Write-Host "📡 Iniciando Backend GraphQL..." -ForegroundColor Cyan
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\graphql-server'; npm run dev"
-
-# Esperar 5 segundos
-Write-Host "⏳ Esperando backend..." -ForegroundColor Yellow
-Start-Sleep -Seconds 5
-
-# Iniciar Frontend en nueva ventana
-Write-Host "🎨 Iniciando Frontend Angular..." -ForegroundColor Cyan
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\web'; ng serve --open"
-
-Write-Host "✅ Sistema iniciado!" -ForegroundColor Green
-Write-Host "Backend: http://localhost:4000/graphql" -ForegroundColor White
-Write-Host "Frontend: http://localhost:4200" -ForegroundColor White
+```
+sep_evaluacion_diagnostica/
+├── start-dev.ps1      ← Iniciar todo el sistema
+├── stop-dev.ps1       ← Detener todos los servicios
+├── status-dev.ps1     ← Verificar estado del sistema
+└── restart-dev.ps1    ← Reiniciar todo
 ```
 
-**Ejecutar:**
+---
+
+### 🚀 Script 1: `start-dev.ps1` - Iniciar Sistema Completo
+
+**Qué hace:**
+- ✅ Verifica y arranca PostgreSQL si es necesario
+- ✅ Verifica que los directorios backend/frontend existan
+- ✅ Compila el backend TypeScript si no está compilado
+- ✅ Inicia el servidor GraphQL en una ventana separada
+- ✅ Inicia el servidor Angular en otra ventana separada
+- ✅ Abre automáticamente el navegador
+
+**Uso:**
+
 ```powershell
 cd C:\VLP\GitHub\sep_evaluacion_diagnostica
-.\start-all.ps1
+.\start-dev.ps1
 ```
 
-### Script 2: Resetear Base de Datos
+**Salida esperada:**
 
-Crea `reset-database.ps1`:
+```
+========================================
+   🚀 INICIANDO SISTEMA EIA - SEP
+========================================
 
-```powershell
-# C:\VLP\GitHub\sep_evaluacion_diagnostica\reset-database.ps1
+[1/6] Verificando PostgreSQL...
+   ✅ PostgreSQL ya está corriendo
 
-Write-Host "⚠️  ADVERTENCIA: Esto eliminará TODOS los datos!" -ForegroundColor Red
-$confirm = Read-Host "¿Estás seguro? (escribe 'SI' para confirmar)"
+[2/6] Verificando directorios del proyecto...
+   ✅ Directorios verificados correctamente
 
-if ($confirm -eq 'SI') {
-    Write-Host "🗑️  Eliminando base de datos..." -ForegroundColor Yellow
-    psql -U postgres -c "DROP DATABASE IF EXISTS eia_db;"
-    
-    Write-Host "🆕 Creando base de datos nueva..." -ForegroundColor Cyan
-    psql -U postgres -c "CREATE DATABASE eia_db;"
-    
-    Write-Host "📊 Ejecutando DDL..." -ForegroundColor Cyan
-    psql -U postgres -d eia_db -f "$PSScriptRoot\ddl_generated.sql"
-    
-    Write-Host "🌱 Cargando datos semilla..." -ForegroundColor Cyan
-    psql -U postgres -d eia_db -f "$PSScriptRoot\graphql-server\scripts\seed-data.sql"
-    
-    Write-Host "✅ Base de datos reseteada exitosamente!" -ForegroundColor Green
-} else {
-    Write-Host "❌ Operación cancelada." -ForegroundColor Yellow
-}
+[3/6] Verificando compilación del backend...
+   ✅ Backend ya compilado (carpeta dist/ existe)
+
+[4/6] Iniciando Backend GraphQL...
+   ⏳ Esperando 5 segundos para que el backend inicie...
+   ✅ Backend iniciado correctamente en http://localhost:4000
+
+[5/6] Iniciando Frontend Angular...
+   ⏳ Esperando 35 segundos para que Angular compile...
+
+[6/6] Abriendo navegador...
+
+========================================
+   ✅ SISTEMA INICIADO CORRECTAMENTE
+========================================
+
+📡 Backend GraphQL:  http://localhost:4000/graphql
+🎨 Frontend Angular: http://localhost:4200
+📊 API Docs:         http://localhost:4000/api-docs
+💚 Health Check:     http://localhost:4000/health
 ```
 
-### Script 3: Verificar Estado del Sistema
+---
 
-Crea `check-status.ps1`:
+### 🛑 Script 2: `stop-dev.ps1` - Detener Todos los Servicios
+
+**Qué hace:**
+- ✅ Busca y detiene todos los procesos de Node.js
+- ✅ Busca y libera los puertos 4000 y 4200
+- ✅ Verifica que todo se haya detenido correctamente
+- ✅ Muestra estado final de los puertos
+
+**Uso:**
 
 ```powershell
-# C:\VLP\GitHub\sep_evaluacion_diagnostica\check-status.ps1
-
-Write-Host "🔍 Verificando estado del sistema..." -ForegroundColor Cyan
-Write-Host ""
-
-# PostgreSQL
-Write-Host "--- PostgreSQL ---" -ForegroundColor Yellow
-$pgStatus = Get-Service *postgres* -ErrorAction SilentlyContinue
-if ($pgStatus) {
-    Write-Host "✅ Servicio: $($pgStatus.Status)" -ForegroundColor Green
-} else {
-    Write-Host "❌ No encontrado" -ForegroundColor Red
-}
-
-# Backend (puerto 4000)
-Write-Host ""
-Write-Host "--- Backend GraphQL ---" -ForegroundColor Yellow
-try {
-    $response = Invoke-WebRequest -Uri "http://localhost:4000/graphql" -Method GET -TimeoutSec 2
-    Write-Host "✅ Respondiendo en puerto 4000" -ForegroundColor Green
-} catch {
-    Write-Host "❌ No responde" -ForegroundColor Red
-}
-
-# Frontend (puerto 4200)
-Write-Host ""
-Write-Host "--- Frontend Angular ---" -ForegroundColor Yellow
-try {
-    $response = Invoke-WebRequest -Uri "http://localhost:4200" -Method GET -TimeoutSec 2
-    Write-Host "✅ Respondiendo en puerto 4200" -ForegroundColor Green
-} catch {
-    Write-Host "❌ No responde" -ForegroundColor Red
-}
-
-# Node.js
-Write-Host ""
-Write-Host "--- Node.js ---" -ForegroundColor Yellow
-$nodeVersion = node --version 2>$null
-if ($nodeVersion) {
-    Write-Host "✅ Versión: $nodeVersion" -ForegroundColor Green
-} else {
-    Write-Host "❌ No instalado" -ForegroundColor Red
-}
-
-# Angular CLI
-Write-Host ""
-Write-Host "--- Angular CLI ---" -ForegroundColor Yellow
-$ngVersion = ng version --json 2>$null | ConvertFrom-Json
-if ($ngVersion) {
-    Write-Host "✅ Versión: $($ngVersion.angular.cli)" -ForegroundColor Green
-} else {
-    Write-Host "❌ No instalado" -ForegroundColor Red
-}
-
-Write-Host ""
-Write-Host "🏁 Verificación completa" -ForegroundColor Cyan
+cd C:\VLP\GitHub\sep_evaluacion_diagnostica
+.\stop-dev.ps1
 ```
 
-### Script 4: Backup de Base de Datos
+**Salida esperada:**
 
-Crea `backup-database.ps1`:
+```
+========================================
+   🛑 DETENIENDO SISTEMA EIA - SEP
+========================================
+
+[1/3] Buscando procesos de Node.js...
+   🔍 Encontrados 2 proceso(s) de Node.js
+   ✅ Detenido proceso Node.js (PID: 12345)
+   ✅ Detenido proceso Node.js (PID: 67890)
+
+[2/3] Buscando procesos de Angular CLI...
+   ✅ Liberado puerto 4000 (PID: 12345)
+   ✅ Liberado puerto 4200 (PID: 67890)
+
+[3/3] Verificando limpieza...
+   ✅ Todos los procesos detenidos correctamente
+
+   Puerto 4000 (Backend):  ✅ Libre
+   Puerto 4200 (Frontend): ✅ Libre
+
+========================================
+   ✅ SERVICIOS DETENIDOS
+========================================
+```
+
+---
+
+### 📊 Script 3: `status-dev.ps1` - Verificar Estado del Sistema
+
+**Qué hace:**
+- ✅ Verifica instalación de Node.js y versión
+- ✅ Verifica instalación de Angular CLI
+- ✅ Verifica estado de PostgreSQL
+- ✅ Verifica si el Backend responde (puerto 4000)
+- ✅ Verifica si el Frontend responde (puerto 4200)
+- ✅ Lista procesos Node.js activos con uso de RAM
+- ✅ Muestra resumen general del sistema
+
+**Uso:**
 
 ```powershell
-# C:\VLP\GitHub\sep_evaluacion_diagnostica\backup-database.ps1
+cd C:\VLP\GitHub\sep_evaluacion_diagnostica
+.\status-dev.ps1
+```
+
+**Salida esperada:**
+
+```
+========================================
+   📊 ESTADO DEL SISTEMA EIA - SEP
+========================================
+
+━━━ Node.js ━━━
+   ✅ Instalado: v20.20.1
+   ✅ Versión compatible (LTS)
+   ✅ npm: 11.9.0
+
+━━━ Angular CLI ━━━
+   ✅ Instalado: 18.2.0
+
+━━━ PostgreSQL ━━━
+   ✅ Servicio: Corriendo (postgresql-x64-14)
+   ✅ Base de datos 'eia_db': Accesible
+
+━━━ Backend GraphQL (Puerto 4000) ━━━
+   ✅ Puerto 4000: ESCUCHANDO (PID: 12345)
+   ✅ Health Check: OK (HTTP 200)
+   ✅ GraphQL Endpoint: Accesible
+
+━━━ Frontend Angular (Puerto 4200) ━━━
+   ✅ Puerto 4200: ESCUCHANDO (PID: 67890)
+   ✅ Aplicación Web: Accesible (HTTP 200)
+
+━━━ Procesos Node.js Activos ━━━
+   📊 Total de procesos Node.js: 2
+      • PID: 12345 | RAM: 145.32 MB
+      • PID: 67890 | RAM: 256.78 MB
+
+========================================
+   📝 RESUMEN
+========================================
+
+   Servicios activos: 4 de 4
+
+   ✅ SISTEMA COMPLETAMENTE OPERATIVO
+
+   🌐 URLs de acceso:
+      • Backend:  http://localhost:4000/graphql
+      • Frontend: http://localhost:4200
+```
+
+---
+
+### 🔄 Script 4: `restart-dev.ps1` - Reiniciar Todo el Sistema
+
+**Qué hace:**
+- ✅ Ejecuta `stop-dev.ps1` para detener todo
+- ✅ Espera a que los procesos se detengan completamente
+- ✅ Verifica limpieza de procesos
+- ✅ Ejecuta `start-dev.ps1` para iniciar todo nuevamente
+
+**Uso:**
+
+```powershell
+cd C:\VLP\GitHub\sep_evaluacion_diagnostica
+.\restart-dev.ps1
+```
+
+**Cuándo usar:**
+- Después de cambiar código del backend
+- Después de cambiar configuración de `.env`
+- Cuando el sistema se comporta de forma extraña
+- Para aplicar cambios en dependencias (`npm install`)
+
+---
+
+### 💾 Script Adicional: Backup de Base de Datos
+
+Si quieres hacer respaldos de tu base de datos, crea este script:
+
+```powershell
+# backup-database.ps1
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $backupFile = "$PSScriptRoot\backups\eia_db_backup_$timestamp.sql"
@@ -1359,17 +1541,16 @@ if ($LASTEXITCODE -eq 0) {
 }
 ```
 
-### Script 5: Restaurar Backup
+---
 
-Crea `restore-database.ps1`:
+### 📋 Resumen de Comandos Rápidos
 
 ```powershell
-# C:\VLP\GitHub\sep_evaluacion_diagnostica\restore-database.ps1
-
-Write-Host "📂 Backups disponibles:" -ForegroundColor Cyan
-Get-ChildItem "$PSScriptRoot\backups\*.sql" | ForEach-Object {
-    Write-Host "  - $($_.Name)"
-}
+# COMANDOS MÁS USADOS
+.\start-dev.ps1      # Iniciar todo
+.\stop-dev.ps1       # Detener todo
+.\status-dev.ps1     # Ver estado
+.\restart-dev.ps1    # Reiniciar
 
 $backupName = Read-Host "Nombre del archivo a restaurar"
 $backupPath = "$PSScriptRoot\backups\$backupName"
