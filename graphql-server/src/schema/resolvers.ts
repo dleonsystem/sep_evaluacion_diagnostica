@@ -1556,11 +1556,22 @@ t.numero_ticket as "folio",
         const buffer = Buffer.from(archivoBase64, 'base64');
         const fileHash = crypto.createHash('sha256').update(buffer).digest('hex');
         let userToLink = context.user?.id;
-        if (!userToLink && email) {
-          const uRes = await client.query('SELECT id FROM usuarios WHERE email = $1', [
-            email.trim().toLowerCase(),
-          ]);
-          if (uRes.rows.length > 0) userToLink = uRes.rows[0].id;
+        const normalizedEmail = email ? email.trim().toLowerCase() : null;
+
+        if (normalizedEmail) {
+          const uRes = await client.query('SELECT id FROM usuarios WHERE email = $1', [normalizedEmail]);
+          if (uRes.rows.length > 0) {
+            const existingUserId = uRes.rows[0].id;
+            // Si el usuario existe pero no está autenticado, RECHAZAMOS (Seguridad US-2.1)
+            if (!context.user) {
+              throw new Error('Este correo ya está registrado en el sistema. Debes iniciar sesión antes de realizar nuevas cargas.');
+            }
+            // Si está autenticado pero con otro correo, RECHAZAMOS (opcional según política, pero recomendable)
+            if (context.user.id !== existingUserId) {
+              throw new Error('El correo proporcionado no coincide con tu sesión activa.');
+            }
+            userToLink = existingUserId;
+          }
         }
 
         let workerResult;

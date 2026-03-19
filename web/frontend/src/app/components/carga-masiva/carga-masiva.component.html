@@ -49,11 +49,11 @@
         <p class="carga__sesion-detalle" *ngIf="sesionActiva">
           Estás autenticado. Continúa con tus cargas o consulta tus archivos guardados.
         </p>
-        <p class="carga__sesion-detalle" *ngIf="!sesionActiva && tieneCredenciales">
+        <p class="carga__sesion-detalle" *ngIf="!sesionActiva && credencialesAsociadas">
           Ya generaste credenciales con tu primer envío. Inicia sesión con tu correo y la contraseña generada para
           continuar con la siguiente carga.
         </p>
-        <p class="carga__sesion-detalle" *ngIf="!sesionActiva && !tieneCredenciales">
+        <p class="carga__sesion-detalle" *ngIf="!sesionActiva && !credencialesAsociadas">
           Es tu primera carga: valida el archivo y cárgalo para generar automáticamente tu contraseña y credenciales de
           acceso.
         </p>
