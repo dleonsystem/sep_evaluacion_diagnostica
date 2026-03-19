@@ -29,6 +29,6 @@ module.exports = {
     '^@services/(.*)$': '<rootDir>/src/services/$1',
     '^@utils/(.*)$': '<rootDir>/src/utils/$1',
   },
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+//  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   verbose: true,
 };

@@ -36,8 +36,9 @@ export class AdminAuthService {
     this.authService.cerrarSesion();
 
     // 4. Guardar sesión admin
-    const tokenSimulado = btoa(`${usuario.email}:${Date.now()}`);
-    localStorage.setItem(this.tokenKey, tokenSimulado);
+    const token = usuario.token || btoa(`${usuario.email}:${Date.now()}`); // Fallback minimal
+    localStorage.setItem(this.tokenKey, token);
+    localStorage.setItem('eia-jwt', token);
     localStorage.setItem(this.correoKey, usuario.email);
     localStorage.setItem(this.rolKey, usuario.rol);
     this.autenticadoSubject.next(true);

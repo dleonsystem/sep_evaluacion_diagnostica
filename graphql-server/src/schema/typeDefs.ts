@@ -324,6 +324,7 @@ export const typeDefs = `#graphql
     apematerno: String
     rol: UserRole!
     activo: Boolean!
+    primerLogin: Boolean
     fechaRegistro: String!
     fechaUltimoAcceso: String
     centrosTrabajo: [CentroTrabajo!]!
@@ -423,6 +424,7 @@ export const typeDefs = `#graphql
   type AuthPayload {
     ok: Boolean!
     message: String
+    token: String
     user: User
   }
   
