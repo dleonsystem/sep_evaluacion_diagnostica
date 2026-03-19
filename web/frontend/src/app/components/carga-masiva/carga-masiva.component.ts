@@ -110,7 +110,9 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   }
 
   get puedeCargarTodo(): boolean {
-    return this.correoControl.valid && this.resultadosValidosSinGuardar.length > 0 && !this.guardandoTodo;
+    return (this.correoControl.valid || this.correoControl.disabled) && 
+           this.resultadosValidosSinGuardar.length > 0 && 
+           !this.guardandoTodo;
   }
 
   constructor(
@@ -407,7 +409,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         email: this.correoControl.value,
         confirmarReemplazo
       }).pipe(
-        timeout(45000),
+        timeout(120000),
         catchError(err => {
           if (err.name === 'TimeoutError') {
             return throwError(() => new Error('La carga está tomando más tiempo de lo esperado (Timeout).'));

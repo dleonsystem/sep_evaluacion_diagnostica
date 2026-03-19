@@ -277,18 +277,23 @@ async function startServer() {
           if (!authHeader) return { user: undefined, loaders, distributionService };
 
           try {
-            const token = authHeader.replace('Bearer ', '');
-            let email = '';
-
-            // 1. Intentar verificar como JWT (Estándar RF-18)
-            const decodedJwt = verifyToken(token);
-            if (decodedJwt && decodedJwt.email) {
-              email = decodedJwt.email;
+            // Extraer token de forma más robusta
+            const token = authHeader.split(' ').pop();
+            if (!token) {
+              logger.error('Token vacío en el header Authorization');
+              return { user: undefined, loaders, distributionService };
             }
 
-            if (!email) return { user: undefined, loaders, distributionService };
+            // 1. Verificar JWT
+            const decodedJwt = verifyToken(token);
+            let email = decodedJwt?.email;
 
-            // Buscar usuario real en BD
+            if (!email) {
+              logger.error('Token JWT inválido o sin email', { hasHeader: !!authHeader, tokenPrefix: token.substring(0, 10) });
+              return { user: undefined, loaders, distributionService };
+            }
+
+            // 2. Buscar usuario real (insensible a mayúsculas para mayor robustez)
             const result = await query(
               `SELECT 
                 u.id, 
@@ -296,8 +301,8 @@ async function startServer() {
                 r.codigo as rol 
                FROM usuarios u
                INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
-               WHERE u.email = $1 AND u.activo = true`,
-              [email]
+               WHERE LOWER(u.email) = LOWER($1) AND u.activo = true`,
+              [email.trim()]
             );
 
             if (result.rows.length > 0) {
@@ -306,9 +311,11 @@ async function startServer() {
                 loaders,
                 distributionService,
               };
+            } else {
+              logger.error('Sesión rechazada: Usuario del token no encontrado o inactivo', { email });
             }
-          } catch (error) {
-            logger.error('Error procesando token de contexto', error);
+          } catch (error: any) {
+            logger.error('Error fatal procesando token de contexto', { error: error.message });
           }
 
           return { user: undefined, loaders, distributionService };

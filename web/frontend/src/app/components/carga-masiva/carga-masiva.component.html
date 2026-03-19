@@ -92,7 +92,7 @@
         <p class="carga__formatos">Solo se aceptan archivos XLSX. Máximo {{ pesoMaximoMb }} MB.</p>
       </div>
 
-      <label class="carga__input" [class.carga__input--disabled]="!correoControl.valid">
+      <label class="carga__input" [class.carga__input--disabled]="correoControl.invalid">
         <input #archivoInput type="file" accept=".xlsx" multiple (change)="onArchivoSeleccionado($event)"
           [disabled]="correoControl.invalid">
         <span class="carga__boton">{{ correoControl.invalid ? 'Ingresa un correo' : 'Elegir archivos' }}</span>
