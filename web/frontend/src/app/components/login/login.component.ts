@@ -47,12 +47,8 @@ export class LoginComponent implements OnInit {
       return;
     }
 
-    this.correo = credenciales.correo;
-    this.contrasenaGuardada = credencialesPersistidas?.contrasena ?? null;
+    // No auto-poblamos campos por seguridad (petición de "sin rastro")
     this.credencialesGuardadas = Boolean(credencialesPersistidas);
-    if (!this.contrasena) {
-      this.contrasena = credenciales.contrasena;
-    }
   }
 
   async iniciarSesion(): Promise<void> {

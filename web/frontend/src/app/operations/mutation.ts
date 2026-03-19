@@ -18,6 +18,7 @@ export const AUTHENTICATE_USER_MUTATION = `
     authenticateUser(input: $input) {
       ok
       message
+      token
       user {
         id
         email

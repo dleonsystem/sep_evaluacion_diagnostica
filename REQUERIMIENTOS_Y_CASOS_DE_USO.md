@@ -199,7 +199,6 @@
   - Administrador: Acceso completo al sistema
 - **RF-14.5** El sistema debe permitir reset de contraseña por administrador
 - **RF-14.6** El sistema debe generar contraseña aleatoria en creación de usuario
-- **RF-14.7** El sistema debe enviar credenciales por email seguro
 - **RF-14.8** El sistema debe implementar gestión granular de permisos por módulo:
   - Lectura (consulta de datos)
   - Escritura (creación y modificación)

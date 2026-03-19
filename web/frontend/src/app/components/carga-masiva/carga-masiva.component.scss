@@ -291,6 +291,7 @@
   position: relative;
   overflow: hidden;
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .carga__input--disabled .carga__boton {
@@ -319,6 +320,7 @@
   font-weight: 700;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   border: none;
+  cursor: pointer;
 }
 
 .carga__boton:hover,

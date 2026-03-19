@@ -110,7 +110,9 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   }
 
   get puedeCargarTodo(): boolean {
-    return this.correoControl.valid && this.resultadosValidosSinGuardar.length > 0 && !this.guardandoTodo;
+    return (this.correoControl.valid || this.correoControl.disabled) && 
+           this.resultadosValidosSinGuardar.length > 0 && 
+           !this.guardandoTodo;
   }
 
   constructor(
@@ -366,6 +368,15 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         text: textoExito,
       });
 
+      // Limpiar el correo tras éxito para evitar que el mensaje de "ya tienes credenciales" 
+      // confunda al usuario si desea hacer una carga nueva/distinta.
+      if (!this.sesionActiva) {
+        this.correoControl.setValue('');
+        this.correoControl.markAsPristine();
+        this.correoControl.markAsUntouched();
+        this.actualizarEstadoSesion();
+      }
+
       if (resultado.escDatos && resultado.resultadoExito && resultado.pdfTipo !== 'exito') {
         await this.generarPdfExito(
           resultado,
@@ -398,7 +409,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         email: this.correoControl.value,
         confirmarReemplazo
       }).pipe(
-        timeout(45000),
+        timeout(120000),
         catchError(err => {
           if (err.name === 'TimeoutError') {
             return throwError(() => new Error('La carga está tomando más tiempo de lo esperado (Timeout).'));
@@ -469,10 +480,22 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         errorMessage.includes('ya está registrado') ||
         errorMessage.includes('already exists')
       ) {
-        // El usuario ya existe, no es un error para la carga del archivo
-        resultado.notaGuardado =
-          'El correo ya estaba registrado previamente. Usa tu contraseña original para ingresar.';
-        console.log('El usuario ya existe, omitiendo creación.');
+        // El usuario ya existe. Bloqueamos el proceso para evitar generar credenciales locales
+        // que no coincidirán con las del servidor y para proteger la cuenta existente.
+        resultado.errorGuardado = 'Este correo ya tiene una cuenta registrada.';
+        await Swal.fire({
+          icon: 'info',
+          title: 'Usuario ya registrado',
+          text: 'Para realizar una nueva carga con este correo, primero debes iniciar sesión con tu contraseña original.',
+          confirmButtonText: 'Ir a login',
+          showCancelButton: true,
+          cancelButtonText: 'Cerrar'
+        }).then((swalRes) => {
+          if (swalRes.isConfirmed) {
+            void this.router.navigate(['/login'], { queryParams: { redirect: '/carga-masiva' } });
+          }
+        });
+        return false;
       } else {
         resultado.errorGuardado =
           error instanceof Error
@@ -640,9 +663,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       this.correoControl.disable();
     } else {
       this.correoControl.enable();
-      if (credenciales?.correo && !this.correoControl.value.trim()) {
-        this.correoControl.setValue(credenciales.correo);
-      }
+      // Ya no auto-poblamos el correo desde localStorage al iniciar el componente 
+      // para cumplir con la petición de seguridad y "sin rastro".
     }
 
     this.establecerCredencialesMostradas();
@@ -651,9 +673,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   private inicializarEstadoCredenciales(): void {
     const credencialesGuardadas = this.estadoCredencialesService.obtener();
 
-    if (credencialesGuardadas && !this.correoControl.value.trim()) {
-      this.correoControl.setValue(credencialesGuardadas.correo);
-    }
+    // eliminamos la auto-población por seguridad
 
     this.establecerCredencialesMostradas();
     this.actualizarAvisoCredenciales(this.correoControl.value);
