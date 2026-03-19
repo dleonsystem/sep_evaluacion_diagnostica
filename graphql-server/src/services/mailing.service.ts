@@ -69,7 +69,7 @@ export class MailingService {
           <p>Se han generado tus credenciales de acceso para la plataforma de Evaluación Diagnóstica.</p>
           <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #e2e8f0;">
             <p style="margin: 5px 0;"><strong>Usuario/Email:</strong> ${email}</p>
-            <p style="margin: 5px 0;"><strong>Contraseña Temporal:</strong> <span style="font-family: monospace; color: #2563eb; font-weight: bold;">${passwordNew}</span></p>
+            <p style="margin: 5px 0;"><strong>Contraseña de Acceso:</strong> <span style="font-family: monospace; color: #2563eb; font-weight: bold;">${passwordNew}</span></p>
           </div>
           <p>Puedes acceder al sistema en la siguiente dirección: <a href="${process.env.APP_URL || 'http://localhost:4200'}" style="color: #2563eb; text-decoration: none; font-weight: 500;">Ir al Sistema</a></p>
         </div>
