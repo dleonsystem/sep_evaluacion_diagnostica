@@ -124,6 +124,12 @@ export const typeDefs = `#graphql
     @use-case CU-17: Entrega de Resultados
     """
     getSchoolReports(cct: String!): [SchoolReport!]!
+
+    """
+    Listar incidencias de carga de usuarios no logueados (Admin)
+    @use-case CU-13: Mesa de ayuda
+    """
+    getPublicIncidents: [Ticket!]!
   }
 
   """
@@ -271,6 +277,32 @@ export const typeDefs = `#graphql
     @use-case CU-08: Generar Reportes
     """
     simulateReportGeneration(solicitudId: ID!): Boolean!
+
+    """
+    Crear incidencia de carga para usuario no logueado
+    @use-case CU-13: Mesa de ayuda (Público)
+    """
+    createPublicIncident(input: CreatePublicIncidentInput!): Ticket!
+  }
+
+  """
+  Input para incidencia pública
+  """
+  input CreatePublicIncidentInput {
+    nombreCompleto: String!
+    cct: String!
+    email: String!
+    descripcion: String!
+    evidencias: [TicketEvidenciaInput!]
+  }
+
+  """
+  Input para evidencias
+  """
+  input TicketEvidenciaInput {
+    nombre: String!
+    base64: String!
+    tipo: String
   }
 
   """
@@ -553,6 +585,8 @@ export const typeDefs = `#graphql
     evidencias: [TicketEvidencia!]
     respuestas: [TicketRespuesta!]
     correo: String
+    nombreCompleto: String
+    cct: String
     fechaCreacion: String!
     fechaActualizacion: String!
   }
@@ -585,14 +619,6 @@ export const typeDefs = `#graphql
     descripcion: String!
     correo: String
     evidencias: [TicketEvidenciaInput!]
-  }
-
-  """
-  Input para evidencia de Ticket
-  """
-  input TicketEvidenciaInput {
-    nombre: String!
-    base64: String!
   }
 
   """

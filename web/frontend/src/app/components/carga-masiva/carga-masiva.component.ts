@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import {
   ExcelValidationService,
@@ -12,6 +12,7 @@ import Swal from 'sweetalert2';
 import { EscDatos } from '../../services/excel-validation.service';
 import { Subject, firstValueFrom, takeUntil } from 'rxjs';
 import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
+import { GraphqlService } from '../../services/graphql.service';
 import { MockPdfService } from '../../services/mock-pdf.service';
 import { UsuariosService } from '../../services/usuarios.service';
 import { EvaluacionesService } from '../../services/evaluaciones.service';
@@ -92,6 +93,19 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   credencialesAsociadas = false;
   contrasenaAsociada: string | null = null;
   guardandoTodo = false;
+  intentosFallidos = 0;
+  mostrarModalIncidencia = false;
+
+  evidenciasIncidencia: any[] = [];
+  readonly maxEvidenciasIncidencia = 5;
+  readonly extensionesEvidencias = ['.pdf', '.jpg', '.jpeg', '.png'];
+
+  readonly incidenciaForm = new FormGroup({
+    nombreCompleto: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    cct: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(10), Validators.maxLength(10)] }),
+    email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
+    descripcion: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] })
+  });
   trackByArchivo = (_: number, item: ResultadoArchivo): string =>
     `${item.archivo.name}-${item.archivo.lastModified.getTime()}`;
 
@@ -119,6 +133,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     private readonly excelValidationService: ExcelValidationService,
     private readonly authService: AuthService,
     private readonly estadoCredencialesService: EstadoCredencialesService,
+    private readonly graphqlService: GraphqlService,
     private readonly mockPdfService: MockPdfService,
     private readonly usuariosService: UsuariosService,
     private readonly evaluacionesService: EvaluacionesService,
@@ -271,6 +286,128 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
   }
 
+  private registrarIntentoFallido(): void {
+    console.log('--- Registro de Intento Fallido ---');
+    console.log('Sesión activa:', this.sesionActiva);
+    if (this.sesionActiva) {
+      console.log('Intento ignorado por sesión activa.');
+      return; 
+    }
+    
+    this.intentosFallidos++;
+    console.log('Total de intentos fallidos:', this.intentosFallidos);
+    
+    if (this.intentosFallidos >= 3) {
+      console.log('Umbral alcanzado (>=3). Abriendo modal de incidencia...');
+      this.abrirModalIncidencia();
+    }
+  }
+
+  abrirModalIncidencia(): void {
+    this.incidenciaForm.patchValue({
+       email: this.correoControl.value
+    });
+    this.mostrarModalIncidencia = true;
+  }
+
+  cerrarModalIncidencia(): void {
+    this.mostrarModalIncidencia = false;
+    this.intentosFallidos = 0; // Resetear tras cerrar o enviar
+    this.evidenciasIncidencia = [];
+  }
+
+  onEvidenciaIncidenciaSeleccionada(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const archivo = input.files?.[0];
+    input.value = '';
+
+    if (!archivo) return;
+
+    if (this.evidenciasIncidencia.length >= this.maxEvidenciasIncidencia) {
+      void Swal.fire('Límite alcanzado', `Máximo ${this.maxEvidenciasIncidencia} archivos.`, 'warning');
+      return;
+    }
+
+    const ext = archivo.name.toLowerCase().substring(archivo.name.lastIndexOf('.'));
+    if (!this.extensionesEvidencias.includes(ext)) {
+      void Swal.fire('Archivo no permitido', `Solo se aceptan: ${this.extensionesEvidencias.join(', ')}`, 'error');
+      return;
+    }
+
+    this.evidenciasIncidencia.push({
+       id: Math.random().toString(36).substring(2),
+       archivo
+    });
+  }
+
+  eliminarEvidenciaIncidencia(index: number): void {
+    this.evidenciasIncidencia.splice(index, 1);
+  }
+
+  private async fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const base64 = (reader.result as string).split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
+  }
+
+  async enviarIncidenciaPublica(): Promise<void> {
+    if (this.incidenciaForm.invalid) {
+      this.incidenciaForm.markAllAsTouched();
+      return;
+    }
+
+    try {
+      const data = this.incidenciaForm.getRawValue();
+      
+      const evidenciasBase64 = await Promise.all(
+        this.evidenciasIncidencia.map(async ev => ({
+          nombre: ev.archivo.name,
+          base64: await this.fileToBase64(ev.archivo),
+          tipo: ev.archivo.type
+        }))
+      );
+
+      const mutation = `
+        mutation CreatePublicIncident($input: CreatePublicIncidentInput!) {
+          createPublicIncident(input: $input) {
+            numeroTicket
+          }
+        }
+      `;
+      
+      const variables = {
+        input: {
+          nombreCompleto: data.nombreCompleto,
+          cct: data.cct,
+          email: data.email,
+          descripcion: data.descripcion,
+          evidencias: evidenciasBase64
+        }
+      };
+
+      await firstValueFrom(this.graphqlService.execute(mutation, variables));
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Incidencia reportada',
+        text: 'Se ha mandado correctamente su información capturada. El sistema generará un ticket para darle atención.',
+        confirmButtonColor: '#00695c'
+      });
+
+      this.cerrarModalIncidencia();
+      this.incidenciaForm.reset();
+    } catch (error) {
+      console.error('Error enviando incidencia:', error);
+      await Swal.fire('Error', 'No se pudo enviar el reporte en este momento.', 'error');
+    }
+  }
+
   async guardarArchivo(resultado: ResultadoArchivo): Promise<void> {
     if (this.correoControl.invalid) {
       this.correoControl.markAllAsTouched();
@@ -395,6 +532,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         title: 'Error de carga',
         text: resultado.errorGuardado,
       });
+      this.registrarIntentoFallido();
     } finally {
       resultado.guardando = false;
     }
@@ -797,6 +935,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     resultadoArchivo.mensajeInformativo =
       resultadoArchivo.mensajeInformativo ??
       this.construirMensajeDeteccion(resultadoArchivo.tipoDetectado, resultadoArchivo.errores[0]);
+    this.registrarIntentoFallido();
     await this.generarPdfErrores(resultadoArchivo);
   }
 
@@ -910,15 +1049,4 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     return `Archivo detectado: ${etiqueta}.`;
   }
 
-  private async fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const base64String = reader.result as string;
-        resolve(base64String.split(',')[1]);
-      };
-      reader.onerror = (error) => reject(error);
-    });
-  }
 }

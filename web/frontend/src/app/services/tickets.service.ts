@@ -11,6 +11,8 @@ export interface Ticket {
   estado: string;
   prioridad: string;
   correo?: string;
+  nombreCompleto?: string;
+  cct?: string;
   fechaCreacion: string;
   fechaActualizacion: string;
   evidencias?: Array<{ nombre: string; url: string; size?: number }>;
@@ -172,6 +174,62 @@ export class TicketsService {
         if (res.errors) throw new Error(res.errors[0].message);
         if (!res.data?.downloadTicketEvidencia) throw new Error('No se pudo descargar la evidencia');
         return res.data.downloadTicketEvidencia;
+      })
+    );
+  }
+
+  getPublicIncidents(): Observable<Ticket[]> {
+    const query = `
+      query GetPublicIncidents {
+        getPublicIncidents {
+          id
+          numeroTicket
+          asunto
+          descripcion
+          estado
+          prioridad
+          correo
+          nombreCompleto
+          cct
+          fechaCreacion
+          fechaActualizacion
+          respuestas {
+            id
+            mensaje
+            fecha
+            autor
+            esInterno
+          }
+        }
+      }
+    `;
+    return this.graphqlService.execute<{ getPublicIncidents: Ticket[] }>(query).pipe(
+      map(res => {
+        if (res.errors) throw new Error(res.errors[0].message);
+        return res.data?.getPublicIncidents || [];
+      })
+    );
+  }
+
+  createPublicIncident(input: { nombreCompleto: string; cct: string; email: string; descripcion: string }): Observable<Ticket> {
+    const mutation = `
+      mutation CreatePublicIncident($nombreCompleto: String!, $cct: String!, $email: String!, $descripcion: String!) {
+        createPublicIncident(nombreCompleto: $nombreCompleto, cct: $cct, email: $email, descripcion: $descripcion) {
+          id
+          numeroTicket
+          asunto
+          descripcion
+          estado
+          prioridad
+          fechaCreacion
+        }
+      }
+    `;
+    return this.graphqlService.execute<{ createPublicIncident: Ticket }>(mutation, input).pipe(
+      map(res => {
+        if (res.errors) throw new Error(res.errors[0].message);
+        if (!res.data?.createPublicIncident) throw new Error('No se pudo crear la incidencia');
+        return res.data.createPublicIncident;
       })
     );
   }

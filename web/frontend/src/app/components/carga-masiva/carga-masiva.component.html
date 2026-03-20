@@ -274,8 +274,7 @@
         <h3>Hoja ESC (datos de la escuela)</h3>
         <ul>
           <li>CCT de 10 caracteres (ej. 01DJN0000A) en la celda junto a la etiqueta “CCT”.</li>
-          <li>Turno seleccionado de la lista: Matutino, Vespertino, Nocturno, Discontinuo, Tiempo Completo o Jornada
-            Ampliada.</li>
+          <li>Turno seleccionado de la lista: Matutino, Vespertino, Nocturno, Discontinuo, Tiempo Completo o Jornada Ampliada.</li>
           <li>Nombre de la escuela en mayúsculas.</li>
           <li>Correo electrónico de contacto válido.</li>
         </ul>
@@ -292,11 +291,96 @@
         <h3>Estatus de validación</h3>
         <ul>
           <li>Al seleccionar el archivo se muestra “Validando tu archivo…”.</li>
-          <li>Si las reglas se cumplen, se confirma la fecha disponible (hoy + 4 días) y al cargar se generan las
-            credenciales.</li>
+          <li>Si las reglas se cumplen, se confirma la fecha disponible (hoy + 4 días) y al cargar se generan las credenciales.</li>
           <li>Si hay errores, revisa la lista anterior, corrige en Excel y vuelve a cargar.</li>
         </ul>
       </div>
     </div>
   </section>
+
+  <!-- MODAL DE INCIDENCIAS PÚBLICAS -->
+  <div class="carga__modal-overlay" *ngIf="mostrarModalIncidencia" (click)="cerrarModalIncidencia()">
+    <div class="carga__modal" (click)="$event.stopPropagation()">
+      <div class="carga__modal-header">
+        <div class="carga__modal-icono">🆘</div>
+        <h3>Reportar Problema de Carga</h3>
+        <button type="button" class="carga__modal-close" (click)="cerrarModalIncidencia()">&times;</button>
+      </div>
+      
+      <div class="carga__modal-body">
+        <p class="carga__modal-aviso">
+          <strong>Usted ya excedió el número de solicitudes para cargar su RFV.</strong> 
+          Para poder orientarlo proporcione la siguiente información:
+        </p>
+
+        <form [formGroup]="incidenciaForm" (ngSubmit)="enviarIncidenciaPublica()" class="carga__modal-form">
+          <label class="carga__campo">
+            <span class="carga__campo-label">Nombre completo</span>
+            <input type="text" formControlName="nombreCompleto" placeholder="Escriba su nombre completo">
+            <span class="carga__error-hint" *ngIf="incidenciaForm.get('nombreCompleto')?.touched && incidenciaForm.get('nombreCompleto')?.errors?.['required']">
+              Este campo es obligatorio
+            </span>
+          </label>
+
+          <div class="carga__modal-row">
+            <label class="carga__campo">
+              <span class="carga__campo-label">CCT de su escuela</span>
+              <input type="text" formControlName="cct" placeholder="CCT (10 caracteres)">
+              <span class="carga__error-hint" *ngIf="incidenciaForm.get('cct')?.touched && (incidenciaForm.get('cct')?.errors?.['minlength'] || incidenciaForm.get('cct')?.errors?.['maxlength'] || incidenciaForm.get('cct')?.errors?.['required'])">
+                El CCT debe tener exactamente 10 caracteres
+              </span>
+            </label>
+            <label class="carga__campo">
+              <span class="carga__campo-label">Correo electrónico</span>
+              <input type="email" formControlName="email" placeholder="correo@ejemplo.com">
+              <span class="carga__error-hint" *ngIf="incidenciaForm.get('email')?.touched && incidenciaForm.get('email')?.errors?.['email']">
+                Correo inválido
+              </span>
+            </label>
+          </div>
+
+          <label class="carga__campo">
+            <span class="carga__campo-label">Describa brevemente su situación</span>
+            <textarea formControlName="descripcion" rows="4" placeholder="Explique qué error le marca el sistema..."></textarea>
+            <span class="carga__error-hint" *ngIf="incidenciaForm.get('descripcion')?.touched && incidenciaForm.get('descripcion')?.errors?.['minlength']">
+              Mínimo 5 caracteres
+            </span>
+          </label>
+
+          <!-- SECCIÓN DE EVIDENCIAS (NUEVO) -->
+          <div class="carga__incidencia-evidencias">
+            <span class="carga__campo-label">Adjuntar evidencias (opcional)</span>
+            <p class="carga__campo-ayuda">Capturas de pantalla o documentos que ayuden a entender el error (Máx. 5 archivos, solo PDF/JPG/PNG)</p>
+            
+            <div class="carga__evidencias-lista" *ngIf="evidenciasIncidencia.length > 0">
+              <div class="carga__evidencia-item" *ngFor="let ev of evidenciasIncidencia; let i = index">
+                <span class="carga__evidencia-nombre" [title]="ev.archivo.name">
+                  <i class="bi bi-file-earmark-image"></i> {{ ev.archivo.name }}
+                </span>
+                <button type="button" class="carga__evidencia-quitar" (click)="eliminarEvidenciaIncidencia(i)">
+                  <i class="bi bi-x-circle-fill"></i>
+                </button>
+              </div>
+            </div>
+
+            <label class="carga__boton-adjuntar" *ngIf="evidenciasIncidencia.length < maxEvidenciasIncidencia">
+              <input type="file" (change)="onEvidenciaIncidenciaSeleccionada($event)" [accept]="extensionesEvidencias.join(',')" hidden>
+              <i class="bi bi-paperclip"></i> Agregar archivo
+            </label>
+          </div>
+
+          <p class="carga__modal-footer-info">
+            <i class="bi bi-info-circle"></i> 
+            El sistema generará un ticket para darle atención a través del correo de dudas 
+            <strong>ejercicios&#64;nube.sep.gob.mx</strong>
+          </p>
+
+          <div class="carga__modal-acciones">
+            <button type="button" class="carga__boton-secundario" (click)="cerrarModalIncidencia()">Cancelar</button>
+            <button type="submit" class="carga__boton-primario">Mandar información</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 </section>
