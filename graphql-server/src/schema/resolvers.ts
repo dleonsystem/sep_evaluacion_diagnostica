@@ -1023,6 +1023,35 @@ t.numero_ticket as "folio",
         };
       }
     },
+
+    /**
+     * Descargar una evidencia de ticket (Imagen, PDF, etc)
+     * @use-case CU-13: Mesa de ayuda
+     */
+    downloadTicketEvidencia: async (_: any, { url }: { url: string }, context: GraphQLContext) => {
+      // Nota: Idealmente validaríamos que el usuario tiene acceso a este ticket
+      if (!context.user) throw new Error('No autorizado');
+
+      try {
+        const buffer = await sftpService.downloadBuffer(url);
+        if (!buffer) throw new Error('No se pudo encontrar el archivo en el servidor SFTP');
+
+        const fileName = url.split('/').pop() || 'evidencia';
+
+        return {
+          success: true,
+          fileName,
+          contentBase64: buffer.toString('base64'),
+        };
+      } catch (error: any) {
+        logger.error('Error en downloadTicketEvidencia', { url, error: error.message });
+        return {
+          success: false,
+          fileName: '',
+          contentBase64: '',
+        };
+      }
+    },
   },
 
   Mutation: {
@@ -1373,9 +1402,13 @@ t.numero_ticket as "folio",
         const seq = seqRes.rows[0].seq;
         const numeroTicket = `TKT-${ymd}-${seq.toString().padStart(4, '0')}`;
 
-        // 3. Procesar evidencias (Guardar archivos)
+        // 3. Procesar evidencias (Guardar archivos en SFTP)
         const evidenciasProcesadas = [];
         if (evidencias && evidencias.length > 0) {
+          // Asegurar directorio remoto para tickets (dentro de /upload)
+          const remoteDir = '/upload/tickets';
+          await sftpService.ensureDir(remoteDir);
+
           for (const evidencia of evidencias) {
             // US-2.7: Restricción de archivos Excel en evidencias de tickets
             const ext = evidencia.nombre.toLowerCase();
@@ -1385,24 +1418,38 @@ t.numero_ticket as "folio",
               );
             }
 
-            // En un entorno real, guardaríamos el base64 en disco/S3.
-            // Aquí simularemos generando una ruta.
-            const fileName = `ticket_${numeroTicket}_${Date.now()}_${evidencia.nombre}`;
-            const filePath = `storage/tickets/${fileName}`;
+            const fileName = `ticket_${numeroTicket}_${Date.now()}_${evidencia.nombre.replace(/\s+/g, '_')}`;
+            const remotePath = `${remoteDir}/${fileName}`;
+
+            // Convertir a Buffer y subir a SFTP
+            const buffer = Buffer.from(evidencia.base64, 'base64');
+            const uploaded = await sftpService.uploadBuffer(buffer, remotePath);
+
+            if (!uploaded) {
+              throw new Error(`Error al subir la evidencia ${evidencia.nombre} al servidor remoto.`);
+            }
 
             evidenciasProcesadas.push({
               nombre: evidencia.nombre,
-              url: filePath,
-              size: Math.round(evidencia.base64.length * 0.75), // Aproximación
+              url: remotePath,
+              size: buffer.length,
             });
           }
+        }
+
+        // Lógica de Priorización Automática (SLA)
+        let prioridad = 'MEDIA';
+        const keywordsHigh = ['urgente', 'bloqueo', 'no puedo', 'error', 'credenciales', 'acceso', 'falla'];
+        const textToAnalyze = `${motivo} ${descripcion}`.toLowerCase();
+        if (keywordsHigh.some(kw => textToAnalyze.includes(kw))) {
+          prioridad = 'ALTA';
         }
 
         // 4. Insertar Ticket
         const insertRes = await client.query(
           `INSERT INTO tickets_soporte 
             (numero_ticket, usuario_id, asunto, descripcion, estado, prioridad, evidencias, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, fn_catalogo_id('cat_estado_ticket', 'ABIERTO'), 'MEDIA', $5, NOW(), NOW())
+           VALUES ($1, $2, $3, $4, fn_catalogo_id('cat_estado_ticket', 'ABIERTO'), $5, $6, NOW(), NOW())
            RETURNING 
             id, 
             numero_ticket as "numeroTicket", 
@@ -1413,7 +1460,7 @@ t.numero_ticket as "folio",
             updated_at as "fechaActualizacion",
             prioridad,
             estado`,
-          [numeroTicket, userId, motivo, descripcion, JSON.stringify(evidenciasProcesadas)]
+          [numeroTicket, userId, motivo, descripcion, prioridad, JSON.stringify(evidenciasProcesadas)]
         );
 
         await client.query('COMMIT');

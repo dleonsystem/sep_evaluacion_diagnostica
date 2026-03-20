@@ -114,6 +114,12 @@ export const typeDefs = `#graphql
     downloadMaterial(id: ID!): FileDownload!
 
     """
+    Descargar una evidencia de ticket (Imagen, PDF, etc)
+    @use-case CU-13: Mesa de ayuda
+    """
+    downloadTicketEvidencia(url: String!): FileDownload!
+
+    """
     Listar reportes consolidados por escuela (CCT)
     @use-case CU-17: Entrega de Resultados
     """

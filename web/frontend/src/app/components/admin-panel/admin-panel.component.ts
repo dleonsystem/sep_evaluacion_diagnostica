@@ -577,6 +577,7 @@ export class AdminPanelComponent implements OnInit {
         nombre: e.nombre,
         tamano: e.size || 0,
         tipo: 'archivo',
+        url: e.url
       })),
     };
   }
@@ -819,6 +820,57 @@ export class AdminPanelComponent implements OnInit {
       mensaje: `Tipo de archivo no permitido: ${nombres}. Solo PDF, XLSX, JPG, Word o ZIP.`,
     };
   }
+
+  async descargarEvidencia(evidencia: { nombre: string; url: string }): Promise<void> {
+    try {
+      Swal.fire({
+        title: 'Descargando...',
+        text: 'Obteniendo archivo del servidor seguro',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const result = await firstValueFrom(this.ticketsService.downloadTicketEvidencia(evidencia.url));
+      
+      if (!result.success) {
+        throw new Error('El servidor no pudo entregar el archivo');
+      }
+
+      // Convertir base64 a Blob
+      const byteCharacters = atob(result.contentBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      
+      // Intentar determinar MIME type por extensión
+      let mimeType = 'application/octet-stream';
+      const ext = evidencia.nombre.toLowerCase().split('.').pop();
+      if (['jpg', 'jpeg'].includes(ext!)) mimeType = 'image/jpeg';
+      else if (ext === 'png') mimeType = 'image/png';
+      else if (ext === 'pdf') mimeType = 'application/pdf';
+      else if (ext === 'doc') mimeType = 'application/msword';
+      else if (ext === 'docx') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+      const blob = new Blob([byteArray], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = result.fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      Swal.close();
+    } catch (error: any) {
+      Swal.fire('Error', error.message || 'No se pudo descargar el archivo', 'error');
+    }
+  }
 }
 
 interface ExcelDisponible {
@@ -844,5 +896,5 @@ interface TicketSoporte {
   fecha: string;
   estatus: 'pendiente' | 'en-proceso' | 'respondido';
   respuestas: Array<{ mensaje: string; fecha: string; autor: 'admin' }>;
-  evidencias: Array<{ nombre: string; tamano: number; tipo: string }>;
+  evidencias: Array<{ nombre: string; tamano: number; tipo: string; url: string }>;
 }
