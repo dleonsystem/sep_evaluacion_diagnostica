@@ -254,7 +254,7 @@
                         <div class="admin-panel__ticket-evidencias" *ngIf="ticket.evidencias.length">
                           <strong>Evidencias:</strong>
                           <ul class="admin-panel__evidencia-list">
-                            <li *ngFor="let evidencia of ticket.evidencias">
+                            <li *ngFor="let evidencia of ticket.evidencias" (click)="descargarEvidencia(evidencia)" style="cursor: pointer; text-decoration: underline; color: #00695c;">
                               <i class="bi bi-file-earmark-arrow-down"></i> {{ evidencia.nombre }}
                             </li>
                           </ul>

@@ -85,30 +85,44 @@
   </form>
 
   <section class="tickets__historial" *ngIf="ticketsCreados.length">
-    <h2>Tickets creados</h2>
-    <div class="tickets__historial-card" *ngFor="let ticket of ticketsCreados">
-      <div>
-        <p class="tickets__historial-folio">Folio: <strong>{{ ticket.folio }}</strong></p>
-        <p class="tickets__historial-motivo">
-          {{ ticket.motivo }}
-          <span *ngIf="ticket.motivoDetalle">({{ ticket.motivoDetalle }})</span>
-        </p>
-        <p class="tickets__historial-descripcion">{{ ticket.descripcion }}</p>
-      </div>
-      <div class="tickets__historial-meta">
-        <span>Evidencias: {{ ticket.evidencias.length }}</span>
-        <span>Estatus: {{ ticket.estatus }}</span>
-      </div>
-      <ul class="tickets__historial-evidencias" *ngIf="ticket.evidencias.length">
-        <li *ngFor="let evidencia of ticket.evidencias">
-          {{ evidencia.nombre }}
-        </li>
-      </ul>
-      <div class="tickets__historial-respuestas" *ngIf="ticket.respuestas?.length">
-        <h3>Respuesta del administrador</h3>
-        <div class="tickets__historial-respuesta" *ngFor="let respuesta of ticket.respuestas">
-          <p>{{ respuesta.mensaje }}</p>
-          <span>{{ respuesta.fecha | date: 'medium' }}</span>
+    <h2 class="tickets__historial-titulo">Historial de tickets realizados</h2>
+    <div class="tickets__historial-grid">
+      <div class="tickets__card" *ngFor="let ticket of ticketsCreados">
+        <div class="tickets__card-header">
+          <span class="tickets__card-folio">#{{ ticket.folio }}</span>
+          <div class="tickets__card-badges">
+            <span class="tickets__badge tickets__badge--prioridad" [ngClass]="'tickets__badge--' + ticket.prioridad.toLowerCase()">
+              {{ ticket.prioridad }}
+            </span>
+            <span class="tickets__badge tickets__badge--estatus" [ngClass]="'tickets__badge--' + ticket.estatus">
+              {{ ticket.estatus | uppercase }}
+            </span>
+          </div>
+        </div>
+
+        <div class="tickets__card-body">
+          <h3 class="tickets__card-asunto">{{ ticket.motivo }}</h3>
+          <p class="tickets__card-descripcion">{{ ticket.descripcion }}</p>
+          <p class="tickets__card-fecha">Enviado: {{ ticket.fecha | date:'short' }}</p>
+        </div>
+
+        <div class="tickets__card-evidencias" *ngIf="ticket.evidencias.length">
+          <p class="tickets__card-subtitle">Evidencias adjuntas:</p>
+          <ul>
+            <li *ngFor="let evidencia of ticket.evidencias" (click)="descargarEvidencia(evidencia)" class="tickets__evidencia-link">
+              <i class="bi bi-file-earmark-text"></i> {{ evidencia.nombre }}
+            </li>
+          </ul>
+        </div>
+
+        <div class="tickets__card-respuestas" *ngIf="ticket.respuestas?.length">
+          <div class="tickets__respuesta" *ngFor="let respuesta of ticket.respuestas">
+            <div class="tickets__respuesta-header">
+              <strong>Respuesta de Soporte</strong>
+              <span>{{ respuesta.fecha | date:'short' }}</span>
+            </div>
+            <p class="tickets__respuesta-mensaje">{{ respuesta.mensaje }}</p>
+          </div>
         </div>
       </div>
     </div>

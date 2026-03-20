@@ -120,11 +120,58 @@ export class TicketsService {
     );
   }
 
+  createTicket(input: { motivo: string; descripcion: string; correo: string | null; evidencias: any[] }): Observable<Ticket> {
+    const mutation = `
+      mutation CreateTicket($input: CreateTicketInput!) {
+        createTicket(input: $input) {
+          id
+          numeroTicket
+          asunto
+          descripcion
+          estado
+          prioridad
+          fechaCreacion
+          evidencias {
+            nombre
+            url
+            size
+          }
+        }
+      }
+    `;
+    return this.graphqlService.execute<{ createTicket: Ticket }>(mutation, { input }).pipe(
+      map(res => {
+        if (res.errors) throw new Error(res.errors[0].message);
+        if (!res.data?.createTicket) throw new Error('No se pudo crear el ticket');
+        return res.data.createTicket;
+      })
+    );
+  }
+
   exportTicketsCSV(): Observable<{ success: boolean; fileName: string; contentBase64: string }> {
     return this.graphqlService.execute<{ exportTicketsCSV: any }>(EXPORT_TICKETS_CSV).pipe(
       map(res => {
         if (res.errors) throw new Error(res.errors[0].message);
         return res.data?.exportTicketsCSV;
+      })
+    );
+  }
+
+  downloadTicketEvidencia(url: string): Observable<{ success: boolean; fileName: string; contentBase64: string }> {
+    const query = `
+      query DownloadTicketEvidencia($url: String!) {
+        downloadTicketEvidencia(url: $url) {
+          success
+          fileName
+          contentBase64
+        }
+      }
+    `;
+    return this.graphqlService.execute<{ downloadTicketEvidencia: { success: boolean; fileName: string; contentBase64: string } }>(query, { url }).pipe(
+      map(res => {
+        if (res.errors) throw new Error(res.errors[0].message);
+        if (!res.data?.downloadTicketEvidencia) throw new Error('No se pudo descargar la evidencia');
+        return res.data.downloadTicketEvidencia;
       })
     );
   }
