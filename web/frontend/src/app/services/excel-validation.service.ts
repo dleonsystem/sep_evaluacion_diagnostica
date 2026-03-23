@@ -1,4 +1,6 @@
 import { Injectable } from '@angular/core';
+import { GraphqlService } from './graphql.service';
+import { firstValueFrom } from 'rxjs';
 
 export interface EscDatos {
   cct: string;
@@ -36,6 +38,7 @@ export interface ResultadoDeteccionNivel {
 
 @Injectable({ providedIn: 'root' })
 export class ExcelValidationService {
+  constructor(private readonly graphql: GraphqlService) { }
   private xlsxPromise: Promise<any> | null = null;
   // Hojas base (centralizadas para evitar duplicidad de nombres).
   private readonly hojasBase = {
@@ -400,6 +403,87 @@ export class ExcelValidationService {
       '*Educación socioemocional / Tutoría'
     ]
   };
+  /**
+   * Valida una CCT según el algoritmo oficial (Elemento Verificador)
+   * @psp Algorithm - CCT Verification
+   */
+  public validarFormatoCCT(cct: string): { isValid: boolean; error?: string } {
+    if (!cct) return { isValid: false, error: 'La CCT es requerida.' };
+
+    const cleanCCT = cct.trim().toUpperCase();
+
+    if (cleanCCT.length !== 10) {
+      return { isValid: false, error: 'La CCT debe tener exactamente 10 caracteres.' };
+    }
+
+    const regex = /^[0-9]{2}[A-Z]{3}[0-9]{4}[0-9A-Z]$/;
+    if (!regex.test(cleanCCT)) {
+      return { isValid: false, error: 'El formato de la CCT es incorrecto (ej: 01DJN0000A).' };
+    }
+
+    try {
+      const base = cleanCCT.substring(0, 9);
+      const digitVerificador = cleanCCT.substring(9, 10);
+
+      const conversion: Record<string, number> = {
+        '0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9,
+        'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8, 'I': 9, 'J': 10,
+        'K': 11, 'L': 12, 'M': 13, 'N': 14, 'O': 15, 'P': 16, 'Q': 17, 'R': 18, 'S': 19,
+        'T': 20, 'U': 21, 'V': 22, 'W': 23, 'X': 24, 'Y': 25, 'Z': 26
+      };
+
+      const pesos = [2, 3, 4, 5, 6, 7, 8, 9, 10];
+      let suma = 0;
+
+      for (let i = 0; i < 9; i++) {
+        const char = base[i];
+        const valor = conversion[char];
+        if (valor === undefined) throw new Error('Caracter no válido');
+        suma += valor * pesos[i];
+      }
+
+      const residuo = suma % 37;
+      let calculado: string;
+
+      if (residuo >= 0 && residuo <= 9) {
+        calculado = residuo.toString();
+      } else {
+        calculado = String.fromCharCode(65 + residuo - 10);
+      }
+
+      if (digitVerificador !== calculado) {
+        return {
+          isValid: false,
+          error: `Dígito verificador incorrecto. Esperado: ${calculado}, Encontrado: ${digitVerificador}`
+        };
+      }
+
+      return { isValid: true };
+    } catch (e) {
+      return { isValid: false, error: 'Error al procesar algoritmo CCT.' };
+    }
+  }
+
+  /**
+   * Verifica si la CCT existe en la base de datos
+   */
+  public async verificarCctEnBaseDeDatos(cct: string): Promise<boolean> {
+    const QUERY = `
+      query CheckCct($clave: String!) {
+        getCCT(clave: $clave) {
+          id
+        }
+      }
+    `;
+    try {
+      const res = await firstValueFrom(this.graphql.execute<{ getCCT: any }>(QUERY, { clave: cct }));
+      return !!res.data?.getCCT;
+    } catch (error) {
+      console.error('Error al verificar CCT', error);
+      return false;
+    }
+  }
+
   async detectarTipoArchivo(buffer: ArrayBuffer): Promise<TipoArchivoCarga | null> {
     const resultado = await this.detectarNivelConDetalle(buffer);
     return resultado.nivel;
@@ -451,6 +535,16 @@ export class ExcelValidationService {
         break;
     }
     resultado.nivel = nivel;
+
+    // Validar existencia de CCT en BD (Requerimiento funcional excel)
+    if (resultado.ok && resultado.esc?.cct) {
+      const existe = await this.verificarCctEnBaseDeDatos(resultado.esc.cct);
+      if (!existe) {
+        resultado.ok = false;
+        resultado.errores.push(`La CCT ${resultado.esc.cct} no está registrada en el sistema. Por favor, asegúrese de que esté en el catálogo de escuelas.`);
+      }
+    }
+
     return resultado;
   }
 
@@ -753,8 +847,11 @@ export class ExcelValidationService {
 
     if (!cct) {
       errores.push('Captura la CCT en la hoja ESC.');
-    } else if (!/^[0-9]{2}[A-Z]{3}[0-9]{4}[A-Z]$/.test(cct)) {
-      errores.push('La CCT debe tener 10 caracteres alfanuméricos (ejemplo: 01DJN0000A).');
+    } else {
+      const vFormat = this.validarFormatoCCT(cct);
+      if (!vFormat.isValid) {
+        errores.push(vFormat.error!);
+      }
     }
 
     if (!turno) {

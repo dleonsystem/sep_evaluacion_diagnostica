@@ -124,6 +124,21 @@ export const typeDefs = `#graphql
     @use-case CU-17: Entrega de Resultados
     """
     getSchoolReports(cct: String!): [SchoolReport!]!
+
+    """
+    Listar escuelas (Catálogo)
+    @use-case CU-14: Administrar Catálogo de Escuelas
+    """
+    listEscuelas(
+      limit: Int = 10
+      offset: Int = 0
+      filtro: String
+    ): EscuelaConnection!
+    
+    """
+    Obtener escuela por ID
+    """
+    getEscuela(id: ID!): Escuela
   }
 
   """
@@ -271,6 +286,24 @@ export const typeDefs = `#graphql
     @use-case CU-08: Generar Reportes
     """
     simulateReportGeneration(solicitudId: ID!): Boolean!
+
+    """
+    Crear nueva escuela
+    @use-case CU-14: Administrar Catálogo de Escuelas
+    """
+    createEscuela(input: CreateEscuelaInput!): Escuela!
+
+    """
+    Actualizar escuela existente
+    @use-case CU-14: Administrar Catálogo de Escuelas
+    """
+    updateEscuela(id: ID!, input: UpdateEscuelaInput!): Escuela!
+
+    """
+    Eliminar escuela (Lógico)
+    @use-case CU-14: Administrar Catálogo de Escuelas
+    """
+    deleteEscuela(id: ID!): DeleteResponse!
   }
 
   """
@@ -361,6 +394,77 @@ export const typeDefs = `#graphql
     nivel: NivelEducativo!
     turno: String!
     usuarios: [User!]!
+  }
+
+  """
+  Escuela (Modelo refined según ESTRUCTURA_DE_DATOS.md)
+  @use-case CU-14: Administrar Catálogo de Escuelas
+  """
+  type Escuela {
+    id: ID!
+    cct: String!
+    nombre: String!
+    estado: String
+    cp: String
+    telefono: String
+    email: String
+    director: String
+    activo: Boolean!
+    turno: Turno
+    nivel: NivelEducativo
+    entidadFederativa: EntidadFederativa
+    cicloEscolar: CicloEscolar
+    created_at: String!
+    updated_at: String!
+  }
+
+  type Turno {
+    id: Int!
+    nombre: String!
+    codigo: String!
+  }
+
+  type EntidadFederativa {
+    id: Int!
+    nombre: String!
+    abreviatura: String
+  }
+
+  type CicloEscolar {
+    id: Int!
+    nombre: String!
+    activo: Boolean!
+  }
+
+  type EscuelaConnection {
+    nodes: [Escuela!]!
+    totalCount: Int!
+  }
+
+  input CreateEscuelaInput {
+    cct: String!
+    nombre: String!
+    id_turno: Int!
+    id_nivel: Int!
+    id_entidad: Int!
+    id_ciclo: Int!
+    email: String
+    telefono: String
+    director: String
+    cp: String
+  }
+
+  input UpdateEscuelaInput {
+    nombre: String
+    id_turno: Int
+    id_nivel: Int
+    id_entidad: Int
+    id_ciclo: Int
+    email: String
+    telefono: String
+    director: String
+    cp: String
+    activo: Boolean
   }
   
   """
