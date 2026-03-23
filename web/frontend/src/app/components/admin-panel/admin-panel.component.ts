@@ -10,6 +10,7 @@ import {
 } from '../../services/tickets.service';
 import { UsuariosService, UsuarioCreado } from '../../services/usuarios.service';
 import { EscuelasService, Escuela, EscuelaInput } from '../../services/escuelas.service';
+import { ExcelValidationService } from '../../services/excel-validation.service';
 import Swal from 'sweetalert2';
 import { firstValueFrom } from 'rxjs';
 
@@ -120,6 +121,7 @@ export class AdminPanelComponent implements OnInit {
     private readonly ticketsService: TicketsService,
     private readonly usuariosService: UsuariosService,
     private readonly escuelasService: EscuelasService,
+    private readonly excelValidationService: ExcelValidationService,
     private readonly router: Router,
   ) { }
 
@@ -969,6 +971,12 @@ export class AdminPanelComponent implements OnInit {
   async guardarEscuela(): Promise<void> {
     if (!this.nuevaEscuela.cct || !this.nuevaEscuela.nombre) {
       await Swal.fire('Error', 'CCT y Nombre son obligatorios', 'error');
+      return;
+    }
+
+    const vCct = this.excelValidationService.validarFormatoCCT(this.nuevaEscuela.cct);
+    if (!vCct.isValid) {
+      await Swal.fire('Error de Formato', vCct.error, 'error');
       return;
     }
 

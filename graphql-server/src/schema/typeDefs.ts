@@ -624,6 +624,20 @@ export const typeDefs = `#graphql
     grado: Int
     alumnosProcesados: Int
     errores: [String!]
+    erroresEstructurados: [ExcelValidationError!]
+  }
+
+  """
+  Error detallado de validación en Excel
+  """
+  type ExcelValidationError {
+    fila: Int
+    columna: String
+    campo: String
+    error: String!
+    valorEncontrado: String
+    valorEsperado: String
+    hoja: String
   }
 
   """

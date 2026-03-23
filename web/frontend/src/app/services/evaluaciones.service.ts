@@ -12,12 +12,23 @@ export interface UploadExcelInput {
     confirmarReemplazo?: boolean;
 }
 
+export interface ExcelValidationError {
+    fila?: number;
+    columna?: string;
+    campo?: string;
+    error: string;
+    valorEncontrado?: string;
+    valorEsperado?: string;
+    hoja?: string;
+}
+
 export interface ExcelUploadResult {
     cct?: string;
     nivel?: string;
     grado?: number;
     alumnosProcesados: number;
     errores?: string[];
+    erroresEstructurados?: ExcelValidationError[];
 }
 
 export interface UploadExcelResponse {
