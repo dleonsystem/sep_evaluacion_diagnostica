@@ -359,9 +359,9 @@ CREATE TABLE escuelas (
 	id_ciclo       INT NOT NULL REFERENCES cat_ciclos_escolares(id_ciclo),
 	created_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
-	CONSTRAINT uq_escuelas_cct UNIQUE (cct),
+	CONSTRAINT uq_escuelas_cct_turno UNIQUE (cct, id_turno),
 	CONSTRAINT chk_escuelas_email CHECK (email IS NULL OR email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
-	CONSTRAINT chk_escuelas_cct_format CHECK (cct ~ '^[0-9]{2}[A-Z]{1}[A-Z0-9]{7}$')
+	CONSTRAINT chk_escuelas_cct_format CHECK (cct ~ '^[0-9]{2}[A-Z]{3}[0-9]{4}[0-9A-Z]$')
 );
 
 CREATE TABLE grupos (

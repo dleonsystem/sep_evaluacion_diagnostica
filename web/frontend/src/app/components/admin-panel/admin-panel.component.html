@@ -254,7 +254,8 @@
                         <div class="admin-panel__ticket-evidencias" *ngIf="ticket.evidencias.length">
                           <strong>Evidencias:</strong>
                           <ul class="admin-panel__evidencia-list">
-                            <li *ngFor="let evidencia of ticket.evidencias" (click)="descargarEvidencia(evidencia)" style="cursor: pointer; text-decoration: underline; color: #00695c;">
+                            <li *ngFor="let evidencia of ticket.evidencias" (click)="descargarEvidencia(evidencia)"
+                              style="cursor: pointer; text-decoration: underline; color: #00695c;">
                               <i class="bi bi-file-earmark-arrow-down"></i> {{ evidencia.nombre }}
                             </li>
                           </ul>
@@ -312,6 +313,74 @@
             </button>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section class="admin-panel__escuelas">
+      <h3>Catálogo de Escuelas (CCT)</h3>
+      <div class="admin-panel__filters">
+        <label class="admin-panel__filters-field">
+          <span class="admin-panel__filters-label">Buscar escuela</span>
+          <input class="admin-panel__filters-input" type="text" [(ngModel)]="filtroEscuelaTexto"
+            (ngModelChange)="cargarEscuelas()" placeholder="CCT o Nombre" />
+        </label>
+        <div class="admin-panel__users-actions" *ngIf="esCoordinadorFederal">
+          <button class="admin-panel__upload-button" (click)="abrirModalEscuela()">
+            <i class="bi bi-plus-circle-fill"></i> Nueva Escuela
+          </button>
+        </div>
+      </div>
+
+      <div class="admin-panel__table-container">
+        <table class="admin-panel__table">
+          <thead>
+            <tr>
+              <th>CCT</th>
+              <th>Nombre de la Escuela</th>
+              <th>Turno</th>
+              <th>Nivel</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let esc of escuelas">
+              <td><strong>{{ esc.cct }}</strong></td>
+              <td>{{ esc.nombre }}</td>
+              <td>{{ esc.turno.nombre }}</td>
+              <td>{{ esc.nivel }}</td>
+              <td>{{ esc.entidadFederativa.nombre }}</td>
+              <td>
+                <div class="admin-panel__actions-cell">
+                  <button class="admin-panel__action-btn" (click)="abrirModalEscuela(esc)" title="Editar">
+                    <i class="bi bi-pencil-fill"></i>
+                  </button>
+                  <button class="admin-panel__action-btn primary-guinda" (click)="eliminarEscuela(esc)"
+                    title="Eliminar">
+                    <i class="bi bi-trash-fill"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="!escuelas.length">
+              <td colspan="6" class="text-center">No hay escuelas registradas.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="admin-panel__pagination" *ngIf="totalEscuelas > 10">
+        <button class="admin-panel__pagination-button" type="button" [disabled]="paginaEscuelasActual === 1"
+          (click)="irAPaginaEscuelas(paginaEscuelasActual - 1)">
+          Anterior
+        </button>
+        <button class="admin-panel__pagination-button" type="button" (click)="irAPaginaEscuelas(paginaEscuelasActual)">
+          {{ paginaEscuelasActual }}
+        </button>
+        <button class="admin-panel__pagination-button" type="button"
+          [disabled]="paginaEscuelasActual * 10 >= totalEscuelas" (click)="irAPaginaEscuelas(paginaEscuelasActual + 1)">
+          Siguiente
+        </button>
       </div>
     </section>
 
@@ -443,6 +512,62 @@
         <button class="admin-panel__upload-button" type="button" (click)="crearUsuario()"
           [disabled]="!nuevoUsuario.email || !nuevoUsuario.nombre || !nuevoUsuario.rol">
           <i class="bi bi-person-check-fill"></i> Crear y enviar accesos
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Escuela Modal (CU-14) -->
+  <div class="admin-panel__modal-overlay" *ngIf="mostrarModalEscuela" (click)="cerrarModalEscuela()">
+    <div class="admin-panel__modal" (click)="$event.stopPropagation()">
+      <div class="admin-panel__modal-header">
+        <h3>{{ editandoEscuela ? 'Editar' : 'Nueva' }} Escuela</h3>
+        <button class="admin-panel__close-btn" (click)="cerrarModalEscuela()">&times;</button>
+      </div>
+      <div class="admin-panel__modal-body">
+        <div class="admin-panel__form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div class="admin-panel__action-group">
+            <label for="esc-cct">Clave CCT *</label>
+            <input id="esc-cct" type="text" class="admin-panel__filters-input" [(ngModel)]="nuevaEscuela.cct"
+              [disabled]="editandoEscuela" placeholder="01DJN0000A">
+          </div>
+          <div class="admin-panel__action-group">
+            <label for="esc-nombre">Nombre de la Escuela *</label>
+            <input id="esc-nombre" type="text" class="admin-panel__filters-input" [(ngModel)]="nuevaEscuela.nombre">
+          </div>
+          <div class="admin-panel__action-group">
+            <label for="esc-turno">Turno *</label>
+            <select id="esc-turno" class="admin-panel__filters-input" [(ngModel)]="nuevaEscuela.id_turno">
+              <option *ngFor="let t of turnosCat" [value]="t.id">{{ t.nombre }}</option>
+            </select>
+          </div>
+          <div class="admin-panel__action-group">
+            <label for="esc-nivel">Nivel Educativo *</label>
+            <select id="esc-nivel" class="admin-panel__filters-input" [(ngModel)]="nuevaEscuela.id_nivel">
+              <option *ngFor="let n of nivelesCat" [value]="n.id">{{ n.nombre }}</option>
+            </select>
+          </div>
+          <div class="admin-panel__action-group" style="grid-column: span 2;">
+            <label for="esc-director">Director</label>
+            <input id="esc-director" type="text" class="admin-panel__filters-input" [(ngModel)]="nuevaEscuela.director">
+          </div>
+          <div class="admin-panel__action-group">
+            <label for="esc-email">Email de Contacto</label>
+            <input id="esc-email" type="email" class="admin-panel__filters-input" [(ngModel)]="nuevaEscuela.email">
+          </div>
+          <div class="admin-panel__action-group">
+            <label for="esc-cp">Código Postal</label>
+            <input id="esc-cp" type="text" class="admin-panel__filters-input" [(ngModel)]="nuevaEscuela.cp">
+          </div>
+        </div>
+      </div>
+      <div class="admin-panel__modal-footer">
+        <button class="admin-panel__upload-button gray" type="button" (click)="cerrarModalEscuela()">
+          Cancelar
+        </button>
+        <button class="admin-panel__upload-button" type="button" (click)="guardarEscuela()"
+          [disabled]="!nuevaEscuela.cct || !nuevaEscuela.nombre">
+          <i class="bi bi-save-fill"></i> {{ editandoEscuela ? 'Actualizar' : 'Crear' }} Escuela
         </button>
       </div>
     </div>
