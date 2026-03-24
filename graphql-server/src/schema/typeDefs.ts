@@ -126,19 +126,10 @@ export const typeDefs = `#graphql
     getSchoolReports(cct: String!): [SchoolReport!]!
 
     """
-    Listar escuelas (Catálogo)
-    @use-case CU-14: Administrar Catálogo de Escuelas
+    Listar incidencias de carga de usuarios no logueados (Admin)
+    @use-case CU-13: Mesa de ayuda
     """
-    listEscuelas(
-      limit: Int = 10
-      offset: Int = 0
-      filtro: String
-    ): EscuelaConnection!
-    
-    """
-    Obtener escuela por ID
-    """
-    getEscuela(id: ID!): Escuela
+    getPublicIncidents: [Ticket!]!
   }
 
   """
@@ -288,22 +279,30 @@ export const typeDefs = `#graphql
     simulateReportGeneration(solicitudId: ID!): Boolean!
 
     """
-    Crear nueva escuela
-    @use-case CU-14: Administrar Catálogo de Escuelas
+    Crear incidencia de carga para usuario no logueado
+    @use-case CU-13: Mesa de ayuda (Público)
     """
-    createEscuela(input: CreateEscuelaInput!): Escuela!
+    createPublicIncident(input: CreatePublicIncidentInput!): Ticket!
+  }
 
-    """
-    Actualizar escuela existente
-    @use-case CU-14: Administrar Catálogo de Escuelas
-    """
-    updateEscuela(id: ID!, input: UpdateEscuelaInput!): Escuela!
+  """
+  Input para incidencia pública
+  """
+  input CreatePublicIncidentInput {
+    nombreCompleto: String!
+    cct: String!
+    email: String!
+    descripcion: String!
+    evidencias: [TicketEvidenciaInput!]
+  }
 
-    """
-    Eliminar escuela (Lógico)
-    @use-case CU-14: Administrar Catálogo de Escuelas
-    """
-    deleteEscuela(id: ID!): DeleteResponse!
+  """
+  Input para evidencias
+  """
+  input TicketEvidenciaInput {
+    nombre: String!
+    base64: String!
+    tipo: String
   }
 
   """
@@ -671,6 +670,8 @@ export const typeDefs = `#graphql
     evidencias: [TicketEvidencia!]
     respuestas: [TicketRespuesta!]
     correo: String
+    nombreCompleto: String
+    cct: String
     fechaCreacion: String!
     fechaActualizacion: String!
   }
@@ -703,14 +704,6 @@ export const typeDefs = `#graphql
     descripcion: String!
     correo: String
     evidencias: [TicketEvidenciaInput!]
-  }
-
-  """
-  Input para evidencia de Ticket
-  """
-  input TicketEvidenciaInput {
-    nombre: String!
-    base64: String!
   }
 
   """

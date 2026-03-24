@@ -48,6 +48,13 @@ export class AdminPanelComponent implements OnInit {
   estatusTicketSeleccionado: TicketSoporte['estatus'] = 'pendiente';
   filtroTicketTexto = '';
   filtroTicketEstatus: 'todos' | TicketSoporte['estatus'] = 'todos';
+  
+  // Incidencias Públicas
+  incidenciasPublicas: TicketSoporte[] = [];
+  incidenciaSeleccionadaId: string | null = null;
+  filtroIncidenciaTexto = '';
+  filtroIncidenciaEstatus: 'todos' | TicketSoporte['estatus'] = 'todos';
+  tabSoporteActiva: 'usuarios' | 'publico' = 'usuarios';
   paginaActual = 1;
   tamanioPagina = 10;
   readonly opcionesTamanioPagina = [10, 20, 30, 50];
@@ -129,6 +136,7 @@ export class AdminPanelComponent implements OnInit {
     this.uploadHistory = this.loadUploadHistory();
     this.cargarExcelDisponibles();
     this.cargarTicketsSoporte();
+    this.cargarIncidenciasPublicas();
     this.cargarUsuarios();
     this.cargarEscuelas();
   }
@@ -599,10 +607,14 @@ export class AdminPanelComponent implements OnInit {
   }
 
   private mapTicketDBToUI(t: TicketDB): TicketSoporte {
+    // Para incidencias públicas, usamos los campos específicos si existen
+    const dbCasteada = t as any;
     return {
       id: t.id,
       folio: t.numeroTicket,
-      correo: (t as any).correo || 'Anónimo',
+      correo: t.correo || dbCasteada.user_email || 'Sin correo',
+      nombreCompleto: dbCasteada.nombreCompleto || 'Usuario Registrado',
+      cct: dbCasteada.cct || 'N/D',
       motivo: t.asunto,
       motivoDetalle: t.asunto,
       descripcion: t.descripcion,
@@ -611,7 +623,7 @@ export class AdminPanelComponent implements OnInit {
       respuestas: (t.respuestas || []).map(r => ({
         mensaje: r.mensaje,
         fecha: r.fecha,
-        autor: 'admin' // Backend returns email, we map to 'admin' for UI logic if needed
+        autor: 'admin' 
       })),
       evidencias: (t.evidencias || []).map((e) => ({
         nombre: e.nombre,
@@ -620,6 +632,30 @@ export class AdminPanelComponent implements OnInit {
         url: e.url
       })),
     };
+  }
+
+  async cargarIncidenciasPublicas(): Promise<void> {
+    try {
+      const tickets = await firstValueFrom(this.ticketsService.getPublicIncidents());
+      this.incidenciasPublicas = tickets.map(t => this.mapTicketDBToUI(t));
+    } catch (error) {
+      console.error('Error al cargar incidencias públicas', error);
+    }
+  }
+
+  get incidenciasPublicasFiltradas(): TicketSoporte[] {
+    return this.incidenciasPublicas.filter(t => {
+      const cumpleTexto = !this.filtroIncidenciaTexto ||
+        t.folio.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()) ||
+        t.correo.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()) ||
+        (t.nombreCompleto && t.nombreCompleto.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()));
+      const cumpleEstatus = this.filtroIncidenciaEstatus === 'todos' || t.estatus === this.filtroIncidenciaEstatus;
+      return cumpleTexto && cumpleEstatus;
+    });
+  }
+
+  seleccionarIncidencia(incidencia: TicketSoporte): void {
+    this.incidenciaSeleccionadaId = (this.incidenciaSeleccionadaId === incidencia.id) ? null : incidencia.id;
   }
 
   private mapEstatusDBToUI(estado: string): TicketSoporte['estatus'] {
@@ -1045,10 +1081,13 @@ interface TicketSoporte {
   id: string;
   folio: string;
   correo: string;
+  nombreCompleto?: string;
+  cct?: string;
   motivo: string;
   motivoDetalle: string;
   descripcion: string;
   fecha: string;
+  prioridad?: string;
   estatus: 'pendiente' | 'en-proceso' | 'respondido';
   respuestas: Array<{ mensaje: string; fecha: string; autor: 'admin' }>;
   evidencias: Array<{ nombre: string; tamano: number; tipo: string; url: string }>;

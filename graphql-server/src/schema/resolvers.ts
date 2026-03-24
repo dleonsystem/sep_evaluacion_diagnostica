@@ -670,7 +670,7 @@ t.id,
     t.updated_at as "fechaActualizacion"
           FROM tickets_soporte t
           LEFT JOIN usuarios u ON t.usuario_id = u.id
-          WHERE t.deleted_at IS NULL
+          WHERE t.deleted_at IS NULL AND t.usuario_id IS NOT NULL
           ORDER BY t.created_at DESC
   `);
         return result.rows.map((row) => ({
@@ -685,6 +685,49 @@ t.id,
       } catch (error) {
         logger.error('Error fetching all tickets', { error });
         throw new Error('Error al obtener los tickets');
+      }
+    },
+
+    /**
+     * Listar incidencias de carga de usuarios no logueados (Admin)
+     * @use-case CU-13: Mesa de ayuda
+     */
+    getPublicIncidents: async (_: any, __: any, context: GraphQLContext) => {
+      // Validar que sea admin (Coordinador Federal o Estatal)
+      if (
+        !context.user ||
+        !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)
+      ) {
+        throw new Error('No autorizado');
+      }
+
+      try {
+        const result = await query(`
+          SELECT 
+            t.id, 
+            t.numero_ticket as "numeroTicket", 
+            t.asunto, 
+            t.descripcion, 
+            (SELECT codigo FROM cat_estado_ticket WHERE id = t.estado) as estado,
+            t.prioridad,
+            t.evidencias,
+            t.user_email as "correo",
+            t.user_fullname as "nombreCompleto",
+            t.user_cct as "cct",
+            t.created_at as "fechaCreacion",
+            t.updated_at as "fechaActualizacion"
+          FROM tickets_soporte t
+          WHERE t.deleted_at IS NULL AND t.usuario_id IS NULL
+          ORDER BY t.created_at DESC
+        `);
+        return result.rows.map((row) => ({
+          ...row,
+          fechaCreacion: row.fechaCreacion instanceof Date ? row.fechaCreacion.toISOString() : row.fechaCreacion,
+          fechaActualizacion: row.fechaActualizacion instanceof Date ? row.fechaActualizacion.toISOString() : row.fechaActualizacion,
+        }));
+      } catch (error) {
+        logger.error('Error fetching public incidents', { error });
+        throw new Error('Error al obtener las incidencias públicas');
       }
     },
 
@@ -2338,122 +2381,89 @@ t.numero_ticket as "folio",
       if (!context.user) throw new Error('No autorizado');
       return reportConsolidatorService.simulateProcessing(solicitudId);
     },
-
     /**
-     * Crear nueva escuela
+     * Crear incidencia de carga para usuario no logueado
+     * @use-case CU-13: Mesa de ayuda (Público)
      */
-    createEscuela: async (_: any, { input }: { input: any }) => {
-      // Validate CCT
-      const validation = validateCCT(input.cct);
-      if (!validation.isValid) {
-        throw new Error(validation.error);
-      }
-
+    createPublicIncident: async (_: any, { input }: any) => {
+      const { nombreCompleto, cct, email, descripcion, evidencias } = input;
+      const client = await getClient();
       try {
-        // Check uniqueness (cct, turno)
-        const existing = await query(
-          'SELECT id FROM escuelas WHERE cct = $1 AND id_turno = $2',
-          [input.cct, input.id_turno]
-        );
-        if (existing.rows.length > 0) {
-          throw new Error('Ya existe una escuela con esa CCT y turno');
-        }
+        await client.query('BEGIN');
 
-        const result = await query(
-          `INSERT INTO escuelas 
-            (cct, nombre, id_turno, id_nivel, id_entidad, id_ciclo, email, telefono, director, cp)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-          RETURNING id`,
-          [
-            input.cct, input.nombre, input.id_turno, input.id_nivel,
-            input.id_entidad, input.id_ciclo, input.email, input.telefono,
-            input.director, input.cp
-          ]
-        );
+        // 1. Generar número de ticket
+        const now = new Date();
+        const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        const seqRes = await client.query("SELECT nextval('seq_numero_ticket') as seq");
+        const seq = seqRes.rows[0].seq;
+        const numeroTicket = `PUB-${ymd}-${seq.toString().padStart(4, '0')}`;
 
-        const newId = result.rows[0].id;
-        const fresh = await query(
-          `SELECT e.*, t.nombre as turno_nombre, t.codigo as turno_codigo, ne.codigo as nivel_codigo
-           FROM escuelas e 
-           LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
-           LEFT JOIN cat_niveles_educativos ne ON e.id_nivel = ne.id_nivel
-           WHERE e.id = $1`,
-          [newId]
-        );
-        const row = fresh.rows[0];
-        return {
-          ...row,
-          turno: { id: row.id_turno, nombre: row.turno_nombre, codigo: row.turno_codigo },
-          nivel: row.nivel_codigo,
-          created_at: row.created_at?.toISOString?.() || row.created_at,
-          updated_at: row.updated_at?.toISOString?.() || row.updated_at
-        };
-      } catch (error: any) {
-        logger.error('Error creating escuela', error);
-        throw new Error(error.message || 'Error al crear escuela');
-      }
-    },
+        // 3. Procesar evidencias
+        const evidenciasProcesadas = [];
+        if (evidencias && evidencias.length > 0) {
+          const remoteDir = '/upload/tickets/public';
+          // @ts-ignore
+          const { sftpService } = await import('../services/sftp.service');
+          await sftpService.ensureDir(remoteDir);
 
-    /**
-     * Actualizar escuela existente
-     */
-    updateEscuela: async (_: any, { id, input }: { id: string, input: any }) => {
-      try {
-        const updates: string[] = [];
-        const values: any[] = [];
-        let paramIndex = 1;
+          for (const evidencia of evidencias) {
+            const fileName = `pub_${numeroTicket}_${Date.now()}_${evidencia.nombre.replace(/\s+/g, '_')}`;
+            const remotePath = `${remoteDir}/${fileName}`;
+            const buffer = Buffer.from(evidencia.base64, 'base64');
+            const uploaded = await sftpService.uploadBuffer(buffer, remotePath);
 
-        for (const [key, value] of Object.entries(input)) {
-          if (value !== undefined) {
-            if (key === 'cct') {
-              const validation = validateCCT(value as string);
-              if (!validation.isValid) throw new Error(validation.error);
+            if (uploaded) {
+              evidenciasProcesadas.push({
+                nombre: evidencia.nombre,
+                url: remotePath,
+                size: buffer.length
+              });
             }
-            updates.push(`${key} = $${paramIndex++}`);
-            values.push(value);
           }
         }
 
-        if (updates.length > 0) {
-          values.push(id);
-          await query(
-            `UPDATE escuelas SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${paramIndex}`,
-            values
+        // 4. Insertar en TICKETS_SOPORTE (Ajustado a campos reales)
+        const insertRes = await client.query(
+          `INSERT INTO tickets_soporte (
+            numero_ticket, asunto, descripcion, estado, prioridad, 
+            user_fullname, user_cct, user_email, created_at, updated_at, usuario_id
+          ) VALUES ($1, $2, $3, fn_catalogo_id('cat_estado_ticket', 'ABIERTO'), 'ALTA', $4, $5, $6, NOW(), NOW(), NULL) RETURNING id`,
+          [numeroTicket, 'Incidencia en Carga Masiva', descripcion, nombreCompleto, cct, email]
+        );
+
+        const ticketId = insertRes.rows[0].id;
+
+        // 5. Guardar evidencias en la BD
+        for (const ev of evidenciasProcesadas) {
+          await client.query(
+            `INSERT INTO archivos_frv (ticket_id, nombre_archivo, ruta_archivo, tipo_archivo, size_archivo, fecha_carga)
+             VALUES ($1, $2, $3, $4, $5, NOW())`,
+            [ticketId, ev.nombre, ev.url, 'evidencia', ev.size]
           );
         }
 
-        const fresh = await query(
-          `SELECT e.*, t.nombre as turno_nombre, t.codigo as turno_codigo, ne.codigo as nivel_codigo
-           FROM escuelas e 
-           LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
-           LEFT JOIN cat_niveles_educativos ne ON e.id_nivel = ne.id_nivel
-           WHERE e.id = $1`,
-          [id]
-        );
-        const row = fresh.rows[0];
+        await client.query('COMMIT');
+
         return {
-          ...row,
-          turno: { id: row.id_turno, nombre: row.turno_nombre, codigo: row.turno_codigo },
-          nivel: row.nivel_codigo,
-          created_at: row.created_at?.toISOString?.() || row.created_at,
-          updated_at: row.updated_at?.toISOString?.() || row.updated_at
+          id: ticketId,
+          numeroTicket,
+          asunto: 'Incidencia en Carga Masiva',
+          descripcion,
+          estado: 'PENDIENTE',
+          prioridad: 'ALTA',
+          nombreCompleto,
+          cct,
+          correo: email,
+          evidencias: evidenciasProcesadas,
+          fechaCreacion: now.toISOString(),
+          fechaActualizacion: now.toISOString()
         };
       } catch (error) {
-        logger.error('Error updating escuela', { id, error });
-        throw new Error('Error al actualizar escuela');
-      }
-    },
-
-    /**
-     * Eliminar escuela (Lógico)
-     */
-    deleteEscuela: async (_: any, { id }: { id: string }) => {
-      try {
-        await query('UPDATE escuelas SET activo = false, updated_at = NOW() WHERE id = $1', [id]);
-        return { success: true, message: 'Escuela eliminada exitosamente' };
-      } catch (error) {
-        logger.error('Error deleting escuela', { id, error });
-        throw new Error('Error al eliminar escuela');
+        await client.query('ROLLBACK');
+        logger.error('Error creating public incident DB:', { error });
+        throw new Error(`Error en Base de Datos: ${(error as Error).message}`);
+      } finally {
+        client.release();
       }
     }
   },
