@@ -8,7 +8,7 @@
 # ============================================
 
 Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "   📊 ESTADO DEL SISTEMA EIA - SEP" -ForegroundColor Cyan
+Write-Host "   ESTADO DEL SISTEMA EIA - SEP" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
 
 # ============================================
@@ -18,31 +18,31 @@ Write-Host "━━━ Node.js ━━━" -ForegroundColor Yellow
 try {
     $nodeVersion = node --version 2>$null
     if ($nodeVersion) {
-        Write-Host "   ✅ Instalado: " -NoNewline -ForegroundColor Green
+        Write-Host "   [OK] Instalado: " -NoNewline -ForegroundColor Green
         Write-Host "$nodeVersion" -ForegroundColor White
         
         # Verificar si es versión correcta (18.x o 20.x)
         if ($nodeVersion -match "v1[89]\.|v20\.") {
-            Write-Host "   ✅ Versión compatible (LTS)" -ForegroundColor Green
+            Write-Host "   [OK] Version compatible (LTS)" -ForegroundColor Green
         } else {
-            Write-Host "   ⚠️  Versión no LTS (recomendado: v18 o v20)" -ForegroundColor Yellow
+            Write-Host "   [!] Version no LTS (recomendado: v18 o v20)" -ForegroundColor Yellow
         }
     } else {
-        Write-Host "   ❌ No instalado" -ForegroundColor Red
+        Write-Host "   [ERROR] No instalado" -ForegroundColor Red
     }
 } catch {
-    Write-Host "   ❌ Error al verificar Node.js" -ForegroundColor Red
+    Write-Host "   [ERROR] Error al verificar Node.js" -ForegroundColor Red
 }
 
 # NPM
 try {
     $npmVersion = npm --version 2>$null
     if ($npmVersion) {
-        Write-Host "   ✅ npm: " -NoNewline -ForegroundColor Green
+        Write-Host "   [OK] npm: " -NoNewline -ForegroundColor Green
         Write-Host "$npmVersion" -ForegroundColor White
     }
 } catch {
-    Write-Host "   ❌ npm no encontrado" -ForegroundColor Red
+    Write-Host "   [ERROR] npm no encontrado" -ForegroundColor Red
 }
 
 # ============================================
@@ -52,14 +52,14 @@ Write-Host "`n━━━ Angular CLI ━━━" -ForegroundColor Yellow
 try {
     $ngVersion = ng version 2>&1
     if ($ngVersion -match "Angular CLI: (\d+\.\d+\.\d+)") {
-        Write-Host "   ✅ Instalado: " -NoNewline -ForegroundColor Green
+        Write-Host "   [OK] Instalado: " -NoNewline -ForegroundColor Green
         Write-Host "$($matches[1])" -ForegroundColor White
     } else {
-        Write-Host "   ❌ No instalado" -ForegroundColor Red
+        Write-Host "   [ERROR] No instalado" -ForegroundColor Red
         Write-Host "   Instalar con: npm install -g @angular/cli" -ForegroundColor Gray
     }
 } catch {
-    Write-Host "   ❌ No instalado o no encontrado en PATH" -ForegroundColor Red
+    Write-Host "   [ERROR] No instalado o no encontrado en PATH" -ForegroundColor Red
 }
 
 # ============================================
@@ -71,26 +71,26 @@ $pgService = Get-Service *postgres* -ErrorAction SilentlyContinue
 
 if ($pgService) {
     if ($pgService.Status -eq 'Running') {
-        Write-Host "   ✅ Servicio: " -NoNewline -ForegroundColor Green
+        Write-Host "   [OK] Servicio: " -NoNewline -ForegroundColor Green
         Write-Host "Corriendo ($($pgService.Name))" -ForegroundColor White
     } else {
-        Write-Host "   ⚠️  Servicio: " -NoNewline -ForegroundColor Yellow
-        Write-Host "$($pgService.Status) (no está corriendo)" -ForegroundColor White
+        Write-Host "   [!] Servicio: " -NoNewline -ForegroundColor Yellow
+        Write-Host "$($pgService.Status) (no esta corriendo)" -ForegroundColor White
     }
     
     # Intentar conectar a la base de datos
     try {
         $pgVersion = psql -U postgres -d eia_db -c "SELECT version();" -t 2>$null
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "   ✅ Base de datos 'eia_db': Accesible" -ForegroundColor Green
+            Write-Host "   [OK] Base de datos 'eia_db': Accesible" -ForegroundColor Green
         } else {
-            Write-Host "   ⚠️  Base de datos 'eia_db': No accesible" -ForegroundColor Yellow
+            Write-Host "   [!] Base de datos 'eia_db': No accesible" -ForegroundColor Yellow
         }
     } catch {
-        Write-Host "   ⚠️  No se pudo verificar la conexión a la BD" -ForegroundColor Yellow
+        Write-Host "   [!] No se pudo verificar la conexion a la BD" -ForegroundColor Yellow
     }
 } else {
-    Write-Host "   ❌ PostgreSQL no encontrado como servicio" -ForegroundColor Red
+    Write-Host "   [ERROR] PostgreSQL no encontrado como servicio" -ForegroundColor Red
 }
 
 # ============================================
@@ -105,31 +105,31 @@ if ($port4000) {
     $processId = $port4000.OwningProcess
     $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
     
-    Write-Host "   ✅ Puerto 4000: " -NoNewline -ForegroundColor Green
+    Write-Host "   [OK] Puerto 4000: " -NoNewline -ForegroundColor Green
     Write-Host "ESCUCHANDO (PID: $processId)" -ForegroundColor White
     
     # Verificar endpoint health
     try {
         $response = Invoke-WebRequest -Uri "http://localhost:4000/health" -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop
         if ($response.StatusCode -eq 200) {
-            Write-Host "   ✅ Health Check: " -NoNewline -ForegroundColor Green
+            Write-Host "   [OK] Health Check: " -NoNewline -ForegroundColor Green
             Write-Host "OK (HTTP $($response.StatusCode))" -ForegroundColor White
         }
     } catch {
-        Write-Host "   ⚠️  Health Check: No responde" -ForegroundColor Yellow
+        Write-Host "   [!] Health Check: No responde" -ForegroundColor Yellow
     }
     
     # Verificar endpoint GraphQL
     try {
         $responseGQL = Invoke-WebRequest -Uri "http://localhost:4000/graphql" -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop
-        Write-Host "   ✅ GraphQL Endpoint: " -NoNewline -ForegroundColor Green
+        Write-Host "   [OK] GraphQL Endpoint: " -NoNewline -ForegroundColor Green
         Write-Host "Accesible" -ForegroundColor White
     } catch {
-        Write-Host "   ⚠️  GraphQL Endpoint: No responde" -ForegroundColor Yellow
+        Write-Host "   [!] GraphQL Endpoint: No responde" -ForegroundColor Yellow
     }
 } else {
-    Write-Host "   ❌ Puerto 4000: NO ESCUCHANDO" -ForegroundColor Red
-    Write-Host "   Backend GraphQL no está corriendo" -ForegroundColor Gray
+    Write-Host "   [ERROR] Puerto 4000: NO ESCUCHANDO" -ForegroundColor Red
+    Write-Host "   Backend GraphQL no esta corriendo" -ForegroundColor Gray
 }
 
 # ============================================
@@ -144,22 +144,22 @@ if ($port4200) {
     $processId = $port4200.OwningProcess
     $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
     
-    Write-Host "   ✅ Puerto 4200: " -NoNewline -ForegroundColor Green
+    Write-Host "   [OK] Puerto 4200: " -NoNewline -ForegroundColor Green
     Write-Host "ESCUCHANDO (PID: $processId)" -ForegroundColor White
     
-    # Verificar aplicación
+    # Verificar aplicacion
     try {
         $response = Invoke-WebRequest -Uri "http://localhost:4200" -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop
         if ($response.StatusCode -eq 200) {
-            Write-Host "   ✅ Aplicación Web: " -NoNewline -ForegroundColor Green
+            Write-Host "   [OK] Aplicacion Web: " -NoNewline -ForegroundColor Green
             Write-Host "Accesible (HTTP $($response.StatusCode))" -ForegroundColor White
         }
     } catch {
-        Write-Host "   ⚠️  Aplicación Web: No responde" -ForegroundColor Yellow
+        Write-Host "   [!] Aplicacion Web: No responde" -ForegroundColor Yellow
     }
 } else {
-    Write-Host "   ❌ Puerto 4200: NO ESCUCHANDO" -ForegroundColor Red
-    Write-Host "   Frontend Angular no está corriendo" -ForegroundColor Gray
+    Write-Host "   [ERROR] Puerto 4200: NO ESCUCHANDO" -ForegroundColor Red
+    Write-Host "   Frontend Angular no esta corriendo" -ForegroundColor Gray
 }
 
 # ============================================
@@ -170,21 +170,21 @@ Write-Host "`n━━━ Procesos Node.js Activos ━━━" -ForegroundColor Yel
 $nodeProcesses = Get-Process -Name node -ErrorAction SilentlyContinue
 
 if ($nodeProcesses) {
-    Write-Host "   📊 Total de procesos Node.js: $($nodeProcesses.Count)" -ForegroundColor Cyan
+    Write-Host "   [INFO] Total de procesos Node.js: $($nodeProcesses.Count)" -ForegroundColor Cyan
     
     $nodeProcesses | ForEach-Object {
         $mem = [math]::Round($_.WorkingSet64 / 1MB, 2)
-        Write-Host "      • PID: $($_.Id) | RAM: $mem MB" -ForegroundColor Gray
+        Write-Host "      - PID: $($_.Id) | RAM: $mem MB" -ForegroundColor Gray
     }
 } else {
-    Write-Host "   ℹ️  No hay procesos de Node.js corriendo" -ForegroundColor Gray
+    Write-Host "   [INFO] No hay procesos de Node.js corriendo" -ForegroundColor Gray
 }
 
 # ============================================
 # RESUMEN FINAL
 # ============================================
 Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "   📝 RESUMEN" -ForegroundColor Cyan
+Write-Host "   RESUMEN" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
 # Contar servicios activos
@@ -201,16 +201,16 @@ Write-Host "   Servicios activos: $servicesActive de $servicesTotal" -Foreground
 Write-Host ""
 
 if ($servicesActive -eq $servicesTotal) {
-    Write-Host "   ✅ SISTEMA COMPLETAMENTE OPERATIVO" -ForegroundColor Green
+    Write-Host "   [OK] SISTEMA COMPLETAMENTE OPERATIVO" -ForegroundColor Green
     Write-Host ""
-    Write-Host "   🌐 URLs de acceso:" -ForegroundColor Cyan
-    Write-Host "      • Backend:  http://localhost:4000/graphql" -ForegroundColor White
-    Write-Host "      • Frontend: http://localhost:4200" -ForegroundColor White
+    Write-Host "   URLs de acceso:" -ForegroundColor Cyan
+    Write-Host "      - Backend:  http://localhost:4000/graphql" -ForegroundColor White
+    Write-Host "      - Frontend: http://localhost:4200" -ForegroundColor White
 } elseif ($servicesActive -gt 0) {
-    Write-Host "   ⚠️  SISTEMA PARCIALMENTE OPERATIVO" -ForegroundColor Yellow
-    Write-Host "   Algunos servicios no están corriendo" -ForegroundColor Gray
+    Write-Host "   [!] SISTEMA PARCIALMENTE OPERATIVO" -ForegroundColor Yellow
+    Write-Host "   Algunos servicios no estan corriendo" -ForegroundColor Gray
 } else {
-    Write-Host "   ❌ SISTEMA NO OPERATIVO" -ForegroundColor Red
+    Write-Host "   [ERROR] SISTEMA NO OPERATIVO" -ForegroundColor Red
     Write-Host "   Ejecuta .\start-dev.ps1 para iniciar" -ForegroundColor Gray
 }
 
