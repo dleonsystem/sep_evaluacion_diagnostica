@@ -394,6 +394,77 @@ export const typeDefs = `#graphql
     turno: String!
     usuarios: [User!]!
   }
+
+  """
+  Escuela (Modelo refined según ESTRUCTURA_DE_DATOS.md)
+  @use-case CU-14: Administrar Catálogo de Escuelas
+  """
+  type Escuela {
+    id: ID!
+    cct: String!
+    nombre: String!
+    estado: String
+    cp: String
+    telefono: String
+    email: String
+    director: String
+    activo: Boolean!
+    turno: Turno
+    nivel: NivelEducativo
+    entidadFederativa: EntidadFederativa
+    cicloEscolar: CicloEscolar
+    created_at: String!
+    updated_at: String!
+  }
+
+  type Turno {
+    id: Int!
+    nombre: String!
+    codigo: String!
+  }
+
+  type EntidadFederativa {
+    id: Int!
+    nombre: String!
+    abreviatura: String
+  }
+
+  type CicloEscolar {
+    id: Int!
+    nombre: String!
+    activo: Boolean!
+  }
+
+  type EscuelaConnection {
+    nodes: [Escuela!]!
+    totalCount: Int!
+  }
+
+  input CreateEscuelaInput {
+    cct: String!
+    nombre: String!
+    id_turno: Int!
+    id_nivel: Int!
+    id_entidad: Int!
+    id_ciclo: Int!
+    email: String
+    telefono: String
+    director: String
+    cp: String
+  }
+
+  input UpdateEscuelaInput {
+    nombre: String
+    id_turno: Int
+    id_nivel: Int
+    id_entidad: Int
+    id_ciclo: Int
+    email: String
+    telefono: String
+    director: String
+    cp: String
+    activo: Boolean
+  }
   
   """
   Niveles educativos
@@ -552,6 +623,20 @@ export const typeDefs = `#graphql
     grado: Int
     alumnosProcesados: Int
     errores: [String!]
+    erroresEstructurados: [ExcelValidationError!]
+  }
+
+  """
+  Error detallado de validación en Excel
+  """
+  type ExcelValidationError {
+    fila: Int
+    columna: String
+    campo: String
+    error: String!
+    valorEncontrado: String
+    valorEsperado: String
+    hoja: String
   }
 
   """

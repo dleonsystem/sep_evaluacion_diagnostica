@@ -15,12 +15,23 @@ export interface SchoolMetadata {
   correo: string;
 }
 
+export interface ExcelValidationError {
+  fila?: number;
+  columna?: string;
+  campo?: string;
+  error: string;
+  valorEncontrado?: string;
+  valorEsperado?: string;
+  hoja?: string;
+}
+
 export interface ParsedAssessmentData {
   cct: string;
   nivel: string;
   grado: number;
   alumnos: ParsedStudent[];
   metadata: SchoolMetadata;
+  erroresEstructurados?: ExcelValidationError[];
 }
 
 const TURNOS_VALIDOS = new Set([
@@ -49,83 +60,98 @@ const COLUMNAS_SECUNDARIA: Record<string, string[]> = {
 
 export function parseExcelAssessmentBuffer(buffer: Buffer): ParsedAssessmentData {
   const workbook = XLSX.read(buffer, { type: 'buffer' });
-  const errors: string[] = [];
+  const allErrors: ExcelValidationError[] = [];
 
   if (!workbook.SheetNames.includes('ESC')) {
-    throw new Error('No se encontró la hoja obligatoria "ESC".');
+    allErrors.push({ error: 'No se encontró la hoja obligatoria "ESC".', hoja: 'General' });
+    return { cct: '', nivel: '', grado: 0, alumnos: [], metadata: {} as any, erroresEstructurados: allErrors };
   }
 
   const escSheet = workbook.Sheets.ESC;
-  const escData = extractEscData(escSheet, errors);
+  const escData = extractEscData(escSheet, allErrors);
   const nivel = detectLevel(workbook.SheetNames, escSheet);
+
   if (!nivel) {
-    errors.push('No se pudo identificar el nivel educativo del archivo.');
+    allErrors.push({ error: 'No se pudo identificar el nivel educativo del archivo.', hoja: 'General' });
   }
 
-  const dataSheetName = findDataSheetName(workbook.SheetNames, nivel);
-  if (!dataSheetName) {
-    errors.push(
-      'No se encontró la hoja de captura de evaluaciones (ej. PREESCOLAR, PRIMERO, SEGUNDO, TERCERO).'
-    );
+  const dataSheetName = nivel ? findDataSheetName(workbook.SheetNames, nivel) : null;
+  if (nivel && !dataSheetName) {
+    allErrors.push({
+      error: 'No se encontró la hoja de captura de evaluaciones (ej. PREESCOLAR, PRIMERO, SEGUNDO, TERCERO).',
+      hoja: 'General'
+    });
   }
 
-  if (errors.length > 0) {
-    throw new Error(errors.join(' | '));
-  }
+  if (allErrors.some(e => ['CCT', 'Turno', 'Email'].includes(e.campo || ''))) {
+    // No continuamos si hay errores críticos en ESC
+  } else if (nivel && dataSheetName) {
+    const sheetData = workbook.Sheets[dataSheetName];
+    const grado = detectGrade(dataSheetName, nivel);
+    const alumnos = extractStudents(sheetData, dataSheetName, nivel, escData.cct, grado, allErrors);
 
-  const sheetData = workbook.Sheets[dataSheetName!];
-  const grado = detectGrade(dataSheetName!, nivel!);
-  const alumnos = extractStudents(sheetData, dataSheetName!, nivel!, escData.cct, grado, errors);
+    if (!alumnos.length && !allErrors.some(e => e.hoja === dataSheetName)) {
+      allErrors.push({ error: `No se encontraron estudiantes capturados en la hoja ${dataSheetName}.`, hoja: dataSheetName });
+    }
 
-  if (!alumnos.length) {
-    errors.push(`No se encontraron estudiantes capturados en la hoja ${dataSheetName}.`);
-  }
-
-  if (errors.length > 0) {
-    throw new Error(errors.join(' | '));
+    return {
+      cct: escData.cct,
+      nivel: nivel,
+      grado,
+      alumnos,
+      metadata: {
+        nivelDetectado: nivel,
+        gradoDetectado: dataSheetName.toUpperCase(),
+        turno: escData.turno,
+        nombreEscuela: escData.nombreEscuela,
+        correo: escData.correo,
+      },
+      erroresEstructurados: allErrors
+    };
   }
 
   return {
-    cct: escData.cct,
-    nivel: nivel!,
-    grado,
-    alumnos,
+    cct: escData.cct || '',
+    nivel: nivel || '',
+    grado: 0,
+    alumnos: [],
     metadata: {
-      nivelDetectado: nivel!,
-      gradoDetectado: dataSheetName!.toUpperCase(),
-      turno: escData.turno,
-      nombreEscuela: escData.nombreEscuela,
-      correo: escData.correo,
+      nivelDetectado: nivel || '',
+      gradoDetectado: '',
+      turno: escData.turno || '',
+      nombreEscuela: escData.nombreEscuela || '',
+      correo: escData.correo || '',
     },
+    erroresEstructurados: allErrors
   };
 }
 
-function extractEscData(sheet: XLSX.WorkSheet, errors: string[]) {
+function extractEscData(sheet: XLSX.WorkSheet, errors: ExcelValidationError[]) {
   const cct = firstNonEmptyCell(sheet, ['D9', 'E9', 'C9']);
   const turno = firstNonEmptyCell(sheet, ['D11', 'E11']).toUpperCase();
   const nombreEscuela = firstNonEmptyCell(sheet, ['D13', 'E13']);
   const correo = firstNonEmptyCell(sheet, ['D18', 'E18']).toLowerCase();
 
   if (!cct) {
-    errors.push('La CCT no está capturada en la hoja ESC.');
+    errors.push({ campo: 'CCT', error: 'La CCT no está capturada en la hoja ESC.', hoja: 'ESC', columna: 'D', fila: 9 });
   } else if (!/^[0-9]{2}[A-Z]{3}[0-9]{4}[A-Z]$/.test(cct)) {
-    errors.push(`La CCT "${cct}" tiene un formato inválido.`);
+    errors.push({ campo: 'CCT', error: `La CCT "${cct}" tiene un formato inválido.`, hoja: 'ESC', columna: 'D', fila: 9, valorEncontrado: cct });
   }
 
   if (!turno) {
-    errors.push('Selecciona un turno válido en la hoja ESC.');
+    errors.push({ campo: 'Turno', error: 'Selecciona un turno válido en la hoja ESC.', hoja: 'ESC', columna: 'D', fila: 11 });
   } else if (!TURNOS_VALIDOS.has(turno)) {
-    errors.push('El turno capturado no coincide con las opciones de la plantilla.');
+    errors.push({ campo: 'Turno', error: 'El turno capturado no coincide con las opciones de la plantilla.', hoja: 'ESC', columna: 'D', fila: 11, valorEncontrado: turno });
   }
 
   if (!nombreEscuela) {
-    errors.push('Ingresa el nombre de la escuela en la hoja ESC.');
+    errors.push({ campo: 'Nombre Escuela', error: 'Ingresa el nombre de la escuela en la hoja ESC.', hoja: 'ESC', columna: 'D', fila: 13 });
   }
 
   if (!correo) {
-    errors.push('Ingresa el correo de contacto en la hoja ESC.');
+    errors.push({ campo: 'Email', error: 'Ingresa el correo de contacto en la hoja ESC.', hoja: 'ESC', columna: 'D', fila: 18 });
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
-    errors.push('El correo de contacto no tiene un formato válido.');
+    errors.push({ campo: 'Email', error: 'El correo de contacto no tiene un formato válido.', hoja: 'ESC', columna: 'D', fila: 18, valorEncontrado: correo });
   }
 
   return { cct, turno, nombreEscuela, correo };
@@ -142,7 +168,7 @@ function detectLevel(sheetNames: string[], escSheet: XLSX.WorkSheet): string | n
 
   const normalized = sheetNames.map((name) => name.toUpperCase());
   if (normalized.includes('PREESCOLAR')) return 'PREESCOLAR';
-  
+
   // Fallback: Si solo está la hoja TERCERO y no hay PRIMERO, es Preescolar
   if (normalized.includes('TERCERO') && !normalized.includes('PRIMERO')) return 'PREESCOLAR';
 
@@ -190,14 +216,14 @@ function extractStudents(
   nivel: string,
   cct: string,
   grado: number,
-  errors: string[]
+  errors: ExcelValidationError[]
 ): ParsedStudent[] {
   const data = XLSX.utils.sheet_to_json(sheet, { range: 9, header: 'A', defval: '' }) as Array<
     Record<string, string>
   >;
   const columnas = resolveEvaluationColumns(nivel, sheetName.toUpperCase());
   if (!columnas.length) {
-    errors.push(`No se pudo determinar el rango de valoraciones para la hoja ${sheetName}.`);
+    errors.push({ error: `No se pudo determinar el rango de valoraciones para la hoja ${sheetName}.`, hoja: sheetName });
     return [];
   }
 
@@ -216,34 +242,33 @@ function extractStudents(
       !numeroLista && !nombre && !sexo && !grupo && valoraciones.every((valor) => valor === null);
     if (filaVacia) return;
 
-    const erroresFila: string[] = [];
+    const erroresFila: ExcelValidationError[] = [];
     if (!numeroLista)
-      erroresFila.push(`Fila ${filaExcel} (${sheetName}): falta el número de lista.`);
+      erroresFila.push({ fila: filaExcel, columna: 'B', campo: 'Número de Lista', error: 'Falta el número de lista.', hoja: sheetName });
     else if (Number.isNaN(Number(numeroLista)))
-      erroresFila.push(`Fila ${filaExcel} (${sheetName}): el número de lista debe ser numérico.`);
+      erroresFila.push({ fila: filaExcel, columna: 'B', campo: 'Número de Lista', error: 'El número de lista debe ser numérico.', hoja: sheetName, valorEncontrado: numeroLista });
 
     if (!nombre)
-      erroresFila.push(
-        `Fila ${filaExcel} (${sheetName}): captura el nombre completo del estudiante.`
-      );
-    if (!sexo) erroresFila.push(`Fila ${filaExcel} (${sheetName}): indica el sexo (H/M).`);
+      erroresFila.push({ fila: filaExcel, columna: 'C', campo: 'Nombre', error: 'Captura el nombre completo del estudiante.', hoja: sheetName });
+    if (!sexo)
+      erroresFila.push({ fila: filaExcel, columna: 'D', campo: 'Sexo', error: 'Indica el sexo (H/M).', hoja: sheetName });
     else if (!['H', 'M'].includes(sexo))
-      erroresFila.push(`Fila ${filaExcel} (${sheetName}): el sexo debe ser H o M.`);
+      erroresFila.push({ fila: filaExcel, columna: 'D', campo: 'Sexo', error: 'El sexo debe ser H o M.', hoja: sheetName, valorEncontrado: sexo });
 
-    if (!grupo) erroresFila.push(`Fila ${filaExcel} (${sheetName}): captura el grupo.`);
+    if (!grupo)
+      erroresFila.push({ fila: filaExcel, columna: 'E', campo: 'Grupo', error: 'Captura el grupo.', hoja: sheetName });
     else if (!/^[A-Z]$/.test(grupo))
-      erroresFila.push(`Fila ${filaExcel} (${sheetName}): el grupo debe ser una sola letra (A-Z).`);
+      erroresFila.push({ fila: filaExcel, columna: 'E', campo: 'Grupo', error: 'El grupo debe ser una sola letra (A-Z).', hoja: sheetName, valorEncontrado: grupo });
 
     const evaluaciones: { materiaIndex: number; valor: number }[] = [];
     valoraciones.forEach((valor, idx) => {
+      const colName = columnas[idx];
       if (valor === null) {
-        erroresFila.push(`Fila ${filaExcel} (${sheetName}): falta la valoración ${idx + 1}.`);
+        erroresFila.push({ fila: filaExcel, columna: colName, campo: `Valoración ${idx + 1}`, error: 'Falta la valoración.', hoja: sheetName });
         return;
       }
       if (Number.isNaN(valor) || valor < 0 || valor > 3) {
-        erroresFila.push(
-          `Fila ${filaExcel} (${sheetName}): la valoración ${idx + 1} debe estar entre 0 y 3.`
-        );
+        erroresFila.push({ fila: filaExcel, columna: colName, campo: `Valoración ${idx + 1}`, error: 'La valoración debe estar entre 0 y 3.', hoja: sheetName, valorEncontrado: String(valor), valorEsperado: '0-3' });
         return;
       }
       evaluaciones.push({ materiaIndex: idx, valor });

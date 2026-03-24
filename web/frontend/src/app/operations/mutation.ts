@@ -44,6 +44,15 @@ export const UPLOAD_EXCEL_MUTATION = `
         grado
         alumnosProcesados
         errores
+        erroresEstructurados {
+          fila
+          columna
+          campo
+          error
+          valorEncontrado
+          valorEsperado
+          hoja
+        }
       }
     }
   }

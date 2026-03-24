@@ -15,7 +15,7 @@ import { EstadoCredencialesService } from '../../services/estado-credenciales.se
 import { GraphqlService } from '../../services/graphql.service';
 import { MockPdfService } from '../../services/mock-pdf.service';
 import { UsuariosService } from '../../services/usuarios.service';
-import { EvaluacionesService } from '../../services/evaluaciones.service';
+import { EvaluacionesService, ExcelValidationError } from '../../services/evaluaciones.service';
 import { timeout, catchError, throwError } from 'rxjs';
 
 interface ResultadoExito {
@@ -124,9 +124,9 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   }
 
   get puedeCargarTodo(): boolean {
-    return (this.correoControl.valid || this.correoControl.disabled) && 
-           this.resultadosValidosSinGuardar.length > 0 && 
-           !this.guardandoTodo;
+    return (this.correoControl.valid || this.correoControl.disabled) &&
+      this.resultadosValidosSinGuardar.length > 0 &&
+      !this.guardandoTodo;
   }
 
   constructor(
@@ -491,7 +491,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       resultado.estado = 'exito';
       resultado.mensajeInformativo = `El archivo se recibió correctamente. Folio de seguimiento: ${respuestaApi.consecutivo || 'Pendiente'}`;
 
-      const textoExito = respuestaApi.consecutivo 
+      const textoExito = respuestaApi.consecutivo
         ? `La información se ha sincronizado. Tu folio de seguimiento es: ${respuestaApi.consecutivo}`
         : 'La información se ha sincronizado correctamente con el servidor.';
 
@@ -524,9 +524,19 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       }
     } catch (error: any) {
       resultado.estado = 'error';
+
+      // Intentar extraer errores estructurados del error de GraphQL si es posible
+      const graphQLErrors = error?.graphQLErrors?.[0]?.extensions?.detalles?.erroresEstructurados;
+      if (graphQLErrors) {
+        this.actualizarErrores(resultado, [], graphQLErrors);
+      } else if (error?.detalles?.erroresEstructurados) {
+        this.actualizarErrores(resultado, [], error.detalles.erroresEstructurados);
+      }
+
       resultado.errorGuardado = error instanceof Error
         ? error.message
         : 'No se pudo cargar el archivo al servidor. Inténtalo de nuevo.';
+
       await Swal.fire({
         icon: 'error',
         title: 'Error de carga',
@@ -939,14 +949,46 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     await this.generarPdfErrores(resultadoArchivo);
   }
 
-  private actualizarErrores(resultadoArchivo: ResultadoArchivo, errores: string[]): void {
+  private actualizarErrores(resultadoArchivo: ResultadoArchivo, errores: string[], estructurados?: ExcelValidationError[]): void {
     resultadoArchivo.errores = [...errores];
-    resultadoArchivo.erroresAgrupados = this.agruparErrores(resultadoArchivo.errores);
+    if (estructurados && estructurados.length > 0) {
+      resultadoArchivo.erroresAgrupados = this.agruparErroresEstructurados(estructurados);
+    } else {
+      resultadoArchivo.erroresAgrupados = this.agruparErrores(resultadoArchivo.errores);
+    }
   }
 
-  private agregarErrores(resultadoArchivo: ResultadoArchivo, errores: string[]): void {
-    resultadoArchivo.errores = [...resultadoArchivo.errores, ...errores];
-    resultadoArchivo.erroresAgrupados = this.agruparErrores(resultadoArchivo.errores);
+  private agruparErroresEstructurados(errores: ExcelValidationError[]): GrupoErrores[] {
+    const mapa = new Map<string, Map<string, string[]>>();
+
+    errores.forEach((err) => {
+      const hoja = err.hoja || 'General';
+      const titulo = err.fila ? `Fila ${err.fila}` : (err.columna ? `Columna ${err.columna}` : 'General');
+
+      if (!mapa.has(hoja)) {
+        mapa.set(hoja, new Map<string, string[]>());
+      }
+
+      const ubicaciones = mapa.get(hoja)!;
+      if (!ubicaciones.has(titulo)) {
+        ubicaciones.set(titulo, []);
+      }
+
+      let msg = err.error;
+      if (err.campo) msg = `${err.campo}: ${msg}`;
+      if (err.valorEncontrado) msg += ` (Encontrado: "${err.valorEncontrado}")`;
+      if (err.valorEsperado) msg += ` (Esperado: "${err.valorEsperado}")`;
+
+      ubicaciones.get(titulo)!.push(msg);
+    });
+
+    return Array.from(mapa.entries()).map(([hoja, ubicaciones]) => ({
+      hoja,
+      ubicaciones: Array.from(ubicaciones.entries()).map(([titulo, items]) => ({
+        titulo,
+        items
+      }))
+    }));
   }
 
   private agruparErrores(errores: string[]): GrupoErrores[] {

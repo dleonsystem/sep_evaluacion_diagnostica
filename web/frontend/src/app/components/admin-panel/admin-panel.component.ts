@@ -9,6 +9,8 @@ import {
   Ticket as TicketDB,
 } from '../../services/tickets.service';
 import { UsuariosService, UsuarioCreado } from '../../services/usuarios.service';
+import { EscuelasService, Escuela, EscuelaInput } from '../../services/escuelas.service';
+import { ExcelValidationService } from '../../services/excel-validation.service';
 import Swal from 'sweetalert2';
 import { firstValueFrom } from 'rxjs';
 
@@ -84,12 +86,49 @@ export class AdminPanelComponent implements OnInit {
     claveCCT: ''
   };
 
+  // Catálogo de Escuelas (CU-14)
+  escuelas: Escuela[] = [];
+  totalEscuelas = 0;
+  paginaEscuelasActual = 1;
+  filtroEscuelaTexto = '';
+  cargandoEscuelas = false;
+  mostrarModalEscuela = false;
+  editandoEscuela = false;
+
+  nuevaEscuela: any = {
+    cct: '',
+    nombre: '',
+    id_turno: 1,
+    id_nivel: 2,
+    id_entidad: 14, // Jalisco default
+    id_ciclo: 1,
+    email: '',
+    telefono: '',
+    director: '',
+    cp: ''
+  };
+
+  turnosCat = [
+    { id: 1, nombre: 'MATUTINO' },
+    { id: 2, nombre: 'VESPERTINO' },
+    { id: 3, nombre: 'NOCTURNO' },
+    { id: 4, nombre: 'DISCONTINUO' }
+  ];
+
+  nivelesCat = [
+    { id: 1, nombre: 'PREESCOLAR' },
+    { id: 2, nombre: 'PRIMARIA' },
+    { id: 3, nombre: 'SECUNDARIA' }
+  ];
+
 
   constructor(
     private readonly adminAuthService: AdminAuthService,
     private readonly evaluacionesService: EvaluacionesService,
     private readonly ticketsService: TicketsService,
     private readonly usuariosService: UsuariosService,
+    private readonly escuelasService: EscuelasService,
+    private readonly excelValidationService: ExcelValidationService,
     private readonly router: Router,
   ) { }
 
@@ -99,6 +138,7 @@ export class AdminPanelComponent implements OnInit {
     this.cargarTicketsSoporte();
     this.cargarIncidenciasPublicas();
     this.cargarUsuarios();
+    this.cargarEscuelas();
   }
 
   seleccionarArchivo(event: Event): void {
@@ -869,7 +909,7 @@ export class AdminPanelComponent implements OnInit {
       });
 
       const result = await firstValueFrom(this.ticketsService.downloadTicketEvidencia(evidencia.url));
-      
+
       if (!result.success) {
         throw new Error('El servidor no pudo entregar el archivo');
       }
@@ -881,7 +921,7 @@ export class AdminPanelComponent implements OnInit {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
       const byteArray = new Uint8Array(byteNumbers);
-      
+
       // Intentar determinar MIME type por extensión
       let mimeType = 'application/octet-stream';
       const ext = evidencia.nombre.toLowerCase().split('.').pop();
@@ -893,7 +933,7 @@ export class AdminPanelComponent implements OnInit {
 
       const blob = new Blob([byteArray], { type: mimeType });
       const url = window.URL.createObjectURL(blob);
-      
+
       const a = document.createElement('a');
       a.href = url;
       a.download = result.fileName;
@@ -906,6 +946,121 @@ export class AdminPanelComponent implements OnInit {
     } catch (error: any) {
       Swal.fire('Error', error.message || 'No se pudo descargar el archivo', 'error');
     }
+  }
+
+  // --- ESCUELAS (CU-14) ---
+
+  async cargarEscuelas(): Promise<void> {
+    this.cargandoEscuelas = true;
+    try {
+      const offset = (this.paginaEscuelasActual - 1) * this.tamanioPagina;
+      const res = await firstValueFrom(
+        this.escuelasService.listarEscuelas(this.tamanioPagina, offset, this.filtroEscuelaTexto)
+      );
+      this.escuelas = res.nodes;
+      this.totalEscuelas = res.totalCount;
+    } catch (error) {
+      console.error('Error cargando escuelas:', error);
+    } finally {
+      this.cargandoEscuelas = false;
+    }
+  }
+
+  abrirModalEscuela(escuela?: Escuela): void {
+    if (escuela) {
+      this.editandoEscuela = true;
+      this.nuevaEscuela = {
+        id: escuela.id,
+        cct: escuela.cct,
+        nombre: escuela.nombre,
+        id_turno: escuela.turno.id,
+        id_nivel: escuela.nivel === 'SECUNDARIA' ? 3 : (escuela.nivel === 'PRIMARIA' ? 2 : 1),
+        id_entidad: escuela.entidadFederativa.id,
+        id_ciclo: escuela.cicloEscolar.id,
+        email: escuela.email,
+        telefono: escuela.telefono,
+        director: escuela.director,
+        cp: escuela.cp
+      };
+    } else {
+      this.editandoEscuela = false;
+      this.nuevaEscuela = {
+        cct: '',
+        nombre: '',
+        id_turno: 1,
+        id_nivel: 2,
+        id_entidad: 14,
+        id_ciclo: 1,
+        email: '',
+        telefono: '',
+        director: '',
+        cp: ''
+      };
+    }
+    this.mostrarModalEscuela = true;
+  }
+
+  cerrarModalEscuela(): void {
+    this.mostrarModalEscuela = false;
+  }
+
+  async guardarEscuela(): Promise<void> {
+    if (!this.nuevaEscuela.cct || !this.nuevaEscuela.nombre) {
+      await Swal.fire('Error', 'CCT y Nombre son obligatorios', 'error');
+      return;
+    }
+
+    const vCct = this.excelValidationService.validarFormatoCCT(this.nuevaEscuela.cct);
+    if (!vCct.isValid) {
+      await Swal.fire('Error de Formato', vCct.error, 'error');
+      return;
+    }
+
+    this.cargandoEscuelas = true;
+    try {
+      if (this.editandoEscuela) {
+        const { id, ...input } = this.nuevaEscuela;
+        await firstValueFrom(this.escuelasService.actualizarEscuela(id, input));
+        await Swal.fire('Éxito', 'Escuela actualizada correctamente', 'success');
+      } else {
+        await firstValueFrom(this.escuelasService.crearEscuela(this.nuevaEscuela));
+        await Swal.fire('Éxito', 'Escuela creada correctamente', 'success');
+      }
+      this.cerrarModalEscuela();
+      await this.cargarEscuelas();
+    } catch (error: any) {
+      await Swal.fire('Error', error.message || 'No se pudo guardar la escuela', 'error');
+    } finally {
+      this.cargandoEscuelas = false;
+    }
+  }
+
+  async eliminarEscuela(escuela: Escuela): Promise<void> {
+    const confirm = await Swal.fire({
+      title: '¿Eliminar escuela?',
+      text: `Esta acción marcará a "${escuela.nombre}" como inactiva.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonColor: '#d33'
+    });
+
+    if (confirm.isConfirmed) {
+      try {
+        await firstValueFrom(this.escuelasService.eliminarEscuela(escuela.id));
+        await Swal.fire('Eliminado', 'La escuela ha sido eliminada del catálogo.', 'success');
+        await this.cargarEscuelas();
+      } catch (error: any) {
+        await Swal.fire('Error', error.message || 'Error al eliminar', 'error');
+      }
+    }
+  }
+
+  irAPaginaEscuelas(pagina: number): void {
+    const totalPaginas = Math.ceil(this.totalEscuelas / this.tamanioPagina);
+    if (pagina < 1 || pagina > totalPaginas) return;
+    this.paginaEscuelasActual = pagina;
+    this.cargarEscuelas();
   }
 }
 
