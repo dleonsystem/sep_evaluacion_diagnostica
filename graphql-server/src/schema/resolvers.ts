@@ -171,14 +171,14 @@ const BASE_USER_FIELDS = `
   u.updated_at as "fechaUltimoAcceso"
 `;
 const BASE_CCT_FIELDS = `
-  id,
-  clave_cct as "claveCCT",
-  nombre,
-  entidad,
-  municipio,
-  localidad,
-  nivel,
-  turno
+  e.id,
+  e.cct as "claveCCT",
+  e.nombre,
+  e.estado as "entidad",
+  e.municipio,
+  e.localidad,
+  REPLACE(ne.codigo, ' ', '_') as nivel,
+  t.nombre as turno
 `;
 
 const BASE_ESCUELA_FIELDS = `
@@ -405,12 +405,13 @@ m.id, m.nombre, m.tipo,
      */
     getCCT: async (_: unknown, { clave }: { clave: string }): Promise<CentroTrabajoRow | null> => {
       try {
-        const result = await query(
-          `SELECT ${BASE_CCT_FIELDS}
-          FROM centros_trabajo 
-          WHERE clave_cct = $1`,
-          [clave]
-        );
+        const sql = `SELECT ${BASE_CCT_FIELDS}
+          FROM escuelas e
+          LEFT JOIN cat_nivel_educativo ne ON e.id_nivel = ne.id
+          LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
+          WHERE e.cct = $1`;
+        
+        const result = await query(sql, [clave]);
 
         if (result.rows.length === 0) {
           return null;
@@ -418,8 +419,8 @@ m.id, m.nombre, m.tipo,
 
         return result.rows[0] as CentroTrabajoRow;
       } catch (error) {
-        logger.error('Error fetching CCT', { clave, error });
-        throw new Error('Error al obtener centro de trabajo');
+        logger.error('Error fetching CCT', { clave, error: (error as Error).message, stack: (error as Error).stack });
+        throw new Error(`Error al obtener centro de trabajo: ${(error as Error).message}`);
       }
     },
 
@@ -438,12 +439,12 @@ m.id, m.nombre, m.tipo,
             ${BASE_ESCUELA_FIELDS},
             e.id_turno, e.id_nivel, e.id_entidad, e.id_ciclo,
             t.nombre as "turno_nombre", t.codigo as "turno_codigo",
-            ne.codigo as "nivel_codigo",
+            REPLACE(ne.codigo, ' ', '_') as "nivel_codigo",
             ef.nombre as "entidad_nombre",
             ce.nombre as "ciclo_nombre"
           FROM escuelas e
           LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
-          LEFT JOIN cat_niveles_educativos ne ON e.id_nivel = ne.id_nivel
+          LEFT JOIN cat_nivel_educativo ne ON e.id_nivel = ne.id
           LEFT JOIN cat_entidades_federativas ef ON e.id_entidad = ef.id_entidad
           LEFT JOIN cat_ciclos_escolares ce ON e.id_ciclo = ce.id_ciclo
           WHERE e.activo = true
@@ -502,12 +503,12 @@ m.id, m.nombre, m.tipo,
             ${BASE_ESCUELA_FIELDS},
             e.id_turno, e.id_nivel, e.id_entidad, e.id_ciclo,
             t.nombre as "turno_nombre", t.codigo as "turno_codigo",
-            ne.codigo as "nivel_codigo",
+            REPLACE(ne.codigo, ' ', '_') as "nivel_codigo",
             ef.nombre as "entidad_nombre",
             ce.nombre as "ciclo_nombre"
           FROM escuelas e
           LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
-          LEFT JOIN cat_niveles_educativos ne ON e.id_nivel = ne.id_nivel
+          LEFT JOIN cat_nivel_educativo ne ON e.id_nivel = ne.id
           LEFT JOIN cat_entidades_federativas ef ON e.id_entidad = ef.id_entidad
           LEFT JOIN cat_ciclos_escolares ce ON e.id_ciclo = ce.id_ciclo
           WHERE e.id = $1`,
@@ -1773,6 +1774,10 @@ t.numero_ticket as "folio",
 
         const buffer = Buffer.from(archivoBase64, 'base64');
         const fileHash = crypto.createHash('sha256').update(buffer).digest('hex');
+        const archivoSize = buffer.length;
+        const remoteDir = '/upload/cargas';
+        const remotePath = `${remoteDir}/${Date.now()}_${nombreArchivo.replace(/\s+/g, '_')}`;
+
         let userToLink = context.user?.id;
         const normalizedEmail = email ? email.trim().toLowerCase() : null;
 
@@ -1780,11 +1785,23 @@ t.numero_ticket as "folio",
           const uRes = await query('SELECT id FROM usuarios WHERE email = $1', [normalizedEmail]);
           if (uRes.rows.length > 0) {
             const existingUserId = uRes.rows[0].id;
-            if (!context.user) {
-              throw new Error('Debes iniciar sesión antes de realizar nuevas cargas.');
-            }
             userToLink = existingUserId;
+            logger.info('Viculando carga masiva a usuario existente sin sesión activa', { email: normalizedEmail, userId: existingUserId });
           }
+        }
+
+        // Subir archivo a SFTP para auditoría (CU-04)
+        try {
+          // @ts-ignore
+          const { sftpService } = await import('../services/sftp.service');
+          await sftpService.connect();
+          await sftpService.ensureDir(remoteDir);
+          await sftpService.uploadBuffer(buffer, remotePath);
+          logger.info('[SFTP] Archivo de carga masiva respaldado', { remotePath });
+        } catch (sftpErr) {
+          logger.error('[SFTP] Error respaldando archivo de carga', { sftpErr });
+          // Continuamos aunque falle el respaldo físico si la BD es prioritaria, 
+          // pero el constraint de la BD nos obliga a tener el path.
         }
 
         let workerResult;
@@ -1793,8 +1810,8 @@ t.numero_ticket as "folio",
         } catch (workerError: any) {
           const errorMsg = workerError.message || 'Error de validación desconocido';
           const rejRes = await query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion) VALUES ($1, $2, NOW(), 1, $3, $4, $5) RETURNING consecutivo',
-            ['DESC', nombreArchivo, fileHash, userToLink || null, JSON.stringify([{ error: errorMsg, hoja: 'General' }])]
+            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7, false) RETURNING consecutivo',
+            ['DESC', nombreArchivo, fileHash, userToLink || null, JSON.stringify([{ error: errorMsg, hoja: 'General' }]), remotePath, archivoSize]
           );
           return {
             success: false,
@@ -1808,8 +1825,8 @@ t.numero_ticket as "folio",
 
         if (erroresEstructurados && erroresEstructurados.length > 0) {
           await query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion) VALUES ($1, $2, NOW(), 1, $3, $4, $5)',
-            [cct || 'INVALID', nombreArchivo, fileHash, userToLink || null, JSON.stringify(erroresEstructurados)]
+            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7, false)',
+            [cct || 'INVALID', nombreArchivo, fileHash, userToLink || null, JSON.stringify(erroresEstructurados), remotePath, archivoSize]
           );
           return {
             success: false,
@@ -1839,8 +1856,8 @@ t.numero_ticket as "folio",
         if (!cctValidation.isValid) {
           const errorMsg = `Formato de CCT inválido en el archivo: ${cctValidation.error}`;
           await query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion) VALUES ($1, $2, NOW(), 1, $3, $4, $5)',
-            [cct || 'INVALID', nombreArchivo, fileHash, userToLink || null, JSON.stringify([errorMsg])]
+            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7, false)',
+            [cct || 'INVALID', nombreArchivo, fileHash, userToLink || null, JSON.stringify([errorMsg]), remotePath, archivoSize]
           );
           return { success: false, message: errorMsg, detalles: { errores: [errorMsg] } };
         }
@@ -1855,8 +1872,8 @@ t.numero_ticket as "folio",
         if (escrow.rows.length === 0) {
           const errorMsg = `La CCT ${cct} con turno "${excelTurno}" no está registrada en el sistema. Por favor, regístrela primero en el Catálogo de Escuelas.`;
           await query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion) VALUES ($1, $2, NOW(), 1, $3, $4, $5)',
-            [cct, nombreArchivo, fileHash, userToLink || null, JSON.stringify([{ campo: 'CCT', error: errorMsg, hoja: 'ESC' }])]
+            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7, false)',
+            [cct, nombreArchivo, fileHash, userToLink || null, JSON.stringify([{ campo: 'CCT', error: errorMsg, hoja: 'ESC' }]), remotePath, archivoSize]
           );
           return {
             success: false,
@@ -1876,17 +1893,9 @@ t.numero_ticket as "folio",
         let credencialId = credCheck.rows.length > 0 ? credCheck.rows[0].id : null;
 
         if (!credencialId) {
-          // Primera carga: Validar coincidencia de correo
+          // Primera carga: Loguear si hay diferencia pero permitir continuar (RF-16.2 modificado)
           if (inputEmail && excelEmail && inputEmail !== excelEmail) {
-            const errorMsg = 'El correo capturado no coincide con el que está en tu Excel. Corrige el dato en la pantalla o en el archivo y vuelve a intentarlo.';
-            return {
-              success: false,
-              message: errorMsg,
-              detalles: {
-                errores: [errorMsg],
-                erroresEstructurados: [{ campo: 'Email', error: errorMsg, hoja: 'ESC', fila: 18, columna: 'D', valorEncontrado: inputEmail, valorEsperado: excelEmail }]
-              }
-            };
+            logger.info('Mismatch entre email de input y excel, se permite continuar', { inputEmail, excelEmail });
           }
         } else {
           // Carga posterior: El correo del Excel debe coincidir con el validado inicialmente?
@@ -1900,8 +1909,14 @@ t.numero_ticket as "folio",
           return { success: false, message: 'El archivo ya existe. ¿Desea reemplazarlo?', duplicadoDetectado: true };
         }
 
-        const nivelMap: Record<string, number> = { PREESCOLAR: 1, PRIMARIA: 2, SECUNDARIA: 3, TELESECUNDARIA: 4 };
-        const nivelId = nivelMap[nivel.toUpperCase()] || 2;
+        const nivelMap: Record<string, number> = { 
+          PREESCOLAR: 1, 
+          PRIMARIA: 2, 
+          SECUNDARIA: 3, 
+          TELESECUNDARIA: 4,
+          INICIAL_GENERAL: 5
+        };
+        const nivelId = nivelMap[nivel.toUpperCase().replace(/ /g, '_')] || 2;
         let solicitudId: string = '';
         let consecutivo: any = null;
 
@@ -1932,9 +1947,12 @@ t.numero_ticket as "folio",
           const userExist = await client.query('SELECT id FROM usuarios WHERE email = $1', [inputEmail]);
           if (userExist.rows.length === 0) {
             await client.query(
-              'INSERT INTO usuarios (email, password_hash, rol_id, nombre) VALUES ($1, $2, fn_catalogo_id($3, $4), $5)',
-              [inputEmail, finalHash, 'cat_rol_usuario', 'RESPONSABLE_CCT', 'Director ' + cct]
+              'INSERT INTO usuarios (email, password_hash, rol, nombre, email_excel) VALUES ($1, $2, fn_catalogo_id($3, $4), $5, $6)',
+              [inputEmail, finalHash, 'cat_rol_usuario', 'RESPONSABLE_CCT', 'Director ' + cct, excelEmail]
             );
+          } else {
+            // Actualizar email_excel si no lo tiene (RF-16.x)
+            await client.query('UPDATE usuarios SET email_excel = $1 WHERE id = $2 AND email_excel IS NULL', [excelEmail, userExist.rows[0].id]);
           }
         }
 
@@ -1945,8 +1963,8 @@ t.numero_ticket as "folio",
           consecutivo = upRes.rows[0].consecutivo;
         } else {
           const solRes = await client.query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, hash_archivo, usuario_id, credencial_id) VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6) RETURNING id, consecutivo',
-            [cct, nombreArchivo, nivelId, fileHash, userToLink || null, credencialId]
+            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, hash_archivo, usuario_id, credencial_id, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7, $8, false) RETURNING id, consecutivo',
+            [cct, nombreArchivo, nivelId, fileHash, userToLink || null, credencialId, remotePath, archivoSize]
           );
           solicitudId = solRes.rows[0].id;
           consecutivo = solRes.rows[0].consecutivo;

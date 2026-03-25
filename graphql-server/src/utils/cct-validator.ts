@@ -85,7 +85,7 @@ export function calculateCCTVerifier(cct9: string): string {
         }
     }
 
-    const total = (sumPares * 7) + (sumNones * 26);
+    const total = (sumNones * 7) + (sumPares * 26);
     const residuo = total % 27;
 
     return TABLA_2[residuo] || '';

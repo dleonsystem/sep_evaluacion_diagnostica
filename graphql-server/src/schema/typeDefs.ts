@@ -130,6 +130,20 @@ export const typeDefs = `#graphql
     @use-case CU-13: Mesa de ayuda
     """
     getPublicIncidents: [Ticket!]!
+
+    """
+    Listar todas las escuelas (Catálogo)
+    """
+    listEscuelas(
+      limit: Int = 10
+      offset: Int = 0
+      filtro: String
+    ): EscuelaConnection!
+
+    """
+    Obtener escuela por ID
+    """
+    getEscuela(id: ID!): Escuela
   }
 
   """
@@ -474,6 +488,8 @@ export const typeDefs = `#graphql
     PREESCOLAR
     PRIMARIA
     SECUNDARIA
+    TELESECUNDARIA
+    INICIAL_GENERAL
   }
   
   """

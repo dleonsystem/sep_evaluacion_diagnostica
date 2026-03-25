@@ -628,22 +628,10 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         errorMessage.includes('ya está registrado') ||
         errorMessage.includes('already exists')
       ) {
-        // El usuario ya existe. Bloqueamos el proceso para evitar generar credenciales locales
-        // que no coincidirán con las del servidor y para proteger la cuenta existente.
-        resultado.errorGuardado = 'Este correo ya tiene una cuenta registrada.';
-        await Swal.fire({
-          icon: 'info',
-          title: 'Usuario ya registrado',
-          text: 'Para realizar una nueva carga con este correo, primero debes iniciar sesión con tu contraseña original.',
-          confirmButtonText: 'Ir a login',
-          showCancelButton: true,
-          cancelButtonText: 'Cerrar'
-        }).then((swalRes) => {
-          if (swalRes.isConfirmed) {
-            void this.router.navigate(['/login'], { queryParams: { redirect: '/carga-masiva' } });
-          }
-        });
-        return false;
+        // Si el usuario ya existe, permitimos continuar. 
+        // El backend ahora vincula automáticamente si se envía el correo.
+        console.log('El usuario ya existe, vinculando automáticamente en el servidor.');
+        return true;
       } else {
         resultado.errorGuardado =
           error instanceof Error

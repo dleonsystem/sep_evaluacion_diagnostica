@@ -134,7 +134,7 @@ function extractEscData(sheet: XLSX.WorkSheet, errors: ExcelValidationError[]) {
 
   if (!cct) {
     errors.push({ campo: 'CCT', error: 'La CCT no está capturada en la hoja ESC.', hoja: 'ESC', columna: 'D', fila: 9 });
-  } else if (!/^[0-9]{2}[A-Z]{3}[0-9]{4}[A-Z]$/.test(cct)) {
+  } else if (!/^[0-9]{2}[A-Z]{3}[0-9]{4}[0-9A-Z]$/.test(cct)) {
     errors.push({ campo: 'CCT', error: `La CCT "${cct}" tiene un formato inválido.`, hoja: 'ESC', columna: 'D', fila: 9, valorEncontrado: cct });
   }
 
@@ -161,7 +161,7 @@ function detectLevel(sheetNames: string[], escSheet: XLSX.WorkSheet): string | n
   const possibleCells = ['B6', 'C6', 'D6', 'B5', 'C5', 'D5'];
   for (const cell of possibleCells) {
     const val = normalizeCellValue(escSheet[cell]?.v).toUpperCase();
-    if (['PREESCOLAR', 'PRIMARIA', 'SECUNDARIA', 'TELESECUNDARIA'].includes(val)) {
+    if (['PREESCOLAR', 'PRIMARIA', 'SECUNDARIA', 'TELESECUNDARIA', 'INICIAL GENERAL', 'INICIAL_GENERAL'].includes(val)) {
       return val;
     }
   }
