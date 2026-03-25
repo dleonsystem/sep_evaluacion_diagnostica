@@ -20,6 +20,7 @@ Este documento se actualiza con cada modificación relevante al proyecto para en
   - Se refactorizó `init-db.sql` para unificarlo con el DDL maestro, asegurando entornos reproducibles y limpios.
 - **Validación Robusta de Cargas**: Se actualizó el resolver `uploadExcelAssessment` para cruzar la CCT y el Nivel Educativo contra los catálogos oficiales, rechazando archivos inconsistentes (RF-13).
 - **Cierre de Issue #297**: Se eliminaron los ENUMs hardcodeados en los resolvers de GraphQL, delegando la lógica a las tablas de catálogo de la base de datos.
+- **Containerización Completa (Issue #301)**: Implementación de Dockerfiles multi-stage para Backend y Frontend. Orquestación mediante Docker Compose con Postgres 16, Healthchecks y despliegue reproducible.
 - **Actualización Documental**: Sincronización de `ddl_generated.sql`, `ESTRUCTURA_DE_DATOS.md` y `PLAN_TRABAJO_FASE1.md`.
 
 ## 2025-11-25
