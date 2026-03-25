@@ -192,6 +192,9 @@ const BASE_ESCUELA_FIELDS = `
   e.updated_at
 `;
 
+const SOLICITUD_ESTADO_VALIDO_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'VALIDO')";
+const SOLICITUD_ESTADO_INVALIDO_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'INVALIDO')";
+
 /**
  * Helper function to build update query
  * @psp Code Reuse - Extract complex logic
@@ -440,7 +443,7 @@ m.id, m.nombre, m.tipo,
             ce.nombre as "ciclo_nombre"
           FROM escuelas e
           LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
-          LEFT JOIN cat_niveles_educativos ne ON e.id_nivel = ne.id_nivel
+          LEFT JOIN cat_nivel_educativo ne ON e.id_nivel = ne.id
           LEFT JOIN cat_entidades_federativas ef ON e.id_entidad = ef.id_entidad
           LEFT JOIN cat_ciclos_escolares ce ON e.id_ciclo = ce.id_ciclo
           WHERE e.activo = true
@@ -504,7 +507,7 @@ m.id, m.nombre, m.tipo,
             ce.nombre as "ciclo_nombre"
           FROM escuelas e
           LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
-          LEFT JOIN cat_niveles_educativos ne ON e.id_nivel = ne.id_nivel
+          LEFT JOIN cat_nivel_educativo ne ON e.id_nivel = ne.id
           LEFT JOIN cat_entidades_federativas ef ON e.id_entidad = ef.id_entidad
           LEFT JOIN cat_ciclos_escolares ce ON e.id_ciclo = ce.id_ciclo
           WHERE e.id = $1`,
@@ -759,7 +762,7 @@ t.id,
           ),
           query('SELECT COUNT(*) as count FROM solicitudes_eia2'),
           query(
-            "SELECT COUNT(*) as count FROM solicitudes_eia2 WHERE estado_validacion = (SELECT id FROM cat_estado_validacion_eia2 WHERE codigo = 'VALIDO')"
+            `SELECT COUNT(*) as count FROM solicitudes_eia2 WHERE estado_validacion = ${SOLICITUD_ESTADO_VALIDO_SQL}`
           ),
           query('SELECT COUNT(DISTINCT cct) as count FROM solicitudes_eia2'),
           query(`
@@ -1820,7 +1823,7 @@ t.numero_ticket as "folio",
         } catch (workerError: any) {
           const errorMsg = workerError.message || 'Error de validación desconocido';
           const rejRes = await query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion) VALUES ($1, $2, NOW(), 1, $3, $4, $5) RETURNING consecutivo',
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_INVALIDO_SQL}, $3, $4, $5) RETURNING consecutivo`,
             ['DESC', nombreArchivo, fileHash, userToLink || null, JSON.stringify([{ error: errorMsg, hoja: 'General' }])]
           );
           return {
@@ -1835,7 +1838,7 @@ t.numero_ticket as "folio",
 
         if (erroresEstructurados && erroresEstructurados.length > 0) {
           await query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion) VALUES ($1, $2, NOW(), 1, $3, $4, $5)',
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_INVALIDO_SQL}, $3, $4, $5)`,
             [cct || 'INVALID', nombreArchivo, fileHash, userToLink || null, JSON.stringify(erroresEstructurados)]
           );
           return {
@@ -1866,7 +1869,7 @@ t.numero_ticket as "folio",
         if (!cctValidation.isValid) {
           const errorMsg = `Formato de CCT inválido en el archivo: ${cctValidation.error}`;
           await query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion) VALUES ($1, $2, NOW(), 1, $3, $4, $5)',
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_INVALIDO_SQL}, $3, $4, $5)`,
             [cct || 'INVALID', nombreArchivo, fileHash, userToLink || null, JSON.stringify([errorMsg])]
           );
           return { success: false, message: errorMsg, detalles: { errores: [errorMsg] } };
@@ -1882,7 +1885,7 @@ t.numero_ticket as "folio",
         if (escrow.rows.length === 0) {
           const errorMsg = `La CCT ${cct} con turno "${excelTurno}" no está registrada en el sistema. Por favor, regístrela primero en el Catálogo de Escuelas.`;
           await query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion) VALUES ($1, $2, NOW(), 1, $3, $4, $5)',
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_INVALIDO_SQL}, $3, $4, $5)`,
             [cct, nombreArchivo, fileHash, userToLink || null, JSON.stringify([{ campo: 'CCT', error: errorMsg, hoja: 'ESC' }])]
           );
           return {
@@ -1972,7 +1975,7 @@ t.numero_ticket as "folio",
           consecutivo = upRes.rows[0].consecutivo;
         } else {
           const solRes = await client.query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, hash_archivo, usuario_id, credencial_id) VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6) RETURNING id, consecutivo',
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, hash_archivo, usuario_id, credencial_id) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_VALIDO_SQL}, $3, $4, $5, $6) RETURNING id, consecutivo`,
             [cct, nombreArchivo, nivelId, fileHash, userToLink || null, credencialId]
           );
           solicitudId = solRes.rows[0].id;
@@ -2153,7 +2156,7 @@ t.numero_ticket as "folio",
         await client.query(
           `UPDATE solicitudes_eia2 
            SET resultados = $1, 
-               estado_validacion = 2, -- Marcamos como VALIDADO/ASIGNADO
+               estado_validacion = ${SOLICITUD_ESTADO_VALIDO_SQL},
                resultado_path = $2,
                updated_at = NOW() 
            WHERE id = $3`,
