@@ -439,7 +439,7 @@ Usuarios del sistema (consolidado: incluye preferencias de notificación).
 | nombre | VARCHAR(60) | Nombre(s) |
 | apepaterno | VARCHAR(60) | Apellido paterno |
 | apematerno | VARCHAR(60) | Apellido materno |
-| email | VARCHAR(100) | Email único UNIQUE |
+| email | VARCHAR(255) | Email único UNIQUE |
 | email_excel | VARCHAR(255) | Email alternativo de Excel |
 | password_hash | VARCHAR(255) | Hash bcrypt de la contraseña |
 | rol | INT | FK a `cat_roles_usuario(id_rol)` |
@@ -452,6 +452,8 @@ Usuarios del sistema (consolidado: incluye preferencias de notificación).
 | fecha_registro | TIMESTAMP | Fecha de registro DEFAULT NOW() |
 | created_at | TIMESTAMP | Fecha de creación DEFAULT NOW() |
 | updated_at | TIMESTAMP | Fecha de actualización DEFAULT NOW() |
+| primer_login | BOOLEAN | Indicador de primer acceso DEFAULT TRUE |
+| intentos_fallidos | INT | Número de intentos fallidos DEFAULT 0 |
 
 **Constraints:**
 - `uq_usuarios_email UNIQUE (email)`
@@ -791,6 +793,8 @@ Solicitudes de procesamiento de archivos EIA2 (plataforma externa).
 | usuario_id | UUID | FK a `usuarios(id)` |
 | resultados | JSONB | Resultados procesados DEFAULT '[]' |
 | detalles_error | JSONB | Detalles adicionales de errores |
+| equipo_asignado | INT | Identificador del equipo de distribución asignado |
+| distributed_at | TIMESTAMP | Fecha/hora de distribución al equipo |
 | created_at | TIMESTAMP | Fecha de creación DEFAULT NOW() |
 | updated_at | TIMESTAMP | Fecha de actualización DEFAULT NOW() |
 
@@ -1076,6 +1080,9 @@ Tickets de soporte técnico gestionados por operadores SEP.
 | cerrado_en | TIMESTAMP | Fecha de cierre |
 | evidencias | JSONB | Evidencias adjuntas DEFAULT '[]' |
 | deleted_at | TIMESTAMP | Fecha de eliminación lógica (soft delete) |
+| user_fullname | VARCHAR(255) | Nombre completo capturado del usuario reportante |
+| user_cct | VARCHAR(20) | CCT capturado del usuario reportante |
+| user_email | VARCHAR(150) | Email capturado del usuario reportante |
 | created_at | TIMESTAMP | Fecha de creación DEFAULT NOW() |
 | updated_at | TIMESTAMP | Fecha de actualización DEFAULT NOW() |
 
@@ -1139,8 +1146,8 @@ Las siguientes 10 tablas almacenan datos raw importados desde archivos DBF del s
 | nivel | VARCHAR(20) | Nivel educativo |
 | fase | VARCHAR(20) | Fase de evaluación |
 | grado | VARCHAR(20) | Grado escolar |
-| correo1 | VARCHAR(255) | Email primario |
-| correo2 | VARCHAR(255) | Email secundario |
+| correo1 | VARCHAR(100) | Email primario |
+| correo2 | VARCHAR(100) | Email secundario |
 | matricula_ | VARCHAR(30) | Matrícula del alumno |
 | nlista | VARCHAR(20) | Número de lista |
 | estudiante | VARCHAR(100) | Nombre del estudiante |
