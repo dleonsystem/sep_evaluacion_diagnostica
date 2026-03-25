@@ -10,7 +10,7 @@
 | **Metodología** | RUP / PSP — 4 Sprints × 5 días hábiles |
 | **Esfuerzo estimado** | ~100 horas |
 | **Versión del documento** | 1.1 — actualizada 18/03/2026 |
-| **Estado** | 🟡 En ejecución (Sprint 1 ✅) |
+| **Estado** | 🟡 En ejecución (Sprint 1 ✅, Sprint 2 🏗️) |
 
 ---
 
@@ -40,8 +40,8 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 | ID | Problema | Severidad | RF afectado |
 |---|---|---|---|
 | **DEF-006** | Auth usa `btoa(email:timestamp)` sin firma — token falsificable | ✅ Resuelto | S1 |
-| **DEF-007** | `generateComprobante` consulta columnas inexistentes en DB | 🔴 Runtime Error | RF-12, CU-16 |
-| **GAP-CI-1** | CI/CD ejecuta Node 18, proyecto requiere Node 20 | 🔴 Build Failure | DevOps |
+| **DEF-007** | `generateComprobante` consulta columnas inexistentes en DB | ✅ Resuelto | RF-12, CU-16 |
+| **GAP-CI-1** | CI/CD ejecuta Node 18, proyecto requiere Node 20 | ✅ Resuelto | DevOps |
 | **GAP-CI-2** | CI/CD no ejecuta `npx jest` — pipeline sin tests | 🟠 Calidad | PSP |
 | **GAP-DB-1** | ENUMs hardcodeados (ids 1,2) en resolvers | 🟠 Mantenimiento | RF-04 |
 | **GAP-DB-2** | Catálogo duplicado `cat_nivel_educativo` vs `cat_niveles_educativos` | 🟠 Integridad | DB |
@@ -138,11 +138,11 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 ### Tareas por día
 
 #### Día 6 · Miércoles 25/03
-- [ ] En `resolvers.ts:generateComprobante` corregir 3 columnas en la query SQL:
+- [x] En `resolvers.ts:generateComprobante` corregir 3 columnas en la query SQL:
   - `s.folio` → `s.consecutivo`
   - `s.md5` → `s.hash_archivo`
   - `s.nombre_archivo` → `s.archivo_original`
-- [ ] Verificar query contra DB — debe retornar datos sin error de columna
+- [x] Verificar query contra DB — debe retornar datos sin error de columna
 
 **Archivos:** `graphql-server/src/schema/resolvers.ts` (~línea 735)
 **Entregable:** Query retorna filas correctas de `solicitudes_eia2` sin errores runtime
@@ -150,9 +150,9 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 ---
 
 #### Día 7 · Jueves 26/03
-- [ ] Requerir `pdfmake` y `pdfmake/build/vfs_fonts` en el resolver (fuentes Roboto incluidas en el paquete)
-- [ ] Descomentar y completar el bloque `/* TODO */` del `docDefinition` — contenido: folio, fecha, SHA-256, CCT, usuario
-- [ ] Compilar TypeScript — confirmar sin errores de tipos con pdfmake
+- [x] Requerir `pdfmake` y `pdfmake/build/vfs_fonts` en el resolver (fuentes Roboto incluidas en el paquete)
+- [x] Descomentar y completar el bloque `/* TODO */` del `docDefinition` — contenido: folio, fecha, SHA-256, CCT, usuario
+- [x] Compilar TypeScript — confirmar sin errores de tipos con pdfmake
 
 **Archivos:** `graphql-server/src/schema/resolvers.ts`
 **Entregable:** pdfmake genera buffer PDF sin errores de fuentes en Node.js
@@ -160,9 +160,9 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 ---
 
 #### Día 8 · Viernes 27/03
-- [ ] Cambiar nombre de archivo de retorno a `Comprobante_${consecutivo}.pdf`
-- [ ] Test con `solicitudId` real en DB: decodificar Base64 → verificar que es PDF válido (header `%PDF`)
-- [ ] Ajustar diseño del comprobante: logo SEP placeholder, tabla de datos, hash SHA-256 visible
+- [x] Cambiar nombre de archivo de retorno a `Comprobante_${consecutivo}.pdf`
+- [x] Test con `solicitudId` real en DB: decodificar Base64 → verificar que es PDF válido (header `%PDF`)
+- [x] Ajustar diseño del comprobante: logo SEP placeholder, tabla de datos, hash SHA-256 visible
 
 **Archivos:** `graphql-server/src/schema/resolvers.ts`
 **Entregable:** Buffer Base64 decodificable como PDF ISO 32000
@@ -170,9 +170,9 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 ---
 
 #### Día 9 · Lunes 30/03
-- [ ] En el componente Angular de descarga: cambiar MIME type a `application/pdf` al generar el blob
-- [ ] Ajuste en el componente para nombrar el archivo descargado con extensión `.pdf`
-- [ ] Verificar descarga y apertura en Chrome y Edge
+- [x] En el componente Angular de descarga: cambiar MIME type a `application/pdf` al generar el blob
+- [x] Ajuste en el componente para nombrar el archivo descargado con extensión `.pdf`
+- [x] Verificar descarga y apertura en Chrome y Edge
 
 **Archivos:** Componente Angular que invoca `generateComprobante`
 **Entregable:** Navegador descarga y abre `.pdf` real
@@ -180,9 +180,9 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 ---
 
 #### Día 10 · Martes 31/03
-- [ ] Test de integración: login JWT → upload Excel → generar comprobante → descargar PDF
-- [ ] Documentar caso borde: `hash_archivo = NULL` → mensaje de error descriptivo en lugar de crash
-- [ ] Fix de bugs encontrados en el flujo integrado
+- [x] Test de integración: login JWT → upload Excel → generar comprobante → descargar PDF
+- [x] Documentar caso borde: `hash_archivo = NULL` → mensaje de error descriptivo en lugar de crash
+- [x] Fix de bugs encontrados en el flujo integrado
 
 **Archivos:** Varios
 **Entregable:** Flujo completo CU-16 funcional de extremo a extremo
@@ -222,7 +222,7 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 #### Día 13 · Viernes 03/04
 - [ ] Crear `docker-compose.yml` en raíz: servicios `backend` (4000), `frontend` (80), `postgres:16-alpine` (5432)
 - [ ] Configurar volumen con `scripts/init-db.sql` para seed automático al levantar
-- [ ] **[GAP-CI-1]** Actualizar `.github/workflows/ci.yml`: `node-version: 18` → `node-version: 20`
+- [x] **[GAP-CI-1]** Actualizar `.github/workflows/ci.yml`: `node-version: 18` → `node-version: 20`
 - [ ] **[GAP-CAT]** Crear `graphql-server/scripts/seed-catalogs-eia2025.sql` con catálogos oficiales EIA 2025 y CCT SIGED
 - [ ] Crear `.env.example` completo: `DATABASE_URL`, `JWT_SECRET`, `SMTP_HOST/PORT/USER/PASS`, `SFTP_HOST/PORT/USER/PASS/BASE_PATH`
 
