@@ -22,6 +22,8 @@ Este documento detalla todas las modificaciones realizadas a la base de datos `E
 | 2026-02-23 | `solicitudes_eia2` | Limpieza de registros huérfanos| Se vincularon retroactivamente todos los registros que tenían `usuario_id` NULL con los usuarios responsables de sus respectivos CCTs para mantener la integridad de la privacidad. |
 | 2026-03-12 | `materiales_evaluacion` | Creación de tabla | Implementación de CU-01 para la publicación de materiales EIA, FRV y Rúbricas por parte de administración. |
 | 2026-03-25 | `NIA (3 tablas)`, `evaluaciones` | Implementación de modelo | Materialización del modelo NIA aprobado institucionalmente. Eliminación de campos obsoletos en `evaluaciones` (GAP-DB-3). |
+| 2026-03-25 | `Init-DB`, `Seeds` | Unificación y Catálogos | Refactorización de `init-db.sql` para alinearse al DDL maestro. Creación de `seed-catalogs-eia2025.sql` con datos oficiales SIGED y EIA (GAP-CAT). |
+| 2026-03-25 | `escuelas` | Validación en Resolver | Se añadió validación de consistencia de nivel educativo (`id_nivel`) contra el catálogo oficial durante la carga de Excel (RF-13). |
 
 ### Notas Adicionales:
 - **Catálogos Duplicados:** Resuelto. Se consolidó el uso de `cat_nivel_educativo` como fuente única de verdad y se eliminó la tabla plural `cat_niveles_educativos` de la base de datos (GAP-DB-2).
