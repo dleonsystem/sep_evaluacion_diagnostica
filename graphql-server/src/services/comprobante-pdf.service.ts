@@ -30,7 +30,8 @@ function ensurePdfFonts(): void {
       bolditalics: path.join(fontsBasePath, 'Roboto-MediumItalic.ttf'),
     },
   });
-  pdfmakeInstance.setUrlAccessPolicy(() => false);
+  // El método setUrlAccessPolicy no está disponible en la versión de Node de pdfmake ^0.3.x
+  // pdfmakeInstance.setUrlAccessPolicy(() => false);
 
   fontsConfigured = true;
 }

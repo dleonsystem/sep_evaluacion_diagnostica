@@ -42,7 +42,7 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 | **DEF-006** | Auth usa `btoa(email:timestamp)` sin firma — token falsificable | ✅ Resuelto | S1 |
 | **DEF-007** | `generateComprobante` consulta columnas inexistentes en DB | ✅ Resuelto | RF-12, CU-16 |
 | **GAP-CI-1** | CI/CD ejecuta Node 18, proyecto requiere Node 20 | ✅ Resuelto | DevOps |
-| **GAP-CI-2** | CI/CD no ejecuta `npx jest` — pipeline sin tests | 🟠 Calidad | PSP |
+| **GAP-CI-2** | CI/CD no ejecuta `npx jest` — pipeline sin tests | ✅ Resuelto | PSP |
 | **GAP-DB-1** | ENUMs hardcodeados (ids 1,2) en resolvers | 🟠 Mantenimiento | RF-04 |
 | **GAP-DB-2** | Catálogo duplicado `cat_nivel_educativo` vs `cat_niveles_educativos` | 🟠 Integridad | DB |
 | **GAP-DB-3** | Modelo NIA (3 tablas aprobadas) sin DDL real | 🟠 RF-04.5 | RF-04 |
@@ -275,11 +275,8 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 - [ ] Crear `graphql-server/tests/generateComprobante.test.ts`: mock de `solicitudId` válido, verificar `success:true`, `fileName` termina en `.pdf`, Base64 decodificable
 - [ ] Revisar `tests/createTicket.test.ts` — actualizar si cambió el schema tras Sprint 1
 - [ ] Verificar cobertura > 60% en `/src/services/` y `/src/schema/resolvers.ts`
-- [ ] **[GAP-CI-2]** Agregar job `test` en `.github/workflows/ci.yml`:
-  ```yaml
-  - name: Run Tests
-    run: npm run test -- --ci --coverage
-  ```
+    - name: Run Tests
+      run: npm run test -- --ci --coverage
 
 **Archivos:** `graphql-server/tests/`, `.github/workflows/ci.yml`
 **Entregable:** `npx jest` en verde con los nuevos tests; CI ejecuta tests en pipeline

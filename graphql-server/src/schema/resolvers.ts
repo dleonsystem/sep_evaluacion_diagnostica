@@ -193,7 +193,7 @@ const BASE_ESCUELA_FIELDS = `
 `;
 
 const SOLICITUD_ESTADO_VALIDO_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'VALIDO')";
-const SOLICITUD_ESTADO_INVALIDO_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'INVALIDO')";
+// const SOLICITUD_ESTADO_INVALIDO_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'INVALIDO')";
 
 /**
  * Helper function to build update query

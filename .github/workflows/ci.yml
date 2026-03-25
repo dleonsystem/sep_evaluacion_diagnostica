@@ -34,6 +34,19 @@ jobs:
     - name: Build Project
       run: npm run build
 
+    - name: Run Tests
+      run: npm test -- --ci --coverage
+      env:
+        NODE_OPTIONS: "--experimental-vm-modules"
+
+    - name: Upload Coverage Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: backend-coverage
+        path: graphql-server/coverage/
+        retention-days: 7
+
   frontend-check:
     name: Frontend Check (Build)
     runs-on: ubuntu-latest
