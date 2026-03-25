@@ -2040,17 +2040,36 @@ t.numero_ticket as "folio",
           solicitudId = solRes.rows[0].id;
           consecutivo = solRes.rows[0].consecutivo;
         }
-
-        // Escuela, Grupos, Estudiantes (Omitido por brevedad en este chunk, manteniendo lógica previa)
-        // ... (asumimos que esta parte ya estaba bien configurada en el archivo original)
-        // Re-introduciendo el bloque de escuela y alumnos de forma limpia
+ 
         const escuelaId = escuelaIdFromDb;
-
         const idGrado = nivelId * 100 + grado;
-        const materiaRes = await client.query('SELECT id FROM materias WHERE nivel_educativo = $1', [nivelId]);
-        const materiasIds = materiaRes.rows.map((m: any) => m.id);
-        const periodRes = await client.query('SELECT id FROM periodos_evaluacion LIMIT 1');
+
+        // 1. Obtener Periodo Activo
+        const periodRes = await client.query('SELECT id FROM periodos_evaluacion WHERE vigente = true LIMIT 1');
         const periodoId = periodRes.rows[0]?.id;
+
+        if (!periodoId) {
+          throw new Error('No hay un periodo de evaluación vigente configurado en el sistema.');
+        }
+
+        // 2. Mapeo de Materias por Nivel y Grado (Estructura determinista del Excel)
+        // Este mapa asocia el índice del array de evaluaciones del alumno con el CÓDIGO de la materia en DB
+        const MATERIA_MAP: Record<string, string[]> = {
+          'PREESCOLAR_3': ['P_L_C', 'P_L_C', 'P_S_P', 'P_S_P', 'P_S_P', 'P_E_N', 'P_E_N', 'P_E_N', 'P_D_C', 'P_D_C', 'P_D_C'],
+          'PRIMARIA_1': ['1P_L', '1P_L', '1P_L', '1P_M', '1P_M', '1P_M', '1P_NS', '1P_NS', '1P_NS', '1P_HC'],
+          'PRIMARIA_2': ['2P_L', '2P_L', '2P_L', '2P_M', '2P_M', '2P_M', '2P_NS', '2P_NS', '2P_NS', '2P_HC'],
+          'PRIMARIA_3': Array(26).fill('3P_GEN'), // Ajustar según códigos reales en DB
+          'SECUNDARIA_1': Array(21).fill('1S_GEN'),
+          // ... mapeo completo según las sábanas oficiales
+        };
+
+        const nivelMapeoKey = `${nivelDetectadoExcel}_${grado}`;
+        const codigosMateriasConfigurados = MATERIA_MAP[nivelMapeoKey] || [];
+
+        // 3. Cache de UUIDs de materias para evitar múltiples queries
+        const materiasCache: Record<string, string> = {};
+        const allMaterias = await client.query('SELECT id, codigo FROM materias WHERE nivel_educativo = $1 AND activa = true', [nivelId]);
+        allMaterias.rows.forEach((m: any) => { materiasCache[m.codigo] = m.id; });
 
         const evaluationValues: any[] = [];
         const evaluationParams: any[] = [];
@@ -2058,24 +2077,53 @@ t.numero_ticket as "folio",
         let alumnosProcesados = 0;
 
         for (const alumno of alumnos) {
-          const gRes = await client.query('SELECT id FROM grupos WHERE escuela_id = $1 AND nombre = $2', [escuelaId, alumno.grupo]);
-          const grupoId = gRes.rows.length > 0 ? gRes.rows[0].id : (await client.query('INSERT INTO grupos (escuela_id, grado_id, nombre, nivel_educativo) VALUES ($1, $2, $3, $4) RETURNING id', [escuelaId, idGrado, alumno.grupo, nivelId])).rows[0].id;
-          const sRes = await client.query('INSERT INTO estudiantes (nombre, grupo_id, curp) VALUES ($1,$2,$3) ON CONFLICT (curp) DO UPDATE SET grupo_id = EXCLUDED.grupo_id RETURNING id', [alumno.nombre, grupoId, alumno.curp]);
+          // 4. Asegurar Grupo
+          const gRes = await client.query(
+            'SELECT id FROM grupos WHERE escuela_id = $1 AND grado_id = $2 AND nombre = $3 LIMIT 1', 
+            [escuelaId, idGrado, alumno.grupo]
+          );
+          
+          let grupoId;
+          if (gRes.rows.length > 0) {
+            grupoId = gRes.rows[0].id;
+          } else {
+            const newG = await client.query(
+              'INSERT INTO grupos (escuela_id, grado_id, nombre, nivel_educativo, grado_numero, turno) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+              [escuelaId, idGrado, alumno.grupo, nivelId, grado, excelTurno]
+            );
+            grupoId = newG.rows[0].id;
+          }
+
+          // 5. Asegurar Estudiante (UPSERT por CURP sintética)
+          const sRes = await client.query(
+            'INSERT INTO estudiantes (nombre, grupo_id, curp) VALUES ($1, $2, $3) ON CONFLICT (curp) DO UPDATE SET grupo_id = EXCLUDED.grupo_id, nombre = EXCLUDED.nombre RETURNING id',
+            [alumno.nombre, grupoId, alumno.curp]
+          );
           const estudianteId = sRes.rows[0].id;
 
-          for (const ev of alumno.evaluaciones) {
-            const mId = materiasIds[ev.materiaIndex];
-            if (mId) {
-              evaluationParams.push(estudianteId, mId, periodoId, ev.valor, solicitudId);
-              evaluationValues.push(`($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2}, $${paramIndex + 3}, NOW(), NOW(), $${paramIndex + 4})`);
-              paramIndex += 5;
+          // 6. Preparar Evaluaciones Granulares
+          alumno.evaluaciones.forEach((ev: any) => {
+            const codigoMateria = codigosMateriasConfigurados[ev.materiaIndex];
+            const materiaId = materiasCache[codigoMateria];
+
+            if (materiaId) {
+              evaluationParams.push(estudianteId, materiaId, periodoId, ev.valor, solicitudId);
+              evaluationValues.push(`($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2}, $${paramIndex + 3}, NOW(), NOW(), $${paramIndex + 4}, true)`);
+              paramIndex += 6;
             }
-          }
+          });
           alumnosProcesados++;
         }
 
         if (evaluationValues.length > 0) {
-          await client.query(`INSERT INTO evaluaciones (estudiante_id, materia_id, periodo_id, valoracion, fecha_evaluacion, updated_at, solicitud_id) VALUES ${evaluationValues.join(', ')} ON CONFLICT (estudiante_id, materia_id, periodo_id, solicitud_id) DO UPDATE SET valoracion = EXCLUDED.valoracion, updated_at = NOW()`, evaluationParams);
+          // 7. Inserción Masiva de Evaluaciónes (Activa Triggers de NIA)
+          await client.query(
+            `INSERT INTO evaluaciones (estudiante_id, materia_id, periodo_id, valoracion, fecha_evaluacion, updated_at, solicitud_id, validado) 
+             VALUES ${evaluationValues.join(', ')} 
+             ON CONFLICT (estudiante_id, materia_id, periodo_id, solicitud_id) 
+             DO UPDATE SET valoracion = EXCLUDED.valoracion, updated_at = NOW(), validado = true`, 
+            evaluationParams
+          );
         }
 
         await client.query('COMMIT');
