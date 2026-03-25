@@ -29,6 +29,7 @@ export class NavComponent implements OnInit, AfterViewInit, OnDestroy {
   isAdminAutenticado = false;
   correoUsuario: string | null = null;
   correoAdmin: string | null = null;
+  rolUsuario: string | null = null;
 
   private routerSubscription: Subscription | null = null;
   private authSubscription: Subscription | null = null;
@@ -143,6 +144,13 @@ export class NavComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isAdminAutenticado = this.adminAuthService.estaAutenticado();
     this.correoUsuario = this.authService.obtenerCorreoSesion();
     this.correoAdmin = this.adminAuthService.obtenerCorreoSesion();
+    this.rolUsuario = this.authService.obtenerRolSesion();
+    console.log('NavComponent - Rol detectado:', this.rolUsuario);
+  }
+
+  get esUsuarioRol4(): boolean {
+    // Ocultar si es rol 4 (CONSULTA o RESPONSABLE_CCT según DB)
+    return this.rolUsuario === 'CONSULTA' || this.rolUsuario === '4' || this.rolUsuario === 'RESPONSABLE_CCT';
   }
 
   private actualizarOffsetHeader(): void {

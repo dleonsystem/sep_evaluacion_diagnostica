@@ -105,20 +105,6 @@
                 </div>
               </div>
 
-              <div class="archivos__seccion">
-                <h4>Detalles del procesamiento:</h4>
-                <ul *ngIf="registro.errores && registro.errores.length; else sinErrores">
-                  <li *ngFor="let error of registro.errores" class="archivos__mensaje--error">
-                    {{ error }}
-                  </li>
-                </ul>
-                <ng-template #sinErrores>
-                  <p class="archivos__mensaje--info" style="margin: 0; padding: 0.5rem 0;">
-                    No se encontraron errores en este archivo. El procesamiento fue exitoso.
-                  </p>
-                </ng-template>
-              </div>
-
               <div class="archivos__resultados-meta">
                 Ruta en servidor: <code>{{ registro.archivoPath || 'N/D' }}</code>
               </div>

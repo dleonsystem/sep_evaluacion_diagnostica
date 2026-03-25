@@ -107,9 +107,9 @@ export class LoginComponent implements OnInit {
           this.contrasena
         );
         this.estadoCredencialesService.actualizar(this.correo, nuevasCredenciales.contrasena);
-        this.authService.iniciarSesion(this.correo, this.contrasena);
+        this.authService.iniciarSesion(this.correo, this.contrasena, usuario.rol);
       } else {
-        this.authService.iniciarSesionSinCredenciales(this.correo);
+        this.authService.iniciarSesionSinCredenciales(this.correo, usuario.rol);
       }
 
       await Swal.fire({

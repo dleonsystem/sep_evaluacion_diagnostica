@@ -16,7 +16,8 @@ import { GraphqlService } from '../../services/graphql.service';
 import { MockPdfService } from '../../services/mock-pdf.service';
 import { UsuariosService } from '../../services/usuarios.service';
 import { EvaluacionesService, ExcelValidationError } from '../../services/evaluaciones.service';
-import { timeout, catchError, throwError } from 'rxjs';
+import { timeout, catchError, throwError, debounceTime, distinctUntilChanged } from 'rxjs';
+import { CHECK_USER_EXISTS } from '../../operations/query';
 
 interface ResultadoExito {
   mensaje: string;
@@ -95,6 +96,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   guardandoTodo = false;
   intentosFallidos = 0;
   mostrarModalIncidencia = false;
+  isDragging = false;
 
   evidenciasIncidencia: any[] = [];
   readonly maxEvidenciasIncidencia = 5;
@@ -181,13 +183,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
 
     if (this.authService.requiereLoginParaNuevaCarga(this.correoControl.value)) {
-      await Swal.fire({
-        icon: 'info',
-        title: 'Inicia sesión',
-        text: 'Ya registraste un envío. Inicia sesión para cargar un nuevo archivo.',
-        confirmButtonText: 'Ir a login'
-      });
-      void this.router.navigate(['/login'], { queryParams: { redirect: '/carga-masiva' } });
+      await this.mostrarAvisoLogin();
       this.limpiarSeleccion(input);
       return;
     }
@@ -201,6 +197,58 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
 
     input.value = '';
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.correoControl.valid) {
+      this.isDragging = true;
+    }
+  }
+
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging = false;
+  }
+
+  async onDrop(event: DragEvent): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging = false;
+
+    if (this.correoControl.invalid) {
+      this.correoControl.markAllAsTouched();
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Correo requerido',
+        text: 'Ingresa un correo electrónico válido antes de arrastrar tu archivo.'
+      });
+      return;
+    }
+
+    if (this.authService.requiereLoginParaNuevaCarga(this.correoControl.value)) {
+      await this.mostrarAvisoLogin();
+      return;
+    }
+
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      for (let i = 0; i < files.length; i++) {
+        await this.procesarArchivo(files[i]);
+      }
+    }
+  }
+
+  private async mostrarAvisoLogin(): Promise<void> {
+    await Swal.fire({
+      icon: 'info',
+      title: 'Inicia sesión',
+      text: 'Ya registraste un envío. Inicia sesión para cargar un nuevo archivo.',
+      confirmButtonText: 'Ir a login'
+    });
+    void this.router.navigate(['/login'], { queryParams: { redirect: '/carga-masiva' } });
   }
 
   private async procesarArchivo(file: File): Promise<void> {
@@ -814,9 +862,40 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     this.establecerCredencialesMostradas();
     this.actualizarAvisoCredenciales(this.correoControl.value);
 
-    this.correoControl.valueChanges.pipe(takeUntil(this.destroy$)).subscribe((correo) => {
+    this.correoControl.valueChanges.pipe(
+      debounceTime(600),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(async (correo) => {
       this.actualizarAvisoCredenciales(correo);
+      if (this.correoControl.valid && correo) {
+        await this.verificarExistenciaUsuario(correo);
+      }
     });
+  }
+
+  private async verificarExistenciaUsuario(email: string): Promise<void> {
+    if (this.sesionActiva) return; // Si ya hay sesión, no bloqueamos
+
+    try {
+      const response = await firstValueFrom(
+        this.graphqlService.execute<any>(CHECK_USER_EXISTS, { email: email.trim().toLowerCase() })
+      );
+
+      const res = response.data?.checkUserExists;
+      if (res?.exists) {
+        await Swal.fire({
+          icon: 'info',
+          title: 'Usuario registrado',
+          text: res.message || 'USUARIO YA REGISTRADO; INICIE SESIÓN PARA CARGAR ARCHIVOS.',
+          confirmButtonText: 'Ir a login',
+          allowOutsideClick: false
+        });
+        void this.router.navigate(['/login'], { queryParams: { correo: email, redirect: '/carga-masiva' } });
+      }
+    } catch (error) {
+      console.warn('Error verificando existencia de usuario:', error);
+    }
   }
 
   private establecerCredencialesMostradas(): void {

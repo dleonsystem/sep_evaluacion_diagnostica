@@ -287,6 +287,15 @@
   filter: grayscale(0.2);
 }
 
+.carga__drop--dragging {
+  border-color: #0d9488 !important;
+  border-style: solid !important;
+  background-color: #f0fdfa !important;
+  transform: scale(1.005);
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.1);
+  transition: all 0.2s ease-in-out;
+}
+
 .carga__input {
   position: relative;
   overflow: hidden;
