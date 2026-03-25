@@ -192,8 +192,9 @@ const BASE_ESCUELA_FIELDS = `
   e.updated_at
 `;
 
+const SOLICITUD_ESTADO_PENDIENTE_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'PENDIENTE')";
 const SOLICITUD_ESTADO_VALIDO_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'VALIDO')";
-// const SOLICITUD_ESTADO_INVALIDO_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'INVALIDO')";
+const SOLICITUD_ESTADO_RECHAZADO_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'RECHAZADO')";
 
 /**
  * Helper function to build update query
@@ -1857,7 +1858,7 @@ t.numero_ticket as "folio",
         } catch (workerError: any) {
           const errorMsg = workerError.message || 'Error de validación desconocido';
           const rejRes = await query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7, false) RETURNING consecutivo',
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false) RETURNING consecutivo`,
             ['DESC', nombreArchivo, fileHash, userToLink || null, JSON.stringify([{ error: errorMsg, hoja: 'General' }]), remotePath, archivoSize]
           );
           return {
@@ -1872,7 +1873,7 @@ t.numero_ticket as "folio",
 
         if (erroresEstructurados && erroresEstructurados.length > 0) {
           await query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7, false)',
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false)`,
             [cct || 'INVALID', nombreArchivo, fileHash, userToLink || null, JSON.stringify(erroresEstructurados), remotePath, archivoSize]
           );
           return {
@@ -1903,7 +1904,7 @@ t.numero_ticket as "folio",
         if (!cctValidation.isValid) {
           const errorMsg = `Formato de CCT inválido en el archivo: ${cctValidation.error}`;
           await query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7, false)',
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false)`,
             [cct || 'INVALID', nombreArchivo, fileHash, userToLink || null, JSON.stringify([errorMsg]), remotePath, archivoSize]
           );
           return { success: false, message: errorMsg, detalles: { errores: [errorMsg] } };
@@ -1919,7 +1920,7 @@ t.numero_ticket as "folio",
         if (escrow.rows.length === 0) {
           const errorMsg = `La CCT ${cct} con turno "${excelTurno}" no está registrada en el sistema. Por favor, regístrela primero en el Catálogo de Escuelas.`;
           await query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7, false)',
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false)`,
             [cct, nombreArchivo, fileHash, userToLink || null, JSON.stringify([{ campo: 'CCT', error: errorMsg, hoja: 'ESC' }]), remotePath, archivoSize]
           );
           return {
@@ -2010,7 +2011,7 @@ t.numero_ticket as "folio",
           consecutivo = upRes.rows[0].consecutivo;
         } else {
           const solRes = await client.query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, hash_archivo, usuario_id, credencial_id, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7, $8, false) RETURNING id, consecutivo',
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, hash_archivo, usuario_id, credencial_id, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_PENDIENTE_SQL}, $3, $4, $5, $6, $7, $8, false) RETURNING id, consecutivo`,
             [cct, nombreArchivo, nivelId, fileHash, userToLink || null, credencialId, remotePath, archivoSize]
           );
           solicitudId = solRes.rows[0].id;
