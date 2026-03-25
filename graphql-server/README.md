@@ -20,7 +20,7 @@ Servidor GraphQL para el Sistema de Evaluación Integral de Aprendizaje (EIA) de
 
 ### Prerrequisitos
 
-- Node.js >= 18.0.0
+- Node.js >= 20.0.0
 - PostgreSQL >= 15.0
 - npm >= 9.0.0
 
