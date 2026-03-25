@@ -49,6 +49,7 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 | **GAP-RF18** | RF-18 incompleto: sin `primer_login`, bloqueo 5 intentos, expiración | ✅ Resuelto | S1 |
 | **GAP-CAT** | Catálogos oficiales EIA 2025 / CCT SIGED con seed y validación | ✅ Resuelto | RF-13 |
 | **ISSUE-301** | Containerización completa (Docker + Compose + Healthcheck) | ✅ Resuelto | Infra |
+| **ISSUE-254** | CU-16: Persistencia robusta de evaluaciones, NIA y estudiantes | ✅ Resuelto | RF-16 |
 
 ---
 
