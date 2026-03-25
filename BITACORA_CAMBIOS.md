@@ -11,6 +11,17 @@ Este documento se actualiza con cada modificación relevante al proyecto para en
 - Se emitió dictamen técnico del issue con resultado `Cumple parcialmente` por brechas remanentes: manejo de solicitudes con `usuario_id` nulo, falta de smoke test navegador versionado, suite global de Jest en rojo y ausencia de job de tests en CI.
 - Se documentó la trazabilidad técnica en `docs/issues/issue-294-analisis-tecnico.md` y `docs/issues/issue-294-dictamen-tecnico.md`.
 
+## 2026-03-25
+
+- **Implementación del Modelo NIA (GAP-DB-3)**: Se materializó el esquema normalizado con las tablas `CAT_NIVELES_INTEGRACION`, `CAT_CAMPOS_FORMATIVOS` y `NIVELES_INTEGRACION_ESTUDIANTE`.
+- **Automatización de Cálculos**: Se implementó el trigger `trg_calcular_nia_auto` para persistir automáticamente el NIA tras la validación de evaluaciones, eliminando campos redundantes en la tabla `EVALUACIONES`.
+- **Catálogos Oficiales EIA 2025 / SIGED (GAP-CAT)**: 
+  - Se creó el script `seed-catalogs-eia2025.sql` con la base oficial de CCTs, entidades, niveles y turnos.
+  - Se refactorizó `init-db.sql` para unificarlo con el DDL maestro, asegurando entornos reproducibles y limpios.
+- **Validación Robusta de Cargas**: Se actualizó el resolver `uploadExcelAssessment` para cruzar la CCT y el Nivel Educativo contra los catálogos oficiales, rechazando archivos inconsistentes (RF-13).
+- **Cierre de Issue #297**: Se eliminaron los ENUMs hardcodeados en los resolvers de GraphQL, delegando la lógica a las tablas de catálogo de la base de datos.
+- **Actualización Documental**: Sincronización de `ddl_generated.sql`, `ESTRUCTURA_DE_DATOS.md` y `PLAN_TRABAJO_FASE1.md`.
+
 ## 2025-11-25
 
 - Se instala y configura el frontend en Angular, incluyendo ajustes iniciales de caché y dependencias para asegurar builds consistentes.
