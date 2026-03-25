@@ -150,6 +150,48 @@ SELECT val,
 FROM unnest(ARRAY['ENS','HYC','LEN','SPC','F5']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
+CREATE TABLE cat_niveles_integracion (
+    id_nia              SERIAL PRIMARY KEY,
+    clave               VARCHAR(2) NOT NULL UNIQUE,     -- ED, EP, ES, SO
+    nombre              VARCHAR(50) NOT NULL,
+    descripcion         TEXT NOT NULL,
+    rango_min           INT NOT NULL CHECK (rango_min >= 0 AND rango_min <= 3),
+    rango_max           INT NOT NULL CHECK (rango_max >= 0 AND rango_max <= 3),
+    color_hex           VARCHAR(7),
+    orden_visual        INT NOT NULL,
+    vigente             BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ck_rango_valido CHECK (rango_min <= rango_max)
+);
+
+INSERT INTO cat_niveles_integracion (clave, nombre, descripcion, rango_min, rango_max, color_hex, orden_visual) 
+VALUES
+    ('ED', 'En Desarrollo', 'Requiere apoyo adicional significativo', 0, 0, '#DC3545', 1),
+    ('EP', 'En Proceso', 'Muestra avances, requiere refuerzo', 1, 1, '#FFC107', 2),
+    ('ES', 'Esperado', 'Cumple con los aprendizajes esperados', 2, 2, '#28A745', 3),
+    ('SO', 'Sobresaliente', 'Supera los aprendizajes esperados', 3, 3, '#007BFF', 4)
+ON CONFLICT (clave) DO NOTHING;
+
+CREATE TABLE cat_campos_formativos (
+    id              SERIAL PRIMARY KEY,
+    clave           VARCHAR(10) NOT NULL UNIQUE,     -- ENS, HYC, LEN, SPC, F5
+    nombre          VARCHAR(100) NOT NULL,
+    descripcion     TEXT,
+    orden_visual    INT NOT NULL,
+    vigente         BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO cat_campos_formativos (clave, nombre, descripcion, orden_visual) 
+VALUES
+    ('ENS', 'Enseñanza', 'Español y Matemáticas', 1),
+    ('HYC', 'Historia y Civismo', 'Ética, Naturaleza y Sociedades', 2),
+    ('LEN', 'Lenguaje y Comunicación', 'Lenguajes', 3),
+    ('SPC', 'Saberes y Pensamiento Científico', 'Saberes y Pensamiento Científico', 4),
+    ('F5', 'Formato 5', 'Reporte individual consolidado', 5)
+ON CONFLICT (clave) DO NOTHING;
+
 CREATE TABLE cat_tipo_notificacion (
 	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	codigo VARCHAR(50) NOT NULL UNIQUE,
@@ -334,6 +376,7 @@ CREATE TABLE materias (
 	codigo            VARCHAR(10) NOT NULL UNIQUE,
 	nombre            VARCHAR(100) NOT NULL,
 	nivel_educativo   SMALLINT NOT NULL REFERENCES cat_nivel_educativo(id),
+	id_campo_formativo INT REFERENCES cat_campos_formativos(id),
 	orden             INT,
 	activa            BOOLEAN NOT NULL DEFAULT TRUE
 );
@@ -406,6 +449,29 @@ CREATE TABLE estudiantes (
 	estatus          CHAR(1) NOT NULL DEFAULT 'A',
 	created_at       TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE niveles_integracion_estudiante (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_estudiante       UUID NOT NULL REFERENCES estudiantes(id) ON DELETE CASCADE,
+    id_campo_formativo  INT NOT NULL REFERENCES cat_campos_formativos(id),
+    id_periodo          UUID NOT NULL REFERENCES periodos_evaluacion(id),
+    id_nia              INT NOT NULL REFERENCES cat_niveles_integracion(id_nia),
+    valoracion_promedio NUMERIC(4,2) NOT NULL CHECK (valoracion_promedio >= 0 AND valoracion_promedio <= 3),
+    total_materias      INT NOT NULL CHECK (total_materias > 0),
+    materias_evaluadas  INT NOT NULL CHECK (materias_evaluadas > 0 AND materias_evaluadas <= total_materias),
+    calculado_en        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    calculado_por       VARCHAR(50) NOT NULL DEFAULT 'SISTEMA',
+    validado            BOOLEAN DEFAULT FALSE,
+    validado_por        UUID REFERENCES usuarios(id),
+    validado_en         TIMESTAMP,
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_estudiante_campo_periodo UNIQUE (id_estudiante, id_campo_formativo, id_periodo)
+);
+
+CREATE INDEX idx_nia_estudiante ON niveles_integracion_estudiante(id_estudiante);
+CREATE INDEX idx_nia_periodo ON niveles_integracion_estudiante(id_periodo);
+CREATE INDEX idx_nia_campo ON niveles_integracion_estudiante(id_campo_formativo);
 
 CREATE TABLE usuarios (
 	id                     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -763,8 +829,6 @@ CREATE TABLE evaluaciones (
 	periodo_id            UUID NOT NULL REFERENCES periodos_evaluacion(id),
 	archivo_frv_id        UUID REFERENCES archivos_frv(id),
 	valoracion            INT NOT NULL,
-	nivel_integracion     VARCHAR(20),
-	competencia_alcanzada BOOLEAN NOT NULL DEFAULT FALSE,
 	observaciones         TEXT,
 	registrado_por        UUID REFERENCES usuarios(id),
 	fecha_evaluacion      TIMESTAMP WITHOUT TIME ZONE,
@@ -1473,6 +1537,66 @@ CREATE TRIGGER trg_touch_evaluaciones
 CREATE TRIGGER trg_touch_preguntas_frecuentes
 	BEFORE UPDATE ON preguntas_frecuentes
 	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
+CREATE TRIGGER trg_touch_nia
+	BEFORE UPDATE ON niveles_integracion_estudiante
+	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
+
+-- =====================================================================
+-- NIA CALCULATION LOGIC
+-- =====================================================================
+
+CREATE OR REPLACE FUNCTION calcular_nia_estudiante()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_id_campo_formativo INT;
+    v_promedio NUMERIC(4,2);
+    v_id_nia INT;
+    v_total_materias INT;
+    v_materias_evaluadas INT;
+BEGIN
+    SELECT id_campo_formativo INTO v_id_campo_formativo
+    FROM MATERIAS WHERE id = NEW.materia_id;
+    
+    IF v_id_campo_formativo IS NULL THEN RETURN NEW; END IF;
+
+    SELECT AVG(e.valoracion)::NUMERIC(4,2), COUNT(DISTINCT m.id), COUNT(DISTINCT e.materia_id)
+    INTO v_promedio, v_total_materias, v_materias_evaluadas
+    FROM EVALUACIONES e
+    INNER JOIN MATERIAS m ON e.materia_id = m.id
+    WHERE e.estudiante_id = NEW.estudiante_id
+      AND e.periodo_id = NEW.periodo_id
+      AND m.id_campo_formativo = v_id_campo_formativo
+      AND e.validado = TRUE;
+    
+    IF v_materias_evaluadas > 0 THEN
+        SELECT id_nia INTO v_id_nia FROM CAT_NIVELES_INTEGRACION
+        WHERE v_promedio BETWEEN rango_min AND rango_max AND vigente = TRUE LIMIT 1;
+        
+        INSERT INTO NIVELES_INTEGRACION_ESTUDIANTE (
+            id_estudiante, id_campo_formativo, id_periodo, id_nia,
+            valoracion_promedio, total_materias, materias_evaluadas
+        )
+        VALUES (
+            NEW.estudiante_id, v_id_campo_formativo, NEW.periodo_id, v_id_nia,
+            v_promedio, v_total_materias, v_materias_evaluadas
+        )
+        ON CONFLICT (id_estudiante, id_campo_formativo, id_periodo)
+        DO UPDATE SET
+            id_nia = EXCLUDED.id_nia,
+            valoracion_promedio = EXCLUDED.valoracion_promedio,
+            total_materias = EXCLUDED.total_materias,
+            materias_evaluadas = EXCLUDED.materias_evaluadas,
+            calculado_en = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_calcular_nia_auto
+AFTER INSERT OR UPDATE OF valoracion, validado ON EVALUACIONES
+FOR EACH ROW WHEN (NEW.validado = TRUE)
+EXECUTE FUNCTION calcular_nia_estudiante();
 
 -- =====================================================================
 -- END OF SCRIPT

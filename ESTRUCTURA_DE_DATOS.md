@@ -1,7 +1,7 @@
 # ESTRUCTURA DE DATOS - Sistema SEP Evaluación Diagnóstica
 
-> **Documento generado desde DDL real** | Fecha: 12 marzo 2026  
-> **Fuente de verdad**: `ddl_generated.sql` (59 tablas totales)
+> **Documento generado desde DDL real** | Fecha: 25 marzo 2026  
+> **Fuente de verdad**: `ddl_generated.sql` (62 tablas totales)
 
 Este documento describe la estructura completa y fidedigna de la base de datos PostgreSQL del Sistema SEP Evaluación Diagnóstica, reflejando **exactamente** el DDL productivo actual.
 
@@ -11,24 +11,24 @@ Este documento describe la estructura completa y fidedigna de la base de datos P
 
 | Categoría | Cantidad | Notas |
 |-----------|----------|-------|
-| **Catálogos ENUM Mirror** | 16 | Reemplazan tipos ENUM por tablas con FKs |
+| **Catálogos ENUM Mirror** | 18 | Reemplazan tipos ENUM por tablas con FKs (incluye NIAs) |
 | **Catálogos Tradicionales** | 5 | CAT_CICLOS_ESCOLARES, CAT_ENTIDADES_FEDERATIVAS, CAT_TURNOS, CAT_GRADOS, CAT_ROLES_USUARIO |
 | **Entidades Core** | 2 | MATERIAS, COMPETENCIAS |
 | **Entidades Principales** | 3 | ESCUELAS, GRUPOS, ESTUDIANTES |
 | **Usuarios y Seguridad** | 7 | USUARIOS, HISTORICO_PASSWORDS, BLOQUEOS_IP, SESIONES, INTENTOS_LOGIN, CAMBIOS_AUDITORIA, LOG_ACTIVIDADES |
 | **Archivos y Validación** | 5 | ARCHIVOS_FRV, ARCHIVOS_TEMPORALES, ARCHIVOS_TICKETS, CREDENCIALES_EIA2, SOLICITUDES_EIA2 |
-| **Evaluaciones** | 3 | EVALUACIONES, RESULTADOS_COMPETENCIAS, PERIODOS_EVALUACION |
+| **Evaluaciones y NIA** | 4 | EVALUACIONES, RESULTADOS_COMPETENCIAS, PERIODOS_EVALUACION, NIVELES_INTEGRACION_ESTUDIANTE |
 | **Reportes y Notificaciones** | 4 | REPORTES_GENERADOS, NOTIFICACIONES_EMAIL, PLANTILLAS_EMAIL, PREGUNTAS_FRECUENTES |
 | **Tickets de Soporte** | 2 | TICKETS_SOPORTE, COMENTARIOS_TICKET |
 | **Configuración** | 2 | CONFIGURACIONES_SISTEMA, CONSENTIMIENTOS_LGPDP |
 | **Staging DBF** | 10 | PRE3, PRI1-PRI6, SEC1-SEC3 |
-| **TOTAL** | **59** | Todas documentadas aquí |
+| **TOTAL** | **62** | Todas documentadas aquí |
 
 ---
 
 ## 🗂️ CATÁLOGOS ENUM MIRROR
 
-Estas 16 tablas reemplazan tipos ENUM mediante el patrón **"ENUM Mirror"** (tablas con FK). Todas comparten estructura idéntica:
+These 18 tablas reemplazan tipos ENUM mediante el patrón **"ENUM Mirror"** (tablas con FK). Todas comparten estructura idéntica:
 
 ```sql
 CREATE TABLE cat_nombre_catalogo (
@@ -176,6 +176,43 @@ Usado por: `archivos_tickets(estado)`
 
 ---
 
+### 17. CAT_NIVELES_INTEGRACION
+
+**Valores**: `ED` (En Desarrollo), `EP` (En Proceso), `ES` (Esperado), `SO` (Sobresaliente)
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id_nia | SERIAL | PK - Identificador único |
+| clave | VARCHAR(2) | Clave unívoca (UNIQUE) |
+| nombre | VARCHAR(50) | Nombre del nivel |
+| descripcion | TEXT | Descripción del nivel |
+| rango_min | INT | Rango mínimo de valoración (0-3) |
+| rango_max | INT | Rango máximo de valoración (0-3) |
+| color_hex | VARCHAR(7) | Código de color para visualización |
+| orden_visual | INT | Orden jerárquico |
+| vigente | BOOLEAN | Indica si es vigente |
+
+Usado por: `niveles_integracion_estudiante(id_nia)`
+
+---
+
+### 18. CAT_CAMPOS_FORMATIVOS
+
+**Valores**: `ENS` (Enseñanza), `HYC` (Historia y Civismo), `LEN` (Lenguaje), `SPC` (Saberes), `F5` (Formato 5)
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | SERIAL | PK - Identificador único |
+| clave | VARCHAR(10) | Clave del campo (UNIQUE) |
+| nombre | VARCHAR(100) | Nombre del campo formativo |
+| descripcion | TEXT | Descripción del área |
+| orden_visual | INT | Orden de visualización |
+| vigente | BOOLEAN | Indica si es vigente |
+
+Usado por: `materias(id_campo_formativo)`, `niveles_integracion_estudiante(id_campo_formativo)`
+
+---
+
 ## 🏛️ CATÁLOGOS TRADICIONALES
 
 ### CAT_CICLOS_ESCOLARES
@@ -287,6 +324,7 @@ Materias/asignaturas del sistema educativo.
 | codigo | VARCHAR(10) | Código único de la materia UNIQUE |
 | nombre | VARCHAR(100) | Nombre de la materia |
 | nivel_educativo | SMALLINT | FK a `cat_nivel_educativo(id)` |
+| id_campo_formativo | INT | FK a `cat_campos_formativos(id)` |
 | orden | INT | Orden de visualización |
 | activa | BOOLEAN | Indica si está activa DEFAULT TRUE |
 
@@ -820,9 +858,7 @@ Evaluaciones de estudiantes por materia y periodo.
 | materia_id | UUID | FK a `materias(id)` |
 | periodo_id | UUID | FK a `periodos_evaluacion(id)` |
 | archivo_frv_id | UUID | FK a `archivos_frv(id)` |
-| valoracion | INT | Valoración (0-3) |
-| nivel_integracion | VARCHAR(20) | Nivel de integración calculado |
-| competencia_alcanzada | BOOLEAN | Indica si alcanzó la competencia DEFAULT FALSE |
+| valoracion | INT | Valoración numérica (0-3) |
 | observaciones | TEXT | Observaciones adicionales |
 | registrado_por | UUID | FK a `usuarios(id)` |
 | fecha_evaluacion | TIMESTAMP | Fecha de evaluación |
@@ -843,15 +879,44 @@ Evaluaciones de estudiantes por materia y periodo.
 - `idx_evaluaciones_archivo (archivo_frv_id)`
 
 **Triggers:**
-- `trg_validar_valoracion_evaluacion` (BEFORE INSERT/UPDATE): Valida rango 0-3 y calcula `nivel_integracion` automáticamente:
-  - 0-1: EN DESARROLLO
-  - 2: SATISFACTORIO
-  - 3: AVANZADO o SOBRESALIENTE (según `competencia_alcanzada`)
 - `trg_touch_evaluaciones` (BEFORE UPDATE): Actualiza `updated_at`
+- `trg_calcular_nia_auto` (AFTER INSERT OR UPDATE OF valoracion, validado): Calcula automáticamente el NIA en la tabla `niveles_integracion_estudiante` cuando la evaluación es marcada como validada.
 
 **Relaciones:**
 - FK: `estudiantes(id)`, `materias(id)`, `periodos_evaluacion(id)`, `archivos_frv(id)`, `usuarios(id)` (x2), `solicitudes_eia2(id)`
 - Referenciado por: `resultados_competencias(id_evaluacion)`
+
+---
+
+### NIVELES_INTEGRACION_ESTUDIANTE
+
+Resultados consolidados de NIA por estudiante, campo formativo y periodo. Se calculan automáticamente mediante trigger tras la validación de evaluaciones.
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | UUID | PK DEFAULT gen_random_uuid() |
+| id_estudiante | UUID | FK a `estudiantes(id)` ON DELETE CASCADE |
+| id_campo_formativo | INT | FK a `cat_campos_formativos(id)` |
+| id_periodo | UUID | FK a `periodos_evaluacion(id)` |
+| id_nia | INT | FK a `cat_niveles_integracion(id_nia)` |
+| valoracion_promedio | NUMERIC(4,2) | Promedio de valoraciones de las materias del campo |
+| total_materias | INT | Total de materias que integran el campo |
+| materias_evaluadas | INT | Cantidad de materias evaluadas efectivamente |
+| calculado_en | TIMESTAMP | Fecha de cálculo DEFAULT NOW() |
+| calculado_por | VARCHAR(50) | Origen del cálculo (SISTEMA, MANUAL) |
+| validado | BOOLEAN | Indica si el NIA ha sido validado |
+| validado_por | UUID | FK a `usuarios(id)` |
+| validado_en | TIMESTAMP | Fecha de validación manual (si aplica) |
+| created_at | TIMESTAMP | DEFAULT NOW() |
+| updated_at | TIMESTAMP | DEFAULT NOW() |
+
+**Constraints:**
+- `uq_estudiante_campo_periodo UNIQUE (id_estudiante, id_campo_formativo, id_periodo)`
+
+**Índices:**
+- `idx_nia_estudiante ON niveles_integracion_estudiante(id_estudiante)`
+- `idx_nia_periodo ON niveles_integracion_estudiante(id_periodo)`
+- `idx_nia_campo ON niveles_integracion_estudiante(id_campo_formativo)`
 
 ---
 
