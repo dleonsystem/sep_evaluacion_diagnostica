@@ -23,5 +23,5 @@ Este documento detalla todas las modificaciones realizadas a la base de datos `E
 | 2026-03-12 | `materiales_evaluacion` | Creación de tabla | Implementación de CU-01 para la publicación de materiales EIA, FRV y Rúbricas por parte de administración. |
 
 ### Notas Adicionales:
-- **Catálogos Duplicados:** Se detectó la coexistencia de `cat_nivel_educativo` (singular) y `cat_niveles_educativos` (plural). Se pobló el plural para cumplir con las referencias de la tabla `escuelas`.
+- **Catálogos Duplicados:** Resuelto. Se consolidó el uso de `cat_nivel_educativo` como fuente única de verdad y se eliminó la tabla plural `cat_niveles_educativos` de la base de datos (GAP-DB-2).
 - **Mapeo de Tipos:** Se solucionaron errores de `smallint` asegurando que los IDs enviados desde Node.js fueran numéricos y no strings u objetos vacíos.
