@@ -76,3 +76,13 @@ export const DOWNLOAD_ASSESSMENT_RESULT = `
     }
   }
 `;
+
+export const GENERATE_COMPROBANTE = `
+  query GenerateComprobante($solicitudId: ID!) {
+    generateComprobante(solicitudId: $solicitudId) {
+      success
+      fileName
+      contentBase64
+    }
+  }
+`;

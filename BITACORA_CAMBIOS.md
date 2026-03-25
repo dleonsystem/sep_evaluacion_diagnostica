@@ -2,6 +2,15 @@
 
 Este documento se actualiza con cada modificación relevante al proyecto para entregar el informe mensual solicitado.
 
+## 2026-03-24
+
+- Se analizó e implementó la corrección del issue `#294` sobre `generateComprobante`, sustituyendo columnas inexistentes por `consecutivo`, `archivo_original` y `hash_archivo` en el resolver GraphQL.
+- Se incorporó generación de PDF real en backend mediante `pdfmake`, con servicio dedicado y política explícita para bloquear descargas de recursos externos.
+- Se integró el consumo del comprobante en el frontend autenticado (`archivos-evaluacion`) para descargar `Comprobante_<consecutivo>.pdf` con MIME `application/pdf`.
+- Se agregaron pruebas específicas para el resolver `generateComprobante` y para el servicio de PDF; ambas pasan en validación local.
+- Se emitió dictamen técnico del issue con resultado `Cumple parcialmente` por brechas remanentes: manejo de solicitudes con `usuario_id` nulo, falta de smoke test navegador versionado, suite global de Jest en rojo y ausencia de job de tests en CI.
+- Se documentó la trazabilidad técnica en `docs/issues/issue-294-analisis-tecnico.md` y `docs/issues/issue-294-dictamen-tecnico.md`.
+
 ## 2025-11-25
 
 - Se instala y configura el frontend en Angular, incluyendo ajustes iniciales de caché y dependencias para asegurar builds consistentes.
