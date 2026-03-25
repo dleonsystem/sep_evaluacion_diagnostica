@@ -192,6 +192,9 @@ const BASE_ESCUELA_FIELDS = `
   e.updated_at
 `;
 
+const SOLICITUD_ESTADO_VALIDO_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'VALIDO')";
+const SOLICITUD_ESTADO_INVALIDO_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'INVALIDO')";
+
 /**
  * Helper function to build update query
  * @psp Code Reuse - Extract complex logic
@@ -777,7 +780,7 @@ t.id,
           ),
           query('SELECT COUNT(*) as count FROM solicitudes_eia2'),
           query(
-            "SELECT COUNT(*) as count FROM solicitudes_eia2 WHERE estado_validacion = (SELECT id FROM cat_estado_validacion_eia2 WHERE codigo = 'VALIDO')"
+            `SELECT COUNT(*) as count FROM solicitudes_eia2 WHERE estado_validacion = ${SOLICITUD_ESTADO_VALIDO_SQL}`
           ),
           query('SELECT COUNT(DISTINCT cct) as count FROM solicitudes_eia2'),
           query(`
@@ -2188,7 +2191,7 @@ t.numero_ticket as "folio",
         await client.query(
           `UPDATE solicitudes_eia2 
            SET resultados = $1, 
-               estado_validacion = 2, -- Marcamos como VALIDADO/ASIGNADO
+               estado_validacion = ${SOLICITUD_ESTADO_VALIDO_SQL},
                resultado_path = $2,
                updated_at = NOW() 
            WHERE id = $3`,

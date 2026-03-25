@@ -24,14 +24,14 @@ async function seed() {
       ON CONFLICT (id_turno) DO NOTHING;
     `);
 
-        // cat_niveles_educativos
-        await runQuery('cat_niveles_educativos', `
-      INSERT INTO cat_niveles_educativos (id_nivel, nombre, codigo, descripcion, orden) VALUES
-      (1, 'PREESCOLAR', 'PRE', 'Educación Preescolar', 1),
-      (2, 'PRIMARIA', 'PRI', 'Educación Primaria', 2),
-      (3, 'SECUNDARIA', 'SEC', 'Educación Secundaria', 3),
-      (4, 'TELESECUNDARIA', 'TEL', 'Educación Telesecundaria', 4)
-      ON CONFLICT (id_nivel) DO NOTHING;
+        // cat_nivel_educativo
+        await runQuery('cat_nivel_educativo', `
+      INSERT INTO cat_nivel_educativo (codigo, descripcion, orden) VALUES
+      ('PREESCOLAR', 'Educación Preescolar', 1),
+      ('PRIMARIA', 'Educación Primaria', 2),
+      ('SECUNDARIA', 'Educación Secundaria', 3),
+      ('TELESECUNDARIA', 'Educación Telesecundaria', 4)
+      ON CONFLICT (codigo) DO NOTHING;
     `);
 
         // cat_entidades_federativas

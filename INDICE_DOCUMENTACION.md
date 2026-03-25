@@ -1,10 +1,110 @@
 # 📚 ÍNDICE GENERAL DE DOCUMENTACIÓN
+
 ## Sistema SiCRER - Evaluación Diagnóstica SEP
 
-**Versión:** 1.1 - Actualización Post-Correcciones Cliente  
-**Fecha:** 19 de enero de 2026  
+**Versión:** 1.4 - Índice documental alineado al estado actual  
+**Fecha:** 25 de marzo de 2026  
 **Autor:** Ingeniero de Software Certificado PSP  
-**Estado:** Fase 1 de correcciones completada (47% aplicadas)
+**Estado:** Índice documental actualizado y consistente con DDL, documentación técnica y estructura actual del repositorio
+
+---
+
+## ✅ ACTUALIZACIÓN RECIENTE - ALINEACIÓN DOCUMENTAL (25 marzo 2026)
+
+### ✅ Corrección del Índice General y Trazabilidad Documental
+
+Se actualizó este índice para reflejar el estado documental vigente del proyecto, corrigiendo inconsistencias de numeración, referencias internas, encabezados y versiones históricas visibles.
+
+**CAMBIOS APLICADOS:**
+
+1. Se corrigió la numeración del índice por perfil y del desglose de documentos.
+2. Se eliminó un encabezado con carácter corrupto y se normalizó la presentación general.
+3. Se actualizaron referencias para reflejar la sincronización vigente de 60 tablas en DDL y documentación estructural.
+4. Se eliminó la contradicción entre la versión vigente del índice y el pie histórico heredado.
+
+---
+
+## 🔄 ACTUALIZACIÓN RECIENTE - GUÍA OPERATIVA (17 marzo 2026)
+
+### ✅ Nueva Documentación para Personal Operativo
+
+Se generó documentación operativa en **lenguaje no técnico** orientada a personal que monitorea cargas de archivos DBF, validadores y supervisores de operaciones.
+
+**DOCUMENTO NUEVO:**
+
+1. **[GUIA_OPERATIVA_TABLAS_STAGING.md](GUIA_OPERATIVA_TABLAS_STAGING.md)** ⭐ NUEVO 17-mar-2026
+   - ⏱️ Tiempo de lectura: 20-30 minutos
+   - 📊 Contiene: Guía operativa completa de 10 tablas staging (PRE3, PRI1-6, SEC1-3)
+   - 🎯 Objetivo: Documentar qué hacer y qué NO hacer con tablas de importación DBF
+   - 📋 Incluye:
+     - ✅ Explicación en lenguaje sencillo de tablas temporales
+     - ✅ Diagrama visual del flujo ETL (Carga → Validación → Procesamiento → Limpieza)
+     - ✅ Procedimientos operativos paso a paso
+     - ✅ FAQ con 8 preguntas frecuentes
+     - ✅ Troubleshooting para 4 problemas comunes
+     - ✅ Checklist de inicio de operaciones
+     - ✅ Formato de bitácora de registro
+     - ✅ Glosario de términos técnicos simplificados
+     - ⚠️ Lista de prohibiciones (acciones peligrosas)
+
+**MOTIVACIÓN:**
+- Información técnica sobre tablas staging estaba fragmentada en 7 archivos diferentes
+- Documentación existente demasiado técnica para personal operativo
+- Se requería guía práctica con procedimientos claros para operaciones diarias
+
+**AUDIENCIA:**
+- 👥 Personal operativo que monitorea cargas de archivos
+- 👥 Validadores que revisan errores en importaciones
+- 👥 Supervisores que coordinan proceso de carga
+
+**COMMIT:** `a74c976` - "docs: agregar guía operativa para tablas staging DBF"
+
+**ÍNDICE ACTUALIZADO:**
+- ✅ Nueva sección "🔧 Personal Operativo y Validadores" en perfiles de usuario
+- ✅ Nueva entrada "4. GUIA_OPERATIVA_TABLAS_STAGING.md" en desglose de documentos
+- ✅ Historial de documentación actualizado a versión 1.3
+
+---
+
+## 🔄 ACTUALIZACIÓN ANTERIOR - SINCRONIZACIÓN BD (12 marzo 2026)
+
+### ✅ Sincronización Completa DDL <-> Base de Datos Real
+
+Se realizó **análisis exhaustivo** de la estructura real de la base de datos PostgreSQL y se corrigieron todas las inconsistencias encontradas entre el DDL documentado y la BD en producción.
+
+**DOCUMENTOS ACTUALIZADOS:**
+
+1. **[ddl_generated.sql](ddl_generated.sql)** ⭐ ACTUALIZADO 12-mar-2026
+   - ⏱️ Cambios: 27 correcciones aplicadas
+   - 📊 Contiene: DDL completo de 60 tablas 100% fiel a BD real
+   - 🎯 Cambios críticos:
+     - ✅ Agregadas 4 columnas faltantes (usuarios.email_excel, tickets_soporte.evidencias, tickets_soporte.deleted_at, solicitudes_eia2.detalles_error)
+     - ✅ Ajustados 14 tamaños VARCHAR para emails y direcciones (100→255, 100→300)
+     - ✅ Corregidos 2 tipos de datos (preguntas_frecuentes.pregunta: VARCHAR→TEXT, orden: SMALLINT→INTEGER)
+
+2. **[ESTRUCTURA_DE_DATOS.md](ESTRUCTURA_DE_DATOS.md)** ⭐ ACTUALIZADO 12-mar-2026
+   - ⏱️ Tiempo de lectura: 45-60 minutos
+   - 📊 Contiene: Documentación completa de 60 tablas sincronizada con DDL
+   - 🎯 Objetivo: Referencia técnica 100% precisa de la estructura de datos
+   - ✅ Todas las tablas, columnas, tipos, constraints e índices documentados fielmente
+
+3. **[graphql-server/db-structure-report.txt](graphql-server/db-structure-report.txt)** ⭐ NUEVO 12-mar-2026
+   - ⏱️ Tamaño: 206.77 KB (reporte completo de BD)
+   - 📊 Contiene: Inspección detallada de estructura real de PostgreSQL
+   - 🎯 Objetivo: Reporte de auditoría con 60 tablas detectadas (ESCUELAS_PP eliminada posteriormente)
+   - 🔧 Generado por: inspect-db-structure.js
+
+4. **[graphql-server/inspect-db-structure.js](graphql-server/inspect-db-structure.js)** ⭐ NUEVO 12-mar-2026
+   - ⏱️ Tamaño: 164 líneas
+   - 📊 Contiene: Script Node.js para inspección automática de estructura PostgreSQL
+   - 🎯 Objetivo: Herramienta para validar DDL vs BD real en cualquier momento
+   - 🔧 Requisitos: Node.js, dotenv, pg, archivo .env con credenciales DB
+
+**ESTADÍSTICAS DE SINCRONIZACIÓN:**
+- 📊 Total archivos corregidos: 2 (DDL + documentación)
+- 📊 Total diferencias corregidas: 27
+- 📊 Nivel de precisión final: **100%** ✅
+- 📊 Commit: `48357e1` - "fix: sincronizar DDL y documentación con estructura real de BD"
 
 ---
 
@@ -57,42 +157,42 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 
 **LEER PRIMERO:**
 
-0. **[plataforma_recepcion_validacion_descarga_EIA.md](plataforma_recepcion_validacion_descarga_EIA.md)** ⭐ NUEVO - **PLATAFORMA FINAL EIA**
+1. **[plataforma_recepcion_validacion_descarga_EIA.md](plataforma_recepcion_validacion_descarga_EIA.md)** ⭐ NUEVO - **PLATAFORMA FINAL EIA**
    - ⏱️ Tiempo de lectura: 15-20 minutos
    - 📊 Contiene: Reglas de validación, generación de credenciales y descargas externas
    - 🎯 Objetivo: Ajustar decisiones a la versión más reciente de la plataforma EIA
 
-1. **[REQUERIMIENTOS_Y_CASOS_DE_USO.md](REQUERIMIENTOS_Y_CASOS_DE_USO.md)** ⭐ NUEVO - **ESPECIFICACIÓN FORMAL**
+2. **[REQUERIMIENTOS_Y_CASOS_DE_USO.md](REQUERIMIENTOS_Y_CASOS_DE_USO.md)** ⭐ NUEVO - **ESPECIFICACIÓN FORMAL**
    - ⏱️ Tiempo de lectura: 30-40 minutos
    - 📊 Contiene: 38 requerimientos funcionales, 31 no funcionales, 12 casos de uso
    - 🎯 Objetivo: Especificación técnica completa del sistema
    - ⚠️ Crítico: Documenta 7 incumplimientos de seguridad LGPDP
 
-2. **[FLUJO_OPERATIVO_OFICIAL.md](FLUJO_OPERATIVO_OFICIAL.md)** ⭐ NUEVO - **LECTURA OBLIGATORIA**
+3. **[FLUJO_OPERATIVO_OFICIAL.md](FLUJO_OPERATIVO_OFICIAL.md)** ⭐ NUEVO - **LECTURA OBLIGATORIA**
    - ⏱️ Tiempo de lectura: 20 minutos
    - 📊 Contiene: Flujo completo basado en documentación oficial DGADAE/SEP
    - 🎯 Objetivo: Entender contexto operativo completo con 10 equipos de validación
    - ⚠️ Crítico: Identifica cuellos de botella y riesgos LGPDP
 
-2. **[DASHBOARD_VISUAL.md](DASHBOARD_VISUAL.md)** ⭐ NUEVO - ALTAMENTE RECOMENDADO
+4. **[DASHBOARD_VISUAL.md](DASHBOARD_VISUAL.md)** ⭐ NUEVO - ALTAMENTE RECOMENDADO
    - ⏱️ Tiempo de lectura: 10 minutos
    - 📊 Contiene: Visualizaciones interactivas, métricas ejecutivas, roadmap visual
    - 🎯 Objetivo: Vista ejecutiva rápida con 15+ diagramas para presentaciones
    - ✨ Especial: Perfecto para presentar a juntas directivas
 
-3. **[RESUMEN_EJECUTIVO_STAKEHOLDERS.md](RESUMEN_EJECUTIVO_STAKEHOLDERS.md)**
+5. **[RESUMEN_EJECUTIVO_STAKEHOLDERS.md](RESUMEN_EJECUTIVO_STAKEHOLDERS.md)**
    - ⏱️ Tiempo de lectura: 15-20 minutos
    - 📊 Contiene: Hallazgos principales, análisis financiero, opciones de decisión
    - 🎯 Objetivo: Tomar decisión informada sobre modernización del sistema
 
-4. **[README.md](README.md)** (Este archivo)
+6. **[INDICE_DOCUMENTACION.md](INDICE_DOCUMENTACION.md)** (Este índice)
    - ⏱️ Tiempo de lectura: 5 minutos
-   - 📊 Contiene: Visión general del sistema, características principales
-   - 🎯 Objetivo: Entender qué es y qué hace el sistema
+   - 📊 Contiene: Mapa de navegación documental y rutas de lectura por perfil
+   - 🎯 Objetivo: Ubicar rápidamente la documentación vigente y prioritaria
 
 **CONSULTAR SI ES NECESARIO:**
 
-3. **[ANALISIS_DETALLADO_PSP_RUP.md](ANALISIS_DETALLADO_PSP_RUP.md)** - Secciones específicas
+1. **[ANALISIS_DETALLADO_PSP_RUP.md](ANALISIS_DETALLADO_PSP_RUP.md)** - Secciones específicas
    - Sección 6: Recomendaciones Estratégicas
    - Sección 7: Análisis de Riesgos
    - Sección 8: Estimación de Costos
@@ -172,6 +272,30 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
    - Sección 1: Fase de Inicio (Visión del Sistema)
    - Sección 3.3: Flujo de Trabajo del Sistema
    - 🎯 Objetivo: Documentar requisitos y procesos
+
+---
+
+### 🔧 Personal Operativo y Validadores
+
+**LEER PRIMERO:**
+
+1. **[GUIA_OPERATIVA_TABLAS_STAGING.md](GUIA_OPERATIVA_TABLAS_STAGING.md)** ⭐ NUEVO 17-mar-2026
+   - ⏱️ Tiempo de lectura: 20-30 minutos
+   - 📊 Contiene: Guía operativa completa de tablas de importación DBF
+   - 🎯 Objetivo: Entender qué hacer y qué NO hacer con tablas staging
+   - ✅ Incluye: Procedimientos operativos, FAQ, troubleshooting
+   - 👥 Destinado a: Monitores de carga, validadores, supervisores
+
+2. **[FLUJO_OPERATIVO_OFICIAL.md](FLUJO_OPERATIVO_OFICIAL.md)**
+   - Sección: Flujo de Información Completo
+   - Sección: Volumetría y Capacidad
+   - 🎯 Objetivo: Entender contexto completo del proceso de evaluación
+
+**CONSULTAR SI ES NECESARIO:**
+
+3. **[ESTRUCTURA_DE_DATOS.md](ESTRUCTURA_DE_DATOS.md)** - Solo sección de tablas staging
+   - Líneas 1124-1175: Documentación técnica de tablas PRE3, PRI1-6, SEC1-3
+   - 🎯 Objetivo: Información técnica detallada (para escalamiento a IT)
 
 ---
 
@@ -303,7 +427,58 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 
 ---
 
-### 3. ANALISIS_DETALLADO_PSP_RUP.md
+### 4. GUIA_OPERATIVA_TABLAS_STAGING.md ⭐ NUEVO
+
+**Audiencia:** Personal operativo, validadores, supervisores de carga  
+**Nivel Técnico:** Básico - No técnico  
+**Tamaño:** ~500 líneas orientadas a operaciones
+
+**Contenido Principal:**
+
+#### ¿QUÉ SON LAS TABLAS STAGING?
+- 📦 Explicación de 10 tablas temporales (PRE3, PRI1-6, SEC1-3)
+- 🔄 Función como "sala de espera" para archivos DBF
+- 📊 Información que contienen (estudiantes, evaluaciones, escuelas)
+
+#### FLUJO DE TRABAJO COMPLETO
+- 📈 Diagrama visual del proceso ETL
+- ⏱️ Tiempos de cada fase (carga, validación, procesamiento, limpieza)
+- ✅ Indicadores de éxito y señales de alerta
+
+#### QUÉ HACER Y QUÉ NO HACER
+- ✅ Monitoreo diario y verificaciones básicas
+- ✅ Procedimientos de verificación de carga exitosa
+- ✅ Procedimientos de atención a errores de validación
+- ❌ Prohibiciones críticas (NO modificar, NO borrar, NO ejecutar SQL)
+
+#### TROUBLESHOOTING
+- 🆘 Problemas comunes y soluciones
+- ⚠️ Escalamiento de incidencias (3 niveles)
+- 📋 Procedimientos operativos paso a paso
+
+#### RECURSOS ADICIONALES
+- ❓ FAQ (8 preguntas frecuentes)
+- 📚 Glosario de términos técnicos
+- 📞 Contactos y soporte
+- 📝 Bitácora de operaciones (formato de registro)
+
+**Cuándo leerlo:**
+- Eres personal operativo nuevo y necesitas entender las tablas staging
+- Necesitas saber qué hacer ante una carga de archivos DBF
+- Tienes que reportar un problema o incidencia
+- Quieres entender el flujo diario de validación
+- Necesitas procedimientos claros de monitoreo
+
+**Características especiales:**
+- 🎯 Lenguaje sencillo sin jerga técnica
+- 📊 Diagramas visuales del flujo de trabajo
+- ⚠️ Advertencias claras sobre acciones peligrosas
+- ✅ Checklist de inicio de operaciones
+- 📋 Formatos de bitácora listos para usar
+
+---
+
+### 5. ANALISIS_DETALLADO_PSP_RUP.md
 
 **Audiencia:** Arquitectos, Desarrolladores Senior, Directivos Técnicos  
 **Nivel Técnico:** Avanzado  
@@ -357,7 +532,7 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 
 ---
 
-### 3. ANALISIS_TECNICO_COMPLEMENTARIO.md
+### 6. ANALISIS_TECNICO_COMPLEMENTARIO.md
 
 **Audiencia:** Desarrolladores, DevOps, DBAs  
 **Nivel Técnico:** Muy Avanzado  
@@ -409,7 +584,7 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 
 ---
 
-### 4. RESUMEN_EJECUTIVO_STAKEHOLDERS.md
+### 7. RESUMEN_EJECUTIVO_STAKEHOLDERS.md
 
 **Audiencia:** Directivos, Gerentes de Proyecto, Sponsors  
 **Nivel Técnico:** Bajo a Medio  
@@ -671,6 +846,10 @@ R: Usa RESUMEN_EJECUTIVO_STAKEHOLDERS.md como base para tu presentación.
 
 | Versión | Fecha | Autor | Cambios |
 |---------|-------|-------|---------|
+| 1.4 | 25/03/2026 | Ingeniero PSP | Corrección del índice general, numeración, encabezados y trazabilidad documental |
+| 1.3 | 17/03/2026 | Ingeniero PSP | Agregada guía operativa para tablas staging (GUIA_OPERATIVA_TABLAS_STAGING.md) |
+| 1.2 | 12/03/2026 | Ingeniero PSP | Sincronización completa DDL con BD real (27 correcciones) |
+| 1.1 | 19/01/2026 | Ingeniero PSP | Correcciones del cliente (RESUMEN_CORRECCIONES_CLIENTE.md, CORRECCIONES_MODELO_NIA.md) |
 | 1.0 | 21/11/2025 | Ingeniero PSP | Creación inicial de toda la documentación |
 
 ---
@@ -695,13 +874,6 @@ Marca lo que ya has leído:
 - [ ] README.md - Instalación y estructura
 - [ ] ANALISIS_TECNICO_COMPLEMENTARIO.md completo
 - [ ] ANALISIS_DETALLADO_PSP_RUP.md - Secciones técnicas
-
----
-
-**ÍNDICE GENERAL DE DOCUMENTACIÓN**  
-**Versión:** 1.0  
-**Fecha:** 21 de Noviembre de 2025  
-**Mantenido por:** dleonsystem
 
 ---
 

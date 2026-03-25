@@ -240,6 +240,21 @@ SELECT val,
 FROM unnest(ARRAY['ABIERTO','EN_PROCESO','RESUELTO','CERRADO']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
+CREATE TABLE cat_estado_archivo_ticket (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_estado_archivo_ticket (codigo, descripcion, orden)
+SELECT val,
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
+	   ord
+FROM unnest(ARRAY['ACTIVO','ELIMINADO','CORRUPTO','EN_CUARENTENA']::TEXT[]) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
 -- Helper para obtener IDs de catálogos por código canónico
 CREATE OR REPLACE FUNCTION fn_catalogo_id(p_catalogo TEXT, p_codigo TEXT)
 RETURNS SMALLINT
@@ -287,13 +302,7 @@ CREATE TABLE cat_entidades_federativas (
 	region       VARCHAR(50)
 );
 
-CREATE TABLE cat_niveles_educativos (
-	id_nivel    INT PRIMARY KEY,
-	nombre      VARCHAR(50) NOT NULL,
-	codigo      VARCHAR(10) NOT NULL UNIQUE,
-	descripcion VARCHAR(200),
-	orden       INT
-);
+-- cat_niveles_educativos eliminado: consolidado en cat_nivel_educativo
 
 CREATE TABLE cat_turnos (
 	id_turno    INT PRIMARY KEY,
@@ -349,12 +358,20 @@ CREATE TABLE escuelas (
 	estado         VARCHAR(50),
 	cp             VARCHAR(10),
 	telefono       VARCHAR(15),
-	email          VARCHAR(100),
+	email          VARCHAR(255),
 	director       VARCHAR(150),
+	municipio      VARCHAR(100),
+	localidad      VARCHAR(100),
+	calle          VARCHAR(300),
+	num_exterior   VARCHAR(20),
+	entre_la_calle VARCHAR(300),
+	y_la_calle     VARCHAR(300),
+	calle_posterior VARCHAR(300),
+	colonia        VARCHAR(100),
 	fecha_registro TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
 	activo         BOOLEAN NOT NULL DEFAULT TRUE,
 	id_turno       INT NOT NULL REFERENCES cat_turnos(id_turno),
-	id_nivel       INT NOT NULL REFERENCES cat_niveles_educativos(id_nivel),
+	id_nivel       SMALLINT NOT NULL REFERENCES cat_nivel_educativo(id),
 	id_entidad     INT NOT NULL REFERENCES cat_entidades_federativas(id_entidad),
 	id_ciclo       INT NOT NULL REFERENCES cat_ciclos_escolares(id_ciclo),
 	created_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
@@ -395,7 +412,8 @@ CREATE TABLE usuarios (
 	nombre                 VARCHAR(60) NOT NULL,
 	apepaterno             VARCHAR(60) NOT NULL,
 	apematerno             VARCHAR(60),
-	email                  VARCHAR(100) NOT NULL,
+	email                  VARCHAR(255) NOT NULL,
+	email_excel            VARCHAR(255),
 	password_hash          VARCHAR(255) NOT NULL,
 	rol                    INT NOT NULL REFERENCES cat_roles_usuario(id_rol),
 	escuela_id             UUID REFERENCES escuelas(id),
@@ -407,6 +425,8 @@ CREATE TABLE usuarios (
 	fecha_registro         TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	created_at             TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at             TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	primer_login           BOOLEAN DEFAULT TRUE,
+	intentos_fallidos      INT DEFAULT 0,
 	CONSTRAINT uq_usuarios_email UNIQUE (email)
 );
 
@@ -546,7 +566,7 @@ CREATE TABLE archivos_temporales (
 CREATE TABLE credenciales_eia2 (
 	id                         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 	cct                        VARCHAR(10) NOT NULL UNIQUE,
-	correo_validado            VARCHAR(100) NOT NULL,
+	correo_validado            VARCHAR(255) NOT NULL,
 	password_hash              VARCHAR(255) NOT NULL,
 	primera_carga_valida_fecha TIMESTAMP WITHOUT TIME ZONE,
 	generado_en                TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
@@ -576,6 +596,9 @@ CREATE TABLE solicitudes_eia2 (
 	hash_archivo             VARCHAR(64),
 	usuario_id               UUID REFERENCES usuarios(id),
 	resultados               JSONB DEFAULT '[]'::JSONB,
+	detalles_error           JSONB,
+	equipo_asignado          INT,
+	distributed_at           TIMESTAMP WITHOUT TIME ZONE,
 	created_at               TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at               TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	UNIQUE (consecutivo)
@@ -626,7 +649,7 @@ CREATE TABLE plantillas_email (
 CREATE TABLE notificaciones_email (
 	id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 	usuario_id       UUID REFERENCES usuarios(id),
-	destinatario     VARCHAR(100) NOT NULL,
+	destinatario     VARCHAR(255) NOT NULL,
 	asunto           VARCHAR(200) NOT NULL,
 	cuerpo           TEXT NOT NULL,
 	tipo             SMALLINT NOT NULL REFERENCES cat_tipo_notificacion(id),
@@ -659,6 +682,11 @@ CREATE TABLE tickets_soporte (
 	resolucion     TEXT,
 	resuelto_en    TIMESTAMP WITHOUT TIME ZONE,
 	cerrado_en     TIMESTAMP WITHOUT TIME ZONE,
+	evidencias     JSONB DEFAULT '[]'::JSONB,
+	deleted_at     TIMESTAMP WITHOUT TIME ZONE,
+	user_fullname  VARCHAR(255),
+	user_cct       VARCHAR(20),
+	user_email     VARCHAR(150),
 	created_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );
@@ -677,6 +705,33 @@ CREATE TABLE comentarios_ticket (
 	CONSTRAINT chk_comentario_longitud CHECK (char_length(trim(comentario)) BETWEEN 10 AND 5000)
 );
 
+CREATE TABLE archivos_tickets (
+	id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	numero_ticket  VARCHAR(20) NOT NULL REFERENCES tickets_soporte(numero_ticket) ON DELETE CASCADE,
+	nombre_archivo VARCHAR(255) NOT NULL,
+	tamanio        BIGINT NOT NULL,
+	extension      VARCHAR(20),
+	ruta           VARCHAR(500) NOT NULL,
+	estado         SMALLINT NOT NULL DEFAULT fn_catalogo_id('cat_estado_archivo_ticket','ACTIVO') REFERENCES cat_estado_archivo_ticket(id),
+	created_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	updated_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	CONSTRAINT chk_archivos_tickets_tamanio CHECK (tamanio > 0),
+	CONSTRAINT chk_archivos_tickets_extension CHECK (extension IS NULL OR extension ~ '^[A-Za-z0-9]{1,20}$')
+);
+
+CREATE TABLE preguntas_frecuentes (
+	id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	pregunta   TEXT NOT NULL,
+	respuesta  TEXT NOT NULL,
+	categoria  VARCHAR(100),
+	activo     BOOLEAN NOT NULL DEFAULT TRUE,
+	orden      INTEGER NOT NULL DEFAULT 0,
+	created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	CONSTRAINT chk_preguntas_pregunta CHECK (char_length(trim(pregunta)) >= 10),
+	CONSTRAINT chk_preguntas_respuesta CHECK (char_length(trim(respuesta)) >= 20)
+);
+
 CREATE TABLE sesiones (
 	id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 	usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -691,7 +746,7 @@ CREATE TABLE sesiones (
 CREATE TABLE intentos_login (
 	id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 	usuario_id      UUID REFERENCES usuarios(id),
-	email           VARCHAR(100) NOT NULL,
+	email           VARCHAR(255) NOT NULL,
 	ip_address      INET,
 	user_agent      TEXT,
 	exito           BOOLEAN NOT NULL,
@@ -1099,8 +1154,12 @@ CREATE INDEX idx_archivos_frv_escuela_ciclo ON archivos_frv(escuela_id, ciclo_es
 CREATE INDEX idx_reportes_escuela_ciclo ON reportes_generados(escuela_id, ciclo_escolar, periodo_id);
 CREATE INDEX idx_reportes_tipo_generado ON reportes_generados(tipo_reporte, generado_en DESC);
 CREATE INDEX idx_tickets_estado_prioridad ON tickets_soporte(estado, prioridad);
+CREATE INDEX idx_archivos_tickets_numero ON archivos_tickets(numero_ticket);
+CREATE INDEX idx_archivos_tickets_estado ON archivos_tickets(estado);
 CREATE INDEX idx_log_usuario_fecha ON log_actividades(id_usuario, fecha_hora);
 CREATE INDEX idx_notificaciones_estado ON notificaciones_email(estado, prioridad, created_at);
+CREATE INDEX idx_preguntas_frecuentes_categoria ON preguntas_frecuentes(categoria);
+CREATE INDEX idx_preguntas_frecuentes_activo_orden ON preguntas_frecuentes(activo, orden);
 
 -- Crear índice parcial para reintentos utilizando el ID del catálogo
 DO $$
@@ -1402,11 +1461,17 @@ CREATE TRIGGER trg_touch_tickets
 CREATE TRIGGER trg_touch_comentarios
 	BEFORE UPDATE ON comentarios_ticket
 	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
+CREATE TRIGGER trg_touch_archivos_tickets
+	BEFORE UPDATE ON archivos_tickets
+	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
 CREATE TRIGGER trg_touch_notificaciones
 	BEFORE UPDATE ON notificaciones_email
 	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
 CREATE TRIGGER trg_touch_evaluaciones
 	BEFORE UPDATE ON evaluaciones
+	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
+CREATE TRIGGER trg_touch_preguntas_frecuentes
+	BEFORE UPDATE ON preguntas_frecuentes
 	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
 
 -- =====================================================================

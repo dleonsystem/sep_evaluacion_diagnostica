@@ -20,6 +20,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const SOLICITUD_ESTADO_VALIDO_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'VALIDO')";
 
 export class ReportConsolidatorService {
   private baseStoragePath = path.resolve(__dirname, '../../storage/results');
@@ -114,7 +115,7 @@ export class ReportConsolidatorService {
       }
 
       await query(
-        'UPDATE solicitudes_eia2 SET resultados = $1, estado_validacion = 2, updated_at = NOW() WHERE id = $2',
+        `UPDATE solicitudes_eia2 SET resultados = $1, estado_validacion = ${SOLICITUD_ESTADO_VALIDO_SQL}, updated_at = NOW() WHERE id = $2`,
         [JSON.stringify(resultsMetadata), solicitudId]
       );
 
