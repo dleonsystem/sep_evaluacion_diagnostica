@@ -17,13 +17,10 @@ import fs from 'fs/promises';
 import { SftpService } from '../services/sftp.service.js';
 import { MailingService } from '../services/mailing.service.js';
 import { ReportConsolidatorService } from '../services/report-consolidator.service.js';
+import { comprobantePdfService } from '../services/comprobante-pdf.service.js';
 import { DistributionService } from '../services/distribution.service.js';
 import crypto from 'crypto';
-import { fileURLToPath } from 'url';
 import { validateCCT } from '../utils/cct-validator.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 import { query, getClient } from '../config/database.js';
 import { generateToken } from '../config/jwt.js';
@@ -944,15 +941,17 @@ t.numero_ticket as "folio",
       if (!context.user) throw new Error('No autorizado');
 
       try {
-        // Obtener datos de la solicitud
+        const isAdmin = ['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol);
         const res = await query(
           `
            SELECT 
-             s.folio,
-             s.fecha_carga,
-             s.nombre_archivo,
-             s.md5,
-             s.estado_validacion,
+             s.id,
+             s.consecutivo,
+             s.fecha_carga as "fechaCarga",
+             s.archivo_original as "archivoOriginal",
+             s.hash_archivo as "hashArchivo",
+             s.cct,
+             s.usuario_id as "usuarioId",
              u.email
            FROM solicitudes_eia2 s
            JOIN usuarios u ON s.usuario_id = u.id
@@ -1002,17 +1001,43 @@ t.numero_ticket as "folio",
         */
 
         // Mock de generación PDF a Base64 para no depender de fs/fonts en runtime sin configuración
-        const mockPdfContent = `COMPROBANTE-EIA-${sol.folio}\nFECHA:${sol.fecha_carga}`;
-        const base64 = Buffer.from(mockPdfContent).toString('base64');
+        if (!isAdmin && sol.usuarioId !== context.user.id) {
+          throw new Error('No tienes permiso para generar este comprobante');
+        }
+
+        if (!sol.hashArchivo) {
+          throw new Error(
+            'No se puede generar el comprobante porque la solicitud no cuenta con hash_archivo registrado'
+          );
+        }
+
+        const base64 = await comprobantePdfService.generarBase64({
+          consecutivo: String(sol.consecutivo),
+          fechaCarga: sol.fechaCarga,
+          archivoOriginal: sol.archivoOriginal,
+          hashArchivo: sol.hashArchivo,
+          cct: sol.cct,
+          email: sol.email,
+        });
 
         return {
           success: true,
-          fileName: `Comprobante_${sol.folio}.txt`, // Cambiar a .pdf cuando se integre libreria completa
+          fileName: `Comprobante_${sol.consecutivo}.pdf`,
           contentBase64: base64,
         };
-      } catch (error) {
-        logger.error('Error generating comprobante', error);
-        throw new Error('Error al generar comprobante');
+      } catch (error: any) {
+        const knownMessages = new Set([
+          'Solicitud no encontrada',
+          'No tienes permiso para generar este comprobante',
+          'No se puede generar el comprobante porque la solicitud no cuenta con hash_archivo registrado',
+        ]);
+
+        logger.error('Error generating comprobante', {
+          solicitudId,
+          userId: context.user.id,
+          error: error.message,
+        });
+        throw new Error(knownMessages.has(error.message) ? error.message : 'Error al generar comprobante');
       }
     },
 
@@ -1049,7 +1074,7 @@ t.numero_ticket as "folio",
         // 3. Obtener el archivo (desde SFTP o disk)
         let buffer: Buffer | null = null;
         if (archivoMetadata.url.startsWith('storage/')) {
-          const fullPath = path.resolve(__dirname, '../../', archivoMetadata.url);
+          const fullPath = path.resolve(process.cwd(), archivoMetadata.url);
           if (existsSync(fullPath)) {
             buffer = await fs.readFile(fullPath);
           }
@@ -1754,9 +1779,11 @@ t.numero_ticket as "folio",
           new Promise<any>((resolve, reject) => {
             import('worker_threads')
               .then(({ Worker }) => {
-                const isTsNode = path.extname(__filename) === '.ts';
+                const runtimeEntry = process.argv[1] || '';
+                const isTsNode = runtimeEntry.endsWith('.ts') || process.env.TS_NODE_DEV === 'true';
                 const workerFileName = isTsNode ? 'worker-excel.ts' : 'worker-excel.js';
-                const wPath = path.resolve(__dirname, '../workers/', workerFileName);
+                const workerBasePath = path.resolve(process.cwd(), isTsNode ? 'src/workers' : 'dist/workers');
+                const wPath = path.join(workerBasePath, workerFileName);
 
                 const worker = new Worker(wPath);
                 worker.on('message', (message) => {
@@ -2011,7 +2038,7 @@ t.numero_ticket as "folio",
 
         // Sincronización SFTP en background (opcional para esta fase)
         const syncSftp = async () => {
-          const tempPath = path.resolve(__dirname, `../../temp_${Date.now()}_${nombreArchivo}`);
+          const tempPath = path.resolve(process.cwd(), `temp_${Date.now()}_${nombreArchivo}`);
           try {
             const fs = await import('fs/promises');
             await fs.writeFile(tempPath, buffer);

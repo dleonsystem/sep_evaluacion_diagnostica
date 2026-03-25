@@ -153,25 +153,12 @@ export class ArchivosEvaluacionComponent implements OnInit {
       const result = await firstValueFrom(this.evaluacionesService.descargarResultado(solicitudId, nombre));
 
       if (result.success && result.contentBase64) {
-        // Crear un enlace temporal para descargar
-        const link = document.createElement('a');
-        const extension = nombre.split('.').pop()?.toLowerCase();
-        let mimeType = 'application/octet-stream';
-
-        if (extension === 'pdf') mimeType = 'application/pdf';
-        else if (['jpg', 'jpeg'].includes(extension!)) mimeType = 'image/jpeg';
-        else if (extension === 'png') mimeType = 'image/png';
-        else if (extension === 'xlsx') mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-        else if (extension === 'zip') mimeType = 'application/zip';
-
-        link.href = `data:${mimeType};base64,${result.contentBase64}`;
-        link.download = nombre;
-        link.click();
+        this.descargarBase64ComoArchivo(result.contentBase64, result.fileName);
 
         await Swal.fire({
           icon: 'success',
           title: 'Descarga iniciada',
-          text: `El archivo ${nombre} se ha descargado correctamente.`,
+          text: `El archivo ${result.fileName} se ha descargado correctamente.`,
           timer: 2000,
           showConfirmButton: false
         });
@@ -186,6 +173,66 @@ export class ArchivosEvaluacionComponent implements OnInit {
     } finally {
       this.cargando = false;
     }
+  }
+
+  async descargarComprobante(registro: SolicitudEia2): Promise<void> {
+    try {
+      this.cargando = true;
+      const result = await firstValueFrom(this.evaluacionesService.generarComprobante(registro.id));
+
+      if (result.success && result.contentBase64) {
+        this.descargarBase64ComoArchivo(result.contentBase64, result.fileName, 'application/pdf');
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Comprobante generado',
+          text: `El comprobante ${result.fileName} se ha descargado correctamente.`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    } catch (error: any) {
+      console.error('Error al generar comprobante:', error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error al generar comprobante',
+        text: error.message || 'No se pudo generar el comprobante de recepcion.'
+      });
+    } finally {
+      this.cargando = false;
+    }
+  }
+
+  private descargarBase64ComoArchivo(base64: string, fileName: string, explicitMimeType?: string): void {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: explicitMimeType ?? this.inferirMimeType(fileName) });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+  }
+
+  private inferirMimeType(fileName: string): string {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+
+    if (extension === 'pdf') return 'application/pdf';
+    if (['jpg', 'jpeg'].includes(extension ?? '')) return 'image/jpeg';
+    if (extension === 'png') return 'image/png';
+    if (extension === 'xlsx') return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    if (extension === 'zip') return 'application/zip';
+
+    return 'application/octet-stream';
   }
 
   cerrarSesion(): void {
