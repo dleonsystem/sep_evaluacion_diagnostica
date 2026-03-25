@@ -144,6 +144,20 @@ export const typeDefs = `#graphql
     Obtener escuela por ID
     """
     getEscuela(id: ID!): Escuela
+
+    """
+    Verificar si un usuario ya existe por su correo
+    @use-case CU-01: Autenticación
+    """
+    checkUserExists(email: String!): UserExistsResponse!
+  }
+
+  """
+  Respuesta de verificación de existencia de usuario
+  """
+  type UserExistsResponse {
+    exists: Boolean!
+    message: String
   }
 
   """

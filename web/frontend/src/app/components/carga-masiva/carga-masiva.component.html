@@ -86,7 +86,8 @@
     </form>
 
     <div class="carga__drop" [class.carga__drop--disabled]="correoControl.invalid"
-      [attr.aria-disabled]="correoControl.invalid">
+      [class.carga__drop--dragging]="isDragging" [attr.aria-disabled]="correoControl.invalid"
+      (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
       <div class="carga__instrucciones">
         <p class="carga__etiqueta">Arrastra y suelta tu archivo o selecciónalo desde tu equipo</p>
         <p class="carga__formatos">Solo se aceptan archivos XLSX. Máximo {{ pesoMaximoMb }} MB.</p>

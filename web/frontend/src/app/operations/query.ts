@@ -86,3 +86,12 @@ export const GENERATE_COMPROBANTE = `
     }
   }
 `;
+
+export const CHECK_USER_EXISTS = `
+  query CheckUserExists($email: String!) {
+    checkUserExists(email: $email) {
+      exists
+      message
+    }
+  }
+`;

@@ -287,6 +287,23 @@ export const resolvers = {
     },
 
     /**
+     * Verificar si el usuario existe para forzar login en Carga Masiva
+     * @use-case CU-01
+     */
+    checkUserExists: async (_: any, { email }: { email: string }) => {
+      try {
+        const result = await query('SELECT id FROM usuarios WHERE email = $1', [email.trim().toLowerCase()]);
+        return {
+          exists: result.rows.length > 0,
+          message: result.rows.length > 0 ? 'USUARIO YA REGISTRADO; INICIE SESIÓN PARA CARGAR ARCHIVOS.' : null
+        };
+      } catch (error) {
+        logger.error('Error checking user existence', { email, error });
+        throw new Error('Error al verificar el usuario');
+      }
+    },
+
+    /**
      * Listar materiales de evaluación
      * @use-case CU-01
      */
