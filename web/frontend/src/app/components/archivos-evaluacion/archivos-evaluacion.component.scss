@@ -344,6 +344,19 @@
   }
 }
 
+.archivos__btn-descargar--secundario {
+  background: #13322e;
+
+  &:hover {
+    background: #0c231f;
+  }
+}
+
+.archivos__mensaje-inline {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+}
+
 .archivos__vacio {
   text-align: center;
   padding: 2rem 1rem;
