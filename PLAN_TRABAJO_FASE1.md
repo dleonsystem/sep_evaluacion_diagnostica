@@ -277,7 +277,7 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 - [ ] Verificar cobertura > 60% en `/src/services/` y `/src/schema/resolvers.ts`
     - name: Run Tests
       run: npm run test -- --ci --coverage
-
+e 
 **Archivos:** `graphql-server/tests/`, `.github/workflows/ci.yml`
 **Entregable:** `npx jest` en verde con los nuevos tests; CI ejecuta tests en pipeline
 
