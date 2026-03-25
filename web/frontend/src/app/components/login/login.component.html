@@ -27,10 +27,6 @@
       </div>
       <p class="login__hint">Usa la contraseña generada en tu primer envío.</p>
 
-      <div class="login__alerta" *ngIf="credencialesGuardadas">
-        Ya existen credenciales guardadas para {{ correo }}. Si es necesario,
-        puedes actualizar la contraseña antes de continuar.
-      </div>
 
       <div class="login__error" *ngIf="error">{{ error }}</div>
 

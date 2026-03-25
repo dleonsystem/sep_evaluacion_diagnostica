@@ -72,7 +72,20 @@
             </td>
           </tr>
           <tr *ngIf="idRegistroExpandido === registro.id" class="archivos__resultados-row">
-            <td colspan="7">
+            <td colspan="8">
+              <div class="archivos__seccion">
+                <h4>Comprobante de recepcion</h4>
+                <p class="archivos__mensaje--info archivos__mensaje-inline">
+                  Descarga el comprobante PDF generado por el backend para esta solicitud.
+                </p>
+                <button
+                  (click)="descargarComprobante(registro); $event.stopPropagation()"
+                  class="archivos__btn-descargar archivos__btn-descargar--secundario"
+                >
+                  Descargar comprobante PDF
+                </button>
+              </div>
+
               <div class="archivos__seccion" *ngIf="registro.resultados && registro.resultados.length">
                 <h4>Resultados Disponibles:</h4>
                 <div class="archivos__grid-resultados">
@@ -90,20 +103,6 @@
                     </button>
                   </div>
                 </div>
-              </div>
-
-              <div class="archivos__seccion">
-                <h4>Detalles del procesamiento:</h4>
-                <ul *ngIf="registro.errores && registro.errores.length; else sinErrores">
-                  <li *ngFor="let error of registro.errores" class="archivos__mensaje--error">
-                    {{ error }}
-                  </li>
-                </ul>
-                <ng-template #sinErrores>
-                  <p class="archivos__mensaje--info" style="margin: 0; padding: 0.5rem 0;">
-                    No se encontraron errores en este archivo. El procesamiento fue exitoso.
-                  </p>
-                </ng-template>
               </div>
 
               <div class="archivos__resultados-meta">

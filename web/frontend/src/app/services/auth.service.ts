@@ -12,6 +12,7 @@ export class AuthService {
   private readonly credencialesKey = 'eia-user-credentials';
   private readonly sesionKey = 'eia-user-session-active';
   private readonly sesionCorreoKey = 'eia-user-session-email';
+  private readonly sesionRolKey = 'eia-user-session-role';
 
   private autenticadoSubject = new BehaviorSubject<boolean>(this.estaAutenticadoInicial());
   public autenticado$ = this.autenticadoSubject.asObservable();
@@ -78,7 +79,7 @@ export class AuthService {
     return guardadas.correo === this.normalizarCorreo(correo);
   }
 
-  iniciarSesion(correo: string, contrasena: string): void {
+  iniciarSesion(correo: string, contrasena: string, rol?: string): void {
     const guardadas = this.obtenerCredenciales();
     if (!guardadas) {
       throw new Error('Aún no hay credenciales registradas. Realiza tu primera carga para generarlas.');
@@ -90,21 +91,31 @@ export class AuthService {
 
     this.marcarSesionActiva();
     localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
+    if (rol) {
+      localStorage.setItem(this.sesionRolKey, rol);
+    }
   }
 
-  iniciarSesionTrasCarga(correo: string): void {
+  iniciarSesionTrasCarga(correo: string, rol?: string): void {
     this.marcarSesionActiva();
     localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
+    if (rol) {
+      localStorage.setItem(this.sesionRolKey, rol);
+    }
   }
 
-  iniciarSesionSinCredenciales(correo: string): void {
+  iniciarSesionSinCredenciales(correo: string, rol?: string): void {
     this.marcarSesionActiva();
     localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
+    if (rol) {
+      localStorage.setItem(this.sesionRolKey, rol);
+    }
   }
 
   cerrarSesion(): void {
     localStorage.removeItem(this.sesionKey);
     localStorage.removeItem(this.sesionCorreoKey);
+    localStorage.removeItem(this.sesionRolKey);
     localStorage.removeItem(this.credencialesKey);
     this.autenticadoSubject.next(false);
   }
@@ -128,6 +139,10 @@ export class AuthService {
   obtenerCorreoSesion(): string | null {
     const correo = localStorage.getItem(this.sesionCorreoKey);
     return correo ? this.normalizarCorreo(correo) : null;
+  }
+
+  obtenerRolSesion(): string | null {
+    return localStorage.getItem(this.sesionRolKey);
   }
 
   private marcarSesionActiva(): void {

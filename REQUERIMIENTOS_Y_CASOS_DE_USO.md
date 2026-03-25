@@ -198,9 +198,7 @@
   - Operador: Gestión de tickets y validaciones
   - Administrador: Acceso completo al sistema
 - **RF-14.5** El sistema debe permitir reset de contraseña por administrador
-- **RF-14.6** El sistema debe generar contraseña temporal aleatoria en creación de usuario
-- **RF-14.6** El sistema debe forzar cambio de contraseña en primer login
-- **RF-14.7** El sistema debe enviar credenciales por email seguro
+- **RF-14.6** El sistema debe generar contraseña aleatoria en creación de usuario
 - **RF-14.8** El sistema debe implementar gestión granular de permisos por módulo:
   - Lectura (consulta de datos)
   - Escritura (creación y modificación)
@@ -249,9 +247,9 @@
 - **RF-16.1** El portal debe pedir primero el correo electrónico (será el usuario) y, solo después de capturarlo, habilitar la selección del archivo .xlsx mostrando la etiqueta "Validando tu archivo con el correo ingresado...".
 - **RF-16.2** La validación automática debe ejecutarse en orden para confirmar coincidencia entre el correo ingresado y el del Excel (solo en la primera carga ligada a ese correo), CCT, nivel, campos y columnas obligatorias por hoja, valores válidos (0-3), número y nombre de hojas, estructura general y consistencia interna; si alguno falla, el archivo se rechaza.
   - **Checklist mínimo de validación (9 puntos):** correo ingresado vs. Excel (primera carga), CCT, nivel, campo obligatorio por hoja, columnas obligatorias, valores válidos (0-3), estructura general de archivo, número de hojas, consistencia interna.
-- **RF-16.3** Si el archivo es válido, el sistema debe mostrar el mensaje "Tu archivo ha sido validado correctamente. Generamos una contraseña aleatoria y podrás consultar tus resultados a partir del día: [hoy + 4 días]".
+- **RF-16.3** Si el archivo es válido, el sistema debe mostrar el mensaje "Tu archivo ha sido validado correctamente. Generamos una contraseña  y podrás consultar tus resultados a partir del día: [hoy + 4 días]".
 - **RF-16.4** En la primera carga válida del usuario (identificado por correo) se deben generar credenciales de consulta con **usuario = correo validado** y **contraseña = cadena aleatoria de 12 caracteres** (mayúsculas, minúsculas, números, símbolos); estas credenciales son reutilizables para todas las cargas del usuario (incluso de diferentes CCT) y no se regeneran en cargas posteriores.
-- **RF-16.5** El sistema debe generar y descargar automáticamente un PDF de confirmación con mensaje de éxito, fecha futura de consulta, usuario (correo), contraseña aleatoria y marca de tiempo; si es inválido o falla la coincidencia de correo, debe descargar PDF de errores.
+- **RF-16.5** El sistema debe generar y descargar automáticamente un PDF de confirmación con mensaje de éxito, fecha futura de consulta, usuario (correo), contraseña y marca de tiempo; si es inválido o falla la coincidencia de correo, debe descargar PDF de errores.
 - **RF-16.6** Cada carga válida debe registrarse como solicitud independiente con consecutivo único y almacenarse en un repositorio de archivos recibidos.
 - **RF-16.11** El sistema debe asociar todas las solicitudes (cargas) al usuario propietario (correo) independientemente del CCT, permitiendo consulta consolidada de resultados de múltiples escuelas bajo un solo login.
 - **RF-16.7** El sistema no determinará si el envío corresponde a primera o segunda aplicación ni comparará/mezclará archivos; solo registrará solicitudes.
@@ -267,13 +265,13 @@
 - **RF-17.5** El sistema debe enviar notificación de email cuando se detecte inicio de sesión desde nueva ubicación o dispositivo.
 
 ### RF-18: Gestión de Contraseñas
-- **RF-18.1** En la primera carga válida, el sistema debe generar una contraseña temporal aleatoria (12 caracteres: mayúsculas, minúsculas, números, símbolos) y forzar cambio en el primer acceso al módulo de descarga.
+- **RF-18.1** En la primera carga válida, el sistema debe generar una contraseña aleatoria (12 caracteres: mayúsculas, minúsculas, números, símbolos) y forzar cambio en el primer acceso al módulo de descarga.
 - **RF-18.2** El sistema debe validar fortaleza de contraseña nueva: mínimo 8 caracteres, al menos 1 mayúscula, 1 minúscula, 1 número y 1 símbolo.
 - **RF-18.3** El sistema debe prevenir reutilización de últimas 5 contraseñas mediante comparación de hashes.
 - **RF-18.4** El sistema debe expirar contraseñas cada 90 días para roles administrativos (DGADAE, Soporte).
 - **RF-18.5** El sistema debe permitir recuperación de contraseña mediante token único enviado por email con vigencia de 2 horas.
 - **RF-18.6** El sistema debe almacenar contraseñas usando bcrypt con salt rounds ≥12 o argon2id.
-- **RF-18.7** El sistema debe enviar notificación por email con la contraseña temporal generada y PDF descargable de confirmación.
+- **RF-18.7** El sistema debe enviar notificación por email con la contraseña generada y PDF descargable de confirmación.
 
 ### RF-19: Validación Avanzada de Archivos FRV
 - **RF-19.1** El sistema debe validar unicidad de CURP dentro del mismo archivo.
@@ -894,7 +892,7 @@ graph TB
    CCT Asignado: [Dropdown con escuelas activas]
    Rol: [Dropdown: Director/Operador/Administrador]
    
-   La contraseña temporal será generada automáticamente
+   La contraseña será generada automáticamente
    y enviada al email del usuario.
    ```
 4. Sistema valida:
@@ -903,7 +901,7 @@ graph TB
    - CCT existe y está activo
 5. Administrador guarda usuario
 6. Sistema:
-   - Genera contraseña temporal segura (12 caracteres, alfanumérico + símbolos)
+   - Genera contraseña segura (12 caracteres, alfanumérico + símbolos)
    - Hash contraseña con bcrypt (10 rounds)
    - Inserta en tabla `usuarios`
    - Genera token de activación
@@ -917,12 +915,12 @@ graph TB
    Se ha creado su cuenta en el Portal de Evaluaciones Diagnósticas.
    
    Usuario: [email]
-   Contraseña temporal: [password]
+   Contraseña: [password]
    URL: https://evaluaciones.sep.gob.mx
    
    IMPORTANTE:
    - Cambie su contraseña en el primer inicio de sesión
-   - La contraseña temporal expira en 72 horas
+   - La contraseña no expira nunca
    - En caso de problemas, contacte a soporte@sep.gob.mx
    
    Saludos,
@@ -930,35 +928,14 @@ graph TB
    ```
 
 **Flujo Principal - Primer Login de Usuario:**
-1. Director accede a portal con credenciales temporales
+1. Director accede a portal con credenciales 
 2. Sistema detecta flag `primera_sesion = true`
-3. Sistema redirige a formulario de cambio de contraseña obligatorio:
-   ```
-   Bienvenido al Portal de Evaluaciones
-   
-   Por seguridad, debe cambiar su contraseña temporal.
-   
-   Contraseña actual: [________]
-   Nueva contraseña: [________] (mínimo 8 caracteres)
-   Confirmar contraseña: [________]
-   
-   Requisitos:
-   ✓ Al menos 8 caracteres
-   ✓ Una mayúscula
-   ✓ Un número
-   ✓ Un carácter especial
-   ```
-4. Director ingresa nueva contraseña
-5. Sistema valida requisitos
-6. Sistema actualiza contraseña hasheada
-7. Sistema actualiza `primera_sesion = false`
-8. Sistema registra `ultimo_acceso = NOW()`
-9. Sistema redirige a dashboard
+3. Sistema redirige a dashboard
 
 **Flujo Principal - Reset de Contraseña:**
 1. Administrador busca usuario
 2. Administrador selecciona "Resetear Contraseña"
-3. Sistema genera nueva contraseña temporal
+3. Sistema genera nueva contraseña
 4. Sistema envía email al usuario con nueva contraseña
 5. Sistema actualiza `primera_sesion = true` (forzar cambio)
 

@@ -1,4 +1,6 @@
 import { Injectable } from '@angular/core';
+import { GraphqlService } from './graphql.service';
+import { firstValueFrom } from 'rxjs';
 
 export interface EscDatos {
   cct: string;
@@ -36,6 +38,7 @@ export interface ResultadoDeteccionNivel {
 
 @Injectable({ providedIn: 'root' })
 export class ExcelValidationService {
+  constructor(private readonly graphql: GraphqlService) { }
   private xlsxPromise: Promise<any> | null = null;
   // Hojas base (centralizadas para evitar duplicidad de nombres).
   private readonly hojasBase = {
@@ -400,6 +403,100 @@ export class ExcelValidationService {
       '*Educación socioemocional / Tutoría'
     ]
   };
+  /**
+   * Valida una CCT según el algoritmo oficial (Elemento Verificador)
+   * @psp Algorithm - CCT Verification
+   */
+  public validarFormatoCCT(cct: string): { isValid: boolean; error?: string } {
+    if (!cct) return { isValid: false, error: 'La CCT es requerida.' };
+
+    const cleanCCT = cct.trim().toUpperCase();
+
+    // Formato base: 10 caracteres
+    if (cleanCCT.length !== 10) {
+      return { isValid: false, error: 'La CCT debe tener exactamente 10 caracteres.' };
+    }
+
+    // Estructura: 2 dígitos, 3 letras, 4 dígitos, 1 caracter validador
+    const regex = /^[0-9]{2}[A-Z]{3}[0-9]{4}[0-9A-Z]$/;
+    if (!regex.test(cleanCCT)) {
+      return { isValid: false, error: 'El formato de la CCT es incorrecto (ej: 01DPR0001D).' };
+    }
+
+    try {
+      const base = cleanCCT.substring(0, 9);
+      const digitVerificador = cleanCCT.substring(9, 10);
+
+      const TABLA_1: Record<string, string> = {
+        A: '01', B: '02', C: '03', D: '04', E: '05', F: '06', G: '07', H: '08', I: '09',
+        J: '10', K: '11', L: '12', M: '13', N: '14', O: '15', P: '16', Q: '17', R: '18',
+        S: '19', T: '20', U: '21', V: '22', W: '23', X: '24', Y: '25', Z: '26'
+      };
+
+      const finalDigits: number[] = [];
+      // Entidad (pos 1, 2)
+      finalDigits.push(parseInt(base[0], 10), parseInt(base[1], 10));
+      // Alfabetización de Clasificador (pos 3, 4, 5)
+      for (let i = 2; i < 5; i++) {
+        const val = TABLA_1[base[i]];
+        if (!val) throw new Error('Caracter no alfabetizable');
+        finalDigits.push(parseInt(val[0], 10), parseInt(val[1], 10));
+      }
+      // Programa (pos 6, 7, 8, 9)
+      finalDigits.push(parseInt(base[5], 10), parseInt(base[6], 10), parseInt(base[7], 10), parseInt(base[8], 10));
+
+      // 12 dígitos en total
+      let sumNones = 0; // Pos 1, 3, 5, 7, 9, 11 (O index 0, 2, 4...)
+      let sumPares = 0; // Pos 2, 4, 6, 8, 10, 12 (O index 1, 3, 5...)
+
+      for (let i = 0; i < 12; i++) {
+        if ((i + 1) % 2 !== 0) {
+          sumNones += finalDigits[i];
+        } else {
+          sumPares += finalDigits[i];
+        }
+      }
+
+      // Algoritmo: (Nones * 7) + (Pares * 26)
+      const total = (sumNones * 7) + (sumPares * 26);
+      const residuo = total % 27;
+
+      const TABLA_2 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0";
+      const calculado = TABLA_2[residuo];
+
+      if (digitVerificador !== calculado) {
+        return {
+          isValid: false,
+          error: `CCT inválida. El dígito verificador no coincide (esperado: ${calculado})`
+        };
+      }
+
+      return { isValid: true };
+    } catch (e) {
+      return { isValid: false, error: 'Error al procesar algoritmo CCT.' };
+    }
+  }
+
+  /**
+   * Verifica si la CCT existe en la base de datos
+   */
+  public async verificarCctEnBaseDeDatos(cct: string): Promise<boolean> {
+    const QUERY = `
+      query CheckCct($clave: String!) {
+        getCCT(clave: $clave) {
+          id
+        }
+      }
+    `;
+    try {
+      const res = await firstValueFrom(this.graphql.execute<{ getCCT: any }>(QUERY, { clave: cct }));
+      return !!res.data?.getCCT;
+    } catch (error) {
+      console.error('Error al verificar CCT', error);
+      return false;
+    }
+  }
+
   async detectarTipoArchivo(buffer: ArrayBuffer): Promise<TipoArchivoCarga | null> {
     const resultado = await this.detectarNivelConDetalle(buffer);
     return resultado.nivel;
@@ -440,27 +537,28 @@ export class ExcelValidationService {
     let resultado: ResultadoValidacion;
     switch (nivel) {
       case 'primaria':
-        resultado = this.validarPrimariaWorkbook(xlsx, workbook, hojas);
+        resultado = await this.validarPrimariaWorkbook(xlsx, workbook, hojas);
         break;
       case 'secundaria':
-        resultado = this.validarSecundariaWorkbook(xlsx, workbook, hojas);
+        resultado = await this.validarSecundariaWorkbook(xlsx, workbook, hojas);
         break;
       case 'preescolar':
       default:
-        resultado = this.validarPreescolarWorkbook(xlsx, workbook, hojas);
+        resultado = await this.validarPreescolarWorkbook(xlsx, workbook, hojas);
         break;
     }
     resultado.nivel = nivel;
+
     return resultado;
   }
 
   async validarPreescolar(buffer: ArrayBuffer): Promise<ResultadoValidacion> {
     const xlsx = await this.cargarXlsx();
     const workbook = xlsx.read(buffer, { type: 'array' });
-    return this.validarPreescolarWorkbook(xlsx, workbook, workbook.SheetNames as string[]);
+    return await this.validarPreescolarWorkbook(xlsx, workbook, workbook.SheetNames as string[]);
   }
 
-  private validarPreescolarWorkbook(xlsx: any, workbook: any, hojas: string[]): ResultadoValidacion {
+  private async validarPreescolarWorkbook(xlsx: any, workbook: any, hojas: string[]): Promise<ResultadoValidacion> {
     const errores: string[] = [];
     const advertencias: string[] = [];
     const escSheet = workbook.Sheets['ESC'];
@@ -491,7 +589,7 @@ export class ExcelValidationService {
       return resultado;
     }
 
-    const esc = this.validarEsc(escSheet);
+    const esc = await this.validarEsc(escSheet);
     resultado.errores.push(...esc.errores);
     if (esc.advertencia) {
       resultado.advertencias.push(esc.advertencia);
@@ -509,7 +607,7 @@ export class ExcelValidationService {
     return resultado;
   }
 
-  private validarPrimariaWorkbook(xlsx: any, workbook: any, hojas: string[]): ResultadoValidacion {
+  private async validarPrimariaWorkbook(xlsx: any, workbook: any, hojas: string[]): Promise<ResultadoValidacion> {
     const errores: string[] = [];
     const advertencias: string[] = [];
     const escSheet = workbook.Sheets['ESC'];
@@ -537,7 +635,7 @@ export class ExcelValidationService {
       return resultado;
     }
 
-    const esc = this.validarEsc(escSheet);
+    const esc = await this.validarEsc(escSheet);
     resultado.errores.push(...esc.errores);
     if (esc.advertencia) {
       resultado.advertencias.push(esc.advertencia);
@@ -555,7 +653,7 @@ export class ExcelValidationService {
     return resultado;
   }
 
-  private validarSecundariaWorkbook(xlsx: any, workbook: any, hojas: string[]): ResultadoValidacion {
+  private async validarSecundariaWorkbook(xlsx: any, workbook: any, hojas: string[]): Promise<ResultadoValidacion> {
     const errores: string[] = [];
     const advertencias: string[] = [];
     const escSheet = workbook.Sheets['ESC'];
@@ -583,7 +681,7 @@ export class ExcelValidationService {
       return resultado;
     }
 
-    const esc = this.validarEsc(escSheet);
+    const esc = await this.validarEsc(escSheet);
     resultado.errores.push(...esc.errores);
     if (esc.advertencia) {
       resultado.advertencias.push(esc.advertencia);
@@ -635,7 +733,7 @@ export class ExcelValidationService {
     const escEncabezados = this.validarEncabezadosEscPrimaria(escSheet);
     resultado.errores.push(...escEncabezados.map((error) => `Primaria: ${error}`));
 
-    const esc = this.validarEsc(escSheet);
+    const esc = await this.validarEsc(escSheet);
     resultado.errores.push(...esc.errores.map((error) => `Primaria: ${error}`));
     if (esc.advertencia) {
       resultado.advertencias.push(`Primaria: ${esc.advertencia}`);
@@ -706,7 +804,7 @@ export class ExcelValidationService {
     const escEncabezados = this.validarEncabezadosEscPrimaria(escSheet);
     resultado.errores.push(...escEncabezados.map((error) => `Secundaria: ${error}`));
 
-    const esc = this.validarEsc(escSheet);
+    const esc = await this.validarEsc(escSheet);
     resultado.errores.push(...esc.errores.map((error) => `Secundaria: ${error}`));
     if (esc.advertencia) {
       resultado.advertencias.push(`Secundaria: ${esc.advertencia}`);
@@ -739,11 +837,11 @@ export class ExcelValidationService {
     return resultado;
   }
 
-  private validarEsc(sheet: any): {
+  private async validarEsc(sheet: any): Promise<{
     datos?: EscDatos;
     errores: string[];
     advertencia?: string;
-  } {
+  }> {
     const errores: string[] = [];
 
     const cct = this.primeraCeldaNoVacia(sheet, ['D9', 'E9', 'C9']);
@@ -753,14 +851,23 @@ export class ExcelValidationService {
 
     if (!cct) {
       errores.push('Captura la CCT en la hoja ESC.');
-    } else if (!/^[0-9]{2}[A-Z]{3}[0-9]{4}[A-Z]$/.test(cct)) {
-      errores.push('La CCT debe tener 10 caracteres alfanuméricos (ejemplo: 01DJN0000A).');
+    } else {
+      const vFormat = this.validarFormatoCCT(cct);
+      if (!vFormat.isValid) {
+        errores.push(`CCT [${cct}]: ${vFormat.error!}`);
+      } else {
+        // Validación de existencia en DB
+        const existe = await this.verificarCctEnBaseDeDatos(cct);
+        if (!existe) {
+          errores.push(`La CCT [${cct}] no está registrada en el catálogo oficial de instituciones. Por favor, solicite el registro de su escuela antes de subir la evaluación.`);
+        }
+      }
     }
 
     if (!turno) {
       errores.push('Selecciona un turno válido en la hoja ESC.');
     } else if (!this.turnosValidos.has(turno.toUpperCase().trim())) {
-      errores.push('El turno capturado no coincide con las opciones de la plantilla.');
+      errores.push(`El turno [${turno}] capturado no coincide con las opciones de la plantilla.`);
     }
 
     if (!nombreEscuela) {
@@ -783,7 +890,7 @@ export class ExcelValidationService {
           correo: correo?.trim() ?? ''
         },
       errores,
-      advertencia: !sheet['!ref']
+      advertencia: !sheet || !sheet['!ref']
         ? 'No se pudieron leer todos los datos de la hoja ESC. Verifica que la plantilla no haya sido modificada.'
         : undefined
     };

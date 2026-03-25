@@ -76,3 +76,22 @@ export const DOWNLOAD_ASSESSMENT_RESULT = `
     }
   }
 `;
+
+export const GENERATE_COMPROBANTE = `
+  query GenerateComprobante($solicitudId: ID!) {
+    generateComprobante(solicitudId: $solicitudId) {
+      success
+      fileName
+      contentBase64
+    }
+  }
+`;
+
+export const CHECK_USER_EXISTS = `
+  query CheckUserExists($email: String!) {
+    checkUserExists(email: $email) {
+      exists
+      message
+    }
+  }
+`;

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { GraphqlService } from './graphql.service';
 import { UPLOAD_EXCEL_MUTATION, UPLOAD_RESULTS_MUTATION } from '../operations/mutation';
-import { GET_SOLICITUDES, DOWNLOAD_ASSESSMENT_RESULT } from '../operations/query';
+import { GET_SOLICITUDES, DOWNLOAD_ASSESSMENT_RESULT, GENERATE_COMPROBANTE } from '../operations/query';
 
 export interface UploadExcelInput {
     archivoBase64: string;
@@ -12,12 +12,23 @@ export interface UploadExcelInput {
     confirmarReemplazo?: boolean;
 }
 
+export interface ExcelValidationError {
+    fila?: number;
+    columna?: string;
+    campo?: string;
+    error: string;
+    valorEncontrado?: string;
+    valorEsperado?: string;
+    hoja?: string;
+}
+
 export interface ExcelUploadResult {
     cct?: string;
     nivel?: string;
     grado?: number;
     alumnosProcesados: number;
     errores?: string[];
+    erroresEstructurados?: ExcelValidationError[];
 }
 
 export interface UploadExcelResponse {
@@ -123,6 +134,26 @@ export class EvaluacionesService {
                     const data = response.data?.downloadAssessmentResult;
                     if (!data || !data.success) {
                         throw new Error(data?.message ?? 'No se pudo descargar el archivo.');
+                    }
+                    return data;
+                })
+            );
+    }
+
+    generarComprobante(solicitudId: string): Observable<{ success: boolean, fileName: string, contentBase64: string }> {
+        return this.graphqlService
+            .execute<{ generateComprobante: { success: boolean, fileName: string, contentBase64: string, message?: string } }>(
+                GENERATE_COMPROBANTE,
+                { solicitudId }
+            )
+            .pipe(
+                map((response) => {
+                    if (response.errors?.length) {
+                        throw new Error(response.errors[0].message ?? 'Error al generar comprobante.');
+                    }
+                    const data = response.data?.generateComprobante;
+                    if (!data || !data.success) {
+                        throw new Error(data?.message ?? 'No se pudo generar el comprobante.');
                     }
                     return data;
                 })

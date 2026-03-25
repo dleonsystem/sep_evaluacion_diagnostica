@@ -18,6 +18,7 @@ export const AUTHENTICATE_USER_MUTATION = `
     authenticateUser(input: $input) {
       ok
       message
+      token
       user {
         id
         email
@@ -43,6 +44,15 @@ export const UPLOAD_EXCEL_MUTATION = `
         grado
         alumnosProcesados
         errores
+        erroresEstructurados {
+          fila
+          columna
+          campo
+          error
+          valorEncontrado
+          valorEsperado
+          hoja
+        }
       }
     }
   }

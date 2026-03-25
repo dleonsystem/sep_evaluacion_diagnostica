@@ -287,10 +287,20 @@
   filter: grayscale(0.2);
 }
 
+.carga__drop--dragging {
+  border-color: #0d9488 !important;
+  border-style: solid !important;
+  background-color: #f0fdfa !important;
+  transform: scale(1.005);
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.1);
+  transition: all 0.2s ease-in-out;
+}
+
 .carga__input {
   position: relative;
   overflow: hidden;
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .carga__input--disabled .carga__boton {
@@ -319,6 +329,7 @@
   font-weight: 700;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   border: none;
+  cursor: pointer;
 }
 
 .carga__boton:hover,
@@ -870,4 +881,232 @@
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+// --- MODAL DE INCIDENCIAS ---
+.carga__modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.carga__modal {
+  background: #fff;
+  width: 100%;
+  max-width: 600px;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  overflow: hidden;
+  animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.carga__modal-header {
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, #f0fdfa 0%, #ffffff 100%);
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+
+  h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+}
+
+.carga__modal-icono {
+  font-size: 1.5rem;
+  background: rgba(15, 118, 110, 0.1);
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+}
+
+.carga__modal-close {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.5rem;
+  background: transparent;
+  border: none;
+  font-size: 1.75rem;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 1;
+  
+  &:hover { color: #0f172a; }
+}
+
+.carga__modal-body {
+  padding: 1.5rem 2rem 2rem;
+}
+
+.carga__modal-aviso {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+
+  strong { color: #78350f; }
+}
+
+.carga__modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  textarea {
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    resize: vertical;
+    font-family: inherit;
+
+    &:focus {
+      outline: 2px solid #0f766e;
+      border-color: #0f766e;
+    }
+  }
+}
+
+.carga__modal-row {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 1rem;
+}
+
+.carga__modal-footer-info {
+  font-size: 0.875rem;
+  color: #64748b;
+  line-height: 1.4;
+  display: flex;
+  gap: 0.5rem;
+
+  i { color: #0f766e; font-size: 1.1rem; }
+  strong { color: #0f172a; }
+}
+
+.carga__modal-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.carga__error-hint {
+  color: #ef4444;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+// --- SECCIÓN DE EVIDENCIAS EN MODAL ---
+.carga__incidencia-evidencias {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.carga__campo-ayuda {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+.carga__evidencias-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.carga__evidencia-item {
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border: 1px solid #e2e8f0;
+
+  .carga__evidencia-nombre {
+    font-size: 0.8rem;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+
+    i { color: #0f766e; }
+  }
+
+  .carga__evidencia-quitar {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0;
+    line-height: 1;
+
+    &:hover { color: #ef4444; }
+  }
+}
+
+.carga__boton-adjuntar {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #ffffff;
+  border: 1.5px dashed #cbd5e1;
+  color: #475569;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #0f766e;
+    color: #0f766e;
+    background: #f0fdfa;
+  }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 640px) {
+  .carga__modal-row {
+    grid-template-columns: 1fr;
+  }
+  .carga__modal-body {
+    padding: 1.25rem 1.5rem;
+  }
 }

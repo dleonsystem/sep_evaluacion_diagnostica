@@ -114,10 +114,50 @@ export const typeDefs = `#graphql
     downloadMaterial(id: ID!): FileDownload!
 
     """
+    Descargar una evidencia de ticket (Imagen, PDF, etc)
+    @use-case CU-13: Mesa de ayuda
+    """
+    downloadTicketEvidencia(url: String!): FileDownload!
+
+    """
     Listar reportes consolidados por escuela (CCT)
     @use-case CU-17: Entrega de Resultados
     """
     getSchoolReports(cct: String!): [SchoolReport!]!
+
+    """
+    Listar incidencias de carga de usuarios no logueados (Admin)
+    @use-case CU-13: Mesa de ayuda
+    """
+    getPublicIncidents: [Ticket!]!
+
+    """
+    Listar todas las escuelas (Catálogo)
+    """
+    listEscuelas(
+      limit: Int = 10
+      offset: Int = 0
+      filtro: String
+    ): EscuelaConnection!
+
+    """
+    Obtener escuela por ID
+    """
+    getEscuela(id: ID!): Escuela
+
+    """
+    Verificar si un usuario ya existe por su correo
+    @use-case CU-01: Autenticación
+    """
+    checkUserExists(email: String!): UserExistsResponse!
+  }
+
+  """
+  Respuesta de verificación de existencia de usuario
+  """
+  type UserExistsResponse {
+    exists: Boolean!
+    message: String
   }
 
   """
@@ -265,6 +305,32 @@ export const typeDefs = `#graphql
     @use-case CU-08: Generar Reportes
     """
     simulateReportGeneration(solicitudId: ID!): Boolean!
+
+    """
+    Crear incidencia de carga para usuario no logueado
+    @use-case CU-13: Mesa de ayuda (Público)
+    """
+    createPublicIncident(input: CreatePublicIncidentInput!): Ticket!
+  }
+
+  """
+  Input para incidencia pública
+  """
+  input CreatePublicIncidentInput {
+    nombreCompleto: String!
+    cct: String!
+    email: String!
+    descripcion: String!
+    evidencias: [TicketEvidenciaInput!]
+  }
+
+  """
+  Input para evidencias
+  """
+  input TicketEvidenciaInput {
+    nombre: String!
+    base64: String!
+    tipo: String
   }
 
   """
@@ -324,6 +390,7 @@ export const typeDefs = `#graphql
     apematerno: String
     rol: UserRole!
     activo: Boolean!
+    primerLogin: Boolean
     fechaRegistro: String!
     fechaUltimoAcceso: String
     centrosTrabajo: [CentroTrabajo!]!
@@ -355,6 +422,77 @@ export const typeDefs = `#graphql
     turno: String!
     usuarios: [User!]!
   }
+
+  """
+  Escuela (Modelo refined según ESTRUCTURA_DE_DATOS.md)
+  @use-case CU-14: Administrar Catálogo de Escuelas
+  """
+  type Escuela {
+    id: ID!
+    cct: String!
+    nombre: String!
+    estado: String
+    cp: String
+    telefono: String
+    email: String
+    director: String
+    activo: Boolean!
+    turno: Turno
+    nivel: NivelEducativo
+    entidadFederativa: EntidadFederativa
+    cicloEscolar: CicloEscolar
+    created_at: String!
+    updated_at: String!
+  }
+
+  type Turno {
+    id: Int!
+    nombre: String!
+    codigo: String!
+  }
+
+  type EntidadFederativa {
+    id: Int!
+    nombre: String!
+    abreviatura: String
+  }
+
+  type CicloEscolar {
+    id: Int!
+    nombre: String!
+    activo: Boolean!
+  }
+
+  type EscuelaConnection {
+    nodes: [Escuela!]!
+    totalCount: Int!
+  }
+
+  input CreateEscuelaInput {
+    cct: String!
+    nombre: String!
+    id_turno: Int!
+    id_nivel: Int!
+    id_entidad: Int!
+    id_ciclo: Int!
+    email: String
+    telefono: String
+    director: String
+    cp: String
+  }
+
+  input UpdateEscuelaInput {
+    nombre: String
+    id_turno: Int
+    id_nivel: Int
+    id_entidad: Int
+    id_ciclo: Int
+    email: String
+    telefono: String
+    director: String
+    cp: String
+    activo: Boolean
+  }
   
   """
   Niveles educativos
@@ -364,6 +502,8 @@ export const typeDefs = `#graphql
     PREESCOLAR
     PRIMARIA
     SECUNDARIA
+    TELESECUNDARIA
+    INICIAL_GENERAL
   }
   
   """
@@ -423,6 +563,7 @@ export const typeDefs = `#graphql
   type AuthPayload {
     ok: Boolean!
     message: String
+    token: String
     user: User
   }
   
@@ -512,6 +653,20 @@ export const typeDefs = `#graphql
     grado: Int
     alumnosProcesados: Int
     errores: [String!]
+    erroresEstructurados: [ExcelValidationError!]
+  }
+
+  """
+  Error detallado de validación en Excel
+  """
+  type ExcelValidationError {
+    fila: Int
+    columna: String
+    campo: String
+    error: String!
+    valorEncontrado: String
+    valorEsperado: String
+    hoja: String
   }
 
   """
@@ -545,6 +700,8 @@ export const typeDefs = `#graphql
     evidencias: [TicketEvidencia!]
     respuestas: [TicketRespuesta!]
     correo: String
+    nombreCompleto: String
+    cct: String
     fechaCreacion: String!
     fechaActualizacion: String!
   }
@@ -577,14 +734,6 @@ export const typeDefs = `#graphql
     descripcion: String!
     correo: String
     evidencias: [TicketEvidenciaInput!]
-  }
-
-  """
-  Input para evidencia de Ticket
-  """
-  input TicketEvidenciaInput {
-    nombre: String!
-    base64: String!
   }
 
   """

@@ -73,7 +73,7 @@
                 <i class="bi bi-folder2-open mr-2" aria-hidden="true"></i>
                 Cargas realizadas
               </a>
-              <a class="dropdown-item" [routerLink]="['/descargas']">
+              <a class="dropdown-item" [routerLink]="['/descargas']" *ngIf="isUsuarioAutenticado && !esUsuarioRol4">
                 <i class="bi bi-download mr-2" aria-hidden="true"></i>
                 Descargas
               </a>

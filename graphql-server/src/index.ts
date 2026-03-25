@@ -59,6 +59,7 @@ import { logger, logPSPTime } from './utils/logger.js';
 import { createDataLoaders } from './utils/data-loaders.js';
 import { DistributionService } from './services/distribution.service.js';
 import { EmailWatcherService } from './services/email-watcher.service.js';
+import { verifyToken } from './config/jwt.js';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -270,21 +271,29 @@ async function startServer() {
       }),
       expressMiddleware(server, {
         context: async ({ req }): Promise<GraphQLContext> => {
-          const token = req.headers.authorization || '';
+          const authHeader = req.headers.authorization || '';
           const loaders = createDataLoaders();
 
-          if (!token) return { user: undefined, loaders, distributionService };
+          if (!authHeader) return { user: undefined, loaders, distributionService };
 
           try {
-            // Formato esperado: "Bearer <base64>"
-            // Base64 decodificado: "email:timestamp" (Generado por AdminAuthService)
-            const encoded = token.replace('Bearer ', '');
-            const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
-            const [email] = decoded.split(':');
+            // Extraer token de forma más robusta
+            const token = authHeader.split(' ').pop();
+            if (!token) {
+              logger.error('Token vacío en el header Authorization');
+              return { user: undefined, loaders, distributionService };
+            }
 
-            if (!email) return { user: undefined, loaders, distributionService };
+            // 1. Verificar JWT
+            const decodedJwt = verifyToken(token);
+            let email = decodedJwt?.email;
 
-            // Buscar usuario real en BD con su rol (codigo)
+            if (!email) {
+              logger.error('Token JWT inválido o sin email', { hasHeader: !!authHeader, tokenPrefix: token.substring(0, 10) });
+              return { user: undefined, loaders, distributionService };
+            }
+
+            // 2. Buscar usuario real (insensible a mayúsculas para mayor robustez)
             const result = await query(
               `SELECT 
                 u.id, 
@@ -292,19 +301,21 @@ async function startServer() {
                 r.codigo as rol 
                FROM usuarios u
                INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
-               WHERE u.email = $1 AND u.activo = true`,
-              [email]
+               WHERE LOWER(u.email) = LOWER($1) AND u.activo = true`,
+              [email.trim()]
             );
 
             if (result.rows.length > 0) {
               return {
                 user: result.rows[0] as any,
                 loaders,
-                distributionService
+                distributionService,
               };
+            } else {
+              logger.error('Sesión rechazada: Usuario del token no encontrado o inactivo', { email });
             }
-          } catch (error) {
-            logger.error('Error procesando token de contexto', error);
+          } catch (error: any) {
+            logger.error('Error fatal procesando token de contexto', { error: error.message });
           }
 
           return { user: undefined, loaders, distributionService };

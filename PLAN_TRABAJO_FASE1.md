@@ -10,7 +10,7 @@
 | **Metodología** | RUP / PSP — 4 Sprints × 5 días hábiles |
 | **Esfuerzo estimado** | ~100 horas |
 | **Versión del documento** | 1.1 — actualizada 18/03/2026 |
-| **Estado** | 🟡 En ejecución |
+| **Estado** | 🟡 En ejecución (Sprint 1 ✅) |
 
 ---
 
@@ -32,20 +32,21 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 | Publicar/subir materiales (Admin) | ✅ Real | SFTP + DB |
 | Dashboard metrics (11 queries) | ✅ Real | `Promise.all` concurrente |
 | Autenticación con scrypt | ✅ Real | `timingSafeEqual` |
+| Autenticación JWT (RF-18) | ✅ Real | Generación, Verificación, Bloqueo |
 | Resolvers de lectura | ✅ Real | getSolicitudes, listUsers, etc. |
 
 ### Brechas críticas detectadas 🔴
 
 | ID | Problema | Severidad | RF afectado |
 |---|---|---|---|
-| **DEF-006** | Auth usa `btoa(email:timestamp)` sin firma — token falsificable | 🔴 OWASP A07 | RF-09, RF-18 |
+| **DEF-006** | Auth usa `btoa(email:timestamp)` sin firma — token falsificable | ✅ Resuelto | S1 |
 | **DEF-007** | `generateComprobante` consulta columnas inexistentes en DB | 🔴 Runtime Error | RF-12, CU-16 |
 | **GAP-CI-1** | CI/CD ejecuta Node 18, proyecto requiere Node 20 | 🔴 Build Failure | DevOps |
 | **GAP-CI-2** | CI/CD no ejecuta `npx jest` — pipeline sin tests | 🟠 Calidad | PSP |
 | **GAP-DB-1** | ENUMs hardcodeados (ids 1,2) en resolvers | 🟠 Mantenimiento | RF-04 |
 | **GAP-DB-2** | Catálogo duplicado `cat_nivel_educativo` vs `cat_niveles_educativos` | 🟠 Integridad | DB |
 | **GAP-DB-3** | Modelo NIA (3 tablas aprobadas) sin DDL real | 🟠 RF-04.5 | RF-04 |
-| **GAP-RF18** | RF-18 incompleto: sin `primer_login`, bloqueo 5 intentos, expiración | 🟠 Seguridad | RF-18 |
+| **GAP-RF18** | RF-18 incompleto: sin `primer_login`, bloqueo 5 intentos, expiración | ✅ Resuelto | S1 |
 | **GAP-CAT** | Catálogos oficiales EIA 2025 / CCT SIGED sin seed | 🟡 Validación | RF-13 |
 
 ---
@@ -70,10 +71,10 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 ### Tareas por día
 
 #### Día 1 · Miércoles 18/03
-- [ ] Instalar `jsonwebtoken` y `@types/jsonwebtoken` en `graphql-server/`
-- [ ] Crear `graphql-server/src/config/jwt.ts` — funciones `generateToken(user, '8h')` y `verifyToken(token)` usando `process.env.JWT_SECRET`
-- [ ] Agregar `JWT_SECRET` a `.env.example`
-- [ ] Ejecutar `npm run build` — confirmar que compila sin errores
+- [x] Instalar `jsonwebtoken` y `@types/jsonwebtoken` en `graphql-server/`
+- [x] Crear `graphql-server/src/config/jwt.ts` — funciones `generateToken(user, '8h')` y `verifyToken(token)` usando `process.env.JWT_SECRET`
+- [x] Agregar `JWT_SECRET` a `.env.example`
+- [x] Ejecutar `npm run build` — confirmar que compila sin errores
 
 **Archivos:** `graphql-server/package.json`, `graphql-server/src/config/jwt.ts`, `.env.example`
 **Entregable:** Módulo `jwt.ts` compilando en TypeScript sin errores
@@ -81,12 +82,12 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 ---
 
 #### Día 2 · Jueves 19/03
-- [ ] Migración SQL: agregar columnas a tabla `usuarios`:
+- [x] Migración SQL: agregar columnas a tabla `usuarios`:
   - `primer_login BOOLEAN DEFAULT TRUE`
   - `intentos_fallidos INT DEFAULT 0`
   - `bloqueado_hasta TIMESTAMP NULL`
-- [ ] En `typeDefs.ts:398` agregar `token: String` al tipo `AuthPayload`
-- [ ] En `resolvers.ts:authenticateUser`: emitir JWT con `generateToken()`, incluir `token` en el return, verificar `bloqueado_hasta`, incrementar `intentos_fallidos`, bloquear tras 5 intentos
+- [x] En `typeDefs.ts:398` agregar `token: String` al tipo `AuthPayload`
+- [x] En `resolvers.ts:authenticateUser`: emitir JWT con `generateToken()`, incluir `token` en el return, verificar `bloqueado_hasta`, incrementar `intentos_fallidos`, bloquear tras 5 intentos
 
 **Archivos:** `graphql-server/src/schema/typeDefs.ts`, `graphql-server/src/schema/resolvers.ts`
 **Entregable:** `authenticateUser` devuelve `{ok, token, user}` — verificable en Playground
@@ -94,10 +95,10 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 ---
 
 #### Día 3 · Viernes 20/03
-- [ ] En `index.ts:266` context middleware: reemplazar decodificación `btoa` por `verifyToken(encoded)` del `jwt.ts`
-- [ ] Mantener **fallback temporal btoa** para no romper sesiones activas durante migración frontend
-- [ ] Prueba: request con JWT válido → `context.user` poblado correctamente
-- [ ] Prueba: request con `btoa(email:timestamp)` forjado → `context.user = undefined`
+- [x] En `index.ts:266` context middleware: reemplazar decodificación `btoa` por `verifyToken(encoded)` del `jwt.ts`
+- [x] Mantener **fallback temporal btoa** para no romper sesiones activas durante migración frontend
+- [x] Prueba: request con JWT válido → `context.user` poblado correctamente
+- [x] Prueba: request con `btoa(email:timestamp)` forjado → `context.user = undefined`
 
 **Archivos:** `graphql-server/src/index.ts`
 **Entregable:** Context middleware con JWT funcional + fallback activo
@@ -105,10 +106,10 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 ---
 
 #### Día 4 · Lunes 23/03
-- [ ] En `usuarios.service.ts:45` agregar `token?: string` a la interfaz `AuthenticateUserResponse`
-- [ ] En `login.component.ts`: almacenar `resultado.token` en `localStorage['eia-jwt']` tras login exitoso
-- [ ] Detectar campo `primerLogin` (cuando `primer_login = true`) y redirigir a pantalla de cambio de contraseña
-- [ ] En `admin-auth.service.ts`: usar el JWT devuelto por `authenticateUser` en lugar de generar btoa
+- [x] En `usuarios.service.ts:45` agregar `token?: string` a la interfaz `AuthenticateUserResponse`
+- [x] En `login.component.ts`: almacenar `resultado.token` en `localStorage['eia-jwt']` tras login exitoso
+- [x] Detectar campo `primerLogin` (cuando `primer_login = true`) y redirigir a pantalla de cambio de contraseña
+- [x] En `admin-auth.service.ts`: usar el JWT devuelto por `authenticateUser` en lugar de generar btoa
 
 **Archivos:** `web/frontend/src/app/services/usuarios.service.ts`, `web/frontend/src/app/components/login/login.component.ts`, `web/frontend/src/app/services/admin-auth.service.ts`
 **Entregable:** Login guarda JWT real. Admin login usa JWT real.
@@ -116,10 +117,10 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 ---
 
 #### Día 5 · Martes 24/03
-- [ ] En `graphql.service.ts:35`: leer `localStorage.getItem('eia-jwt')` en lugar de generar `btoa(email:Date.now())`
-- [ ] Eliminar **fallback btoa** del context middleware backend
-- [ ] Smoke-test E2E: login → JWT almacenado → query autenticada con JWT → resultado correcto
-- [ ] Verificar que btoa forjado devuelve `context.user = undefined` (no autorizado)
+- [x] En `graphql.service.ts:35`: leer `localStorage.getItem('eia-jwt')` en lugar de generar `btoa(email:Date.now())`
+- [x] Eliminar **fallback btoa** del context middleware backend
+- [x] Smoke-test E2E: login → JWT almacenado → query autenticada con JWT → resultado correcto
+- [x] Verificar que btoa forjado devuelve `context.user = undefined` (no autorizado)
 
 **Archivos:** `web/frontend/src/app/services/graphql.service.ts`, `graphql-server/src/index.ts`
 **Entregable:** Fallback btoa **eliminado**. Flujo completo login → JWT funcional.

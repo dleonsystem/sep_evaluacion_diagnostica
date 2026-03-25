@@ -23,7 +23,7 @@ export const createDataLoaders = () => {
           e.estado as entidad,
           e.municipio,
           e.localidad,
-          ne.codigo as nivel,
+          REPLACE(ne.codigo, ' ', '_') as nivel,
           t.nombre as turno
         FROM escuelas e
         JOIN usuarios u ON e.id = u.escuela_id
