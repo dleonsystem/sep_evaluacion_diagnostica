@@ -35,6 +35,8 @@ export interface UsuarioAutenticado {
   id: string;
   email: string;
   rol: string;
+  token?: string;
+  primerLogin?: boolean;
   centrosTrabajo: Array<{ claveCCT: string }>;
 }
 
@@ -46,6 +48,7 @@ interface AuthenticateUserResponse {
   authenticateUser: {
     ok: boolean;
     message?: string | null;
+    token?: string | null;
     user?: UsuarioAutenticado | null;
   };
 }
@@ -91,7 +94,12 @@ export class UsuariosService {
           if (!resultado?.ok || !resultado.user) {
             throw new Error(resultado?.message ?? 'Credenciales inválidas.');
           }
-          return resultado.user;
+          // Inyectar el token en el objeto de usuario para el frontend
+          const user = resultado.user;
+          if (resultado.token) {
+            user.token = resultado.token;
+          }
+          return user;
         }),
       );
   }

@@ -376,9 +376,9 @@ CREATE TABLE escuelas (
 	id_ciclo       INT NOT NULL REFERENCES cat_ciclos_escolares(id_ciclo),
 	created_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
-	CONSTRAINT uq_escuelas_cct UNIQUE (cct),
+	CONSTRAINT uq_escuelas_cct_turno UNIQUE (cct, id_turno),
 	CONSTRAINT chk_escuelas_email CHECK (email IS NULL OR email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
-	CONSTRAINT chk_escuelas_cct_format CHECK (cct ~ '^[0-9]{2}[A-Z]{1}[A-Z0-9]{7}$')
+	CONSTRAINT chk_escuelas_cct_format CHECK (cct ~ '^[0-9]{2}[A-Z]{3}[0-9]{4}[0-9A-Z]$')
 );
 
 CREATE TABLE grupos (
@@ -779,6 +779,24 @@ CREATE TABLE resultados_competencias (
 	nivel_logro    INT NOT NULL CHECK (nivel_logro BETWEEN 1 AND 4),
 	UNIQUE (id_evaluacion, id_competencia)
 );
+
+CREATE TABLE materiales_evaluacion (
+	id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	nombre            VARCHAR(255) NOT NULL,
+	tipo              VARCHAR(50) NOT NULL CHECK (tipo IN ('EIA', 'FRV', 'RUBRICA')),
+	nivel_educativo   SMALLINT NOT NULL REFERENCES cat_nivel_educativo(id),
+	ruta_archivo      TEXT NOT NULL,
+	ciclo_escolar     VARCHAR(10) NOT NULL,
+	periodo_id        UUID NOT NULL REFERENCES periodos_evaluacion(id),
+	fecha_publicacion TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
+	usuario_id        UUID REFERENCES usuarios(id),
+	activo            BOOLEAN DEFAULT true,
+	created_at        TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	updated_at        TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE materiales_evaluacion IS 'Materiales oficiales de evaluación (EIA, FRV, Rúbricas) subidos por administración';
+COMMENT ON COLUMN materiales_evaluacion.tipo IS 'Tipo de material: EIA (Cuadernillo), FRV (Excel), RUBRICA (Guía)';
 
 -- Staging tables for DBF imports
 

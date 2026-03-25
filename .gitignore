@@ -148,3 +148,6 @@ web/frontend/.angular/
 
 # SFTP local storage
 sftp-data/
+
+# Temporary debug scripts
+tmp/

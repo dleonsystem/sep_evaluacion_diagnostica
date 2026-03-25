@@ -100,6 +100,49 @@ export const typeDefs = `#graphql
     @use-case CU-18: Preguntas Frecuentes
     """
     getPreguntasFrecuentes: [PreguntaFrecuente!]!
+
+    """
+    Listar materiales de evaluación disponibles
+    @use-case CU-01: Publicar Materiales de Evaluación
+    """
+    getMateriales(nivel: NivelEducativo, ciclo: String): [MaterialEvaluacion!]!
+
+    """
+    Descargar un material de evaluación (EIA, FRV, Rúbrica)
+    @use-case CU-01: Publicar Materiales de Evaluación
+    """
+    downloadMaterial(id: ID!): FileDownload!
+
+    """
+    Descargar una evidencia de ticket (Imagen, PDF, etc)
+    @use-case CU-13: Mesa de ayuda
+    """
+    downloadTicketEvidencia(url: String!): FileDownload!
+
+    """
+    Listar reportes consolidados por escuela (CCT)
+    @use-case CU-17: Entrega de Resultados
+    """
+    getSchoolReports(cct: String!): [SchoolReport!]!
+
+    """
+    Listar incidencias de carga de usuarios no logueados (Admin)
+    @use-case CU-13: Mesa de ayuda
+    """
+    getPublicIncidents: [Ticket!]!
+  }
+
+  """
+  Reporte consolidado por escuela
+  """
+  type SchoolReport {
+    id: ID!
+    nombre: String!
+    tipo: String!
+    fechaGeneracion: String!
+    url: String!
+    size: Int
+    solicitudId: ID
   }
 
   """
@@ -222,6 +265,44 @@ export const typeDefs = `#graphql
     @use-case CU-17: Entrega de Resultados
     """
     uploadAssessmentResults(input: UploadResultsInput!): UploadResultsResponse!
+
+    """
+    Publicar un nuevo material de evaluación (Admin)
+    @use-case CU-01: Publicar Materiales de Evaluación
+    """
+    publicarMaterial(input: PublicarMaterialInput!): PublicarMaterialResponse!
+
+    """
+    Simular la generación de reportes para una solicitud (Demo/Phase 1)
+    @use-case CU-08: Generar Reportes
+    """
+    simulateReportGeneration(solicitudId: ID!): Boolean!
+
+    """
+    Crear incidencia de carga para usuario no logueado
+    @use-case CU-13: Mesa de ayuda (Público)
+    """
+    createPublicIncident(input: CreatePublicIncidentInput!): Ticket!
+  }
+
+  """
+  Input para incidencia pública
+  """
+  input CreatePublicIncidentInput {
+    nombreCompleto: String!
+    cct: String!
+    email: String!
+    descripcion: String!
+    evidencias: [TicketEvidenciaInput!]
+  }
+
+  """
+  Input para evidencias
+  """
+  input TicketEvidenciaInput {
+    nombre: String!
+    base64: String!
+    tipo: String
   }
 
   """
@@ -281,6 +362,7 @@ export const typeDefs = `#graphql
     apematerno: String
     rol: UserRole!
     activo: Boolean!
+    primerLogin: Boolean
     fechaRegistro: String!
     fechaUltimoAcceso: String
     centrosTrabajo: [CentroTrabajo!]!
@@ -311,6 +393,77 @@ export const typeDefs = `#graphql
     nivel: NivelEducativo!
     turno: String!
     usuarios: [User!]!
+  }
+
+  """
+  Escuela (Modelo refined según ESTRUCTURA_DE_DATOS.md)
+  @use-case CU-14: Administrar Catálogo de Escuelas
+  """
+  type Escuela {
+    id: ID!
+    cct: String!
+    nombre: String!
+    estado: String
+    cp: String
+    telefono: String
+    email: String
+    director: String
+    activo: Boolean!
+    turno: Turno
+    nivel: NivelEducativo
+    entidadFederativa: EntidadFederativa
+    cicloEscolar: CicloEscolar
+    created_at: String!
+    updated_at: String!
+  }
+
+  type Turno {
+    id: Int!
+    nombre: String!
+    codigo: String!
+  }
+
+  type EntidadFederativa {
+    id: Int!
+    nombre: String!
+    abreviatura: String
+  }
+
+  type CicloEscolar {
+    id: Int!
+    nombre: String!
+    activo: Boolean!
+  }
+
+  type EscuelaConnection {
+    nodes: [Escuela!]!
+    totalCount: Int!
+  }
+
+  input CreateEscuelaInput {
+    cct: String!
+    nombre: String!
+    id_turno: Int!
+    id_nivel: Int!
+    id_entidad: Int!
+    id_ciclo: Int!
+    email: String
+    telefono: String
+    director: String
+    cp: String
+  }
+
+  input UpdateEscuelaInput {
+    nombre: String
+    id_turno: Int
+    id_nivel: Int
+    id_entidad: Int
+    id_ciclo: Int
+    email: String
+    telefono: String
+    director: String
+    cp: String
+    activo: Boolean
   }
   
   """
@@ -380,6 +533,7 @@ export const typeDefs = `#graphql
   type AuthPayload {
     ok: Boolean!
     message: String
+    token: String
     user: User
   }
   
@@ -455,6 +609,7 @@ export const typeDefs = `#graphql
     success: Boolean!
     message: String!
     solicitudId: ID
+    consecutivo: String
     detalles: ExcelUploadResult
     duplicadoDetectado: Boolean
   }
@@ -468,6 +623,20 @@ export const typeDefs = `#graphql
     grado: Int
     alumnosProcesados: Int
     errores: [String!]
+    erroresEstructurados: [ExcelValidationError!]
+  }
+
+  """
+  Error detallado de validación en Excel
+  """
+  type ExcelValidationError {
+    fila: Int
+    columna: String
+    campo: String
+    error: String!
+    valorEncontrado: String
+    valorEsperado: String
+    hoja: String
   }
 
   """
@@ -501,6 +670,8 @@ export const typeDefs = `#graphql
     evidencias: [TicketEvidencia!]
     respuestas: [TicketRespuesta!]
     correo: String
+    nombreCompleto: String
+    cct: String
     fechaCreacion: String!
     fechaActualizacion: String!
   }
@@ -536,20 +707,51 @@ export const typeDefs = `#graphql
   }
 
   """
-  Input para evidencia de Ticket
-  """
-  input TicketEvidenciaInput {
-    nombre: String!
-    base64: String!
-  }
-
-  """
   Respuesta para descarga de archivos
   """
   type FileDownload {
     success: Boolean!
     fileName: String!
     contentBase64: String!
+  }
+
+  """
+  Material de Evaluación (EIA, FRV, Rúbrica)
+  @use-case CU-01
+  """
+  type MaterialEvaluacion {
+    id: ID!
+    nombre: String!
+    tipo: String!
+    nivelEducativo: NivelEducativo!
+    rutaArchivo: String!
+    cicloEscolar: String!
+    fechaPublicacion: String!
+    activo: Boolean!
+  }
+
+  """
+  Input para publicar material
+  """
+  input PublicarMaterialInput {
+    nombre: String!
+    tipo: String!
+    nivelEducativo: NivelEducativo!
+    cicloEscolar: String!
+    periodoId: ID!
+    archivoBase64: String!
+    nombreArchivo: String!
+    overwrite: Boolean
+  }
+
+  """
+  Respuesta de publicación de material
+  """
+  type PublicarMaterialResponse {
+    success: Boolean!
+    message: String!
+    requiresConfirmation: Boolean
+    material: MaterialEvaluacion
   }
 `;
 

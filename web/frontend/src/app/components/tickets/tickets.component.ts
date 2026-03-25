@@ -4,6 +4,8 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
+import { TicketsService } from '../../services/tickets.service';
+import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
 interface EvidenciaArchivo {
@@ -16,12 +18,13 @@ interface TicketSoporte {
   folio: string;
   correo: string;
   motivo: string;
-  motivoDetalle: string;
+  motivoDetalle?: string;
   descripcion: string;
   fecha: string;
+  prioridad: string;
   estatus: 'pendiente' | 'en-proceso' | 'respondido';
   respuestas: Array<{ mensaje: string; fecha: string; autor: 'admin' }>;
-  evidencias: Array<{ nombre: string; tamano: number; tipo: string }>;
+  evidencias: Array<{ nombre: string; tamano: number; tipo: string; url: string }>;
 }
 
 @Component({
@@ -59,6 +62,7 @@ export class TicketsComponent implements OnInit {
   constructor(
     private readonly authService: AuthService,
     private readonly estadoCredencialesService: EstadoCredencialesService,
+    private readonly ticketsService: TicketsService,
     private readonly router: Router
   ) { }
 
@@ -68,12 +72,10 @@ export class TicketsComponent implements OnInit {
       return;
     }
 
-    this.inicializarStorageTickets();
-
     const credenciales = this.estadoCredencialesService.obtener() ?? this.authService.obtenerCredenciales();
     const correoSesion = this.authService.obtenerCorreoSesion();
     this.correoActivo = this.normalizarCorreo(credenciales?.correo ?? correoSesion ?? null);
-    this.cargarTickets();
+    void this.cargarTickets();
   }
 
   get mostrarMotivoOtro(): boolean {
@@ -82,10 +84,6 @@ export class TicketsComponent implements OnInit {
 
   get puedeAgregarEvidencias(): boolean {
     return this.evidencias.length < this.maxEvidencias;
-  }
-
-  get ticketsStorageJson(): string {
-    return localStorage.getItem('tickets-soporte') ?? '[]';
   }
 
   onArchivoSeleccionado(event: Event): void {
@@ -140,15 +138,6 @@ export class TicketsComponent implements OnInit {
       return;
     }
 
-    // Aunque no tengamos token real, necesitamos el correo
-    if (!this.correoActivo) {
-      // Intentar recuperar de auth service, o pedir login
-      if (!this.authService.estaAutenticado()) {
-        this.mensajeError = 'Inicia sesión para registrar un ticket.';
-        return;
-      }
-    }
-
     try {
       // 1. Convertir evidencias a Base64
       const evidenciasPromises = this.evidencias.map(async (item) => ({
@@ -157,54 +146,20 @@ export class TicketsComponent implements OnInit {
       }));
       const evidenciasToSend = await Promise.all(evidenciasPromises);
 
-      // 2. Preparar Payload GraphQL
-      const query = `
-        mutation CreateTicket($input: CreateTicketInput!) {
-          createTicket(input: $input) {
-            id
-            numeroTicket
-            asunto
-            descripcion
-            estado
-            fechaCreacion
-            evidencias {
-              nombre
-              url
-              size
-            }
-          }
-        }
-      `;
-
-      const variables = {
-        input: {
+      // 2. Enviar petición usando el servicio
+      const ticketResult = await firstValueFrom(
+        this.ticketsService.createTicket({
           motivo: this.motivoControl.value,
           descripcion: this.descripcionControl.value,
-          correo: this.correoActivo, // Enviamos correo para identificar usuario (Auth Mock)
+          correo: this.correoActivo,
           evidencias: evidenciasToSend
-        }
-      };
+        })
+      );
 
-      // 3. Enviar Petición
-      const response = await fetch('http://localhost:4000/graphql', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ query, variables })
-      });
-
-      const result = await response.json();
-
-      if (result.errors) {
-        throw new Error(result.errors[0].message);
-      }
-
-      // 4. Éxito y actualización de lista desde DB
+      // 3. Éxito
       await Swal.fire({
         title: '¡Ticket enviado!',
-        text: `Tu ticket se registró correctamente con el folio: ${result.data.createTicket.numeroTicket}`,
+        text: `Tu ticket se registró correctamente con el folio: ${ticketResult.numeroTicket}`,
         icon: 'success',
         confirmButtonText: 'Entendido',
         confirmButtonColor: '#00695c'
@@ -215,7 +170,6 @@ export class TicketsComponent implements OnInit {
       this.descripcionControl.reset('');
       this.evidencias = [];
 
-      // Recargar la lista real desde la base de datos
       await this.cargarTickets();
 
     } catch (error: any) {
@@ -230,7 +184,6 @@ export class TicketsComponent implements OnInit {
       reader.readAsDataURL(file);
       reader.onload = () => {
         const result = reader.result as string;
-        // Eliminar prefijo data:tipo;base64,
         const base64 = result.split(',')[1];
         resolve(base64);
       };
@@ -243,80 +196,14 @@ export class TicketsComponent implements OnInit {
     return this.extensionesPermitidas.some((extension) => nombreLower.endsWith(extension));
   }
 
-  private inicializarStorageTickets(): void {
-    const data = localStorage.getItem('tickets-soporte');
-    if (!data) {
-      localStorage.setItem('tickets-soporte', '[]');
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(data);
-      if (!Array.isArray(parsed)) {
-        localStorage.setItem('tickets-soporte', '[]');
-      }
-    } catch {
-      localStorage.setItem('tickets-soporte', '[]');
-    }
-  }
-
-  private obtenerTickets(): TicketSoporte[] {
-    const data = localStorage.getItem('tickets-soporte');
-    if (!data) {
-      return [];
-    }
-
-    try {
-      const parsed = JSON.parse(data);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-
   private async cargarTickets(): Promise<void> {
     if (!this.correoActivo) return;
 
     try {
-      const query = `
-        query GetMyTickets($correo: String) {
-          getMyTickets(correo: $correo) {
-            id
-            numeroTicket
-            asunto
-            descripcion
-            estado
-            fechaCreacion
-            evidencias {
-              nombre
-              url
-              size
-            }
-          }
-        }
-      `;
+      const ticketsDB = await firstValueFrom(
+        this.ticketsService.getMyTickets(this.correoActivo)
+      );
 
-      const response = await fetch('http://localhost:4000/graphql', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          query,
-          variables: { correo: this.correoActivo }
-        })
-      });
-
-      const result = await response.json();
-
-      if (result.errors) {
-        throw new Error(result.errors[0].message);
-      }
-
-      const ticketsDB = result.data.getMyTickets;
-
-      // Mapear al modelo de la UI
       this.ticketsCreados = ticketsDB.map((t: any) => ({
         id: t.id,
         folio: t.numeroTicket,
@@ -325,11 +212,17 @@ export class TicketsComponent implements OnInit {
         descripcion: t.descripcion,
         fecha: t.fechaCreacion,
         estatus: this.mapEstatus(t.estado),
-        respuestas: [],
+        prioridad: t.prioridad,
+        respuestas: (t.respuestas || []).map((r: any) => ({
+          mensaje: r.mensaje,
+          fecha: r.fecha,
+          autor: 'admin'
+        })),
         evidencias: (t.evidencias || []).map((e: any) => ({
           nombre: e.nombre,
           tamano: e.size || 0,
-          tipo: 'archivo'
+          tipo: 'archivo',
+          url: e.url
         }))
       }));
 
@@ -338,10 +231,63 @@ export class TicketsComponent implements OnInit {
     }
   }
 
+  async descargarEvidencia(evidencia: { nombre: string; url: string }): Promise<void> {
+    try {
+      Swal.fire({
+        title: 'Descargando...',
+        text: 'Obteniendo archivo del servidor seguro',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const result = await firstValueFrom(this.ticketsService.downloadTicketEvidencia(evidencia.url));
+      
+      if (!result.success) {
+        throw new Error('El servidor no pudo entregar el archivo');
+      }
+
+      // Convertir base64 a Blob
+      const byteCharacters = atob(result.contentBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      
+      // Intentar determinar MIME type por extensión
+      let mimeType = 'application/octet-stream';
+      const ext = evidencia.nombre.toLowerCase().split('.').pop();
+      if (['jpg', 'jpeg'].includes(ext!)) mimeType = 'image/jpeg';
+      else if (ext === 'png') mimeType = 'image/png';
+      else if (ext === 'pdf') mimeType = 'application/pdf';
+      else if (ext === 'doc') mimeType = 'application/msword';
+      else if (ext === 'docx') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+      const blob = new Blob([byteArray], { type: mimeType });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Si es imagen o PDF, podemos intentar abrir en nueva pestaña, 
+      // pero el usuario pidió ver o descargar. Descargar es más seguro.
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = result.fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      Swal.close();
+    } catch (error: any) {
+      Swal.fire('Error', error.message || 'No se pudo descargar el archivo', 'error');
+    }
+  }
+
   private mapEstatus(estado: string): 'pendiente' | 'en-proceso' | 'respondido' {
     switch (estado) {
       case 'ABIERTO': return 'pendiente';
-      case 'EN PROCESO': return 'en-proceso';
+      case 'EN_PROCESO': return 'en-proceso';
       case 'CERRADO': case 'RESUELTO': return 'respondido';
       default: return 'pendiente';
     }

@@ -7,6 +7,7 @@ interface PdfExitoPayload {
   alumnosValidados: number;
   cct: string;
   fechaValidacion: string;
+  consecutivo: string; // Trazabilidad CU-04v2
 }
 
 interface PdfErroresPayload {
@@ -137,6 +138,7 @@ export class MockPdfService {
     return {
       titulo: 'Comprobante de validación',
       lineas: [
+        `Folio Siguiente: ${payload.consecutivo}`, // Trazabilidad
         'Archivo validado correctamente.',
         `Fecha disponible para resultados: ${payload.fechaDisponible}`,
         `CCT: ${payload.cct}`,

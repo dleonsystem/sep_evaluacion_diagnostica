@@ -47,12 +47,8 @@ export class LoginComponent implements OnInit {
       return;
     }
 
-    this.correo = credenciales.correo;
-    this.contrasenaGuardada = credencialesPersistidas?.contrasena ?? null;
+    // No auto-poblamos campos por seguridad (petición de "sin rastro")
     this.credencialesGuardadas = Boolean(credencialesPersistidas);
-    if (!this.contrasena) {
-      this.contrasena = credenciales.contrasena;
-    }
   }
 
   async iniciarSesion(): Promise<void> {
@@ -62,27 +58,46 @@ export class LoginComponent implements OnInit {
     // Asegurar limpieza de sesión administrativa previa
     this.adminAuthService.cerrarSesion();
 
-    try {
-      const usuario = await firstValueFrom(
-        this.usuariosService.autenticarUsuario(this.correo, this.contrasena)
-      );
+      try {
+        const usuario = await firstValueFrom(
+          this.usuariosService.autenticarUsuario(this.correo, this.contrasena)
+        );
 
-      // Detectar Roles Administrativos (Rol 2 o 3)
-      if (usuario.rol === 'COORDINADOR_FEDERAL' || usuario.rol === 'COORDINADOR_ESTATAL') {
-        // Redirigir al flujo de AdminAuthService unificado
-        await this.adminAuthService.iniciarSesion(this.correo, this.contrasena);
+        // Guardar Token Real (JWT)
+        if (usuario.token) {
+          localStorage.setItem('eia-jwt', usuario.token);
+        }
 
-        await Swal.fire({
-          icon: 'success',
-          title: 'Sesión administrativa',
-          text: 'Bienvenido al panel de administración.',
-          timer: 2000,
-          timerProgressBar: true
-        });
+        // Redirigir a cambio de contraseña si es el primer login
+        if (usuario.primerLogin) {
+          await Swal.fire({
+            icon: 'info',
+            title: 'Primer inicio de sesión',
+            text: 'Debes cambiar tu contraseña para continuar.',
+            timer: 3000,
+            timerProgressBar: true
+          });
+          // Redirigir a una ruta de cambio de contraseña o perfil (asumiendo /admin/panel como base para Phase 1)
+          await this.router.navigateByUrl('/admin/panel');
+          return;
+        }
 
-        await this.router.navigateByUrl('/admin/dashboard');
-        return;
-      }
+        // Detectar Roles Administrativos (Rol 2 o 3)
+        if (usuario.rol === 'COORDINADOR_FEDERAL' || usuario.rol === 'COORDINADOR_ESTATAL') {
+          // Redirigir al flujo de AdminAuthService unificado
+          await this.adminAuthService.iniciarSesion(this.correo, this.contrasena);
+
+          await Swal.fire({
+            icon: 'success',
+            title: 'Sesión administrativa',
+            text: 'Bienvenido al panel de administración.',
+            timer: 2000,
+            timerProgressBar: true
+          });
+
+          await this.router.navigateByUrl('/admin/dashboard');
+          return;
+        }
 
       const cct = usuario.centrosTrabajo?.[0]?.claveCCT ?? null;
       if (cct) {

@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import {
   ExcelValidationService,
@@ -12,9 +12,10 @@ import Swal from 'sweetalert2';
 import { EscDatos } from '../../services/excel-validation.service';
 import { Subject, firstValueFrom, takeUntil } from 'rxjs';
 import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
+import { GraphqlService } from '../../services/graphql.service';
 import { MockPdfService } from '../../services/mock-pdf.service';
 import { UsuariosService } from '../../services/usuarios.service';
-import { EvaluacionesService } from '../../services/evaluaciones.service';
+import { EvaluacionesService, ExcelValidationError } from '../../services/evaluaciones.service';
 import { timeout, catchError, throwError } from 'rxjs';
 
 interface ResultadoExito {
@@ -22,6 +23,7 @@ interface ResultadoExito {
   fechaDisponible: Date;
   credenciales: { usuario: string; contrasena: string; esNueva: boolean };
   totalAlumnos: number;
+  consecutivo: string; // Trazabilidad
 }
 
 interface ResultadoArchivo {
@@ -91,6 +93,19 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   credencialesAsociadas = false;
   contrasenaAsociada: string | null = null;
   guardandoTodo = false;
+  intentosFallidos = 0;
+  mostrarModalIncidencia = false;
+
+  evidenciasIncidencia: any[] = [];
+  readonly maxEvidenciasIncidencia = 5;
+  readonly extensionesEvidencias = ['.pdf', '.jpg', '.jpeg', '.png'];
+
+  readonly incidenciaForm = new FormGroup({
+    nombreCompleto: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    cct: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(10), Validators.maxLength(10)] }),
+    email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
+    descripcion: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] })
+  });
   trackByArchivo = (_: number, item: ResultadoArchivo): string =>
     `${item.archivo.name}-${item.archivo.lastModified.getTime()}`;
 
@@ -109,13 +124,16 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   }
 
   get puedeCargarTodo(): boolean {
-    return this.correoControl.valid && this.resultadosValidosSinGuardar.length > 0 && !this.guardandoTodo;
+    return (this.correoControl.valid || this.correoControl.disabled) &&
+      this.resultadosValidosSinGuardar.length > 0 &&
+      !this.guardandoTodo;
   }
 
   constructor(
     private readonly excelValidationService: ExcelValidationService,
     private readonly authService: AuthService,
     private readonly estadoCredencialesService: EstadoCredencialesService,
+    private readonly graphqlService: GraphqlService,
     private readonly mockPdfService: MockPdfService,
     private readonly usuariosService: UsuariosService,
     private readonly evaluacionesService: EvaluacionesService,
@@ -268,6 +286,128 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
   }
 
+  private registrarIntentoFallido(): void {
+    console.log('--- Registro de Intento Fallido ---');
+    console.log('Sesión activa:', this.sesionActiva);
+    if (this.sesionActiva) {
+      console.log('Intento ignorado por sesión activa.');
+      return; 
+    }
+    
+    this.intentosFallidos++;
+    console.log('Total de intentos fallidos:', this.intentosFallidos);
+    
+    if (this.intentosFallidos >= 3) {
+      console.log('Umbral alcanzado (>=3). Abriendo modal de incidencia...');
+      this.abrirModalIncidencia();
+    }
+  }
+
+  abrirModalIncidencia(): void {
+    this.incidenciaForm.patchValue({
+       email: this.correoControl.value
+    });
+    this.mostrarModalIncidencia = true;
+  }
+
+  cerrarModalIncidencia(): void {
+    this.mostrarModalIncidencia = false;
+    this.intentosFallidos = 0; // Resetear tras cerrar o enviar
+    this.evidenciasIncidencia = [];
+  }
+
+  onEvidenciaIncidenciaSeleccionada(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const archivo = input.files?.[0];
+    input.value = '';
+
+    if (!archivo) return;
+
+    if (this.evidenciasIncidencia.length >= this.maxEvidenciasIncidencia) {
+      void Swal.fire('Límite alcanzado', `Máximo ${this.maxEvidenciasIncidencia} archivos.`, 'warning');
+      return;
+    }
+
+    const ext = archivo.name.toLowerCase().substring(archivo.name.lastIndexOf('.'));
+    if (!this.extensionesEvidencias.includes(ext)) {
+      void Swal.fire('Archivo no permitido', `Solo se aceptan: ${this.extensionesEvidencias.join(', ')}`, 'error');
+      return;
+    }
+
+    this.evidenciasIncidencia.push({
+       id: Math.random().toString(36).substring(2),
+       archivo
+    });
+  }
+
+  eliminarEvidenciaIncidencia(index: number): void {
+    this.evidenciasIncidencia.splice(index, 1);
+  }
+
+  private async fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const base64 = (reader.result as string).split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
+  }
+
+  async enviarIncidenciaPublica(): Promise<void> {
+    if (this.incidenciaForm.invalid) {
+      this.incidenciaForm.markAllAsTouched();
+      return;
+    }
+
+    try {
+      const data = this.incidenciaForm.getRawValue();
+      
+      const evidenciasBase64 = await Promise.all(
+        this.evidenciasIncidencia.map(async ev => ({
+          nombre: ev.archivo.name,
+          base64: await this.fileToBase64(ev.archivo),
+          tipo: ev.archivo.type
+        }))
+      );
+
+      const mutation = `
+        mutation CreatePublicIncident($input: CreatePublicIncidentInput!) {
+          createPublicIncident(input: $input) {
+            numeroTicket
+          }
+        }
+      `;
+      
+      const variables = {
+        input: {
+          nombreCompleto: data.nombreCompleto,
+          cct: data.cct,
+          email: data.email,
+          descripcion: data.descripcion,
+          evidencias: evidenciasBase64
+        }
+      };
+
+      await firstValueFrom(this.graphqlService.execute(mutation, variables));
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Incidencia reportada',
+        text: 'Se ha mandado correctamente su información capturada. El sistema generará un ticket para darle atención.',
+        confirmButtonColor: '#00695c'
+      });
+
+      this.cerrarModalIncidencia();
+      this.incidenciaForm.reset();
+    } catch (error) {
+      console.error('Error enviando incidencia:', error);
+      await Swal.fire('Error', 'No se pudo enviar el reporte en este momento.', 'error');
+    }
+  }
+
   async guardarArchivo(resultado: ResultadoArchivo): Promise<void> {
     if (this.correoControl.invalid) {
       this.correoControl.markAllAsTouched();
@@ -349,13 +489,30 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
       resultado.guardado = true;
       resultado.estado = 'exito';
-      resultado.mensajeInformativo = 'El archivo se recibió correctamente en el servidor.';
+      resultado.mensajeInformativo = `El archivo se recibió correctamente. Folio de seguimiento: ${respuestaApi.consecutivo || 'Pendiente'}`;
+
+      const textoExito = respuestaApi.consecutivo
+        ? `La información se ha sincronizado. Tu folio de seguimiento es: ${respuestaApi.consecutivo}`
+        : 'La información se ha sincronizado correctamente con el servidor.';
+
+      if (resultado.resultadoExito && respuestaApi.consecutivo) {
+        resultado.resultadoExito.consecutivo = respuestaApi.consecutivo;
+      }
 
       await Swal.fire({
         icon: 'success',
         title: 'Archivo cargado',
-        text: 'La información se ha sincronizado correctamente con el servidor.',
+        text: textoExito,
       });
+
+      // Limpiar el correo tras éxito para evitar que el mensaje de "ya tienes credenciales" 
+      // confunda al usuario si desea hacer una carga nueva/distinta.
+      if (!this.sesionActiva) {
+        this.correoControl.setValue('');
+        this.correoControl.markAsPristine();
+        this.correoControl.markAsUntouched();
+        this.actualizarEstadoSesion();
+      }
 
       if (resultado.escDatos && resultado.resultadoExito && resultado.pdfTipo !== 'exito') {
         await this.generarPdfExito(
@@ -367,14 +524,25 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       }
     } catch (error: any) {
       resultado.estado = 'error';
+
+      // Intentar extraer errores estructurados del error de GraphQL si es posible
+      const graphQLErrors = error?.graphQLErrors?.[0]?.extensions?.detalles?.erroresEstructurados;
+      if (graphQLErrors) {
+        this.actualizarErrores(resultado, [], graphQLErrors);
+      } else if (error?.detalles?.erroresEstructurados) {
+        this.actualizarErrores(resultado, [], error.detalles.erroresEstructurados);
+      }
+
       resultado.errorGuardado = error instanceof Error
         ? error.message
         : 'No se pudo cargar el archivo al servidor. Inténtalo de nuevo.';
+
       await Swal.fire({
         icon: 'error',
         title: 'Error de carga',
         text: resultado.errorGuardado,
       });
+      this.registrarIntentoFallido();
     } finally {
       resultado.guardando = false;
     }
@@ -389,7 +557,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         email: this.correoControl.value,
         confirmarReemplazo
       }).pipe(
-        timeout(45000),
+        timeout(120000),
         catchError(err => {
           if (err.name === 'TimeoutError') {
             return throwError(() => new Error('La carga está tomando más tiempo de lo esperado (Timeout).'));
@@ -460,10 +628,22 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         errorMessage.includes('ya está registrado') ||
         errorMessage.includes('already exists')
       ) {
-        // El usuario ya existe, no es un error para la carga del archivo
-        resultado.notaGuardado =
-          'El correo ya estaba registrado previamente. Usa tu contraseña original para ingresar.';
-        console.log('El usuario ya existe, omitiendo creación.');
+        // El usuario ya existe. Bloqueamos el proceso para evitar generar credenciales locales
+        // que no coincidirán con las del servidor y para proteger la cuenta existente.
+        resultado.errorGuardado = 'Este correo ya tiene una cuenta registrada.';
+        await Swal.fire({
+          icon: 'info',
+          title: 'Usuario ya registrado',
+          text: 'Para realizar una nueva carga con este correo, primero debes iniciar sesión con tu contraseña original.',
+          confirmButtonText: 'Ir a login',
+          showCancelButton: true,
+          cancelButtonText: 'Cerrar'
+        }).then((swalRes) => {
+          if (swalRes.isConfirmed) {
+            void this.router.navigate(['/login'], { queryParams: { redirect: '/carga-masiva' } });
+          }
+        });
+        return false;
       } else {
         resultado.errorGuardado =
           error instanceof Error
@@ -578,7 +758,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         contrasena: '',
         esNueva: false
       },
-      totalAlumnos: resultado.alumnos?.length ?? 0
+      totalAlumnos: resultado.alumnos?.length ?? 0,
+      consecutivo: '0' // Se actualizará al guardar
     };
   }
 
@@ -630,9 +811,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       this.correoControl.disable();
     } else {
       this.correoControl.enable();
-      if (credenciales?.correo && !this.correoControl.value.trim()) {
-        this.correoControl.setValue(credenciales.correo);
-      }
+      // Ya no auto-poblamos el correo desde localStorage al iniciar el componente 
+      // para cumplir con la petición de seguridad y "sin rastro".
     }
 
     this.establecerCredencialesMostradas();
@@ -641,9 +821,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   private inicializarEstadoCredenciales(): void {
     const credencialesGuardadas = this.estadoCredencialesService.obtener();
 
-    if (credencialesGuardadas && !this.correoControl.value.trim()) {
-      this.correoControl.setValue(credencialesGuardadas.correo);
-    }
+    // eliminamos la auto-población por seguridad
 
     this.establecerCredencialesMostradas();
     this.actualizarAvisoCredenciales(this.correoControl.value);
@@ -705,7 +883,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         fechaDisponible: fechaDisponible.toLocaleDateString(),
         alumnosValidados: totalAlumnos,
         cct: esc.cct,
-        fechaValidacion: new Date().toLocaleString()
+        fechaValidacion: new Date().toLocaleString(),
+        consecutivo: resultadoArchivo.resultadoExito?.consecutivo ?? 'N/D'
       });
       resultadoArchivo.pdfEstado = 'descargando';
       this.mockPdfService.descargarPdf(blob, resultadoArchivo.pdfNombre);
@@ -766,17 +945,50 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     resultadoArchivo.mensajeInformativo =
       resultadoArchivo.mensajeInformativo ??
       this.construirMensajeDeteccion(resultadoArchivo.tipoDetectado, resultadoArchivo.errores[0]);
+    this.registrarIntentoFallido();
     await this.generarPdfErrores(resultadoArchivo);
   }
 
-  private actualizarErrores(resultadoArchivo: ResultadoArchivo, errores: string[]): void {
+  private actualizarErrores(resultadoArchivo: ResultadoArchivo, errores: string[], estructurados?: ExcelValidationError[]): void {
     resultadoArchivo.errores = [...errores];
-    resultadoArchivo.erroresAgrupados = this.agruparErrores(resultadoArchivo.errores);
+    if (estructurados && estructurados.length > 0) {
+      resultadoArchivo.erroresAgrupados = this.agruparErroresEstructurados(estructurados);
+    } else {
+      resultadoArchivo.erroresAgrupados = this.agruparErrores(resultadoArchivo.errores);
+    }
   }
 
-  private agregarErrores(resultadoArchivo: ResultadoArchivo, errores: string[]): void {
-    resultadoArchivo.errores = [...resultadoArchivo.errores, ...errores];
-    resultadoArchivo.erroresAgrupados = this.agruparErrores(resultadoArchivo.errores);
+  private agruparErroresEstructurados(errores: ExcelValidationError[]): GrupoErrores[] {
+    const mapa = new Map<string, Map<string, string[]>>();
+
+    errores.forEach((err) => {
+      const hoja = err.hoja || 'General';
+      const titulo = err.fila ? `Fila ${err.fila}` : (err.columna ? `Columna ${err.columna}` : 'General');
+
+      if (!mapa.has(hoja)) {
+        mapa.set(hoja, new Map<string, string[]>());
+      }
+
+      const ubicaciones = mapa.get(hoja)!;
+      if (!ubicaciones.has(titulo)) {
+        ubicaciones.set(titulo, []);
+      }
+
+      let msg = err.error;
+      if (err.campo) msg = `${err.campo}: ${msg}`;
+      if (err.valorEncontrado) msg += ` (Encontrado: "${err.valorEncontrado}")`;
+      if (err.valorEsperado) msg += ` (Esperado: "${err.valorEsperado}")`;
+
+      ubicaciones.get(titulo)!.push(msg);
+    });
+
+    return Array.from(mapa.entries()).map(([hoja, ubicaciones]) => ({
+      hoja,
+      ubicaciones: Array.from(ubicaciones.entries()).map(([titulo, items]) => ({
+        titulo,
+        items
+      }))
+    }));
   }
 
   private agruparErrores(errores: string[]): GrupoErrores[] {
@@ -879,15 +1091,4 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     return `Archivo detectado: ${etiqueta}.`;
   }
 
-  private async fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const base64String = reader.result as string;
-        resolve(base64String.split(',')[1]);
-      };
-      reader.onerror = (error) => reject(error);
-    });
-  }
 }
