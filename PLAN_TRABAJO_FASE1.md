@@ -48,6 +48,7 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 | **GAP-DB-3** | Modelo NIA (3 tablas aprobadas) sin DDL real | ✅ Resuelto | RF-04 |
 | **GAP-RF18** | RF-18 incompleto: sin `primer_login`, bloqueo 5 intentos, expiración | ✅ Resuelto | S1 |
 | **GAP-CAT** | Catálogos oficiales EIA 2025 / CCT SIGED con seed y validación | ✅ Resuelto | RF-13 |
+| **ISSUE-301** | Containerización completa (Docker + Compose + Healthcheck) | ✅ Resuelto | Infra |
 
 ---
 

@@ -1,6 +1,58 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: sicrer-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-eia_db}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - sicrer-db-data:/var/lib/postgresql/data
+      - ./graphql-server/scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./graphql-server/scripts/seed-catalogs-eia2025.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-eia_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./graphql-server
+      dockerfile: Dockerfile
+    container_name: sicrer-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-eia_db}
+      JWT_SECRET: ${JWT_SECRET:-supersecretkey}
+      SFTP_HOST: sftp
+      SFTP_PORT: 22
+      SFTP_USER: eia_user
+      SFTP_PASS: eia_password
+      SFTP_BASE_PATH: /home/eia_user/upload
+      PORT: 4000
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./web/frontend
+      dockerfile: Dockerfile
+    container_name: sicrer-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
   sftp:
     image: atmoz/sftp
     container_name: eia_sftp
@@ -11,3 +63,6 @@ services:
     environment:
       SFTP_USERS: "eia_user:eia_password:1001"
     restart: unless-stopped
+
+volumes:
+  sicrer-db-data:
