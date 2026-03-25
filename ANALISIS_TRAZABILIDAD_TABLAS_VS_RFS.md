@@ -29,7 +29,7 @@
 **Catálogos (6):**
 12. CAT_ENTIDADES_FEDERATIVAS
 13. CAT_CICLOS_ESCOLARES
-14. CAT_NIVELES_EDUCATIVOS
+14. CAT_NIVEL_EDUCATIVO
 15. CAT_GRADOS
 16. CAT_TURNOS
 17. CAT_ROLES_USUARIO
@@ -112,7 +112,7 @@
 | ----- | -- | ------------- | ---------- |
 | **CAT_ENTIDADES_FEDERATIVAS** | RF-01, RF-13 | Estados de la República | ⚠️ **CRÍTICA** |
 | **CAT_CICLOS_ESCOLARES** | RF-08 | Ciclos escolares | ⚠️ **CRÍTICA** |
-| **CAT_NIVELES_EDUCATIVOS** | RF-01, RF-13 | Preescolar/Primaria/Secundaria | ⚠️ **CRÍTICA** |
+| **CAT_NIVEL_EDUCATIVO** | RF-01, RF-13 | Preescolar/Primaria/Secundaria | ⚠️ **CRÍTICA** |
 | **CAT_GRADOS** | RF-02 | Grados 1°-6° por nivel | ⚠️ **CRÍTICA** |
 | **CAT_TURNOS** | RF-01, RF-13 | Matutino/Vespertino/Nocturno | ✅ **IMPORTANTE** |
 | **CAT_ROLES_USUARIO** | RF-14 | Director/Operador/Admin | ⚠️ **CRÍTICA** |
@@ -398,7 +398,7 @@ DROP TABLE RESPALDOS_ARCHIVOS;
 | 11 | PERIODOS_EVALUACION | RF-08 | P0 | ✅ |
 | 12 | CAT_ENTIDADES_FEDERATIVAS | RF-01, RF-13 | P0 | ✅ |
 | 13 | CAT_CICLOS_ESCOLARES | RF-08 | P0 | ✅ |
-| 14 | CAT_NIVELES_EDUCATIVOS | RF-01, RF-13 | P0 | ✅ |
+| 14 | CAT_NIVEL_EDUCATIVO | RF-01, RF-13 | P0 | ✅ |
 | 15 | CAT_GRADOS | RF-02 | P0 | ✅ |
 | 16 | CAT_TURNOS | RF-01, RF-13 | P0 | ✅ |
 | 17 | CAT_ROLES_USUARIO | RF-14 | P0 | ✅ |

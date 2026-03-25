@@ -44,7 +44,7 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 | **GAP-CI-1** | CI/CD ejecuta Node 18, proyecto requiere Node 20 | ✅ Resuelto | DevOps |
 | **GAP-CI-2** | CI/CD no ejecuta `npx jest` — pipeline sin tests | ✅ Resuelto | PSP |
 | **GAP-DB-1** | ENUMs hardcodeados (ids 1,2) en resolvers | ✅ Resuelto | RF-04 |
-| **GAP-DB-2** | Catálogo duplicado `cat_nivel_educativo` vs `cat_niveles_educativos` | 🟠 Integridad | DB |
+| **GAP-DB-2** | Catálogo duplicado `cat_nivel_educativo` vs `cat_niveles_educativos` | ✅ Resuelto | DB |
 | **GAP-DB-3** | Modelo NIA (3 tablas aprobadas) sin DDL real | 🟠 RF-04.5 | RF-04 |
 | **GAP-RF18** | RF-18 incompleto: sin `primer_login`, bloqueo 5 intentos, expiración | ✅ Resuelto | S1 |
 | **GAP-CAT** | Catálogos oficiales EIA 2025 / CCT SIGED sin seed | 🟡 Validación | RF-13 |
@@ -284,9 +284,9 @@ e
 ---
 
 #### Día 18 · Viernes 10/04
-- [ ] **[GAP-DB-2]** Migración SQL: unificar catálogo duplicado
-  - Hacer `cat_nivel_educativo` (singular) la tabla canónica
-  - Actualizar referencias en resolvers que apuntan a la versión plural
+- [x] **[GAP-DB-2]** Migración SQL: unificar catálogo duplicado
+  - Hacer `cat_nivel_educativo` (singular) la tabla canónica ✅
+  - Actualizar referencias en resolvers que apuntan a la versión plural (ya consumido) ✅
 - [x] **[GAP-DB-1]** En `resolvers.ts:uploadExcelAssessment` y `uploadAssessmentResults`: reemplazar ids hardcodeados (`1`, `2`) por llamadas a `fn_catalogo_id('cat_estado_validacion_eia2', 'PENDIENTE')` y `fn_catalogo_id('cat_estado_validacion_eia2', 'VALIDADO')`
 
 **Archivos:** `graphql-server/src/schema/resolvers.ts`, script de migración SQL
