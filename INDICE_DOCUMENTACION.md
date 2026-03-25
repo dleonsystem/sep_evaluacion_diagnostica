@@ -1,14 +1,30 @@
 # 📚 ÍNDICE GENERAL DE DOCUMENTACIÓN
+
 ## Sistema SiCRER - Evaluación Diagnóstica SEP
 
-**Versión:** 1.3 - Guía Operativa Tablas Staging  
-**Fecha:** 17 de marzo de 2026  
+**Versión:** 1.4 - Índice documental alineado al estado actual  
+**Fecha:** 25 de marzo de 2026  
 **Autor:** Ingeniero de Software Certificado PSP  
-**Estado:** DDL y documentación 100% sincronizados con BD PostgreSQL
+**Estado:** Índice documental actualizado y consistente con DDL, documentación técnica y estructura actual del repositorio
 
 ---
 
-## � ACTUALIZACIÓN RECIENTE - GUÍA OPERATIVA (17 marzo 2026)
+## ✅ ACTUALIZACIÓN RECIENTE - ALINEACIÓN DOCUMENTAL (25 marzo 2026)
+
+### ✅ Corrección del Índice General y Trazabilidad Documental
+
+Se actualizó este índice para reflejar el estado documental vigente del proyecto, corrigiendo inconsistencias de numeración, referencias internas, encabezados y versiones históricas visibles.
+
+**CAMBIOS APLICADOS:**
+
+1. Se corrigió la numeración del índice por perfil y del desglose de documentos.
+2. Se eliminó un encabezado con carácter corrupto y se normalizó la presentación general.
+3. Se actualizaron referencias para reflejar la sincronización vigente de 60 tablas en DDL y documentación estructural.
+4. Se eliminó la contradicción entre la versión vigente del índice y el pie histórico heredado.
+
+---
+
+## 🔄 ACTUALIZACIÓN RECIENTE - GUÍA OPERATIVA (17 marzo 2026)
 
 ### ✅ Nueva Documentación para Personal Operativo
 
@@ -60,7 +76,7 @@ Se realizó **análisis exhaustivo** de la estructura real de la base de datos P
 
 1. **[ddl_generated.sql](ddl_generated.sql)** ⭐ ACTUALIZADO 12-mar-2026
    - ⏱️ Cambios: 27 correcciones aplicadas
-   - 📊 Contiene: DDL completo de 59 tablas 100% fiel a BD real
+   - 📊 Contiene: DDL completo de 60 tablas 100% fiel a BD real
    - 🎯 Cambios críticos:
      - ✅ Agregadas 4 columnas faltantes (usuarios.email_excel, tickets_soporte.evidencias, tickets_soporte.deleted_at, solicitudes_eia2.detalles_error)
      - ✅ Ajustados 14 tamaños VARCHAR para emails y direcciones (100→255, 100→300)
@@ -68,7 +84,7 @@ Se realizó **análisis exhaustivo** de la estructura real de la base de datos P
 
 2. **[ESTRUCTURA_DE_DATOS.md](ESTRUCTURA_DE_DATOS.md)** ⭐ ACTUALIZADO 12-mar-2026
    - ⏱️ Tiempo de lectura: 45-60 minutos
-   - 📊 Contiene: Documentación completa de 59 tablas sincronizada con DDL
+   - 📊 Contiene: Documentación completa de 60 tablas sincronizada con DDL
    - 🎯 Objetivo: Referencia técnica 100% precisa de la estructura de datos
    - ✅ Todas las tablas, columnas, tipos, constraints e índices documentados fielmente
 
@@ -141,42 +157,42 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 
 **LEER PRIMERO:**
 
-0. **[plataforma_recepcion_validacion_descarga_EIA.md](plataforma_recepcion_validacion_descarga_EIA.md)** ⭐ NUEVO - **PLATAFORMA FINAL EIA**
+1. **[plataforma_recepcion_validacion_descarga_EIA.md](plataforma_recepcion_validacion_descarga_EIA.md)** ⭐ NUEVO - **PLATAFORMA FINAL EIA**
    - ⏱️ Tiempo de lectura: 15-20 minutos
    - 📊 Contiene: Reglas de validación, generación de credenciales y descargas externas
    - 🎯 Objetivo: Ajustar decisiones a la versión más reciente de la plataforma EIA
 
-1. **[REQUERIMIENTOS_Y_CASOS_DE_USO.md](REQUERIMIENTOS_Y_CASOS_DE_USO.md)** ⭐ NUEVO - **ESPECIFICACIÓN FORMAL**
+2. **[REQUERIMIENTOS_Y_CASOS_DE_USO.md](REQUERIMIENTOS_Y_CASOS_DE_USO.md)** ⭐ NUEVO - **ESPECIFICACIÓN FORMAL**
    - ⏱️ Tiempo de lectura: 30-40 minutos
    - 📊 Contiene: 38 requerimientos funcionales, 31 no funcionales, 12 casos de uso
    - 🎯 Objetivo: Especificación técnica completa del sistema
    - ⚠️ Crítico: Documenta 7 incumplimientos de seguridad LGPDP
 
-2. **[FLUJO_OPERATIVO_OFICIAL.md](FLUJO_OPERATIVO_OFICIAL.md)** ⭐ NUEVO - **LECTURA OBLIGATORIA**
+3. **[FLUJO_OPERATIVO_OFICIAL.md](FLUJO_OPERATIVO_OFICIAL.md)** ⭐ NUEVO - **LECTURA OBLIGATORIA**
    - ⏱️ Tiempo de lectura: 20 minutos
    - 📊 Contiene: Flujo completo basado en documentación oficial DGADAE/SEP
    - 🎯 Objetivo: Entender contexto operativo completo con 10 equipos de validación
    - ⚠️ Crítico: Identifica cuellos de botella y riesgos LGPDP
 
-2. **[DASHBOARD_VISUAL.md](DASHBOARD_VISUAL.md)** ⭐ NUEVO - ALTAMENTE RECOMENDADO
+4. **[DASHBOARD_VISUAL.md](DASHBOARD_VISUAL.md)** ⭐ NUEVO - ALTAMENTE RECOMENDADO
    - ⏱️ Tiempo de lectura: 10 minutos
    - 📊 Contiene: Visualizaciones interactivas, métricas ejecutivas, roadmap visual
    - 🎯 Objetivo: Vista ejecutiva rápida con 15+ diagramas para presentaciones
    - ✨ Especial: Perfecto para presentar a juntas directivas
 
-3. **[RESUMEN_EJECUTIVO_STAKEHOLDERS.md](RESUMEN_EJECUTIVO_STAKEHOLDERS.md)**
+5. **[RESUMEN_EJECUTIVO_STAKEHOLDERS.md](RESUMEN_EJECUTIVO_STAKEHOLDERS.md)**
    - ⏱️ Tiempo de lectura: 15-20 minutos
    - 📊 Contiene: Hallazgos principales, análisis financiero, opciones de decisión
    - 🎯 Objetivo: Tomar decisión informada sobre modernización del sistema
 
-4. **[README.md](README.md)** (Este archivo)
+6. **[INDICE_DOCUMENTACION.md](INDICE_DOCUMENTACION.md)** (Este índice)
    - ⏱️ Tiempo de lectura: 5 minutos
-   - 📊 Contiene: Visión general del sistema, características principales
-   - 🎯 Objetivo: Entender qué es y qué hace el sistema
+   - 📊 Contiene: Mapa de navegación documental y rutas de lectura por perfil
+   - 🎯 Objetivo: Ubicar rápidamente la documentación vigente y prioritaria
 
 **CONSULTAR SI ES NECESARIO:**
 
-3. **[ANALISIS_DETALLADO_PSP_RUP.md](ANALISIS_DETALLADO_PSP_RUP.md)** - Secciones específicas
+1. **[ANALISIS_DETALLADO_PSP_RUP.md](ANALISIS_DETALLADO_PSP_RUP.md)** - Secciones específicas
    - Sección 6: Recomendaciones Estratégicas
    - Sección 7: Análisis de Riesgos
    - Sección 8: Estimación de Costos
@@ -516,7 +532,7 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 
 ---
 
-### 3. ANALISIS_TECNICO_COMPLEMENTARIO.md
+### 6. ANALISIS_TECNICO_COMPLEMENTARIO.md
 
 **Audiencia:** Desarrolladores, DevOps, DBAs  
 **Nivel Técnico:** Muy Avanzado  
@@ -568,7 +584,7 @@ Este repositorio contiene **documentación técnica exhaustiva** preparada bajo 
 
 ---
 
-### 4. RESUMEN_EJECUTIVO_STAKEHOLDERS.md
+### 7. RESUMEN_EJECUTIVO_STAKEHOLDERS.md
 
 **Audiencia:** Directivos, Gerentes de Proyecto, Sponsors  
 **Nivel Técnico:** Bajo a Medio  
@@ -830,6 +846,7 @@ R: Usa RESUMEN_EJECUTIVO_STAKEHOLDERS.md como base para tu presentación.
 
 | Versión | Fecha | Autor | Cambios |
 |---------|-------|-------|---------|
+| 1.4 | 25/03/2026 | Ingeniero PSP | Corrección del índice general, numeración, encabezados y trazabilidad documental |
 | 1.3 | 17/03/2026 | Ingeniero PSP | Agregada guía operativa para tablas staging (GUIA_OPERATIVA_TABLAS_STAGING.md) |
 | 1.2 | 12/03/2026 | Ingeniero PSP | Sincronización completa DDL con BD real (27 correcciones) |
 | 1.1 | 19/01/2026 | Ingeniero PSP | Correcciones del cliente (RESUMEN_CORRECCIONES_CLIENTE.md, CORRECCIONES_MODELO_NIA.md) |
@@ -857,13 +874,6 @@ Marca lo que ya has leído:
 - [ ] README.md - Instalación y estructura
 - [ ] ANALISIS_TECNICO_COMPLEMENTARIO.md completo
 - [ ] ANALISIS_DETALLADO_PSP_RUP.md - Secciones técnicas
-
----
-
-**ÍNDICE GENERAL DE DOCUMENTACIÓN**  
-**Versión:** 1.0  
-**Fecha:** 21 de Noviembre de 2025  
-**Mantenido por:** dleonsystem
 
 ---
 
