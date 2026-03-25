@@ -193,10 +193,18 @@ export class ArchivosEvaluacionComponent implements OnInit {
       }
     } catch (error: any) {
       console.error('Error al generar comprobante:', error);
+      
+      let mensajeFinal = 'No se pudo generar el comprobante de recepcion en este momento.';
+      if (error.message?.includes('hash_archivo')) {
+        mensajeFinal = 'Tu solicitud aún está siendo procesada por el servidor. Por favor, espera unos minutos e intenta de nuevo.';
+      } else if (error.message) {
+        mensajeFinal = error.message;
+      }
+
       await Swal.fire({
-        icon: 'error',
-        title: 'Error al generar comprobante',
-        text: error.message || 'No se pudo generar el comprobante de recepcion.'
+        icon: 'warning',
+        title: 'Documento en proceso',
+        text: mensajeFinal
       });
     } finally {
       this.cargando = false;
