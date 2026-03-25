@@ -45,7 +45,7 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 | **GAP-CI-2** | CI/CD no ejecuta `npx jest` — pipeline sin tests | ✅ Resuelto | PSP |
 | **GAP-DB-1** | ENUMs hardcodeados (ids 1,2) en resolvers | ✅ Resuelto | RF-04 |
 | **GAP-DB-2** | Catálogo duplicado `cat_nivel_educativo` vs `cat_niveles_educativos` | ✅ Resuelto | DB |
-| **GAP-DB-3** | Modelo NIA (3 tablas aprobadas) sin DDL real | 🟠 RF-04.5 | RF-04 |
+| **GAP-DB-3** | Modelo NIA (3 tablas aprobadas) sin DDL real | ✅ Resuelto | RF-04 |
 | **GAP-RF18** | RF-18 incompleto: sin `primer_login`, bloqueo 5 intentos, expiración | ✅ Resuelto | S1 |
 | **GAP-CAT** | Catálogos oficiales EIA 2025 / CCT SIGED sin seed | 🟡 Validación | RF-13 |
 
@@ -295,10 +295,10 @@ e
 ---
 
 #### Día 19 · Lunes 13/04
-- [ ] **[GAP-DB-3]** Migración SQL NIA: crear tablas aprobadas en `RESUMEN_CORRECCIONES_CLIENTE.md`:
-  - `CAT_NIVELES_INTEGRACION` con datos oficiales (ED, EP, ES, SO)
-  - `CAT_CAMPOS_FORMATIVOS` (ENS, HYC, LEN, SPC, F5)
-  - `NIVELES_INTEGRACION_ESTUDIANTE` con constraint `UNIQUE(estudiante, campo, periodo)`
+- [x] **[GAP-DB-3]** Migración SQL NIA: crear tablas aprobadas en `RESUMEN_CORRECCIONES_CLIENTE.md`:
+  - `CAT_NIVELES_INTEGRACION` con datos oficiales (ED, EP, ES, SO) ✅
+  - `CAT_CAMPOS_FORMATIVOS` (ENS, HYC, LEN, SPC, F5) ✅
+  - `NIVELES_INTEGRACION_ESTUDIANTE` con constraint `UNIQUE(estudiante, campo, periodo)` ✅
 - [ ] Verificar path del worker en producción: `isTsNode` → `dist/workers/worker-excel.js`
 - [ ] Registrar Angular bundle budget actual (valores relajados DEF-005); restaurar thresholds objetivo en `angular.json`
 - [ ] Ejecutar `ng build --configuration production` en frontend — 0 errores de budget
