@@ -1887,7 +1887,7 @@ t.numero_ticket as "folio",
         }
         const excelTurno = metadata.turno?.toUpperCase() || '';
 
-        // Mapeo selectivo para identificar escuela única por CCT y Turno
+        // Mapeo de turnos alineado a cat_turnos id_turno
         const turnoMap: Record<string, number> = {
           'MATUTINO': 1,
           'VESPERTINO': 2,
@@ -1898,6 +1898,17 @@ t.numero_ticket as "folio",
           'JORNADA AMPLIADA': 7
         };
         const idTurno = turnoMap[excelTurno] || 1;
+
+        // Mapeo de niveles alineado a cat_nivel_educativo id
+        const nivelMap: Record<string, number> = { 
+          'PREESCOLAR': 1, 
+          'PRIMARIA': 2, 
+          'SECUNDARIA': 3, 
+          'TELESECUNDARIA': 4,
+          'INICIAL_GENERAL': 5
+        };
+        const nivelDetectadoExcel = nivel.toUpperCase().replace(/ /g, '_');
+        const idNivelExcel = nivelMap[nivelDetectadoExcel] || 2;
 
         // Validar formato de CCT
         const cctValidation = validateCCT(cct);
@@ -1910,15 +1921,15 @@ t.numero_ticket as "folio",
           return { success: false, message: errorMsg, detalles: { errores: [errorMsg] } };
         }
 
-        // Validar que la CCT exista en el catálogo de escuelas (Uso CU-14)
-        // Se valida tanto CCT como Turno para asegurar consistencia
+        // Validar que la CCT exista en el catálogo oficial SIGED (tabla escuelas)
+        // RF-13: La carga debe rechazarse si la CCT no es oficial o no coincide con el nivel
         const escrow = await query(
-          'SELECT id FROM escuelas WHERE cct = $1 AND id_turno = $2 AND activo = true LIMIT 1',
+          'SELECT id, id_nivel FROM escuelas WHERE cct = $1 AND id_turno = $2 AND activo = true LIMIT 1',
           [cct, idTurno]
         );
 
         if (escrow.rows.length === 0) {
-          const errorMsg = `La CCT ${cct} con turno "${excelTurno}" no está registrada en el sistema. Por favor, regístrela primero en el Catálogo de Escuelas.`;
+          const errorMsg = `La CCT ${cct} con turno "${excelTurno}" no está registrada en el catálogo oficial SIGED. Por favor, verifique sus datos.`;
           await query(
             `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false)`,
             [cct, nombreArchivo, fileHash, userToLink || null, JSON.stringify([{ campo: 'CCT', error: errorMsg, hoja: 'ESC' }]), remotePath, archivoSize]
@@ -1929,6 +1940,25 @@ t.numero_ticket as "folio",
             detalles: {
               errores: [errorMsg],
               erroresEstructurados: [{ campo: 'CCT', error: errorMsg, hoja: 'ESC', fila: 9, columna: 'D' }]
+            }
+          };
+        }
+
+        // Validar consistencia de Nivel Educativo (RF-13.2)
+        const idNivelBd = escrow.rows[0].id_nivel;
+        if (idNivelBd !== idNivelExcel) {
+          const nivelNombreBd = Object.keys(nivelMap).find(key => nivelMap[key] === idNivelBd) || 'DESCONOCIDO';
+          const errorMsg = `Inconsistencia de Nivel: El archivo es de nivel ${nivelDetectadoExcel}, pero la CCT ${cct} está registrada oficialmente como ${nivelNombreBd}.`;
+          await query(
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false)`,
+            [cct, nombreArchivo, fileHash, userToLink || null, JSON.stringify([{ campo: 'Nivel', error: errorMsg, hoja: 'ESC' }]), remotePath, archivoSize]
+          );
+          return {
+            success: false,
+            message: errorMsg,
+            detalles: {
+              errores: [errorMsg],
+              erroresEstructurados: [{ campo: 'Nivel', error: errorMsg, hoja: 'ESC', fila: 6, columna: 'C' }]
             }
           };
         }
@@ -1957,14 +1987,7 @@ t.numero_ticket as "folio",
           return { success: false, message: 'El archivo ya existe. ¿Desea reemplazarlo?', duplicadoDetectado: true };
         }
 
-        const nivelMap: Record<string, number> = { 
-          PREESCOLAR: 1, 
-          PRIMARIA: 2, 
-          SECUNDARIA: 3, 
-          TELESECUNDARIA: 4,
-          INICIAL_GENERAL: 5
-        };
-        const nivelId = nivelMap[nivel.toUpperCase().replace(/ /g, '_')] || 2;
+        const nivelId = idNivelExcel;
         let solicitudId: string = '';
         let consecutivo: any = null;
 
