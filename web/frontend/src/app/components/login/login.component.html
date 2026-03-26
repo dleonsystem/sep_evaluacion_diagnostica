@@ -4,52 +4,55 @@
     <p>Use el correo y la contraseña generada en su primer envío.</p>
 
     <div class="login__alerta" *ngIf="sinCredenciales">
-      Aún no tiene credenciales. Realice su primera carga en el módulo de carga
-      masiva para generar su usuario y contraseña.
+      ¿Aún no tiene credenciales?. Realice su primera carga en el módulo de carga
+      para generar su usuario y contraseña.
     </div>
 
     <form (ngSubmit)="iniciarSesion()" #loginForm="ngForm" novalidate>
       <label for="correo">Correo (usuario)</label>
       <input id="correo" name="correo" type="email" required [(ngModel)]="correo" #correoModel="ngModel"
-        autocomplete="email" placeholder="correo@dominio.com" />
+             autocomplete="email" placeholder="correo@dominio.com" />
 
       <label for="contrasena">Contraseña</label>
       <div class="login__password-field">
         <input id="contrasena" name="contrasena" [type]="mostrarContrasena ? 'text' : 'password'" required
-          [(ngModel)]="contrasena" #contrasenaModel="ngModel" autocomplete="current-password"
-          placeholder="Clave enviada en su primer carga" />
+               [(ngModel)]="contrasena" #contrasenaModel="ngModel" autocomplete="current-password"
+               placeholder="Contraseña generada en su primer carga" />
         <button class="login__toggle" type="button" (click)="mostrarContrasena = !mostrarContrasena">
           <i class="bi" [ngClass]="mostrarContrasena ? 'bi-eye-slash' : 'bi-eye'" aria-hidden="true"></i>
-          <span class="login__toggle-text">{{
+          <span class="login__toggle-text">
+            {{
             mostrarContrasena ? "Ocultar" : "Mostrar"
-            }}</span>
+            }}
+          </span>
         </button>
       </div>
-      <p class="login__hint">Use la contraseña generada en su primer envío.</p>
+      <!--
+        <p class="login__hint">Use la contraseña generada en su primer envío.</p>
+        -->
+        <div class="login__alerta" *ngIf="credencialesGuardadas">
+          Ya existen credenciales guardadas para {{ correo }}. Si es necesario,
+          puede actualizar la contraseña antes de continuar.
+        </div>
 
-      <div class="login__alerta" *ngIf="credencialesGuardadas">
-        Ya existen credenciales guardadas para {{ correo }}. Si es necesario,
-        puede actualizar la contraseña antes de continuar.
-      </div>
+        <div class="login__error" *ngIf="error">{{ error }}</div>
 
-      <div class="login__error" *ngIf="error">{{ error }}</div>
+        <button class="login__submit" type="submit" [disabled]="
+            correoModel.invalid || contrasenaModel.invalid || autenticando
+          ">
+          {{ autenticando ? "Validando..." : "Ingresar" }}
+        </button>
 
-      <button class="login__submit" type="submit" [disabled]="
-          correoModel.invalid || contrasenaModel.invalid || autenticando
-        ">
-        {{ autenticando ? "Validando..." : "Ingresar" }}
-      </button>
-
-      <div class="login__actions">
-        <a class="login__link login__link--back" routerLink="/carga-masiva">
-          <i class="bi bi-arrow-left-circle"></i>
-          Volver a la carga masiva
-        </a>
-        <a class="login__link login__link--forgot" routerLink="/recuperar-password">
-          <i class="bi bi-question-circle"></i>
-          ¿Olvidó su contraseña?
-        </a>
-      </div>
-    </form>
-  </div>
-</section>
+        <div class="login__actions">
+          <a class="login__link login__link--back" routerLink="/carga-masiva">
+            <i class="bi bi-arrow-left-circle"></i>
+            Volver al Módulo de Carga
+          </a>
+          <a class="login__link login__link--forgot" routerLink="/recuperar-password">
+            <i class="bi bi-question-circle"></i>
+            ¿Olvidó su contraseña?
+          </a>
+        </div>
+      </form>
+    </div>
+  </section>

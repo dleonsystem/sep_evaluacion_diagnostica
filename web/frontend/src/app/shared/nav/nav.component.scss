@@ -271,8 +271,11 @@ $sep-gray-700: #4a4a4a;
 
   .navbar-nav .nav-link {
     padding: 0.35rem 0.75rem;
-    font-size: 1rem;
+    font-size: 2rem;
     line-height: 1.25;
+  }
+  .navbar-nav.ml-auto {
+    margin-left: auto !important;
   }
 }
 
@@ -300,13 +303,13 @@ $sep-gray-700: #4a4a4a;
 
   .navbar-nav .nav-link {
     padding: 0.5rem 1.2rem;
-    font-size: 1rem;
+    font-size: 2rem;
   }
 }
 
 @media (min-width: 1900px) {
   .navbar-nav .nav-link {
-    font-size: 1rem;
+    font-size: 3rem;
   }
 }
 
