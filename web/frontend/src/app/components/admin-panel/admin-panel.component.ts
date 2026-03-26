@@ -320,7 +320,12 @@ export class AdminPanelComponent implements OnInit {
   abrirModalRespuesta(ticket: TicketSoporte, event: Event): void {
     event.stopPropagation();
     this.ticketParaResponder = ticket;
-    this.ticketSeleccionadoId = ticket.id; // Expand the row too
+    if (this.tabSoporteActiva === 'publico') {
+      this.incidenciaSeleccionadaId = ticket.id;
+      this.ticketSeleccionadoId = ticket.id; // Also set this for `guardarRespuesta` logic
+    } else {
+      this.ticketSeleccionadoId = ticket.id;
+    }
     this.estatusTicketSeleccionado = ticket.estatus;
     this.respuestaAdmin = '';
     this.mostrarModalRespuesta = true;
@@ -363,7 +368,11 @@ export class AdminPanelComponent implements OnInit {
 
       this.respuestaAdmin = '';
       this.cerrarModalRespuesta();
-      await this.cargarTicketsSoporte();
+      if (this.tabSoporteActiva === 'publico') {
+        await this.cargarIncidenciasPublicas();
+      } else {
+        await this.cargarTicketsSoporte();
+      }
     } catch (error) {
       console.error('Error enviando respuesta:', error);
       await Swal.fire('Error', 'No se pudo enviar la respuesta', 'error');
