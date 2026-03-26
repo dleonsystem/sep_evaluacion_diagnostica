@@ -307,10 +307,24 @@ export const typeDefs = `#graphql
     simulateReportGeneration(solicitudId: ID!): Boolean!
 
     """
+    Reiniciar contraseña de un usuario (Admin)
+    @use-case CU-02: Gestión de usuarios
+    """
+    resetUserPassword(userId: ID!): ResetPasswordResponse!
+
+    """
     Crear incidencia de carga para usuario no logueado
     @use-case CU-13: Mesa de ayuda (Público)
     """
     createPublicIncident(input: CreatePublicIncidentInput!): Ticket!
+  }
+
+  """
+  Respuesta de reinicio de contraseña
+  """
+  type ResetPasswordResponse {
+    success: Boolean!
+    message: String!
   }
 
   """
