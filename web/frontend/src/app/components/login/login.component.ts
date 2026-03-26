@@ -63,10 +63,16 @@ export class LoginComponent implements OnInit {
         throw new Error('No se recibió la información del usuario o el token de acceso.');
       }
 
-      // 2. Persistir sesión en el servicio central
-      this.authService.iniciarSesion(this.correo, token, usuario);
+      // 2. Persistir sesión en el servicio correspondiente
+      const esAdmin = usuario.rol === 'COORDINADOR_FEDERAL' || usuario.rol === 'COORDINADOR_ESTATAL';
 
-      // 3. Redirección según Rol (Ajuste Issue #268 - El cambio ya no es obligatorio)
+      if (esAdmin) {
+        this.adminAuthService.establecerSesion(this.correo, token, usuario.rol);
+      } else {
+        this.authService.iniciarSesion(this.correo, token, usuario);
+      }
+
+      // 3. Notificar y Redirigir según Rol (Ajuste Issue #268)
       await Swal.fire({
         icon: 'success',
         title: '¡Bienvenido!',
@@ -75,7 +81,7 @@ export class LoginComponent implements OnInit {
         showConfirmButton: false
       });
 
-      if (usuario.rol === 'COORDINADOR_FEDERAL' || usuario.rol === 'COORDINADOR_ESTATAL') {
+      if (esAdmin) {
         await this.router.navigateByUrl('/admin/dashboard');
       } else {
         await this.router.navigateByUrl('/archivos-evaluacion');

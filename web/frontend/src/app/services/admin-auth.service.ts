@@ -32,15 +32,19 @@ export class AdminAuthService {
       throw new Error('No tienes permisos de administrador.');
     }
 
-    // 3. Limpiar sesión de usuario regular para evitar conflictos
+    const token = usuario.token || btoa(`${usuario.user.email}:${Date.now()}`); // Fallback minimal
+    this.establecerSesion(usuario.user.email, token, usuario.user.rol);
+  }
+
+  establecerSesion(correo: string, token: string, rol: string): void {
+    // Limpiar sesión de usuario regular para evitar conflictos
     this.authService.cerrarSesion();
 
-    // 4. Guardar sesión admin
-    const token = usuario.token || btoa(`${usuario.user.email}:${Date.now()}`); // Fallback minimal
+    // Guardar sesión admin
     localStorage.setItem(this.tokenKey, token);
     localStorage.setItem('eia-jwt', token);
-    localStorage.setItem(this.correoKey, usuario.user.email);
-    localStorage.setItem(this.rolKey, usuario.user.rol);
+    localStorage.setItem(this.correoKey, correo);
+    localStorage.setItem(this.rolKey, rol);
     this.autenticadoSubject.next(true);
   }
 
