@@ -2519,6 +2519,61 @@ t.numero_ticket as "folio",
       return reportConsolidatorService.simulateProcessing(solicitudId);
     },
     /**
+     * Reiniciar contraseña de un usuario (Admin)
+     * @use-case CU-02: Gestión de usuarios
+     */
+    resetUserPassword: async (_: any, { userId }: { userId: string }, context: GraphQLContext) => {
+      // 1. Validar que el solicitante sea admin
+      if (!context.user || !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)) {
+        throw new Error('No autorizado: Solo administradores pueden reiniciar contraseñas.');
+      }
+
+      const client = await getClient();
+      try {
+        await client.query('BEGIN');
+
+        // 2. Buscar al usuario objetivo
+        const userRes = await client.query('SELECT email FROM usuarios WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) {
+          throw new Error('Usuario no encontrado.');
+        }
+        const email = userRes.rows[0].email;
+
+        // 3. Generar nueva contraseña aleatoria
+        const randomPart = crypto.randomBytes(4).toString('hex');
+        const newPassword = `A${randomPart}#`; // Prefijo A para Admin
+
+        // 4. Hashear y actualizar
+        const salt = crypto.randomBytes(16).toString('hex');
+        const passwordHash = crypto.scryptSync(newPassword, salt, 64).toString('hex');
+        const finalHash = `${salt}:${passwordHash}`;
+
+        await client.query(
+          'UPDATE usuarios SET password_hash = $1, updated_at = NOW(), primer_login = true WHERE id = $2',
+          [finalHash, userId]
+        );
+
+        // 5. Enviar notificación por correo
+        const emailSent = await mailingService.sendAdminPasswordReset(email, newPassword);
+        
+        await client.query('COMMIT');
+
+        return {
+          success: true,
+          message: emailSent 
+            ? `Contraseña reiniciada correctamente. Se ha enviado un correo a ${email}.`
+            : `Contraseña reiniciada en sistema, pero hubo un error al enviar el correo a ${email}. Informe la nueva contraseña manualmente.`
+        };
+      } catch (error: any) {
+        await client.query('ROLLBACK');
+        logger.error('Error resetting user password', { userId, error: error.message });
+        throw new Error(error.message || 'Error al reiniciar la contraseña.');
+      } finally {
+        client.release();
+      }
+    },
+
+    /**
      * Crear incidencia de carga para usuario no logueado
      * @use-case CU-13: Mesa de ayuda (Público)
      */

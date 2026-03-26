@@ -17,9 +17,24 @@ export class MailingService {
   }
 
   async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+    const isTestMode = process.env.SMTP_TEST_MODE === 'true';
+    const fromName = process.env.SMTP_FROM_NAME || 'Sistema SiCRER';
+    const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'no-reply@sicrer.sep.gob.mx';
+
+    if (isTestMode) {
+      logger.info('--- SMTP TEST MODE ACTIVE ---');
+      logger.info(`To: ${to}`);
+      logger.info(`Subject: ${subject}`);
+      logger.info(`From: "${fromName}" <${fromEmail}>`);
+      logger.info('Content (HTML):');
+      console.log(html); // Usamos console.log para el HTML para que sea legible en la terminal
+      logger.info('--- END OF SMTP TEST ---');
+      return true;
+    }
+
     try {
       const info = await this.transporter.sendMail({
-        from: `"${process.env.SMTP_FROM_NAME || 'Sistema de Evaluación'}" <${process.env.SMTP_USER}>`,
+        from: `"${fromName}" <${fromEmail}>`,
         to,
         subject,
         html,
@@ -79,6 +94,34 @@ export class MailingService {
       </div>
     `;
     return this.sendEmail(email, 'Tus Credenciales de Acceso - SiCRER', html);
+  }
+
+  /**
+   * Envía notificación cuando un administrador cambia la contraseña de un usuario.
+   */
+  async sendAdminPasswordReset(email: string, passwordNew: string): Promise<boolean> {
+    const html = `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <div style="text-align: center; padding-bottom: 20px;">
+          <h2 style="color: #1e293b; margin: 0;">Actualización de Credenciales</h2>
+          <p style="color: #64748b; font-size: 0.9em;">Sistema de Evaluación Diagnóstica SiCRER</p>
+        </div>
+        <div style="color: #334155; line-height: 1.6;">
+          <p>Hola,</p>
+          <p>Te informamos que un administrador ha actualizado tu contraseña de acceso al sistema.</p>
+          <div style="background: #fdf2f2; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #fecaca;">
+            <p style="margin: 5px 0;"><strong>Nueva Contraseña:</strong> <span style="font-family: monospace; color: #dc2626; font-weight: bold;">${passwordNew}</span></p>
+          </div>
+          <p>Por seguridad, te recomendamos cambiar esta contraseña en tu primer inicio de sesión desde tu perfil.</p>
+          <p>Puedes acceder aquí: <a href="${process.env.APP_URL || 'http://localhost:4200'}" style="color: #2563eb; text-decoration: none; font-weight: 500;">Acceder al Sistema</a></p>
+        </div>
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 0.8em; color: #94a3b8; text-align: center;">
+          <p>Si tienes dudas sobre este cambio, contacta a tu coordinador estatal.</p>
+          <p>&copy; 2026 SEP - Secretaría de Educación Pública</p>
+        </div>
+      </div>
+    `;
+    return this.sendEmail(email, 'Actualización de Contraseña por Administrador - SiCRER', html);
   }
 
   /**
