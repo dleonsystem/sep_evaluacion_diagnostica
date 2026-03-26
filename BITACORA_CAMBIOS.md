@@ -22,6 +22,11 @@ Este documento se actualiza con cada modificación relevante al proyecto para en
 - **Cierre de Issue #297**: Se eliminaron los ENUMs hardcodeados en los resolvers de GraphQL, delegando la lógica a las tablas de catálogo de la base de datos.
 - **Containerización Completa (Issue #301)**: Implementación de Dockerfiles multi-stage para Backend y Frontend. Orquestación mediante Docker Compose con Postgres 16, Healthchecks y despliegue reproducible.
 - **Persistencia Robusta CU-16 (Issue #254)**: Refactorización del resolver `uploadExcelAssessment` para insertar estudiantes, grupos y evaluaciones de forma granular, asegurando la activación de cálculos automáticos de NIA en la base de datos.
+- **Evolución de Historial y Descargas (Issue #271)**: 
+  *   Rediseño de la tabla de "Cargas realizadas" con columna de **Acciones directas** para descarga de Comprobantes PDF y Resultados.
+  *   Eliminación de dependencia de scripts externos (`gobmx.js`) mediante implementación de expansión de filas **nativa de Angular**.
+  *   Corrección de Error 404 en CDNs de jQuery/gobmx reemplazándolos por fuentes estables de **cdnjs**.
+- **Estabilización de Entorno**: Configuración de arranque manual persistente para GraphQL (puerto 4000) y Angular (puerto 4200) tras detectar conflictos de caché en Docker.
 - **Actualización Documental**: Sincronización de `ddl_generated.sql`, `ESTRUCTURA_DE_DATOS.md`, `PLAN_TRABAJO_FASE1.md` y bitácoras.
 
 ## 2025-11-25

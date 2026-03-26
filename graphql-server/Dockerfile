@@ -7,7 +7,7 @@ WORKDIR /app
 RUN apk add --no-cache python3 make g++
 
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 COPY . .
 RUN npm run build
@@ -23,7 +23,7 @@ COPY --from=build /app/package*.json ./
 COPY --from=build /app/scripts ./scripts
 
 # Instalar solo dependencias de producción
-RUN npm ci --only=production
+RUN npm install --only=production
 
 # Exponer puerto de Apollo Server
 EXPOSE 4000
