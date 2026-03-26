@@ -9,10 +9,11 @@ export interface CredencialesGuardadas {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly credencialesKey = 'eia-user-credentials';
   private readonly sesionKey = 'eia-user-session-active';
   private readonly sesionCorreoKey = 'eia-user-session-email';
   private readonly sesionRolKey = 'eia-user-session-role';
+  private readonly mustChangePasswordKey = 'eia-user-must-change-password';
+  private readonly primerLoginKey = 'eia-user-first-login';
 
   private autenticadoSubject = new BehaviorSubject<boolean>(this.estaAutenticadoInicial());
   public autenticado$ = this.autenticadoSubject.asObservable();
@@ -21,102 +22,18 @@ export class AuthService {
     return localStorage.getItem(this.sesionKey) === 'true';
   }
 
-  obtenerCredenciales(): CredencialesGuardadas | null {
-    const guardadas = localStorage.getItem(this.credencialesKey);
-    if (!guardadas) {
-      return null;
-    }
-
-    try {
-      const parsed = JSON.parse(guardadas) as CredencialesGuardadas;
-      if (parsed?.cct && parsed?.correo && parsed?.contrasena) {
-        return {
-          cct: this.normalizarCct(parsed.cct),
-          correo: this.normalizarCorreo(parsed.correo),
-          contrasena: parsed.contrasena
-        };
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  }
-
-  registrarCredenciales(
-    cct: string,
-    correo: string,
-    contrasenaPersonalizada?: string
-  ): { contrasena: string; esNueva: boolean } {
-    const credencialesActuales = this.obtenerCredenciales();
-    const cctNormalizado = this.normalizarCct(cct);
-    const correoNormalizado = this.normalizarCorreo(correo);
-
-    const esNueva = !credencialesActuales || credencialesActuales.correo !== correoNormalizado;
-    const contrasena =
-      (credencialesActuales?.correo === correoNormalizado ? credencialesActuales?.contrasena : null) ??
-      contrasenaPersonalizada ??
-      this.generarContrasena();
-
-    localStorage.setItem(
-      this.credencialesKey,
-      JSON.stringify({ cct: cctNormalizado, correo: correoNormalizado, contrasena })
-    );
-
-    return { contrasena, esNueva };
-  }
-
-  generarContrasenaTemporal(): string {
-    return this.generarContrasena();
-  }
-
-  coincidenCredenciales(cct: string, correo: string): boolean {
-    const guardadas = this.obtenerCredenciales();
-    if (!guardadas) {
-      return true;
-    }
-
-    // Solo verificamos el correo. El usuario puede subir cualquier CCT.
-    return guardadas.correo === this.normalizarCorreo(correo);
-  }
-
-  iniciarSesion(correo: string, contrasena: string, rol?: string): void {
-    const guardadas = this.obtenerCredenciales();
-    if (!guardadas) {
-      throw new Error('Aún no hay credenciales registradas. Realiza tu primera carga para generarlas.');
-    }
-
-    if (guardadas.correo !== this.normalizarCorreo(correo) || guardadas.contrasena !== contrasena) {
-      throw new Error('El correo o la contraseña no coinciden con tu primer envío.');
-    }
-
+  iniciarSesion(correo: string, token: string, user: any): void {
     this.marcarSesionActiva();
+    localStorage.setItem('eia-token', token);
     localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
-    if (rol) {
-      localStorage.setItem(this.sesionRolKey, rol);
-    }
-  }
-
-  iniciarSesionTrasCarga(correo: string, rol?: string): void {
-    this.marcarSesionActiva();
-    localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
-    if (rol) {
-      localStorage.setItem(this.sesionRolKey, rol);
-    }
-  }
-
-  iniciarSesionSinCredenciales(correo: string, rol?: string): void {
-    this.marcarSesionActiva();
-    localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
-    if (rol) {
-      localStorage.setItem(this.sesionRolKey, rol);
-    }
+    localStorage.setItem(this.sesionRolKey, user.rol);
   }
 
   cerrarSesion(): void {
     localStorage.removeItem(this.sesionKey);
+    localStorage.removeItem('eia-token');
     localStorage.removeItem(this.sesionCorreoKey);
     localStorage.removeItem(this.sesionRolKey);
-    localStorage.removeItem(this.credencialesKey);
     this.autenticadoSubject.next(false);
   }
 
@@ -124,16 +41,12 @@ export class AuthService {
     return localStorage.getItem(this.sesionKey) === 'true';
   }
 
-  requiereLoginParaNuevaCarga(correo?: string): boolean {
-    const credenciales = this.obtenerCredenciales();
-    if (!credenciales || this.estaAutenticado()) {
-      return false;
-    }
-    // Solo requerir login si el correo que se intenta usar es el mismo que ya tiene credenciales guardadas
-    if (correo && credenciales.correo !== this.normalizarCorreo(correo)) {
-      return false;
-    }
-    return true;
+  debeCambiarPassword(): boolean {
+    return false;
+  }
+
+  esPrimerLogin(): boolean {
+    return false;
   }
 
   obtenerCorreoSesion(): string | null {
@@ -150,22 +63,7 @@ export class AuthService {
     this.autenticadoSubject.next(true);
   }
 
-  private normalizarCct(cct: string): string {
-    return (cct ?? '').trim().toUpperCase();
-  }
-
   public normalizarCorreo(correo: string): string {
     return (correo ?? '').trim().toLowerCase();
-  }
-
-  private generarContrasena(): string {
-    const caracteres = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
-    let contrasena = '';
-
-    for (let i = 0; i < 12; i++) {
-      contrasena += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
-    }
-
-    return contrasena;
   }
 }

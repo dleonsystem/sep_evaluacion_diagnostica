@@ -38,101 +38,55 @@ export class LoginComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    const credencialesPersistidas = this.authService.obtenerCredenciales();
-    const credenciales = this.estadoCredencialesService.obtener() ?? credencialesPersistidas;
-
     this.redirect = this.route.snapshot.queryParamMap.get('redirect') ?? this.redirect;
-    if (!credenciales) {
-      this.sinCredenciales = true;
-      return;
-    }
-
-    // No auto-poblamos campos por seguridad (petición de "sin rastro")
-    this.credencialesGuardadas = Boolean(credencialesPersistidas);
+    // La lógica de pre-poblado/mocks ha sido removida por seguridad (Issue #268)
   }
 
   async iniciarSesion(): Promise<void> {
     this.error = null;
     this.autenticando = true;
 
-    // Asegurar limpieza de sesión administrativa previa
-    this.adminAuthService.cerrarSesion();
+    try {
+      // 1. Llamar al servicio de autenticación GraphQL
+      const response = await firstValueFrom(
+        this.usuariosService.autenticarUsuario(this.correo, this.contrasena)
+      );
 
-      try {
-        const usuario = await firstValueFrom(
-          this.usuariosService.autenticarUsuario(this.correo, this.contrasena)
-        );
-
-        // Guardar Token Real (JWT)
-        if (usuario.token) {
-          localStorage.setItem('eia-jwt', usuario.token);
-        }
-
-        // Redirigir a cambio de contraseña si es el primer login
-        if (usuario.primerLogin) {
-          await Swal.fire({
-            icon: 'info',
-            title: 'Primer inicio de sesión',
-            text: 'Debes cambiar tu contraseña para continuar.',
-            timer: 3000,
-            timerProgressBar: true
-          });
-          // Redirigir a una ruta de cambio de contraseña o perfil (asumiendo /admin/panel como base para Phase 1)
-          await this.router.navigateByUrl('/admin/panel');
-          return;
-        }
-
-        // Detectar Roles Administrativos (Rol 2 o 3)
-        if (usuario.rol === 'COORDINADOR_FEDERAL' || usuario.rol === 'COORDINADOR_ESTATAL') {
-          // Redirigir al flujo de AdminAuthService unificado
-          await this.adminAuthService.iniciarSesion(this.correo, this.contrasena);
-
-          await Swal.fire({
-            icon: 'success',
-            title: 'Sesión administrativa',
-            text: 'Bienvenido al panel de administración.',
-            timer: 2000,
-            timerProgressBar: true
-          });
-
-          await this.router.navigateByUrl('/admin/dashboard');
-          return;
-        }
-
-      const cct = usuario.centrosTrabajo?.[0]?.claveCCT ?? null;
-      if (cct) {
-        const nuevasCredenciales = this.authService.registrarCredenciales(
-          cct,
-          this.correo,
-          this.contrasena
-        );
-        this.estadoCredencialesService.actualizar(this.correo, nuevasCredenciales.contrasena);
-        this.authService.iniciarSesion(this.correo, this.contrasena, usuario.rol);
-      } else {
-        this.authService.iniciarSesionSinCredenciales(this.correo, usuario.rol);
+      if (!response || !response.ok) {
+        throw new Error(response?.message || 'Credenciales inválidas');
       }
 
+      const usuario = response.user;
+      const token = response.token;
+
+      if (!usuario || !token) {
+        throw new Error('No se recibió la información del usuario o el token de acceso.');
+      }
+
+      // 2. Persistir sesión en el servicio central
+      this.authService.iniciarSesion(this.correo, token, usuario);
+
+      // 3. Redirección según Rol (Ajuste Issue #268 - El cambio ya no es obligatorio)
       await Swal.fire({
         icon: 'success',
-        title: 'Sesión iniciada',
-        text: 'Puedes continuar con tu siguiente envío.',
-        timer: 2500,
-        timerProgressBar: true
+        title: '¡Bienvenido!',
+        text: 'Sesión iniciada correctamente.',
+        timer: 1500,
+        showConfirmButton: false
       });
 
-      let destino = this.redirect;
-      if (usuario.rol === 'RESPONSABLE_CCT' && destino === '/carga-masiva') {
-        destino = '/archivos-evaluacion';
+      if (usuario.rol === 'COORDINADOR_FEDERAL' || usuario.rol === 'COORDINADOR_ESTATAL') {
+        await this.router.navigateByUrl('/admin/dashboard');
+      } else {
+        await this.router.navigateByUrl('/archivos-evaluacion');
       }
 
-      await this.router.navigateByUrl(destino);
-    } catch (error) {
-      const mensajeError = error instanceof Error ? error.message : 'Ocurrió un error inesperado.';
-      this.error = `No se pudo iniciar sesión. ${mensajeError}`;
+    } catch (error: any) {
+      this.error = error.message || 'Error al conectar con el servidor.';
       await Swal.fire({
         icon: 'error',
-        title: 'No se pudo iniciar sesión',
-        text: this.error
+        title: 'Error de acceso',
+        text: this.error || 'Verifique sus credenciales.'
       });
     } finally {
       this.autenticando = false;

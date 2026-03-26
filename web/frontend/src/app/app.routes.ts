@@ -15,6 +15,8 @@ import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { PreguntasFrecuentesComponent } from './components/preguntas-frecuentes/preguntas-frecuentes.component';
 import { MaterialesAdminComponent } from './components/admin-panel/materiales/materiales.component';
 import { MaterialesPublicosComponent } from './components/materiales-publicos/materiales-publicos.component';
+import { CambioPasswordComponent } from './components/cambio-password/cambio-password.component';
+import { PasswordChangeGuard } from './guards/password-change.guard';
 
 export const routes: Routes = [
   {
@@ -55,6 +57,12 @@ export const routes: Routes = [
   {
     path: 'archivos-evaluacion',
     component: ArchivosEvaluacionComponent,
+    canActivate: [AuthGuard],
+    pathMatch: 'full',
+  },
+  {
+    path: 'cambiar-password',
+    component: CambioPasswordComponent,
     canActivate: [AuthGuard],
     pathMatch: 'full',
   },
