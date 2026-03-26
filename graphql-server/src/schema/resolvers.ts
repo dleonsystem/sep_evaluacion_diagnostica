@@ -63,6 +63,7 @@ interface UserRow {
   rol: string;
   activo: boolean;
   primerLogin: boolean;
+  passwordDebeCambiar?: boolean;
   intentosFallidos: number;
   bloqueadoHasta?: Date;
   fechaRegistro: Date;
@@ -142,6 +143,8 @@ interface CreateUserResult {
   apematerno: string;
   rol: string;
   activo: boolean;
+  passwordDebeCambiar?: boolean;
+  primerLogin?: boolean;
   fechaRegistro: Date;
 }
 
@@ -1315,16 +1318,18 @@ t.numero_ticket as "folio",
         // Insertar usuario
         const result = await query(
           `INSERT INTO usuarios 
-            (email, nombre, apepaterno, apematerno, rol, password_hash, activo, fecha_registro)
-          VALUES ($1, $2, $3, $4, $5, $6, true, NOW())
+            (email, nombre, apepaterno, apematerno, rol, password_hash, activo, fecha_registro, password_debe_cambiar, primer_login)
+          VALUES ($1, $2, $3, $4, $5, $6, true, NOW(), false, false)
           RETURNING 
             id, 
             email, 
             nombre, 
-            apepaterno,
+            apepaterno, 
             apematerno,
             (SELECT codigo FROM cat_roles_usuario WHERE id_rol = usuarios.rol) as "rol",
             activo,
+            password_debe_cambiar as "passwordDebeCambiar",
+            primer_login as "primerLogin",
             fecha_registro as "fechaRegistro"`,
           [
             email,
@@ -1379,7 +1384,8 @@ t.numero_ticket as "folio",
      */
     authenticateUser: async (
       _: unknown,
-      { input }: { input: { email: string; password: string } }
+      { input }: { input: { email: string; password: string } },
+      context: any
     ): Promise<AuthPayload> => {
       try {
         const { email, password } = input;
@@ -1398,7 +1404,8 @@ t.numero_ticket as "folio",
             u.updated_at as "fechaUltimoAcceso",
             u.bloqueado_hasta as "bloqueadoHasta",
             u.intentos_fallidos as "intentosFallidos",
-            u.primer_login as "primerLogin"
+            u.primer_login as "primerLogin",
+            u.password_debe_cambiar as "passwordDebeCambiar"
           FROM usuarios u
           INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
           WHERE u.email = $1`,
@@ -1416,6 +1423,18 @@ t.numero_ticket as "folio",
           const minutosRestantes = Math.ceil(
             (new Date(usuario.bloqueadoHasta).getTime() - new Date().getTime()) / (60 * 1000)
           );
+
+          // Registro de auditoría de bloqueo (Issue #268)
+          try {
+            const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+            const userAgent = context.req?.headers['user-agent'];
+            await query(
+              `INSERT INTO log_actividades (id_usuario, fecha_hora, accion, modulo, resultado, ip_address, user_agent, detalle)
+               VALUES ($1, NOW(), 'LOGIN_BLOQUEADO', 'AUTH', 'FAIL', $2, $3, $4)`,
+              [usuario.id, clientIp, userAgent, JSON.stringify({ reason: 'Attempt while blocked', expires: usuario.bloqueadoHasta })]
+            );
+          } catch (e) { logger.warn('Audit error', e); }
+
           return {
             ok: false,
             message: `Esta cuenta está temporalmente bloqueada. Intente de nuevo en ${minutosRestantes} minutos.`,
@@ -1449,6 +1468,18 @@ t.numero_ticket as "folio",
               'UPDATE usuarios SET intentos_fallidos = $1, bloqueado_hasta = NOW() + INTERVAL \'1 hour\' WHERE id = $2',
               [nuevosIntentos, usuario.id]
             );
+
+            // Registro de auditoría de bloqueo (Issue #268)
+            try {
+              const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+              const userAgent = context.req?.headers['user-agent'];
+              await query(
+                `INSERT INTO log_actividades (id_usuario, fecha_hora, accion, modulo, resultado, ip_address, user_agent, detalle)
+                 VALUES ($1, NOW(), 'CUENTA_BLOQUEADA_AUTO', 'AUTH', 'FAIL', $2, $3, $4)`,
+                [usuario.id, clientIp, userAgent, JSON.stringify({ attempts: nuevosIntentos, lockdownUntil: '1 hour' })]
+              );
+            } catch (e) { logger.warn('Audit error', e); }
+
             return {
               ok: false,
               message: 'Demasiados intentos fallidos. Su cuenta ha sido bloqueada por 1 hora.',
@@ -1459,6 +1490,18 @@ t.numero_ticket as "folio",
               nuevosIntentos,
               usuario.id,
             ]);
+
+            // Despues de cada fallo tambien auditamos (Issue #268)
+            try {
+              const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+              const userAgent = context.req?.headers['user-agent'];
+              await query(
+                `INSERT INTO log_actividades (id_usuario, fecha_hora, accion, modulo, resultado, ip_address, user_agent, detalle)
+                 VALUES ($1, NOW(), 'LOGIN_FALLIDO', 'AUTH', 'FAIL', $2, $3, $4)`,
+                [usuario.id, clientIp, userAgent, JSON.stringify({ attempt: nuevosIntentos })]
+              );
+            } catch (e) { logger.warn('Audit error', e); }
+
             return {
               ok: false,
               message: `Credenciales inválidas. Intento ${nuevosIntentos} de 5.`,
@@ -1473,6 +1516,31 @@ t.numero_ticket as "folio",
           [usuario.id]
         );
 
+        // Registro de auditoría (CU-15 / Issue #268)
+        try {
+          const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const userAgent = context.req?.headers['user-agent'];
+
+          await query(
+            `INSERT INTO log_actividades 
+              (id_usuario, fecha_hora, accion, tabla, registro_id, detalle, ip_address, user_agent, modulo, resultado)
+            VALUES ($1, NOW(), $2, $3, $4, $5, $6, $7, $8, $9)`,
+            [
+              usuario.id,
+              'LOGIN_EXITOSO',
+              'usuarios',
+              usuario.id,
+              JSON.stringify({ email: usuario.email }),
+              clientIp,
+              userAgent,
+              'AUTH',
+              'SUCCESS'
+            ]
+          );
+        } catch (logErr) {
+          logger.error('Error recording successful login in log_actividades', logErr);
+        }
+
         // Emitir JWT (RF-18)
         const token = generateToken(usuario);
 
@@ -1480,11 +1548,74 @@ t.numero_ticket as "folio",
           ok: true,
           message: 'Autenticación correcta',
           token,
-          user: usuario,
+          user: {
+            ...usuario,
+            primerLogin: !!usuario.primerLogin,
+            passwordDebeCambiar: !!usuario.passwordDebeCambiar
+          },
         };
       } catch (error) {
         logger.error('Error authenticating user', { input, error });
         throw error;
+      }
+    },
+
+    /**
+     * Cambiar contraseña de usuario autenticado
+     * @use-case CU-15: Gestión de credenciales
+     */
+    changePassword: async (
+      _: any,
+      { input }: { input: { currentPassword: string; newPassword: string } },
+      context: any
+    ): Promise<AuthPayload> => {
+      if (!context.user) {
+        throw new Error('No autorizado');
+      }
+
+      const { currentPassword, newPassword } = input;
+      const userId = context.user.id;
+
+      try {
+        const res = await query('SELECT password_hash, email FROM usuarios WHERE id = $1', [userId]);
+        if (res.rows.length === 0) throw new Error('Usuario no encontrado');
+        
+        const { password_hash: hashActual, email } = res.rows[0];
+        const [salt, storedHash] = hashActual.split(':');
+
+        const calculatedHash = crypto.scryptSync(currentPassword, salt, 64).toString('hex');
+        if (calculatedHash !== storedHash) {
+          return { ok: false, message: 'La contraseña actual es incorrecta' };
+        }
+
+        const newSalt = crypto.randomBytes(16).toString('hex');
+        const newHash = crypto.scryptSync(newPassword, newSalt, 64).toString('hex');
+        const finalHash = `${newSalt}:${newHash}`;
+
+        await query(
+          `UPDATE usuarios 
+           SET password_hash = $1, 
+               password_debe_cambiar = false, 
+               primer_login = false,
+               updated_at = NOW() 
+           WHERE id = $2`,
+          [finalHash, userId]
+        );
+
+        try {
+          const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const userAgent = context.req?.headers['user-agent'];
+          await query(
+            `INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, ip_address, user_agent, detalle)
+             VALUES ($1, 'CHANGE_PASSWORD', 'AUTH', 'SUCCESS', $2, $3, $4)`,
+            [userId, clientIp, userAgent, JSON.stringify({ email })]
+          );
+        } catch (e) { }
+
+        return { ok: true, message: 'Contraseña actualizada correctamente' };
+      } catch (error: any) {
+        logger.error('Error changing password', { userId, error });
+        return { ok: false, message: error.message || 'Error interno' };
       }
     },
 
@@ -1701,7 +1832,7 @@ t.numero_ticket as "folio",
      * Recuperar contraseña (envío de email con nueva contraseña)
      * @use-case CU-01: Autenticación
      */
-    recoverPassword: async (_: any, { email }: { email: string }) => {
+    recoverPassword: async (_: any, { email }: { email: string }, context: any) => {
       const client = await getClient();
       try {
         await client.query('BEGIN');
@@ -1713,7 +1844,17 @@ t.numero_ticket as "folio",
         );
 
         if (userRes.rows.length === 0) {
-          // Por seguridad, no decimos que no existe, pero retornamos true simulado
+          // Registro de auditoría para intento fallido de recuperación (Issue #268)
+          try {
+            const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+            const userAgent = context.req?.headers['user-agent'];
+            await query(
+              `INSERT INTO log_actividades (accion, modulo, resultado, ip_address, user_agent, detalle)
+               VALUES ('RECOVER_PASSWORD_INVALID_EMAIL', 'AUTH', 'FAIL', $1, $2, $3)`,
+              [clientIp, userAgent, JSON.stringify({ attemptedEmail: email })]
+            );
+          } catch (e) { }
+          
           await client.query('ROLLBACK');
           return 'OK';
         }
@@ -1748,7 +1889,7 @@ t.numero_ticket as "folio",
         const passwordHash = crypto.scryptSync(newPassword, salt, 64).toString('hex');
         const finalHash = `${salt}:${passwordHash}`;
 
-        // 4. Actualizar usuario
+        // 4. Actualizar usuario: Clave nueva activa (Issue #268 - Ajuste de requerimientos)
         await client.query(
           'UPDATE usuarios SET password_hash = $1, updated_at = NOW() WHERE id = $2',
           [finalHash, userId]
@@ -1761,6 +1902,17 @@ t.numero_ticket as "folio",
         }
 
         logger.info(`Recovery email sent to ${email}`);
+
+        // Registro de auditoría (Issue #268)
+        try {
+          const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const userAgent = context.req?.headers['user-agent'];
+          await query(
+            `INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, ip_address, user_agent)
+             VALUES ($1, 'RECOVER_PASSWORD_REQUEST', 'AUTH', 'SUCCESS', $2, $3)`,
+            [userId, clientIp, userAgent]
+          );
+        } catch (e) { }
 
         await client.query('COMMIT');
         return 'Solicitud procesada';
@@ -2018,7 +2170,7 @@ t.numero_ticket as "folio",
           const userExist = await client.query('SELECT id FROM usuarios WHERE email = $1', [inputEmail]);
           if (userExist.rows.length === 0) {
             await client.query(
-              'INSERT INTO usuarios (email, password_hash, rol, nombre, email_excel) VALUES ($1, $2, fn_catalogo_id($3, $4), $5, $6)',
+              'INSERT INTO usuarios (email, password_hash, rol, nombre, email_excel, password_debe_cambiar, primer_login) VALUES ($1, $2, fn_catalogo_id($3, $4), $5, $6, false, false)',
               [inputEmail, finalHash, 'cat_rol_usuario', 'RESPONSABLE_CCT', 'Director ' + cct, excelEmail]
             );
           } else {

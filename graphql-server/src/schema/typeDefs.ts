@@ -250,6 +250,12 @@ export const typeDefs = `#graphql
     @use-case CU-02: Actualización de datos de usuario
     """
     updateUser(id: ID!, input: UpdateUserInput!): User!
+
+    """
+    Cambiar contraseña de usuario autenticado
+    @use-case CU-15: Gestión de credenciales
+    """
+    changePassword(input: ChangePasswordInput!): AuthPayload!
     
     """
     Eliminar usuario
@@ -405,6 +411,7 @@ export const typeDefs = `#graphql
     rol: UserRole!
     activo: Boolean!
     primerLogin: Boolean
+    passwordDebeCambiar: Boolean
     fechaRegistro: String!
     fechaUltimoAcceso: String
     centrosTrabajo: [CentroTrabajo!]!
@@ -601,6 +608,14 @@ export const typeDefs = `#graphql
   input AuthenticateUserInput {
     email: String!
     password: String!
+  }
+
+  """
+  Input para cambiar contraseña
+  """
+  input ChangePasswordInput {
+    currentPassword: String!
+    newPassword: String!
   }
   
   """

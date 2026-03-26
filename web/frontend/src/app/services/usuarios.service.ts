@@ -4,6 +4,7 @@ import { GraphqlService } from './graphql.service';
 import {
   AUTHENTICATE_USER_MUTATION,
   CREATE_USER_MUTATION,
+  CHANGE_PASSWORD_MUTATION,
 } from '../operations/mutation';
 
 export interface CreateUserInput {
@@ -35,9 +36,16 @@ export interface UsuarioAutenticado {
   id: string;
   email: string;
   rol: string;
-  token?: string;
   primerLogin?: boolean;
-  centrosTrabajo: Array<{ claveCCT: string }>;
+  passwordDebeCambiar?: boolean;
+  centrosTrabajo?: Array<{ claveCCT: string }>;
+}
+
+export interface AuthPayload {
+  ok: boolean;
+  message?: string;
+  token?: string;
+  user?: UsuarioAutenticado;
 }
 
 interface CreateUserResponse {
@@ -78,7 +86,7 @@ export class UsuariosService {
   autenticarUsuario(
     email: string,
     password: string,
-  ): Observable<UsuarioAutenticado> {
+  ): Observable<AuthPayload> {
     return this.graphqlService
       .execute<AuthenticateUserResponse>(AUTHENTICATE_USER_MUTATION, {
         input: { email, password },
@@ -91,15 +99,18 @@ export class UsuariosService {
             );
           }
           const resultado = response.data?.authenticateUser;
-          if (!resultado?.ok || !resultado.user) {
-            throw new Error(resultado?.message ?? 'Credenciales inválidas.');
+          if (!resultado) {
+            throw new Error('No se recibió respuesta del servidor.');
           }
-          // Inyectar el token en el objeto de usuario para el frontend
-          const user = resultado.user;
-          if (resultado.token) {
-            user.token = resultado.token;
-          }
-          return user;
+          return {
+            ok: resultado.ok,
+            message: resultado.message || undefined,
+            token: resultado.token || undefined,
+            user: resultado.user ? {
+              ...resultado.user,
+              passwordDebeCambiar: (resultado.user as any).passwordDebeCambiar || false
+            } : undefined
+          };
         }),
       );
   }
@@ -150,6 +161,19 @@ export class UsuariosService {
           if (res.errors) throw new Error(res.errors[0].message);
           return res.data?.listUsers || { nodes: [], totalCount: 0 };
         }),
+      );
+  }
+
+  changePassword(currentPassword: string, newPassword: string): Observable<AuthPayload> {
+    return this.graphqlService
+      .execute<{ changePassword: AuthPayload }>(CHANGE_PASSWORD_MUTATION, {
+        input: { currentPassword, newPassword }
+      })
+      .pipe(
+        map((res) => {
+          if (res.errors) throw new Error(res.errors[0].message);
+          return res.data?.changePassword || { ok: false, message: 'No se recibió respuesta.' };
+        })
       );
   }
 }

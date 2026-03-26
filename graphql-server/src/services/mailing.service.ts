@@ -52,24 +52,30 @@ export class MailingService {
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
         <div style="text-align: center; padding-bottom: 20px;">
           <h2 style="color: #1e293b; margin: 0;">Recuperación de Contraseña</h2>
-          <p style="color: #64748b; font-size: 0.9em;">Sistema de Evaluación Diagnóstica</p>
+          <p style="color: #64748b; font-size: 0.9em;">Sistema de Evaluación Diagnóstica SiCRER</p>
         </div>
         <div style="color: #334155; line-height: 1.6;">
           <p>Hola,</p>
           <p>Has solicitado restablecer tu contraseña para acceder a la plataforma <strong>SiCRER</strong>.</p>
           <div style="background: #f8fafc; padding: 20px; border-radius: 8px; text-align: center; margin: 25px 0; border: 1px dashed #cbd5e1;">
-            <p style="margin-bottom: 10px; font-size: 0.9em; color: #64748b;">Tu nueva contraseña de acceso es:</p>
+            <p style="margin-bottom: 10px; font-size: 0.9em; color: #64748b;">Tu contraseña <strong>temporal</strong> de acceso es:</p>
             <span style="font-size: 1.5em; font-weight: bold; color: #2563eb; letter-spacing: 2px;">${passwordNew}</span>
           </div>
-          <p>A partir de ahora, deberás utilizar esta contraseña para ingresar al sistema.</p>
+          <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px; margin-bottom: 20px;">
+            <p style="margin: 0; color: #92400e; font-size: 0.95em;">
+              <strong>⚠️ Importante:</strong> Esta contraseña es temporal y <strong>expira en 24 horas</strong>. 
+              Se le solicitará cambiarla obligatoriamente al ingresar al portal.
+            </p>
+          </div>
+          <p>Puedes acceder aquí: <a href="${process.env.APP_URL || 'http://localhost:4200'}/login" style="color: #2563eb; text-decoration: none; font-weight: 500;">Ir al Portal de Acceso</a></p>
         </div>
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 0.8em; color: #94a3b8; text-align: center;">
-          <p>Si no has solicitado este cambio, puedes ignorar este correo o contactar al administrador del sistema.</p>
+          <p>Si no has solicitado este cambio, contacta a soporte técnico de inmediato.</p>
           <p>&copy; 2026 SEP - Secretaría de Educación Pública</p>
         </div>
       </div>
     `;
-    return this.sendEmail(email, 'Recuperación de Contraseña - SiCRER', html);
+    return this.sendEmail(email, 'Recuperación de Contraseña Temporal - SiCRER', html);
   }
 
   async sendCredentials(email: string, cct: string, passwordNew: string): Promise<boolean> {
