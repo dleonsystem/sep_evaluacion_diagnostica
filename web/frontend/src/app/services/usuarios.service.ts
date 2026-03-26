@@ -176,4 +176,48 @@ export class UsuariosService {
         })
       );
   }
+
+  actualizarUsuario(id: string, input: any): Observable<UsuarioCreado> {
+    const mutation = `
+      mutation UpdateUser($id: ID!, $input: UpdateUserInput!) {
+        updateUser(id: $id, input: $input) {
+          id
+          email
+          nombre
+          apepaterno
+          apematerno
+          rol
+          activo
+          fechaRegistro
+        }
+      }
+    `;
+    return this.graphqlService
+      .execute<{ updateUser: UsuarioCreado }>(mutation, { id, input })
+      .pipe(
+        map((res) => {
+          if (res.errors) throw new Error(res.errors[0].message);
+          return res.data!.updateUser;
+        }),
+      );
+  }
+
+  eliminarUsuario(id: string): Observable<boolean> {
+    const mutation = `
+      mutation DeleteUser($id: ID!) {
+        deleteUser(id: $id) {
+          success
+          message
+        }
+      }
+    `;
+    return this.graphqlService
+      .execute<{ deleteUser: { success: boolean } }>(mutation, { id })
+      .pipe(
+        map((res) => {
+          if (res.errors) throw new Error(res.errors[0].message);
+          return res.data?.deleteUser.success || false;
+        }),
+      );
+  }
 }

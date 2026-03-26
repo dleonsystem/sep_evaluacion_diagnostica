@@ -5,6 +5,7 @@ export interface CredencialesGuardadas {
   cct: string;
   correo: string;
   contrasena: string;
+  esNueva: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -58,6 +59,31 @@ export class AuthService {
     return localStorage.getItem(this.sesionRolKey);
   }
 
+  public registrarCredenciales(cct: string, correo: string, contrasena: string): CredencialesGuardadas {
+    const credenciales: CredencialesGuardadas = { 
+      cct, 
+      correo: this.normalizarCorreo(correo), 
+      contrasena,
+      esNueva: true 
+    };
+    localStorage.setItem('eia-last-credentials', JSON.stringify(credenciales));
+    return credenciales;
+  }
+
+  public obtenerCredenciales(): CredencialesGuardadas | null {
+    const guardadas = localStorage.getItem('eia-last-credentials');
+    if (!guardadas) return null;
+    try {
+      const parsed = JSON.parse(guardadas);
+      return {
+        ...parsed,
+        esNueva: !!parsed.esNueva
+      };
+    } catch {
+      return null;
+    }
+  }
+
   private marcarSesionActiva(): void {
     localStorage.setItem(this.sesionKey, 'true');
     this.autenticadoSubject.next(true);
@@ -65,5 +91,16 @@ export class AuthService {
 
   public normalizarCorreo(correo: string): string {
     return (correo ?? '').trim().toLowerCase();
+  }
+
+  public requiereLoginParaNuevaCarga(correo?: string): boolean {
+    const correoSesion = this.obtenerCorreoSesion();
+    if (!correo) return !this.estaAutenticado();
+    return !this.estaAutenticado() || (!!correoSesion && correoSesion !== this.normalizarCorreo(correo));
+  }
+
+  public generarContrasenaTemporal(): string {
+    const random = Math.random().toString(36).slice(-8);
+    return `T${random}!A`;
   }
 }

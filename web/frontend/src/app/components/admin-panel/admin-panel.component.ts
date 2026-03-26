@@ -85,6 +85,8 @@ export class AdminPanelComponent implements OnInit {
     rol: 'CONSULTA' as any,
     claveCCT: ''
   };
+  editandoUsuario = false;
+  usuarioSeleccionadoId: string | null = null;
 
   // Catálogo de Escuelas (CU-14)
   escuelas: Escuela[] = [];
@@ -546,44 +548,109 @@ export class AdminPanelComponent implements OnInit {
   }
 
   cerrarModalUsuario(): void {
+    this.editandoUsuario = false;
+    this.usuarioSeleccionadoId = null;
     this.mostrarModalUsuario = false;
   }
 
-  async crearUsuario(): Promise<void> {
+  async guardarUsuario(): Promise<void> {
     if (!this.nuevoUsuario.email || !this.nuevoUsuario.nombre || !this.nuevoUsuario.rol) {
       return;
     }
 
     this.cargandoUsuarios = true;
     try {
-      // Generar contraseña aleatoria temporal
-      const password = Math.random().toString(36).slice(-10) + '!A1';
-
-      await firstValueFrom(
-        this.usuariosService.crearUsuario({
-          email: this.nuevoUsuario.email,
+      if (this.editandoUsuario && this.usuarioSeleccionadoId) {
+        // Modo Edición
+        const input = {
           nombre: this.nuevoUsuario.nombre,
           apepaterno: this.nuevoUsuario.apepaterno,
           apematerno: this.nuevoUsuario.apematerno,
           rol: this.nuevoUsuario.rol,
-          clavesCCT: this.nuevoUsuario.claveCCT ? [this.nuevoUsuario.claveCCT] : [],
-          password: password
-        })
-      );
+        };
 
-      await Swal.fire({
-        icon: 'success',
-        title: 'Usuario Creado',
-        text: `El usuario ${this.nuevoUsuario.email} ha sido creado. Se le han enviado sus credenciales por correo electrónico.`,
-      });
+        await firstValueFrom(
+          this.usuariosService.actualizarUsuario(this.usuarioSeleccionadoId, input)
+        );
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Usuario Actualizado',
+          text: `El usuario ${this.nuevoUsuario.email} ha sido actualizado correctamente.`,
+        });
+      } else {
+        // Modo Creación
+        const password = Math.random().toString(36).slice(-10) + '!A1';
+
+        await firstValueFrom(
+          this.usuariosService.crearUsuario({
+            email: this.nuevoUsuario.email,
+            nombre: this.nuevoUsuario.nombre,
+            apepaterno: this.nuevoUsuario.apepaterno,
+            apematerno: this.nuevoUsuario.apematerno,
+            rol: this.nuevoUsuario.rol,
+            clavesCCT: this.nuevoUsuario.claveCCT ? [this.nuevoUsuario.claveCCT] : [],
+            password: password
+          })
+        );
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Usuario Creado',
+          text: `El usuario ${this.nuevoUsuario.email} ha sido creado. Se le han enviado sus credenciales por correo electrónico.`,
+        });
+      }
 
       this.cerrarModalUsuario();
       await this.cargarUsuarios();
     } catch (error: any) {
-      console.error('Error creando usuario:', error);
-      await Swal.fire('Error', error.message || 'No se pudo crear el usuario', 'error');
+      console.error('Error al guardar usuario:', error);
+      await Swal.fire('Error', error.message || 'No se pudo procesar la solicitud', 'error');
     } finally {
       this.cargandoUsuarios = false;
+    }
+  }
+
+  abrirModalEdicion(usuario: UsuarioCreado): void {
+    this.editandoUsuario = true;
+    this.usuarioSeleccionadoId = usuario.id;
+    this.nuevoUsuario = {
+      email: usuario.email,
+      nombre: usuario.nombre,
+      apepaterno: usuario.apepaterno,
+      apematerno: usuario.apematerno || '',
+      rol: usuario.rol as any,
+      claveCCT: '' // En este sistema la CCT es parte de una tabla intermedia o escuela_id
+    };
+    this.mostrarModalUsuario = true;
+  }
+
+  async cambiarEstadoUsuario(usuario: UsuarioCreado): Promise<void> {
+    const accion = usuario.activo ? 'desactivar' : 'activar';
+    const confirmacion = await Swal.fire({
+      title: `¿${accion.charAt(0).toUpperCase() + accion.slice(1)} usuario?`,
+      text: `¿Estás seguro de que deseas ${accion} al usuario ${usuario.email}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: `Sí, ${accion}`,
+      cancelButtonText: 'Cancelar',
+    });
+
+    if (!confirmacion.isConfirmed) return;
+
+    try {
+      if (usuario.activo) {
+        // Soft delete
+        await firstValueFrom(this.usuariosService.eliminarUsuario(usuario.id));
+      } else {
+        // Reactivación via update
+        await firstValueFrom(this.usuariosService.actualizarUsuario(usuario.id, { activo: true }));
+      }
+
+      await Swal.fire('Éxito', `Usuario ${accion}do correctamente.`, 'success');
+      await this.cargarUsuarios();
+    } catch (error: any) {
+      await Swal.fire('Error', error.message || `No se pudo ${accion} al usuario.`, 'error');
     }
   }
 
