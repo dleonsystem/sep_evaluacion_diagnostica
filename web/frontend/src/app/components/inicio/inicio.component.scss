@@ -238,7 +238,8 @@ $gray-light: #f7f7f7;
    ========================================================================== */
 
 .descripcion {
-  background-color: $gray-light;
+  background: #e6e6c8;
+  background: linear-gradient(180deg,rgba(230, 230, 200, 1) 0%, rgba(230, 206, 154, 0.04) 96%, rgba(225, 205, 151, 1) 35%, rgba(153, 41, 3, 0.63) 100%);
   width: 100% !important;
   padding: 3rem 2rem !important;
   margin: 0 auto;
@@ -1066,7 +1067,7 @@ $gray-light: #f7f7f7;
 
   i {
     font-size: 0.85rem;
-    transition: transform 0.3s ease;
+    
   }
 
   &:hover i {
@@ -1333,7 +1334,7 @@ $gray-light: #f7f7f7;
 }
 
 .text-secondary {
-  color: #6c757d !important;
+  color: #1e293b !important;
 }
 
 .font-weight-bold {
@@ -1432,11 +1433,40 @@ $gray-light: #f7f7f7;
 .inicio-faq {
   &__card {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: #e6e6c8;
+    background: linear-gradient(360deg,rgba(230, 230, 200, 1) 0%, rgba(225, 219, 151, 0.17) 0%, rgba(225, 209, 151, 1) 0%, rgba(148, 41, 41, 0.12) 78%);
 
     &:hover {
       transform: translateY(-5px);
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
     }
+  }
+
+  .btn-sirver {
+    color: #9d2449;
+    border: 2px solid #9d2449;
+    background-color: transparent;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border-radius: 5px; /* Opcional: para redondear bordes */
+  }
+  /* Estado: Pasar el mouse por encima (Hover) */
+  .btn-sirver:hover {
+    color: #ffffff;
+    background-color: #9d2449; /* El fondo se llena de color */
+    border-color: #9d2449;
+    transform: translateY(-2px); /* Pequeño salto hacia arriba */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  /* Estado: Al hacer clic (Active) */
+  .btn-sirver:active {
+    background-color: #7e1d3a; /* Un tono más oscuro de guinda */
+    transform: translateY(0);
+  }
+  /* Estado: Cuando el botón está seleccionado (Focus) */
+  .btn-sirver:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(157, 36, 73, 0.4); /* Resplandor exterior */
   }
 
   .btn-outline-guinda {

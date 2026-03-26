@@ -8,12 +8,15 @@
 }
 
 .login__card {
-  background: #fff;
+  background: #e6e6c8;
+  background: linear-gradient(360deg,rgba(230, 230, 200, 1) 0%, rgba(225, 219, 151, 0.17) 0%, rgba(225, 209, 151, 1) 0%, rgba(148, 41, 41, 0.12) 78%);
   padding: 2rem;
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   max-width: 440px;
   width: 100%;
+  border: 3px dashed #BD8686;
+  box-shadow: 5px 5px 10px rgba(0,0,0,0.5);
 }
 
 .login h1 {
@@ -149,7 +152,7 @@ input:focus {
   color: #2e7d32;
   text-decoration: none;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 1.2rem;
   transition: color 0.2s ease;
 
   i {

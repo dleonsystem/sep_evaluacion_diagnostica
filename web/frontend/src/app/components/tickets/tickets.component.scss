@@ -10,7 +10,7 @@
 
 .tickets__encabezado {
   margin-bottom: 1rem;
-  
+
   .tickets__eyebrow {
     color: #00695c;
     font-weight: 700;
@@ -42,7 +42,13 @@
   box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.05);
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
+  gap: 1.25rem;
+  background: #e6e6c8;
+  background: linear-gradient(360deg,rgba(230, 230, 200, 1) 0%, rgba(225, 219, 151, 0.17) 0%, rgba(225, 209, 151, 1) 0%, rgba(189, 134, 134, 0.13) 78%);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 10px 10px 5px #888888;
 }
 
 .tickets__campo {
@@ -50,11 +56,15 @@
   flex-direction: column;
   gap: 0.5rem;
 
-  span {
-    font-weight: 600;
-    font-size: 0.875rem;
-    color: #475569;
-  }
+.tickets__campo input,
+.tickets__campo textarea,
+.tickets__campo select {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 2rem;
+  font-family: inherit;
+}
 
   input, select, textarea {
     border: 1px solid #cbd5e1;
@@ -245,11 +255,11 @@
       align-items: center;
       gap: 0.5rem;
       i { color: #00695c; }
-      
+
       &.tickets__evidencia-link {
         cursor: pointer;
         transition: background-color 0.2s, color 0.2s;
-        
+
         &:hover {
           background-color: #f0fdf4;
           color: #00695c;
@@ -294,7 +304,7 @@
   .tickets__historial-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .tickets__formulario {
     padding: 1.5rem;
   }
