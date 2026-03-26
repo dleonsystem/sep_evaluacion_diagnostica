@@ -1318,8 +1318,8 @@ t.numero_ticket as "folio",
         // Insertar usuario
         const result = await query(
           `INSERT INTO usuarios 
-            (email, nombre, apepaterno, apematerno, rol, password_hash, activo, fecha_registro, password_debe_cambiar, primer_login)
-          VALUES ($1, $2, $3, $4, $5, $6, true, NOW(), false, false)
+            (email, nombre, apepaterno, apematerno, rol, password_hash, activo, fecha_registro, password_debe_cambiar, primer_login, ultimo_cambio_password)
+          VALUES ($1, $2, $3, $4, $5, $6, true, NOW(), false, false, NOW())
           RETURNING 
             id, 
             email, 
@@ -1597,6 +1597,7 @@ t.numero_ticket as "folio",
            SET password_hash = $1, 
                password_debe_cambiar = false, 
                primer_login = false,
+               ultimo_cambio_password = NOW(),
                updated_at = NOW() 
            WHERE id = $2`,
           [finalHash, userId]
@@ -1891,7 +1892,7 @@ t.numero_ticket as "folio",
 
         // 4. Actualizar usuario: Clave nueva activa (Issue #268 - Ajuste de requerimientos)
         await client.query(
-          'UPDATE usuarios SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+          'UPDATE usuarios SET password_hash = $1, ultimo_cambio_password = NOW(), updated_at = NOW() WHERE id = $2',
           [finalHash, userId]
         );
 
@@ -2170,7 +2171,7 @@ t.numero_ticket as "folio",
           const userExist = await client.query('SELECT id FROM usuarios WHERE email = $1', [inputEmail]);
           if (userExist.rows.length === 0) {
             await client.query(
-              'INSERT INTO usuarios (email, password_hash, rol, nombre, email_excel, password_debe_cambiar, primer_login) VALUES ($1, $2, fn_catalogo_id($3, $4), $5, $6, false, false)',
+              'INSERT INTO usuarios (email, password_hash, rol, nombre, email_excel, password_debe_cambiar, primer_login, ultimo_cambio_password) VALUES ($1, $2, fn_catalogo_id($3, $4), $5, $6, false, false, NOW())',
               [inputEmail, finalHash, 'cat_rol_usuario', 'RESPONSABLE_CCT', 'Director ' + cct, excelEmail]
             );
           } else {
@@ -2701,7 +2702,7 @@ t.numero_ticket as "folio",
         const finalHash = `${salt}:${passwordHash}`;
 
         await client.query(
-          'UPDATE usuarios SET password_hash = $1, updated_at = NOW(), primer_login = true WHERE id = $2',
+          'UPDATE usuarios SET password_hash = $1, ultimo_cambio_password = NOW(), updated_at = NOW(), primer_login = true WHERE id = $2',
           [finalHash, userId]
         );
 

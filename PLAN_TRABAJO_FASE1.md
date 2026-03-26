@@ -51,6 +51,7 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 | **GAP-CAT** | Catálogos oficiales EIA 2025 / CCT SIGED con seed y validación | ✅ Resuelto | RF-13 |
 | **ISSUE-301** | Containerización completa (Docker + Compose + Healthcheck) | ✅ Resuelto | Infra |
 | **ISSUE-254** | CU-16: Persistencia robusta de evaluaciones, NIA y estudiantes | ✅ Resuelto | RF-16 |
+| **ISSUE-267** | CU-15: Gestión de Directores (CRUD completo, Estado, CCT) | 🏗️ En Verificación | S2 |
 
 ---
 
