@@ -340,9 +340,9 @@
                   <td>{{ incidencia.cct }}</td>
                   <td>{{ incidencia.correo }}</td>
                   <td>
-                    <span class="admin-panel__badge" [class.admin-panel__badge--pending]="incidencia.estatus === 'pendiente' || incidencia.estatus === 'PENDIENTE'"
-                      [class.admin-panel__badge--processing]="incidencia.estatus === 'en-proceso' || incidencia.estatus === 'EN_PROCESO'"
-                      [class.admin-panel__badge--resolved]="incidencia.estatus === 'respondido' || incidencia.estatus === 'RESUELTO' || incidencia.estatus === 'CERRADO'">
+                    <span class="admin-panel__badge" [class.admin-panel__badge--pending]="incidencia.estatus === 'pendiente'"
+                      [class.admin-panel__badge--processing]="incidencia.estatus === 'en-proceso'"
+                      [class.admin-panel__badge--resolved]="incidencia.estatus === 'respondido'">
                       {{ incidencia.estatus | titlecase }}
                     </span>
                   </td>
