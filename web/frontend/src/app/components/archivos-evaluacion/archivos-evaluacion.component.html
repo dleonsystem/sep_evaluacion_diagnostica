@@ -53,11 +53,12 @@
           <th>Tamaño</th>
           <th>Fecha de carga</th>
           <th>Estado</th>
+          <th style="text-align: center;">Acciones</th>
         </tr>
       </thead>
       <tbody>
         <ng-container *ngFor="let registro of registrosFiltrados">
-          <tr (click)="alternarDetalle(registro.id)" style="cursor: pointer;">
+          <tr (click)="alternarDetalle(registro.id)" style="cursor: pointer;" [class.archivos__row--expandida]="idRegistroExpandido === registro.id">
             <td data-label="Folio"><strong>#{{ registro.consecutivo || '?' }}</strong></td>
             <td data-label="Archivo">{{ registro.archivoOriginal }}</td>
             <td data-label="Nivel">{{ obtenerEtiquetaNivel(registro.nivelEducativo) }}</td>
@@ -70,9 +71,36 @@
                 {{ obtenerEstadoDescripcion(registro.estadoValidacion) }}
               </span>
             </td>
+            <td data-label="Acciones" style="text-align: center;">
+              <div class="archivos__acciones-celda">
+                <!-- Botón Comprobante PDF (Estado VALIDADO o superior) -->
+                <button 
+                  *ngIf="registro.estadoValidacion >= 2"
+                  (click)="descargarComprobante(registro); $event.stopPropagation()" 
+                  class="archivos__icon-btn" 
+                  title="Descargar Comprobante de Recepción (PDF)"
+                >
+                  <i class="bi bi-file-earmark-pdf"></i>
+                </button>
+
+                <!-- Botón Resultados (Si existen resultados) -->
+                <button 
+                  *ngIf="registro.resultados && registro.resultados.length > 0"
+                  (click)="descargarArchivo(registro.id, registro.resultados[0].nombre); $event.stopPropagation()" 
+                  class="archivos__icon-btn archivos__icon-btn--exito" 
+                  title="Descargar Resultados Procesados"
+                >
+                  <i class="bi bi-file-earmark-arrow-down"></i>
+                </button>
+                
+                <span *ngIf="registro.estadoValidacion < 2" class="archivos__texto-espera">
+                  Pendiente
+                </span>
+              </div>
+            </td>
           </tr>
           <tr *ngIf="idRegistroExpandido === registro.id" class="archivos__resultados-row">
-            <td colspan="8">
+            <td colspan="9">
               <div class="archivos__seccion">
                 <h4>Comprobante de recepcion</h4>
                 <p class="archivos__mensaje--info archivos__mensaje-inline">

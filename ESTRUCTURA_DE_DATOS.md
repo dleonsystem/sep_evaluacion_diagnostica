@@ -829,8 +829,8 @@ Solicitudes de procesamiento de archivos EIA2 (plataforma externa).
 | nivel_educativo | SMALLINT | FK a `cat_nivel_educativo(id)` |
 | hash_archivo | VARCHAR(64) | Hash SHA256 del archivo |
 | usuario_id | UUID | FK a `usuarios(id)` |
-| resultados | JSONB | Resultados procesados DEFAULT '[]' |
-| detalles_error | JSONB | Detalles adicionales de errores |
+| resultados | JSONB | Resultados procesados. Estructura: `[{nombre: string, size: number}]`. Crítico para descargas en portal. |
+| detalles_error | JSONB | Detalles adicionales de errores si `estado_validacion` es INVALIDO. |
 | equipo_asignado | INT | Identificador del equipo de distribución asignado |
 | distributed_at | TIMESTAMP | Fecha/hora de distribución al equipo |
 | created_at | TIMESTAMP | Fecha de creación DEFAULT NOW() |

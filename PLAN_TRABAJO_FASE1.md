@@ -39,6 +39,7 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 
 | ID | Problema | Severidad | RF afectado |
 |---|---|---|---|
+| ISSUE-271 | Historial y descargas | ✅ Resuelto | |
 | **DEF-006** | Auth usa `btoa(email:timestamp)` sin firma — token falsificable | ✅ Resuelto | S1 |
 | **DEF-007** | `generateComprobante` consulta columnas inexistentes en DB | ✅ Resuelto | RF-12, CU-16 |
 | **GAP-CI-1** | CI/CD ejecuta Node 18, proyecto requiere Node 20 | ✅ Resuelto | DevOps |
