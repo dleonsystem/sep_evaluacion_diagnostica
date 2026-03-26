@@ -679,9 +679,9 @@ export class AdminPanelComponent implements OnInit {
     return {
       id: t.id,
       folio: t.numeroTicket,
-      correo: t.correo || dbCasteada.user_email || 'Sin correo',
-      nombreCompleto: dbCasteada.nombreCompleto || 'Usuario Registrado',
-      cct: dbCasteada.cct || 'N/D',
+      correo: t.correo || 'Sin correo',
+      nombreCompleto: t.nombreCompleto || 'Usuario del Sistema',
+      cct: t.cct || 'N/D',
       motivo: t.asunto,
       motivoDetalle: t.asunto,
       descripcion: t.descripcion,
@@ -690,7 +690,7 @@ export class AdminPanelComponent implements OnInit {
       respuestas: (t.respuestas || []).map(r => ({
         mensaje: r.mensaje,
         fecha: r.fecha,
-        autor: 'admin' 
+        autor: r.autor || 'admin' 
       })),
       evidencias: (t.evidencias || []).map((e) => ({
         nombre: e.nombre,
@@ -1156,6 +1156,6 @@ interface TicketSoporte {
   fecha: string;
   prioridad?: string;
   estatus: 'pendiente' | 'en-proceso' | 'respondido';
-  respuestas: Array<{ mensaje: string; fecha: string; autor: 'admin' }>;
+  respuestas: Array<{ mensaje: string; fecha: string; autor: string }>;
   evidencias: Array<{ nombre: string; tamano: number; tipo: string; url: string }>;
 }

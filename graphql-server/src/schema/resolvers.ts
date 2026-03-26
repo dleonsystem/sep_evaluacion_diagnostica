@@ -679,22 +679,23 @@ s.id,
 
       try {
         const result = await query(`
-SELECT
-t.id,
-  t.numero_ticket as "numeroTicket",
-  t.asunto,
-  t.descripcion,
-  (SELECT codigo FROM cat_estado_ticket WHERE id = t.estado) as estado,
-    t.prioridad,
-    t.evidencias,
-    u.email as "correo",
-    t.created_at as "fechaCreacion",
-    t.updated_at as "fechaActualizacion"
+          SELECT
+            t.id,
+            t.numero_ticket as "numeroTicket",
+            t.asunto,
+            t.descripcion,
+            (SELECT codigo FROM cat_estado_ticket WHERE id = t.estado) as estado,
+            t.prioridad,
+            t.evidencias,
+            u.email as "correo",
+            u.nombre || ' ' || u.apepaterno as "nombreCompleto",
+            t.created_at as "fechaCreacion",
+            t.updated_at as "fechaActualizacion"
           FROM tickets_soporte t
           LEFT JOIN usuarios u ON t.usuario_id = u.id
           WHERE t.deleted_at IS NULL AND t.usuario_id IS NOT NULL
           ORDER BY t.created_at DESC
-  `);
+        `);
         return result.rows.map((row) => ({
           ...row,
           fechaCreacion:
@@ -1994,7 +1995,7 @@ t.numero_ticket as "folio",
         // Subir archivo a SFTP para auditoría (CU-04)
         try {
           // @ts-ignore
-          const { sftpService } = await import('../services/sftp.service');
+          const sftpService = new SftpService();
           await sftpService.connect();
           await sftpService.ensureDir(remoteDir);
           await sftpService.uploadBuffer(buffer, remotePath);
@@ -2559,14 +2560,12 @@ t.numero_ticket as "folio",
       { ticketId, respuesta, cerrar }: { ticketId: string; respuesta: string; cerrar: boolean },
       context: GraphQLContext
     ) => {
-      /*
       if (
         !context.user ||
         !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)
       ) {
         throw new Error('No autorizado: Solo administradores pueden responder tickets');
       }
-      */
 
       const client = await getClient();
       try {
@@ -2578,7 +2577,7 @@ t.numero_ticket as "folio",
           INSERT INTO comentarios_ticket (ticket_id, usuario_id, comentario, es_interno)
           VALUES ($1, $2, $3, false)
         `,
-          [ticketId, context.user?.id || '00000000-0000-0000-0000-000000000000', respuesta]
+          [ticketId, context.user!.id, respuesta]
         );
 
         // 2. Actualizar estado del ticket
@@ -2748,7 +2747,7 @@ t.numero_ticket as "folio",
         if (evidencias && evidencias.length > 0) {
           const remoteDir = '/upload/tickets/public';
           // @ts-ignore
-          const { sftpService } = await import('../services/sftp.service');
+          const sftpService = new SftpService();
           await sftpService.ensureDir(remoteDir);
 
           for (const evidencia of evidencias) {
@@ -2767,26 +2766,23 @@ t.numero_ticket as "folio",
           }
         }
 
-        // 4. Insertar en TICKETS_SOPORTE (Ajustado a campos reales)
+        // 4. Insertar en TICKETS_SOPORTE
         const insertRes = await client.query(
           `INSERT INTO tickets_soporte (
             numero_ticket, asunto, descripcion, estado, prioridad, 
-            user_fullname, user_cct, user_email, created_at, updated_at, usuario_id
-          ) VALUES ($1, $2, $3, fn_catalogo_id('cat_estado_ticket', 'ABIERTO'), 'ALTA', $4, $5, $6, NOW(), NOW(), NULL) RETURNING id`,
-          [numeroTicket, 'Incidencia en Carga Masiva', descripcion, nombreCompleto, cct, email]
+            user_fullname, user_cct, user_email, evidencias, created_at, updated_at, usuario_id
+          ) VALUES ($1, $2, $3, fn_catalogo_id('cat_estado_ticket', 'ABIERTO'), 'ALTA', $4, $5, $6, $7, NOW(), NOW(), NULL) RETURNING id`,
+          [
+            numeroTicket, 
+            'Incidencia en Carga Masiva', 
+            descripcion, 
+            nombreCompleto, 
+            cct, 
+            email,
+            JSON.stringify(evidenciasProcesadas)
+          ]
         );
-
         const ticketId = insertRes.rows[0].id;
-
-        // 5. Guardar evidencias en la BD
-        for (const ev of evidenciasProcesadas) {
-          await client.query(
-            `INSERT INTO archivos_frv (ticket_id, nombre_archivo, ruta_archivo, tipo_archivo, size_archivo, fecha_carga)
-             VALUES ($1, $2, $3, $4, $5, NOW())`,
-            [ticketId, ev.nombre, ev.url, 'evidencia', ev.size]
-          );
-        }
-
         await client.query('COMMIT');
 
         return {
