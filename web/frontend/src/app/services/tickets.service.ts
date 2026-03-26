@@ -34,6 +34,7 @@ export class TicketsService {
           estado
           prioridad
           correo
+          nombreCompleto
           fechaCreacion
           fechaActualizacion
           evidencias {
@@ -213,8 +214,8 @@ export class TicketsService {
 
   createPublicIncident(input: { nombreCompleto: string; cct: string; email: string; descripcion: string }): Observable<Ticket> {
     const mutation = `
-      mutation CreatePublicIncident($nombreCompleto: String!, $cct: String!, $email: String!, $descripcion: String!) {
-        createPublicIncident(nombreCompleto: $nombreCompleto, cct: $cct, email: $email, descripcion: $descripcion) {
+      mutation CreatePublicIncident($input: CreatePublicIncidentInput!) {
+        createPublicIncident(input: $input) {
           id
           numeroTicket
           asunto
@@ -225,7 +226,7 @@ export class TicketsService {
         }
       }
     `;
-    return this.graphqlService.execute<{ createPublicIncident: Ticket }>(mutation, input).pipe(
+    return this.graphqlService.execute<{ createPublicIncident: Ticket }>(mutation, { input }).pipe(
       map(res => {
         if (res.errors) throw new Error(res.errors[0].message);
         if (!res.data?.createPublicIncident) throw new Error('No se pudo crear la incidencia');

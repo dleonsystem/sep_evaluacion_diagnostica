@@ -325,6 +325,7 @@
                 <th scope="col">Nombre Usuario</th>
                 <th scope="col">CCT</th>
                 <th scope="col">Correo</th>
+                <th scope="col">Estatus</th>
                 <th scope="col">Prioridad</th>
                 <th scope="col">Fecha</th>
                 <th scope="col">Acciones</th>
@@ -338,6 +339,13 @@
                   <td>{{ incidencia.nombreCompleto }}</td>
                   <td>{{ incidencia.cct }}</td>
                   <td>{{ incidencia.correo }}</td>
+                  <td>
+                    <span class="admin-panel__badge" [class.admin-panel__badge--pending]="incidencia.estatus === 'pendiente'"
+                      [class.admin-panel__badge--processing]="incidencia.estatus === 'en-proceso'"
+                      [class.admin-panel__badge--resolved]="incidencia.estatus === 'respondido'">
+                      {{ incidencia.estatus | titlecase }}
+                    </span>
+                  </td>
                   <td>
                     <span class="admin-panel__badge" 
                       [class.admin-panel__badge--pending]="incidencia.prioridad === 'ALTA' || incidencia.prioridad === 'CRITICA'">
@@ -353,10 +361,26 @@
                   </td>
                 </tr>
                 <tr *ngIf="incidencia.id === incidenciaSeleccionadaId" class="admin-panel__table-expanded-row">
-                  <td colspan="7">
+                  <td colspan="8">
                     <div class="admin-panel__expanded-content">
-                      <p><strong>Descripción de la situación:</strong></p>
-                      <p>{{ incidencia.descripcion }}</p>
+                      <div class="admin-panel__detail-grid">
+                        <div class="admin-panel__detail-info">
+                          <p><strong>Descripción de la situación:</strong></p>
+                          <p>{{ incidencia.descripcion }}</p>
+                        </div>
+                        <div class="admin-panel__detail-chat">
+                          <div class="admin-panel__ticket-respuestas" *ngIf="incidencia.respuestas?.length">
+                            <strong>Historial de respuestas:</strong>
+                            <div class="admin-panel__ticket-respuesta" *ngFor="let respuesta of incidencia.respuestas">
+                              <p>{{ respuesta.mensaje }}</p>
+                              <small>{{ formatearFecha(respuesta.fecha) }}</small>
+                            </div>
+                          </div>
+                          <div *ngIf="!incidencia.respuestas?.length" class="admin-panel__helper">
+                            No hay respuestas previas a esta incidencia.
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </td>
                 </tr>
