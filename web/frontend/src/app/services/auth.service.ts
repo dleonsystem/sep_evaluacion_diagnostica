@@ -13,6 +13,7 @@ export class AuthService {
   private readonly sesionKey = 'eia-user-session-active';
   private readonly sesionCorreoKey = 'eia-user-session-email';
   private readonly sesionRolKey = 'eia-user-session-role';
+  private readonly sesionCctKey = 'eia-user-session-cct';
   private readonly mustChangePasswordKey = 'eia-user-must-change-password';
   private readonly primerLoginKey = 'eia-user-first-login';
 
@@ -28,6 +29,13 @@ export class AuthService {
     localStorage.setItem('eia-token', token);
     localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
     localStorage.setItem(this.sesionRolKey, user.rol);
+    
+    // Extraer CCT de la estructura de GraphQL si está presente
+    const cct = user.cct || (user.centrosTrabajo && user.centrosTrabajo.length > 0 ? user.centrosTrabajo[0].claveCCT : null);
+    
+    if (cct) {
+      localStorage.setItem(this.sesionCctKey, cct);
+    }
   }
 
   cerrarSesion(): void {
@@ -35,6 +43,7 @@ export class AuthService {
     localStorage.removeItem('eia-token');
     localStorage.removeItem(this.sesionCorreoKey);
     localStorage.removeItem(this.sesionRolKey);
+    localStorage.removeItem(this.sesionCctKey);
     this.autenticadoSubject.next(false);
   }
 
@@ -57,6 +66,10 @@ export class AuthService {
 
   obtenerRolSesion(): string | null {
     return localStorage.getItem(this.sesionRolKey);
+  }
+  
+  obtenerCctSesion(): string | null {
+    return localStorage.getItem(this.sesionCctKey);
   }
 
   public registrarCredenciales(cct: string, correo: string, contrasena: string): CredencialesGuardadas {
@@ -94,9 +107,24 @@ export class AuthService {
   }
 
   public requiereLoginParaNuevaCarga(correo?: string): boolean {
-    const correoSesion = this.obtenerCorreoSesion();
-    if (!correo) return !this.estaAutenticado();
-    return !this.estaAutenticado() || (!!correoSesion && correoSesion !== this.normalizarCorreo(correo));
+    const autenticado = this.estaAutenticado();
+    const correoInput = correo ? this.normalizarCorreo(correo) : null;
+
+    if (autenticado) {
+      const correoSesion = this.obtenerCorreoSesion();
+      // Si está autenticado, solo bloqueamos si intenta cargar para un correo DISTINTO al de su sesión
+      return !!correoInput && !!correoSesion && correoSesion !== correoInput;
+    }
+
+    // Si NO está autenticado, el componente CargaMasivaComponent maneja la verificación
+    // asíncrona con el servidor para ver si el correo ya existe.
+    // Aquí solo bloqueamos si tenemos evidencia LOCAL (en el mismo navegador) de que ya tiene cuenta.
+    const credenciales = this.obtenerCredenciales();
+    if (credenciales && correoInput && credenciales.correo === correoInput) {
+      return true;
+    }
+
+    return false;
   }
 
   public generarContrasenaTemporal(): string {

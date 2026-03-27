@@ -165,7 +165,11 @@
     </form>
 
     <div class="carga__drop" [class.carga__drop--disabled]="correoControl.invalid"
-         [attr.aria-disabled]="correoControl.invalid">
+         [class.carga__drop--dragging]="isDragging"
+         [attr.aria-disabled]="correoControl.invalid"
+         (dragover)="onDragOver($event)"
+         (dragleave)="onDragLeave($event)"
+         (drop)="onDrop($event)">
       <div class="carga__instrucciones">
         <p class="carga__etiqueta">Arrastre y suelte aquí su o sus archivos o selecciónelo(s) desde su equipo</p>
         <p class="carga__formatos">Sólo se aceptan archivos <b>.XLSX</b>. Máximo {{ pesoMaximoMb }} MB.</p>
@@ -360,3 +364,90 @@
 
 
 </section>
+
+<!-- MODAL DE INCIDENCIAS PARA CARGAS PÚBLICAS -->
+<div class="carga__modal-overlay" *ngIf="mostrarModalIncidencia">
+  <div class="carga__modal">
+    <header class="carga__modal-header">
+      <div class="carga__modal-icono"><i class="bi bi-megaphone"></i></div>
+      <h3>Reportar incidencia de carga</h3>
+      <button class="carga__modal-close" (click)="cerrarModalIncidencia()">&times;</button>
+    </header>
+
+    <div class="carga__modal-body">
+      <p class="carga__modal-aviso">
+        Detectamos varios intentos fallidos de validación. <strong>Si su archivo es correcto</strong> pero el sistema indica errores, por favor mande su información a través de este formulario.
+      </p>
+
+      <form [formGroup]="incidenciaForm" (ngSubmit)="enviarIncidenciaPublica()" class="carga__modal-form">
+        <div class="carga__campo">
+          <span class="carga__campo-label">Nombre completo</span>
+          <input type="text" formControlName="nombreCompleto" placeholder="Ej. Juan Pérez">
+          <small class="carga__error-hint" *ngIf="incidenciaForm.get('nombreCompleto')?.touched && incidenciaForm.get('nombreCompleto')?.invalid">
+            El nombre es obligatorio.
+          </small>
+        </div>
+
+        <div class="carga__modal-row">
+          <div class="carga__campo">
+            <span class="carga__campo-label">CCT (10 caracteres)</span>
+            <input type="text" formControlName="cct" placeholder="09DPR0001A" maxlength="10">
+            <small class="carga__error-hint" *ngIf="incidenciaForm.get('cct')?.touched && incidenciaForm.get('cct')?.invalid">
+              CCT inválido (10 caracteres).
+            </small>
+          </div>
+          <div class="carga__campo">
+            <span class="carga__campo-label">Correo de contacto</span>
+            <input type="email" formControlName="email" placeholder="correo@ejemplo.com">
+            <small class="carga__error-hint" *ngIf="incidenciaForm.get('email')?.touched && incidenciaForm.get('email')?.invalid">
+              Correo inválido.
+            </small>
+          </div>
+        </div>
+
+        <div class="carga__campo">
+          <span class="carga__campo-label">Descripción del problema</span>
+          <textarea formControlName="descripcion" rows="3" placeholder="Describa brevemente qué sucede..."></textarea>
+          <small class="carga__error-hint" *ngIf="incidenciaForm.get('descripcion')?.touched && incidenciaForm.get('descripcion')?.invalid">
+            Mínimo 5 caracteres.
+          </small>
+        </div>
+
+        <!-- SECCIÓN DE EVIDENCIAS -->
+        <div class="carga__incidencia-evidencias">
+          <span class="carga__campo-label">Archivos de evidencia (Opcional)</span>
+          <p class="carga__campo-ayuda">Capturas de pantalla o documentos que ayuden a entender el error (Máx. 5 archivos).</p>
+          
+          <div class="carga__evidencias-lista" *ngIf="evidenciasIncidencia.length">
+            <div class="carga__evidencia-item" *ngFor="let ev of evidenciasIncidencia; let i = index">
+              <span class="carga__evidencia-nombre" [title]="ev.archivo.name">
+                <i class="bi bi-file-earmark-image"></i> {{ ev.archivo.name }}
+              </span>
+              <button type="button" class="carga__evidencia-quitar" (click)="eliminarEvidenciaIncidencia(i)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+
+          <label class="carga__boton-adjuntar" *ngIf="evidenciasIncidencia.length < 5">
+            <i class="bi bi-paperclip"></i> Agregar archivo
+            <input type="file" (change)="onEvidenciaIncidenciaSeleccionada($event)" [accept]="extensionesEvidencias.join(',')" hidden>
+          </label>
+        </div>
+
+        <div class="carga__modal-footer-info">
+          <i class="bi bi-info-circle"></i>
+          <p>
+            Al enviar, se generará un ticket de soporte tipo <strong>"INCIDENCIA_PUBLICA"</strong>. 
+            Podrá dar seguimiento a través del correo de dudas: <strong>ejercicios&#64;nube.sep.gob.mx</strong>
+          </p>
+        </div>
+
+        <div class="carga__modal-acciones">
+          <button type="button" class="carga__boton-secundario" (click)="cerrarModalIncidencia()">Cancelar</button>
+          <button type="submit" class="carga__boton-primario">Mandar información</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

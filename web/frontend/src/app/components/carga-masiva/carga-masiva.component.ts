@@ -336,14 +336,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
   private registrarIntentoFallido(): void {
     console.log('--- Registro de Intento Fallido ---');
-    console.log('Sesión activa:', this.sesionActiva);
-    if (this.sesionActiva) {
-      console.log('Intento ignorado por sesión activa.');
-      return; 
-    }
-    
     this.intentosFallidos++;
-    console.log('Total de intentos fallidos:', this.intentosFallidos);
+    console.log('Contador de intentos fallidos:', this.intentosFallidos);
     
     if (this.intentosFallidos >= 3) {
       console.log('Umbral alcanzado (>=3). Abriendo modal de incidencia...');

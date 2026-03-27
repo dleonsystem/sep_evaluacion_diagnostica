@@ -38,7 +38,7 @@ export class ArchivosEvaluacionComponent implements OnInit {
 
     const credenciales = this.authService.obtenerCredenciales();
     this.correoActivo = credenciales?.correo ?? this.authService.obtenerCorreoSesion() ?? null;
-    this.cctActivo = credenciales?.cct ?? null;
+    this.cctActivo = credenciales?.cct ?? this.authService.obtenerCctSesion() ?? null;
     void this.cargarRegistros();
   }
 

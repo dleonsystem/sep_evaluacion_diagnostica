@@ -201,6 +201,11 @@ export class TicketsService {
             autor
             esInterno
           }
+          evidencias {
+            nombre
+            url
+            size
+          }
         }
       }
     `;

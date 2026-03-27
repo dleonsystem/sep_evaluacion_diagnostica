@@ -367,6 +367,14 @@
                         <div class="admin-panel__detail-info">
                           <p><strong>Descripción de la situación:</strong></p>
                           <p>{{ incidencia.descripcion }}</p>
+                          <div class="admin-panel__ticket-evidencias" *ngIf="incidencia.evidencias && incidencia.evidencias.length">
+                            <strong>Archivos adjuntos (Evidencias):</strong>
+                            <ul class="admin-panel__evidencia-list">
+                              <li *ngFor="let evidencia of incidencia.evidencias" (click)="descargarEvidencia(evidencia)" style="cursor: pointer; text-decoration: underline; color: #00695c;">
+                                <i class="bi bi-file-earmark-arrow-down"></i> {{ evidencia.nombre }}
+                              </li>
+                            </ul>
+                          </div>
                         </div>
                         <div class="admin-panel__detail-chat">
                           <div class="admin-panel__ticket-respuestas" *ngIf="incidencia.respuestas?.length">
