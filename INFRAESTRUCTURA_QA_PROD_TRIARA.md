@@ -15,28 +15,35 @@ Cada VM ejecuta los siguientes contenedores:
 
 ---
 
-## 2) Dimensionamiento técnico propuesto
+## 2) Dimensionamiento técnico ajustado (totales solicitados)
 
-| VM | Ambiente | vCPU | RAM | Disco SO | Disco datos/logs | CPU sugerido | SO |
-|---|---|---:|---:|---:|---:|---|---|
-| vm-qa-01 | QA | 4 | 12 GB | 100 GB SSD | 250 GB SSD | Intel Xeon Silver/Gold o AMD EPYC equivalente | Ubuntu Server 22.04 LTS |
-| vm-prod-01 | Producción | 12 | 48 GB | 150 GB SSD | 1.2 TB SSD NVMe | Intel Xeon Gold / AMD EPYC (2.6 GHz+) | Ubuntu Server 22.04 LTS |
+**Totales globales requeridos:**
+- **CPU:** 20 vCPU
+- **RAM:** 40 GB
+- **Disco (DD):** 2.2 TB
+
+| VM | Ambiente | vCPU | RAM | Disco SO | Disco datos/logs | Disco total VM |
+|---|---|---:|---:|---:|---:|---:|
+| vm-qa-01 | QA | 6 | 8 GB | 100 GB SSD | 300 GB SSD | 400 GB |
+| vm-prod-01 | Producción | 14 | 32 GB | 200 GB SSD | 1.6 TB SSD/NVMe | 1.8 TB |
+
+**Suma total propuesta:** 20 vCPU, 40 GB RAM, 2.2 TB DD.
 
 ---
 
 ## 3) Asignación de recursos por contenedor (referencial)
 
-### vm-qa-01
+### vm-qa-01 (6 vCPU / 8 GB)
 - `lb-qa`: 0.5 vCPU / 512 MB
-- `app-qa`: 1.5 vCPU / 3 GB
-- `db-qa`: 1.5 vCPU / 6 GB
-- `files-qa`: 0.5 vCPU / 2 GB
+- `app-qa`: 2 vCPU / 2.5 GB
+- `db-qa`: 2.5 vCPU / 3.5 GB
+- `files-qa`: 1 vCPU / 1.5 GB
 
-### vm-prod-01
+### vm-prod-01 (14 vCPU / 32 GB)
 - `lb-prod`: 1 vCPU / 2 GB
-- `app-prod`: 4 vCPU / 14 GB
-- `db-prod`: 6 vCPU / 26 GB
-- `files-prod`: 1 vCPU / 6 GB
+- `app-prod`: 5 vCPU / 10 GB
+- `db-prod`: 6 vCPU / 16 GB
+- `files-prod`: 2 vCPU / 4 GB
 
 Recomendación de operación Docker:
 - Definir límites `cpus`, `memory` y `pids` por contenedor.
@@ -47,20 +54,22 @@ Recomendación de operación Docker:
 
 ## 4) Almacenamiento y persistencia
 
-### vm-qa-01
-- `/data/db-qa` 120 GB
-- `/data/files-qa` 100 GB
+### vm-qa-01 (400 GB)
+- `/data/db-qa` 180 GB
+- `/data/files-qa` 90 GB
 - `/data/logs-qa` 30 GB
+- SO: 100 GB
 
-### vm-prod-01
-- `/data/db-prod` 700 GB
-- `/data/files-prod` 400 GB
+### vm-prod-01 (1.8 TB)
+- `/data/db-prod` 1.0 TB
+- `/data/files-prod` 500 GB
 - `/data/logs-prod` 100 GB
+- SO: 200 GB
 
 Recomendaciones:
 - Separar almacenamiento de BD, archivos y logs.
-- Usar discos SSD/NVMe con IOPS garantizadas para contenedor `db` en Producción.
-- Monitorear crecimiento mensual de volumen para reaprovisionamiento preventivo.
+- Asignar el volumen de BD en producción sobre SSD/NVMe con IOPS garantizadas.
+- Monitorear crecimiento mensual para ampliar capacidad antes de saturación.
 
 ---
 
