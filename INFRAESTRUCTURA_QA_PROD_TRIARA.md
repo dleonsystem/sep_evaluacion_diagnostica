@@ -1,163 +1,135 @@
-# Propuesta de infraestructura de máquinas virtuales en TRIARA (SEP)
+# Propuesta ajustada de infraestructura de máquinas virtuales en TRIARA (SEP)
 
 ## 1) Objetivo
-Definir una arquitectura base para **ambiente QA** y **ambiente Producción** para un equipo/proyecto dockerizado, considerando prácticas de PSP, DevOps, DBA, administración de servidores y cloud.
+Ajustar la arquitectura de ambientes **QA** y **Producción** para un proyecto dockerizado, respetando la capacidad real disponible:
+
+- **CPU total disponible:** 20 vCPU
+- **RAM total disponible:** 38 GB
+- **Disco total disponible:** 2.2 TB
 
 ---
 
-## 2) Supuestos de diseño
-- Aplicación dockerizada con servicios API/web y procesos batch.
-- Base de datos relacional (recomendado PostgreSQL o SQL Server según estándar SEP vigente).
-- Carga esperada inicial media (hasta ~300 usuarios concurrentes en horarios pico) con crecimiento anual.
-- Disponibilidad objetivo:
-  - QA: 99.5%
-  - Producción: 99.9%
-- Sistema operativo recomendado: **Ubuntu Server 22.04 LTS** o **RHEL 9** (según lineamiento institucional).
+## 2) Criterio de ajuste
+Para no rebasar capacidad, se mantiene el esquema de **2 VMs por ambiente** (APP + DB), priorizando Producción sobre QA:
+
+- Producción recibe mayor proporción de recursos (continuidad operativa).
+- QA se mantiene funcional para pruebas, validación y regresión.
+- Se conserva separación APP/DB por seguridad y operación DBA.
 
 ---
 
-## 3) Topología propuesta (par de VMs por ambiente)
-Se propone **2 VMs por ambiente** (total 4 VMs):
-
-- **VM-APP**: ejecución de contenedores Docker (API, frontend, workers, scheduler).
-- **VM-DB**: motor de base de datos, respaldos y monitoreo de rendimiento de datos.
-
-> Esta separación APP/DB facilita seguridad, escalabilidad y operación DBA.
+## 3) Topología propuesta (4 VMs totales)
+- **qa-app-01**: host Docker de QA (frontend, API, pruebas funcionales).
+- **qa-db-01**: base de datos QA.
+- **prod-app-01**: host Docker de Producción.
+- **prod-db-01**: base de datos Producción.
 
 ---
 
-## 4) Dimensionamiento de infraestructura
+## 4) Dimensionamiento ajustado a la capacidad real
 
-### 4.1 Ambiente QA
+### 4.1 Distribución de recursos por VM
 
-| VM | Rol | vCPU | RAM | Disco SO | Disco Datos | CPU sugerido (host TRIARA) | SO |
-|---|---|---:|---:|---:|---:|---|---|
-| qa-app-01 | Docker host (app + pruebas funcionales) | 4 | 16 GB | 120 GB SSD | 200 GB SSD | Intel Xeon Gold / AMD EPYC equivalente | Ubuntu 22.04 LTS |
-| qa-db-01 | Base de datos QA | 4 | 16 GB | 120 GB SSD | 500 GB SSD (IOPS medias-altas) | Intel Xeon Gold / AMD EPYC equivalente | Ubuntu 22.04 LTS |
+| VM | Rol | vCPU | RAM | Disco total |
+|---|---|---:|---:|---:|
+| qa-app-01 | Docker host QA | 3 | 6 GB | 120 GB SSD |
+| qa-db-01 | Base de datos QA | 3 | 8 GB | 380 GB SSD |
+| prod-app-01 | Docker host Producción | 6 | 10 GB | 220 GB SSD |
+| prod-db-01 | Base de datos Producción | 8 | 14 GB | 1.48 TB SSD/NVMe |
+| **TOTAL** |  | **20 vCPU** | **38 GB** | **2.20 TB** |
 
-**Notas QA**
-- Pool Docker con límites por contenedor (`cpu`, `memory`) para pruebas de estrés.
-- Snapshot previo a pruebas de regresión y actualización.
-- Datos enmascarados (anonimizados) para cumplir seguridad de información.
-
-### 4.2 Ambiente Producción
-
-| VM | Rol | vCPU | RAM | Disco SO | Disco Datos | CPU sugerido (host TRIARA) | SO |
-|---|---|---:|---:|---:|---:|---|---|
-| prod-app-01 | Docker host producción | 8 | 32 GB | 150 GB SSD | 300 GB SSD | Intel Xeon Gold / AMD EPYC (2.6 GHz+), virtualización enterprise | Ubuntu 22.04 LTS |
-| prod-db-01 | Base de datos producción | 12 | 64 GB | 150 GB SSD | 1.5 TB SSD NVMe (IOPS altas) | Intel Xeon Gold / AMD EPYC (alto cache) | Ubuntu 22.04 LTS |
-
-**Notas Producción**
-- En producción, la VM de BD prioriza RAM e IOPS para reducir latencia y mejorar consultas.
-- Reservar 20–25% de holgura para picos estacionales de operación SEP.
+### 4.2 Validación de restricción
+- **CPU:** 3 + 3 + 6 + 8 = **20 vCPU** ✅
+- **RAM:** 6 + 8 + 10 + 14 = **38 GB** ✅
+- **Disco:** 120 + 380 + 220 + 1480 = **2200 GB (2.2 TB)** ✅
 
 ---
 
-## 5) Contenedorización y despliegue
+## 5) Recomendaciones operativas con recursos limitados
 
-### VM-APP (QA/PROD)
-- Docker Engine + Docker Compose (o Kubernetes si la madurez operativa lo justifica).
-- Contenedores típicos:
-  - `reverse-proxy` (Nginx/Traefik)
-  - `api-backend`
-  - `frontend-web`
-  - `worker-batch`
-  - `monitor-agent` (node exporter / fluent-bit)
-- Política de imágenes:
-  - Registro privado institucional.
-  - Versionamiento semántico (`vX.Y.Z`) + etiqueta de commit SHA.
+### QA
+- Ejecutar pruebas por ventanas (evitar pruebas de carga pesadas simultáneas).
+- Limitar recursos por contenedor con `cpu` y `memory` en Docker Compose.
+- Usar dataset enmascarado y reducido para mantener desempeño.
 
-### VM-DB (QA/PROD)
-- Motor de BD en VM dedicada (sin compartir con app).
-- Volúmenes separados:
-  - datos
-  - logs/transacciones
-  - respaldos temporales
-- Parámetros DBA base:
-  - Conexiones máximas acotadas por pool.
-  - Mantenimiento programado (vacuum/reindex/estadísticas según motor).
-  - Auditoría y bitácora de sentencias críticas.
+### Producción
+- Asignar prioridad de CPU/RAM a base de datos (`prod-db-01`).
+- Activar compresión de logs y rotación para no agotar disco en `prod-app-01`.
+- Configurar pool de conexiones del backend para no saturar BD.
 
 ---
 
-## 6) Red y seguridad
-- Segmentación por VLAN/subred:
-  - VLAN-QA
-  - VLAN-PROD
-  - VLAN-MGMT (administración)
-- Reglas mínimas de firewall:
-  - Internet → APP: solo 443/TCP (y 80 con redirección a 443).
-  - APP → DB: puerto específico del motor (ej. 5432/1433) restringido por IP.
-  - SSH (22): solo por bastión/VPN y con llaves.
-- Hardening:
-  - CIS baseline.
-  - Deshabilitar login root remoto.
-  - MFA en accesos administrativos.
-  - Gestión de secretos con vault (no en variables planas).
+## 6) Distribución sugerida de disco por VM
+
+### qa-app-01 (120 GB)
+- SO: 40 GB
+- Imágenes/volúmenes Docker: 60 GB
+- Logs: 20 GB
+
+### qa-db-01 (380 GB)
+- SO: 40 GB
+- Datos BD: 260 GB
+- Logs/temporales/respaldos cortos: 80 GB
+
+### prod-app-01 (220 GB)
+- SO: 50 GB
+- Imágenes/volúmenes Docker: 120 GB
+- Logs: 50 GB
+
+### prod-db-01 (1.48 TB)
+- SO: 60 GB
+- Datos productivos: 1.05 TB
+- Logs transaccionales: 220 GB
+- Respaldos locales temporales: 150 GB
 
 ---
 
-## 7) Respaldo, continuidad y recuperación
-- Esquema de respaldos BD:
-  - Full semanal.
-  - Incremental diario.
-  - Logs de transacción cada 15 minutos (producción).
-- Retención sugerida:
-  - QA: 15–30 días.
-  - Producción: 90 días operativos + archivo mensual.
-- Objetivos DR:
-  - QA: RPO 24h / RTO 8h.
-  - Producción: RPO 15 min / RTO 2h.
-- Prueba de restauración: mensual y documentada.
+## 7) Seguridad y red (mínimo requerido)
+- Segmentación en VLAN separadas para QA, PROD y MGMT.
+- Firewall:
+  - Internet → APP: 443/TCP (80 solo redirect).
+  - APP → DB: solo puerto del motor (5432 o 1433 según plataforma).
+  - SSH solo por VPN/bastión con llave.
+- Hardening básico:
+  - Deshabilitar root remoto.
+  - Actualizaciones mensuales de seguridad.
+  - Gestión de secretos fuera del código.
 
 ---
 
-## 8) Observabilidad y operación DevOps
-- Monitoreo:
-  - Infraestructura: CPU, RAM, disco, IOPS, latencia, red.
-  - Aplicación: p95/p99, tasa de error, throughput.
-  - BD: locks, tiempo de consulta, deadlocks, crecimiento de tablas.
-- Herramientas sugeridas:
-  - Prometheus + Grafana + Alertmanager.
-  - Centralización de logs en ELK/OpenSearch.
-- SLO iniciales:
-  - API p95 < 800 ms en producción.
-  - Error rate < 1%.
-  - Disponibilidad mensual > 99.9% (prod).
+## 8) Respaldo y continuidad (ajustado)
+- **QA:** full semanal + incremental diario (retención 15 días).
+- **Producción:** full semanal + incremental diario + log transaccional cada 30 min.
+- Objetivo realista con capacidad actual:
+  - **RPO PROD:** 30 min
+  - **RTO PROD:** 4 horas
 
 ---
 
-## 9) Pipeline CI/CD (QA → PROD)
-1. Commit y pruebas unitarias.
-2. Build de imagen Docker y escaneo de vulnerabilidades.
-3. Deploy automático a QA.
-4. Pruebas funcionales/regresión + aprobación.
-5. Ventana controlada de despliegue a producción (blue/green o rolling).
-6. Validación post-deploy + rollback automático si falla health-check.
+## 9) CI/CD y operación DevOps
+1. Build de imagen + escaneo de vulnerabilidades.
+2. Despliegue automático a QA.
+3. Pruebas funcionales y aprobación.
+4. Despliegue controlado a Producción (rolling).
+5. Monitoreo post-deploy y rollback si falla health-check.
+
+Herramientas sugeridas de bajo costo operativo:
+- Prometheus + Grafana (métricas).
+- Loki o ELK liviano (logs).
 
 ---
 
-## 10) Capacidad y crecimiento recomendado
-- Escalamiento vertical inicial (más vCPU/RAM).
-- Umbrales para re-dimensionar:
-  - CPU > 70% sostenido por 15 min.
-  - RAM > 80% sostenido.
-  - IOPS > 75% en disco de BD.
-- Evolución objetivo (fase 2):
-  - Agregar `prod-app-02` para alta disponibilidad.
-  - Replicación de BD (read replica o standby).
-  - Balanceador institucional en capa 7.
+## 10) Riesgos y plan de crecimiento
+Con esta capacidad, el ambiente es viable para operación inicial; sin embargo, existen límites:
+- Riesgo de saturación en picos altos de concurrencia.
+- Margen de crecimiento acotado en RAM de producción.
+
+### Escalamiento recomendado (siguiente fase)
+- +4 vCPU y +8 GB RAM en `prod-app-01`.
+- Replicación de lectura para `prod-db-01` cuando el uso promedio de CPU en BD supere 70% sostenido.
+- Balanceador L7 institucional si se agrega `prod-app-02`.
 
 ---
 
-## 11) Resumen ejecutivo de recursos (mínimo viable recomendado)
-
-### QA (2 VMs)
-- **qa-app-01:** 4 vCPU, 16 GB RAM, 320 GB SSD total.
-- **qa-db-01:** 4 vCPU, 16 GB RAM, 620 GB SSD total.
-
-### Producción (2 VMs)
-- **prod-app-01:** 8 vCPU, 32 GB RAM, 450 GB SSD total.
-- **prod-db-01:** 12 vCPU, 64 GB RAM, 1.65 TB SSD NVMe total.
-
-Esta propuesta ofrece una base robusta para iniciar operación formal, con separación de responsabilidades APP/DB, controles de seguridad, gobernanza DevOps y ruta clara de escalamiento.
+## 11) Resumen ejecutivo final
+La propuesta queda **alineada al disponible real** de **20 vCPU, 38 GB RAM y 2.2 TB disco**, conservando separación de funciones APP/DB en QA y Producción, y priorizando estabilidad de Producción con un diseño operable en TRIARA.
