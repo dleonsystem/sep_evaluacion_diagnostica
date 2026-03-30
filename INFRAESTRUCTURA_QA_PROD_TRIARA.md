@@ -1,109 +1,125 @@
-# Propuesta ajustada de infraestructura de VMs en TRIARA (SEP)
+# Propuesta técnica de infraestructura (TRIARA / SEP)
 
-## 1) Objetivo
-Ajustar la propuesta para operar con **solo 2 máquinas virtuales totales**:
-- **1 VM para QA** (dimensionada de forma austera).
-- **1 VM para Producción** (prioridad alta de capacidad y rendimiento).
+## 1) Arquitectura objetivo (2 VMs)
 
-Cada VM contendrá contenedores Docker para:
-- Base de datos (BD)
-- Aplicación (API/Web)
-- File server
-- Balanceador/reverse proxy
+La arquitectura considera dos máquinas virtuales y contenedorización Docker en cada una:
 
----
+- **vm-qa-01**: ambiente de QA.
+- **vm-prod-01**: ambiente de Producción.
 
-## 2) Criterio de priorización (QA sacrificado / Producción priorizada)
-- QA se mantiene con recursos mínimos para pruebas funcionales, humo y regresión.
-- Producción concentra la mayor capacidad de cómputo, memoria e IOPS.
-- Diferencia objetivo de capacidad: **Producción ~3x en CPU/RAM** respecto a QA.
+Cada VM ejecuta los siguientes contenedores:
+- Balanceador / reverse proxy (`lb`)
+- Aplicación (`app`)
+- Base de datos (`db`)
+- File server (`files`)
 
 ---
 
-## 3) Dimensionamiento final (2 VMs)
+## 2) Dimensionamiento técnico propuesto
 
-| VM | Ambiente | vCPU | RAM | Disco SO | Disco datos/logs | Perfil de CPU sugerido | SO |
+| VM | Ambiente | vCPU | RAM | Disco SO | Disco datos/logs | CPU sugerido | SO |
 |---|---|---:|---:|---:|---:|---|---|
 | vm-qa-01 | QA | 4 | 12 GB | 100 GB SSD | 250 GB SSD | Intel Xeon Silver/Gold o AMD EPYC equivalente | Ubuntu Server 22.04 LTS |
-| vm-prod-01 | Producción | 12 | 48 GB | 150 GB SSD | 1.2 TB SSD NVMe (IOPS altas) | Intel Xeon Gold / AMD EPYC (2.6 GHz+), virtualización enterprise | Ubuntu Server 22.04 LTS |
-
-### Distribución sugerida dentro de cada VM (Docker)
-
-#### vm-qa-01 (austero)
-- `lb-qa` (Nginx/Traefik): 0.5 vCPU / 512 MB
-- `app-qa` (API/Web): 1.5 vCPU / 3 GB
-- `db-qa` (PostgreSQL o SQL Server): 1.5 vCPU / 6 GB
-- `files-qa` (NFS/Samba/MinIO): 0.5 vCPU / 2 GB
-
-#### vm-prod-01 (prioritario)
-- `lb-prod` (Nginx/Traefik): 1 vCPU / 2 GB
-- `app-prod` (API/Web): 4 vCPU / 14 GB
-- `db-prod` (PostgreSQL o SQL Server): 6 vCPU / 26 GB
-- `files-prod` (NFS/Samba/MinIO): 1 vCPU / 6 GB
-
-> Nota: Los límites por contenedor (`cpus`, `memory`, `pids`) deben configurarse en Docker Compose para evitar contención.
+| vm-prod-01 | Producción | 12 | 48 GB | 150 GB SSD | 1.2 TB SSD NVMe | Intel Xeon Gold / AMD EPYC (2.6 GHz+) | Ubuntu Server 22.04 LTS |
 
 ---
 
-## 4) Almacenamiento y volúmenes
+## 3) Asignación de recursos por contenedor (referencial)
 
-### QA
-- Volúmenes:
-  - `/data/db-qa` (120 GB)
-  - `/data/files-qa` (100 GB)
-  - `/data/logs-qa` (30 GB)
-- Política: datos enmascarados y retención corta.
+### vm-qa-01
+- `lb-qa`: 0.5 vCPU / 512 MB
+- `app-qa`: 1.5 vCPU / 3 GB
+- `db-qa`: 1.5 vCPU / 6 GB
+- `files-qa`: 0.5 vCPU / 2 GB
 
-### Producción
-- Volúmenes:
-  - `/data/db-prod` (700 GB)
-  - `/data/files-prod` (400 GB)
-  - `/data/logs-prod` (100 GB)
-- Recomendación: separar logs de BD y archivos de aplicación para mejorar I/O.
+### vm-prod-01
+- `lb-prod`: 1 vCPU / 2 GB
+- `app-prod`: 4 vCPU / 14 GB
+- `db-prod`: 6 vCPU / 26 GB
+- `files-prod`: 1 vCPU / 6 GB
+
+Recomendación de operación Docker:
+- Definir límites `cpus`, `memory` y `pids` por contenedor.
+- Configurar `restart: always` en servicios críticos.
+- Mantener versionado semántico de imágenes y registro privado.
 
 ---
 
-## 5) Red y seguridad mínima obligatoria
-- Segmentación de red en VLAN separadas para QA y Producción.
-- Solo abrir a Internet el balanceador (443/TCP).
-- Puertos de BD y file server restringidos a red privada interna.
-- SSH solo por VPN/bastión, autenticación por llave y MFA.
-- Secretos en vault/gestor seguro (no en texto plano dentro de compose).
+## 4) Almacenamiento y persistencia
+
+### vm-qa-01
+- `/data/db-qa` 120 GB
+- `/data/files-qa` 100 GB
+- `/data/logs-qa` 30 GB
+
+### vm-prod-01
+- `/data/db-prod` 700 GB
+- `/data/files-prod` 400 GB
+- `/data/logs-prod` 100 GB
+
+Recomendaciones:
+- Separar almacenamiento de BD, archivos y logs.
+- Usar discos SSD/NVMe con IOPS garantizadas para contenedor `db` en Producción.
+- Monitorear crecimiento mensual de volumen para reaprovisionamiento preventivo.
+
+---
+
+## 5) Red y seguridad
+
+- VLAN separadas para QA y Producción.
+- Exposición externa únicamente por `443/TCP` hacia `lb`.
+- Puerto de `db` y `files` limitado a red privada.
+- Acceso administrativo por VPN/bastión, SSH con llave y MFA.
+- Secretos fuera de `docker-compose` (vault o gestor seguro).
+- Hardening base del sistema operativo y parchado mensual.
 
 ---
 
 ## 6) Respaldo y continuidad
 
-### QA (operación básica)
-- Backup full semanal + incremental diario.
-- Retención 15 días.
-- RPO 24 h / RTO 8 h.
+### QA
+- Full semanal + incremental diario.
+- Retención: 15 días.
+- Objetivo: RPO 24 h / RTO 8 h.
 
-### Producción (prioridad)
-- Backup full semanal + incremental diario.
+### Producción
+- Full semanal + incremental diario.
 - Logs de transacción cada 15 minutos.
-- Retención 90 días + respaldo mensual de archivo.
-- RPO 15 min / RTO 2 h.
+- Retención: 90 días + archivo mensual.
+- Objetivo: RPO 15 min / RTO 2 h.
+
+Práctica operativa:
+- Ejecutar prueba de restauración mensual documentada.
 
 ---
 
-## 7) Operación DevOps/DBA recomendada
-- Pipeline: build → escaneo de vulnerabilidades → despliegue QA → aprobación → despliegue Producción.
-- Observabilidad mínima:
-  - Infra: CPU, RAM, disco, IOPS, red.
-  - App: latencia p95, error rate, throughput.
-  - DB: locks, consultas lentas, crecimiento de tablas.
-- Umbrales para crecer Producción:
-  - CPU > 70% sostenido 15 min.
-  - RAM > 80%.
-  - IOPS > 75%.
+## 7) Observabilidad y operación
+
+Métricas mínimas:
+- Infraestructura: CPU, RAM, disco, IOPS, latencia de red.
+- Aplicación: latencia p95/p99, tasa de error, throughput.
+- Base de datos: locks, consultas lentas, crecimiento de tablas e índices.
+
+Herramientas sugeridas:
+- Prometheus + Grafana + Alertmanager.
+- Centralización de logs en ELK/OpenSearch.
 
 ---
 
-## 8) Resumen ejecutivo solicitado
-Con base en la restricción presupuestal y priorización operativa, la arquitectura queda en:
+## 8) Recomendaciones de crecimiento
 
-1. **Una VM de QA (`vm-qa-01`)** con recursos reducidos, que contiene contenedores de balanceador, aplicación, base de datos y file server para pruebas.
-2. **Una VM de Producción (`vm-prod-01`)** con recursos reforzados, que contiene contenedores de balanceador, aplicación, base de datos y file server para operación productiva.
+### Escalamiento vertical (primera etapa)
+- Incrementar recursos de `vm-prod-01` cuando se cumpla alguno de estos umbrales:
+  - CPU > 70% sostenido por 15 minutos.
+  - RAM > 80% sostenida.
+  - IOPS > 75% sostenidas.
 
-Este ajuste sacrifica capacidad de QA para privilegiar estabilidad y desempeño de Producción, manteniendo el modelo dockerizado solicitado.
+### Escalamiento horizontal (segunda etapa)
+- Incorporar `vm-prod-02` para separar `app/lb` y habilitar alta disponibilidad.
+- Migrar `db` a nodo dedicado o servicio administrado con réplica/standby.
+- Incorporar balanceador institucional L7 para distribución activa-activa.
+
+### Madurez operativa (tercera etapa)
+- Orquestación con Kubernetes (si aplica a la operación del proyecto).
+- Estrategias blue/green o canary para despliegues.
+- Automatización de capacidad y costos con revisiones trimestrales.
