@@ -2557,7 +2557,7 @@ t.numero_ticket as "folio",
      */
     respondToTicket: async (
       _: any,
-      { ticketId, respuesta, cerrar }: { ticketId: string; respuesta: string; cerrar: boolean },
+      { ticketId, respuesta, cerrar, prioridad }: { ticketId: string; respuesta: string; cerrar: boolean; prioridad?: string },
       context: GraphQLContext
     ) => {
       if (
@@ -2580,17 +2580,25 @@ t.numero_ticket as "folio",
           [ticketId, context.user!.id, respuesta]
         );
 
-        // 2. Actualizar estado del ticket
+        // 2. Actualizar estado y opcionalmente prioridad
         const nuevoEstado = cerrar ? 'RESUELTO' : 'EN_PROCESO';
-        await client.query(
-          `
+        let updateQuery = `
           UPDATE tickets_soporte
           SET estado = (SELECT id FROM cat_estado_ticket WHERE codigo = $1),
               updated_at = NOW()
-          WHERE id = $2
-        `,
-          [nuevoEstado, ticketId]
-        );
+        `;
+        const params: any[] = [nuevoEstado];
+
+        if (prioridad) {
+          updateQuery += `, prioridad = $3`;
+          params.push(ticketId, prioridad);
+        } else {
+          params.push(ticketId);
+        }
+
+        updateQuery += ` WHERE id = $2`;
+        
+        await client.query(updateQuery, params);
 
         await client.query('COMMIT');
 

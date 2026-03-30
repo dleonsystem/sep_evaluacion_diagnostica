@@ -95,14 +95,15 @@ export class TicketsService {
     );
   }
 
-  respondToTicket(ticketId: string, respuesta: string, cerrar: boolean): Observable<Ticket> {
+  respondToTicket(ticketId: string, respuesta: string, cerrar: boolean, prioridad?: string): Observable<Ticket> {
     const mutation = `
-      mutation RespondToTicket($ticketId: ID!, $respuesta: String!, $cerrar: Boolean!) {
-        respondToTicket(ticketId: $ticketId, respuesta: $respuesta, cerrar: $cerrar) {
+      mutation RespondToTicket($ticketId: ID!, $respuesta: String!, $cerrar: Boolean!, $prioridad: String) {
+        respondToTicket(ticketId: $ticketId, respuesta: $respuesta, cerrar: $cerrar, prioridad: $prioridad) {
           id
           numeroTicket
           asunto
           estado
+          prioridad
           fechaActualizacion
           respuestas {
             id
@@ -114,7 +115,7 @@ export class TicketsService {
         }
       }
     `;
-    return this.graphqlService.execute<{ respondToTicket: Ticket }>(mutation, { ticketId, respuesta, cerrar }).pipe(
+    return this.graphqlService.execute<{ respondToTicket: Ticket }>(mutation, { ticketId, respuesta, cerrar, prioridad }).pipe(
       map(res => {
         if (res.errors) throw new Error(res.errors[0].message);
         if (!res.data?.respondToTicket) throw new Error('No se pudo responder al ticket');

@@ -46,6 +46,7 @@ export class AdminPanelComponent implements OnInit {
   ticketSeleccionadoId: string | null = null;
   respuestaAdmin = '';
   estatusTicketSeleccionado: TicketSoporte['estatus'] = 'pendiente';
+  prioridadTicketSeleccionado = 'MEDIA';
   filtroTicketTexto = '';
   filtroTicketEstatus: 'todos' | TicketSoporte['estatus'] = 'todos';
   
@@ -327,6 +328,7 @@ export class AdminPanelComponent implements OnInit {
       this.ticketSeleccionadoId = ticket.id;
     }
     this.estatusTicketSeleccionado = ticket.estatus;
+    this.prioridadTicketSeleccionado = ticket.prioridad || 'MEDIA';
     this.respuestaAdmin = '';
     this.mostrarModalRespuesta = true;
   }
@@ -355,6 +357,7 @@ export class AdminPanelComponent implements OnInit {
           this.ticketSeleccionadoId,
           mensaje,
           cerrar,
+          this.prioridadTicketSeleccionado
         ),
       );
 
