@@ -35,9 +35,22 @@ jobs:
       run: npm run build
 
     - name: Run Tests
+      id: jest_tests
       run: npm test -- --ci --coverage
       env:
         NODE_OPTIONS: "--experimental-vm-modules"
+
+    - name: Add Coverage to Step Summary
+      if: always()
+      run: |
+        echo "### 📊 Cobertura de Backend" >> $GITHUB_STEP_SUMMARY
+        echo "Los resultados de las pruebas unitarias y la cobertura se han generado." >> $GITHUB_STEP_SUMMARY
+        echo "Descarga el artefacto **backend-coverage** para ver el informe HTML completo." >> $GITHUB_STEP_SUMMARY
+        if [ -f "coverage/lcov-report/index.html" ]; then
+          echo "✅ Reporte HTML generado exitosamente." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ No se encontró el reporte HTML de cobertura." >> $GITHUB_STEP_SUMMARY
+        fi
 
     - name: Upload Coverage Results
       uses: actions/upload-artifact@v4
