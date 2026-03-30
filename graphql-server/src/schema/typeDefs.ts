@@ -286,7 +286,7 @@ export const typeDefs = `#graphql
     Responder a un ticket de soporte (Admin)
     @use-case CU-13: Mesa de ayuda
     """
-    respondToTicket(ticketId: ID!, respuesta: String!, cerrar: Boolean!): Ticket!
+    respondToTicket(ticketId: ID!, respuesta: String!, cerrar: Boolean!, prioridad: String): Ticket!
 
     """
     Borrar lógicamente un ticket (Usuario/Admin)

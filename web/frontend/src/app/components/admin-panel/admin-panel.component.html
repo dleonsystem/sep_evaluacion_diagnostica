@@ -220,6 +220,7 @@
               <tr>
                 <th scope="col">Folio</th>
                 <th scope="col">Estatus</th>
+                <th scope="col">Prioridad</th>
                 <th scope="col">Correo</th>
                 <th scope="col">Motivo</th>
                 <th scope="col">Fecha</th>
@@ -236,6 +237,14 @@
                       [class.admin-panel__badge--processing]="ticket.estatus === 'en-proceso'"
                       [class.admin-panel__badge--resolved]="ticket.estatus === 'respondido'">
                       {{ ticket.estatus | titlecase }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="admin-panel__badge" 
+                      [class.admin-panel__badge--resolved]="ticket.prioridad === 'BAJA'"
+                      [class.admin-panel__badge--processing]="ticket.prioridad === 'MEDIA'"
+                      [class.admin-panel__badge--pending]="ticket.prioridad === 'ALTA' || ticket.prioridad === 'URGENTE'">
+                      {{ ticket.prioridad || 'NORMAL' }}
                     </span>
                   </td>
                   <td>{{ ticket.correo }}</td>
@@ -412,6 +421,15 @@
                 <option value="pendiente">Pendiente</option>
                 <option value="en-proceso">En proceso</option>
                 <option value="respondido">Respondido</option>
+              </select>
+            </div>
+            <div class="admin-panel__action-group">
+              <label for="modal-priority">Asignar Prioridad</label>
+              <select id="modal-priority" class="admin-panel__filters-input" [(ngModel)]="prioridadTicketSeleccionado">
+                <option value="BAJA">Baja</option>
+                <option value="MEDIA">Normal / Media</option>
+                <option value="ALTA">Alta</option>
+                <option value="URGENTE">Urgente</option>
               </select>
             </div>
             <div class="admin-panel__action-group">
