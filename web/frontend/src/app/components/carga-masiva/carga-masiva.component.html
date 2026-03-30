@@ -407,7 +407,8 @@
 
         <div class="carga__campo">
           <span class="carga__campo-label">Descripción del problema</span>
-          <textarea formControlName="descripcion" rows="3" placeholder="Describa brevemente qué sucede..."></textarea>
+          <p class="carga__campo-ayuda">Puede agregar más explicaciones o detalles al reporte técnico generado automáticamente.</p>
+          <textarea formControlName="descripcion" rows="5" placeholder="Describa brevemente qué sucede..."></textarea>
           <small class="carga__error-hint" *ngIf="incidenciaForm.get('descripcion')?.touched && incidenciaForm.get('descripcion')?.invalid">
             Mínimo 5 caracteres.
           </small>

@@ -53,6 +53,7 @@ interface ResultadoArchivo {
   pdfError: string | null;
   pdfNombre: string | null;
   pdfTipo: 'exito' | 'error' | null;
+  pdfBlob?: Blob;
 }
 
 interface GrupoErrores {
@@ -95,9 +96,10 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   contrasenaAsociada: string | null = null;
   guardandoTodo = false;
   intentosFallidos = 0;
+  readonly umbralFallosTicket = 3;
   mostrarModalIncidencia = false;
   isDragging = false;
-
+  
   evidenciasIncidencia: any[] = [];
   readonly maxEvidenciasIncidencia = 5;
   readonly extensionesEvidencias = ['.pdf', '.jpg', '.jpeg', '.png'];
@@ -334,20 +336,40 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
   }
 
-  private registrarIntentoFallido(): void {
+  private registrarIntentoFallido(resultadoArchivo?: ResultadoArchivo): void {
     console.log('--- Registro de Intento Fallido ---');
     this.intentosFallidos++;
     console.log('Contador de intentos fallidos:', this.intentosFallidos);
     
-    if (this.intentosFallidos >= 3) {
-      console.log('Umbral alcanzado (>=3). Abriendo modal de incidencia...');
-      this.abrirModalIncidencia();
+    if (this.intentosFallidos >= this.umbralFallosTicket) {
+      console.log(`Umbral alcanzado (>=${this.umbralFallosTicket}). Abriendo modal de incidencia...`);
+      this.abrirModalIncidencia(resultadoArchivo);
     }
   }
 
-  abrirModalIncidencia(): void {
+  abrirModalIncidencia(resultadoArchivo?: ResultadoArchivo): void {
+    let preDescripcion = '';
+    if (resultadoArchivo) {
+      const errString = resultadoArchivo.errores.map((e, index) => `${index + 1}. ${e}`).join('\n');
+      preDescripcion = `Registro técnico (Fallos de Validación):\n${errString}\n\n`;
+      
+      // Auto-adjuntar la evidencia generada en PDF del dictamen técnico,
+      // dado que los archivos .xlsx no están permitidos por el formulario de tickets.
+      if (resultadoArchivo.pdfBlob && resultadoArchivo.pdfNombre) {
+        const pdfFile = new File([resultadoArchivo.pdfBlob], resultadoArchivo.pdfNombre, { type: 'application/pdf' });
+        const yaAdjunto = this.evidenciasIncidencia.find(e => e.archivo.name === pdfFile.name);
+        if (!yaAdjunto) {
+          this.evidenciasIncidencia.push({
+            id: Math.random().toString(36).substring(2),
+            archivo: pdfFile
+          });
+        }
+      }
+    }
+
     this.incidenciaForm.patchValue({
-       email: this.correoControl.value
+       email: this.correoControl.value,
+       descripcion: preDescripcion
     });
     this.mostrarModalIncidencia = true;
   }
@@ -974,6 +996,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         advertencias: resultadoArchivo.advertencias,
         archivo: resultadoArchivo.archivo.name
       });
+      resultadoArchivo.pdfBlob = blob;
       resultadoArchivo.pdfEstado = 'descargando';
       this.mockPdfService.descargarPdf(blob, resultadoArchivo.pdfNombre);
       resultadoArchivo.pdfEstado = 'listo';
@@ -1006,8 +1029,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     resultadoArchivo.mensajeInformativo =
       resultadoArchivo.mensajeInformativo ??
       this.construirMensajeDeteccion(resultadoArchivo.tipoDetectado, resultadoArchivo.errores[0]);
-    this.registrarIntentoFallido();
     await this.generarPdfErrores(resultadoArchivo);
+    this.registrarIntentoFallido(resultadoArchivo);
   }
 
   private actualizarErrores(resultadoArchivo: ResultadoArchivo, errores: string[], estructurados?: ExcelValidationError[]): void {
