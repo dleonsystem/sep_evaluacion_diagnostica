@@ -2625,8 +2625,8 @@ t.numero_ticket as "folio",
             (SELECT codigo FROM cat_estado_ticket WHERE id = t.estado) as estado,
             t.prioridad,
             t.evidencias,
-            COALESCE(u.email, t.user_email, 'Anónimo') as "correo",
-            COALESCE(u.nombre || ' ' || u.apepaterno, t.user_fullname, 'Usuario') as "nombreCompleto",
+            u.email as "correo",
+            u.nombre || ' ' || u.apepaterno as "nombreCompleto",
             t.created_at as "fechaCreacion",
             t.updated_at as "fechaActualizacion"
           FROM tickets_soporte t

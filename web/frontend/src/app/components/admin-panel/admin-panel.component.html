@@ -270,7 +270,7 @@
                       <div class="admin-panel__detail-grid">
                         <div class="admin-panel__detail-info">
                           <p><strong>Descripción:</strong> {{ ticket.descripcion }}</p>
-                          <p *ngIf="ticket.motivoDetalle"><strong>Detalle del motivo:</strong> {{ ticket.motivoDetalle }}
+                          <p *ngIf="ticket.motivoDetalle && ticket.motivoDetalle !== ticket.motivo"><strong>Detalle del motivo:</strong> {{ ticket.motivoDetalle }}
                           </p>
                           <div class="admin-panel__ticket-evidencias" *ngIf="ticket.evidencias.length">
                             <strong>Evidencias:</strong>
@@ -285,6 +285,9 @@
                           <div class="admin-panel__ticket-respuestas" *ngIf="ticket.respuestas?.length">
                             <strong>Historial de respuestas:</strong>
                             <div class="admin-panel__ticket-respuesta" *ngFor="let respuesta of ticket.respuestas">
+                              <span class="admin-panel__respuesta-autor" [ngClass]="{'admin': respuesta?.autor === 'admin', 'user': respuesta?.autor !== 'admin'}">
+                                {{ respuesta?.autor === 'admin' ? 'Tú (Soporte)' : 'Directivo' }}
+                              </span>
                               <p>{{ respuesta.mensaje }}</p>
                               <small>{{ formatearFecha(respuesta.fecha) }}</small>
                             </div>

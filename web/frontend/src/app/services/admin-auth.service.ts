@@ -54,6 +54,7 @@ export class AdminAuthService {
 
   cerrarSesion(): void {
     localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem('eia-jwt');
     localStorage.removeItem(this.correoKey);
     localStorage.removeItem(this.rolKey);
     this.autenticadoSubject.next(false);

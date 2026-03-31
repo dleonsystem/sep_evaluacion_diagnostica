@@ -12,7 +12,6 @@ export interface Ticket {
   prioridad: string;
   correo?: string;
   nombreCompleto?: string;
-  cct?: string;
   fechaCreacion: string;
   fechaActualizacion: string;
   evidencias?: Array<{ nombre: string; url: string; size?: number }>;

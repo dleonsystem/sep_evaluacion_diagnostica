@@ -25,8 +25,14 @@ export class AuthService {
   }
 
   iniciarSesion(correo: string, token: string, user: any): void {
+    // Limpiar posible sesión admin residual
+    localStorage.removeItem('eia-admin-token');
+    localStorage.removeItem('eia-admin-email');
+    localStorage.removeItem('eia-admin-role');
+
     this.marcarSesionActiva();
     localStorage.setItem('eia-token', token);
+    localStorage.setItem('eia-jwt', token); // Mantener sincronía con GraphqlService
     localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
     localStorage.setItem(this.sesionRolKey, user.rol);
     
@@ -41,6 +47,7 @@ export class AuthService {
   cerrarSesion(): void {
     localStorage.removeItem(this.sesionKey);
     localStorage.removeItem('eia-token');
+    localStorage.removeItem('eia-jwt');
     localStorage.removeItem(this.sesionCorreoKey);
     localStorage.removeItem(this.sesionRolKey);
     localStorage.removeItem(this.sesionCctKey);

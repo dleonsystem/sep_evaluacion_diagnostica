@@ -668,3 +668,10 @@
   padding-top: 1rem;
   border-top: 2px solid #f1f5f9;
 }
+
+
+/* Estilos para globo de chat en el admin panel */
+.admin-panel__ticket-respuesta { padding: 12px; margin-bottom: 12px; border-radius: 8px; border: 1px solid #e0e0e0; background: #fafafa; }
+.admin-panel__respuesta-autor { font-weight: bold; display: block; margin-bottom: 6px; }
+.admin-panel__respuesta-autor.admin { color: #d32f2f; }
+.admin-panel__respuesta-autor.user { color: #1976d2; }

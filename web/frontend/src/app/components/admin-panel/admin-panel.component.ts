@@ -693,7 +693,6 @@ export class AdminPanelComponent implements OnInit {
       folio: t.numeroTicket,
       correo: t.correo || 'Sin correo',
       nombreCompleto: t.nombreCompleto || 'Usuario del Sistema',
-      cct: t.cct || 'N/D',
       motivo: t.asunto,
       motivoDetalle: t.asunto,
       descripcion: t.descripcion,
@@ -713,25 +712,7 @@ export class AdminPanelComponent implements OnInit {
     };
   }
 
-  async cargarIncidenciasPublicas(): Promise<void> {
-    try {
-      const tickets = await firstValueFrom(this.ticketsService.getPublicIncidents());
-      this.incidenciasPublicas = tickets.map(t => this.mapTicketDBToUI(t));
-    } catch (error) {
-      console.error('Error al cargar incidencias públicas', error);
-    }
-  }
 
-  get incidenciasPublicasFiltradas(): TicketSoporte[] {
-    return this.incidenciasPublicas.filter(t => {
-      const cumpleTexto = !this.filtroIncidenciaTexto ||
-        t.folio.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()) ||
-        t.correo.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()) ||
-        (t.nombreCompleto && t.nombreCompleto.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()));
-      const cumpleEstatus = this.filtroIncidenciaEstatus === 'todos' || t.estatus === this.filtroIncidenciaEstatus;
-      return cumpleTexto && cumpleEstatus;
-    });
-  }
 
   seleccionarIncidencia(incidencia: TicketSoporte): void {
     this.incidenciaSeleccionadaId = (this.incidenciaSeleccionadaId === incidencia.id) ? null : incidencia.id;
@@ -1140,6 +1121,25 @@ export class AdminPanelComponent implements OnInit {
     if (pagina < 1 || pagina > totalPaginas) return;
     this.paginaEscuelasActual = pagina;
     this.cargarEscuelas();
+  }
+  async cargarIncidenciasPublicas(): Promise<void> {
+    try {
+      const tickets = await firstValueFrom(this.ticketsService.getPublicIncidents());
+      this.incidenciasPublicas = tickets.map(t => this.mapTicketDBToUI(t));
+    } catch (error) {
+      console.error('Error al cargar incidencias públicas', error);
+    }
+  }
+
+  get incidenciasPublicasFiltradas(): TicketSoporte[] {
+    return this.incidenciasPublicas.filter(t => {
+      const cumpleTexto = !this.filtroIncidenciaTexto ||
+        t.folio.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()) ||
+        t.correo.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()) ||
+        (t.nombreCompleto && t.nombreCompleto.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()));
+      const cumpleEstatus = this.filtroIncidenciaEstatus === 'todos' || t.estatus === this.filtroIncidenciaEstatus;
+      return cumpleTexto && cumpleEstatus;
+    });
   }
 }
 

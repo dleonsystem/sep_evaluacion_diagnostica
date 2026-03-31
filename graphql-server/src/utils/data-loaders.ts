@@ -83,7 +83,13 @@ export const createDataLoaders = () => {
           ticket_id,
           comentario as mensaje, 
           created_at as fecha,
-          COALESCE((SELECT email FROM usuarios WHERE id = comentarios_ticket.usuario_id), 'Administrador') as autor,
+          COALESCE(
+            (SELECT CASE WHEN r.codigo IN ('COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL') THEN 'admin' ELSE 'user' END 
+             FROM usuarios u 
+             JOIN cat_roles_usuario r ON u.rol = r.id_rol 
+             WHERE u.id = comentarios_ticket.usuario_id),
+            'admin'
+          ) as autor,
           es_interno as "esInterno"
         FROM comentarios_ticket
         WHERE ticket_id = ANY($1)
@@ -92,7 +98,10 @@ export const createDataLoaders = () => {
 
             const responsesMap = results.rows.reduce((acc, row) => {
                 if (!acc[row.ticket_id]) acc[row.ticket_id] = [];
-                acc[row.ticket_id].push(row);
+                acc[row.ticket_id].push({
+                    ...row,
+                    fecha: row.fecha instanceof Date ? row.fecha.toISOString() : row.fecha
+                });
                 return acc;
             }, {} as Record<string, any[]>);
 

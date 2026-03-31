@@ -48,7 +48,7 @@
             <td data-label="Folio">{{ ticket.folio }}</td>
             <td data-label="Motivo">
               {{ ticket.motivo }}
-              <span *ngIf="ticket.motivoDetalle">({{ ticket.motivoDetalle }})</span>
+              <span *ngIf="ticket.motivoDetalle && ticket.motivoDetalle !== ticket.motivo">({{ ticket.motivoDetalle }})</span>
             </td>
             <td data-label="Descripción">{{ ticket.descripcion }}</td>
             <td data-label="Respuesta">
