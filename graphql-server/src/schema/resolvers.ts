@@ -2282,23 +2282,36 @@ t.numero_ticket as "folio",
 
         await client.query('COMMIT');
 
-        // Sincronización SFTP en background (opcional para esta fase)
+        // Sincronización SFTP en background (Fase 1 Legacy - CU-07)
         const syncSftp = async () => {
-          const tempPath = path.resolve(process.cwd(), `temp_${Date.now()}_${nombreArchivo}`);
           try {
-            const fs = await import('fs/promises');
-            await fs.writeFile(tempPath, buffer);
-            // Simular subida o implementar si el servicio SFTP está listo
-            // await sftpService.uploadFile(tempPath, `/upload/${Date.now()}_${nombreArchivo}`);
-          } catch (e) {
-            logger.error('SFTP sync error', e);
-          } finally {
-            try {
-              const fs = await import('fs/promises');
-              await fs.unlink(tempPath);
-            } catch { }
+            if (context.distributionService) {
+              const team = context.distributionService.getTeamForCCT(cct);
+              // Sanitizamos el nombre eliminando espacios por precaución
+              const fileName = `${Date.now()}_${nombreArchivo.replace(/\s+/g, '_')}`;
+              
+              // Aseguramos que la carpeta compartida exista antes de subir
+              await sftpService.ensureDir(team.sftpPath);
+              
+              const remotePath = `${team.sftpPath}/${fileName}`;
+              
+              const uploaded = await sftpService.uploadBuffer(buffer, remotePath);
+              
+              if (uploaded) {
+                // Registrar en bitácora la trazabilidad (equipo_asignado en BD)
+                await context.distributionService.logDistribution(solicitudId, team.id);
+                logger.info(`Archivo FRV subido a SFTP y distribuido exitosamente: ${team.nombre} -> ${remotePath}`);
+              } else {
+                throw new Error('Retorno false al subir FRV (uploadBuffer).');
+              }
+            } else {
+              logger.warn('distributionService no está inyectado en el contexto. Se omite envío SFTP.');
+            }
+          } catch (e: any) {
+            logger.error('SFTP/Distribution sync error (CU-07)', { solicitudId, cct, error: e.message });
           }
         };
+        // Ejecución en segundo plano ("fire-and-forget")
         syncSftp().catch(() => { });
 
         const fechaHoy = new Date();
