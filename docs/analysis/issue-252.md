@@ -93,13 +93,14 @@ Completar el endpoint de capa Backend (`typeDefs` y `resolvers`) robusto con val
 - Artefactos técnicos a adjuntar o referenciar: Plan de Implementación generado durante TDD.
 
 ## 12. Acciones en GitHub
-- Comentario publicado: [por ejecutar]
+- Comentario publicado: sí
 - Labels ajustadas: no requirió
 - Docs preparadas: sí
 - Comandos ejecutados:
   - `git checkout -b task/pepenautamx-issue252-administrar-catalogo-escuelas`
   - `git add docs/analysis/issue-252.md`
-  - `git commit -m "docs: anexa plan tecnico de analisis para CU-14 issue 252 catalogos escuelas"`
+  - `git commit -m "docs: anexa plan tecnico de analisis para CU-14 issue 252" `
+  - `git commit -m "feat(escuelas): implementa CRUD administrador CU-14 issue 252" `
 
 ## 13. Recomendación final
-Aprobar formalmente el Plan de Implementación a redactar en esta iteración para ejecutar la edición en `typeDefs.ts` y las consultas PostgreSQL en `resolvers.ts`. A partir de esto, el frontend quedará habilitado para consumirlo.
+La implementación ha sido desplegada en la rama de tarea. Se recomienda al equipo de QA realizar pruebas de carga con escenarios de colisión de CCT/Turno para validar la robustez de los mensajes de error arrojados por el resolver. El frontend ya puede consumir `createEscuela` y `updateEscuela` de forma segura.
