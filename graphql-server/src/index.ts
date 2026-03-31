@@ -310,6 +310,7 @@ async function startServer() {
                 user: result.rows[0] as any,
                 loaders,
                 distributionService,
+                req,
               };
             } else {
               logger.error('Sesión rechazada: Usuario del token no encontrado o inactivo', { email });
@@ -318,7 +319,7 @@ async function startServer() {
             logger.error('Error fatal procesando token de contexto', { error: error.message });
           }
 
-          return { user: undefined, loaders, distributionService };
+          return { user: undefined, loaders, distributionService, req };
         },
       })
     );

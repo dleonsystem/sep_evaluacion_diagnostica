@@ -30,6 +30,22 @@ export const createDataLoaders = () => {
         LEFT JOIN cat_nivel_educativo ne ON e.id_nivel = ne.id
         LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
         WHERE u.id = ANY($1)
+        UNION
+        SELECT 
+          uct.usuario_id as user_id,
+          e.id,
+          e.cct as "claveCCT",
+          e.nombre,
+          e.estado as entidad,
+          e.municipio,
+          e.localidad,
+          REPLACE(ne.codigo, ' ', '_') as nivel,
+          t.nombre as turno
+        FROM escuelas e
+        JOIN usuarios_centros_trabajo uct ON e.id = uct.centro_trabajo_id
+        LEFT JOIN cat_nivel_educativo ne ON e.id_nivel = ne.id
+        LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
+        WHERE uct.usuario_id = ANY($1)
       `, [userIds as string[]]);
 
             // Map results back to the order of requested userIds

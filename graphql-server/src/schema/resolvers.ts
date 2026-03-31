@@ -45,6 +45,7 @@ interface ContextUser {
  */
 export interface GraphQLContext {
   user?: ContextUser;
+  req?: any;
   dataSources?: Record<string, unknown>;
   loaders: ReturnType<typeof import('../utils/data-loaders.js').createDataLoaders>;
   distributionService?: DistributionService;
@@ -1285,7 +1286,7 @@ t.numero_ticket as "folio",
      * @use-case CU-01: Registro de usuario
      * @psp Design Review - Validación completa de entrada
      */
-    createUser: async (_: any, { input }: { input: CreateUserInput }) => {
+    createUser: async (_: any, { input }: { input: CreateUserInput }, context: GraphQLContext) => {
       const { email, nombre, apepaterno, apematerno, rol, password } = input;
 
       try {
@@ -1346,18 +1347,51 @@ t.numero_ticket as "folio",
 
         if (clavesCCT && clavesCCT.length > 0) {
           try {
-            const escuelas = await query(`SELECT id FROM escuelas WHERE cct = $1 LIMIT 1`, [
-              clavesCCT[0],
-            ]);
-            if (escuelas.rows.length > 0) {
-              await query('UPDATE usuarios SET escuela_id = $1 WHERE id = $2', [
-                escuelas.rows[0].id,
-                createdUser.id,
-              ]);
+            for (const cct of clavesCCT) {
+              const escuelaResult = await query(`SELECT id FROM escuelas WHERE cct = $1 LIMIT 1`, [cct]);
+              if (escuelaResult.rows.length > 0) {
+                const escuelaId = escuelaResult.rows[0].id;
+                // Asociación Muchos a Muchos
+                await query(
+                  'INSERT INTO usuarios_centros_trabajo (usuario_id, centro_trabajo_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+                  [createdUser.id, escuelaId]
+                );
+
+                // Mantener escuela_id legacy (primer CCT)
+                if (cct === clavesCCT[0]) {
+                  await query('UPDATE usuarios SET escuela_id = $1 WHERE id = $2', [
+                    escuelaId,
+                    createdUser.id,
+                  ]);
+                }
+              }
             }
           } catch (err) {
-            logger.error('Error vinculando escuela al crear usuario', err);
+            logger.error('Error vinculando escuelas al crear usuario', err);
           }
+        }
+
+        // Registro de Auditoría (Trazabilidad Issue #253)
+        try {
+          const clientIp = context.req?.headers?.['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const userAgent = context.req?.headers?.['user-agent'];
+          await query(
+            `INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, ip_address, user_agent, detalle)
+             VALUES ($1, 'CREATE_USER', 'USERS', 'SUCCESS', $2, $3, $4)`,
+            [
+              context.user?.id || null, 
+              clientIp, 
+              userAgent, 
+              JSON.stringify({ 
+                createdUserId: createdUser.id, 
+                email: createdUser.email, 
+                rol, 
+                ccts: clavesCCT 
+              })
+            ]
+          );
+        } catch (e) {
+          logger.warn('Audit record failed', e);
         }
 
         logger.info('User created successfully', { userId: createdUser.id });
