@@ -1970,16 +1970,45 @@ t.numero_ticket as "folio",
 
     /**
      * Cargar evaluación
-     * @use-case CU-05: Carga de archivos
+     * @use-case CU-16: Carga de archivos
      * @psp Code Review - Validación de formato
      */
     /**
      * Cargar archivo de evaluación (Universal) - Asíncrono con Worker Threads
-     * @use-case CU-05: Recepción de archivos (EIA2)
+     * @use-case CU-16: Recepción de archivos (EIA2)
      */
     uploadExcelAssessment: async (_: any, { input }: { input: any }, context: GraphQLContext) => {
       const { archivoBase64, nombreArchivo, confirmarReemplazo, email } = input;
       let client: any = null;
+      let currentCct: string | null = null;
+      const normalizedEmail = email ? email.trim().toLowerCase() : null;
+
+      // Helper para auditoría (Issue #254 - Trazabilidad)
+      const auditLog = async (resultado: string, status: string, detalleAdicional: any = {}) => {
+        try {
+          const clientIp = context.req?.headers?.['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const userAgent = context.req?.headers?.['user-agent'];
+          await query(
+            `INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, ip_address, user_agent, detalle)
+             VALUES ($1, 'UPLOAD_EIA2', 'EVALUACION', $2, $3, $4, $5)`,
+            [
+              context.user?.id || null,
+              status, 
+              clientIp, 
+              userAgent, 
+              JSON.stringify({ 
+                email: email || normalizedEmail, 
+                archivo: nombreArchivo, 
+                resultado,
+                cct: currentCct,
+                ...detalleAdicional 
+              })
+            ]
+          );
+        } catch (e) {
+          logger.warn('Falla en registro de auditoría uploadExcelAssessment', e);
+        }
+      };
 
       try {
         logger.info('Iniciando carga masiva con Worker', { nombreArchivo });
@@ -2015,7 +2044,6 @@ t.numero_ticket as "folio",
         const remotePath = `${remoteDir}/${Date.now()}_${nombreArchivo.replace(/\s+/g, '_')}`;
 
         let userToLink = context.user?.id;
-        const normalizedEmail = email ? email.trim().toLowerCase() : null;
 
         if (normalizedEmail) {
           const uRes = await query('SELECT id FROM usuarios WHERE email = $1', [normalizedEmail]);
@@ -2045,6 +2073,7 @@ t.numero_ticket as "folio",
           workerResult = await runWorker();
         } catch (workerError: any) {
           const errorMsg = workerError.message || 'Error de validación desconocido';
+          await auditLog(`Error worker: ${errorMsg}`, 'RECHAZADO');
           const rejRes = await query(
             `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false) RETURNING consecutivo`,
             ['DESC', nombreArchivo, fileHash, userToLink || null, JSON.stringify([{ error: errorMsg, hoja: 'General' }]), remotePath, archivoSize]
@@ -2058,8 +2087,10 @@ t.numero_ticket as "folio",
         }
 
         const { cct, nivel, grado, alumnos, metadata, erroresEstructurados } = workerResult;
+        currentCct = cct;
 
         if (erroresEstructurados && erroresEstructurados.length > 0) {
+          await auditLog(`Errores validación: ${erroresEstructurados.length}`, 'RECHAZADO');
           await query(
             `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false)`,
             [cct || 'INVALID', nombreArchivo, fileHash, userToLink || null, JSON.stringify(erroresEstructurados), remotePath, archivoSize]
@@ -2102,6 +2133,7 @@ t.numero_ticket as "folio",
         const cctValidation = validateCCT(cct);
         if (!cctValidation.isValid) {
           const errorMsg = `Formato de CCT inválido en el archivo: ${cctValidation.error}`;
+          await auditLog(errorMsg, 'RECHAZADO');
           await query(
             `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false)`,
             [cct || 'INVALID', nombreArchivo, fileHash, userToLink || null, JSON.stringify([errorMsg]), remotePath, archivoSize]
@@ -2357,6 +2389,8 @@ t.numero_ticket as "folio",
           successMessage = `Tu archivo ha sido validado correctamente. Generamos una contraseña aleatoria y podrás consultar tus resultados a partir del día: ${fechaFutura}.`;
         }
 
+        await auditLog('Carga exitosa', 'SUCCESS', { alumnos: alumnosProcesados });
+
         return {
           success: true,
           message: successMessage,
@@ -2372,6 +2406,7 @@ t.numero_ticket as "folio",
         };
       } catch (error: any) {
         if (client) await client.query('ROLLBACK');
+        await auditLog(`Error general: ${error.message}`, 'ERROR');
         logger.error('Upload Error', error);
         return {
           success: false,
