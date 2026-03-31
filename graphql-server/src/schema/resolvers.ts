@@ -2560,16 +2560,28 @@ t.numero_ticket as "folio",
       { ticketId, respuesta, cerrar, prioridad }: { ticketId: string; respuesta: string; cerrar: boolean; prioridad?: string },
       context: GraphQLContext
     ) => {
-      if (
-        !context.user ||
-        !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)
-      ) {
-        throw new Error('No autorizado: Solo administradores pueden responder tickets');
-      }
+      if (!context.user) throw new Error('No autorizado');
 
       const client = await getClient();
       try {
         await client.query('BEGIN');
+
+        // Verificar propiedad o rol (Admin responde cualquiera, usuario solo lo suyo)
+        const ticketOwnerQuery = await client.query(
+          'SELECT usuario_id FROM tickets_soporte WHERE id = $1',
+          [ticketId]
+        );
+
+        if (ticketOwnerQuery.rows.length === 0) {
+          throw new Error('Ticket no encontrado');
+        }
+
+        const ownerId = ticketOwnerQuery.rows[0].usuario_id;
+        const isAdmin = ['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol);
+        
+        if (!isAdmin && ownerId !== context.user.id) {
+          throw new Error('No tienes permiso para responder a este ticket');
+        }
 
         // 1. Insertar comentario
         await client.query(
@@ -2577,7 +2589,7 @@ t.numero_ticket as "folio",
           INSERT INTO comentarios_ticket (ticket_id, usuario_id, comentario, es_interno)
           VALUES ($1, $2, $3, false)
         `,
-          [ticketId, context.user!.id, respuesta]
+          [ticketId, context.user.id, respuesta]
         );
 
         // 2. Actualizar estado y opcionalmente prioridad
@@ -2589,7 +2601,8 @@ t.numero_ticket as "folio",
         `;
         const params: any[] = [nuevoEstado];
 
-        if (prioridad) {
+        // Solo el Admin debería cambiar la prioridad
+        if (prioridad && isAdmin) {
           updateQuery += `, prioridad = $3`;
           params.push(ticketId, prioridad);
         } else {
@@ -2612,19 +2625,22 @@ t.numero_ticket as "folio",
             (SELECT codigo FROM cat_estado_ticket WHERE id = t.estado) as estado,
             t.prioridad,
             t.evidencias,
+            COALESCE(u.email, t.user_email, 'Anónimo') as "correo",
+            COALESCE(u.nombre || ' ' || u.apepaterno, t.user_fullname, 'Usuario') as "nombreCompleto",
             t.created_at as "fechaCreacion",
             t.updated_at as "fechaActualizacion"
           FROM tickets_soporte t
+          LEFT JOIN usuarios u ON t.usuario_id = u.id
           WHERE t.id = $1
         `,
           [ticketId]
         );
 
         return result.rows[0];
-      } catch (error) {
+      } catch (error: any) {
         await client.query('ROLLBACK');
-        logger.error('Error responding to ticket', { ticketId, error });
-        throw new Error('Error al responder el ticket');
+        logger.error('Error responding to ticket', { ticketId, error: error.message });
+        throw new Error(error.message || 'Error al responder el ticket');
       } finally {
         client.release();
       }

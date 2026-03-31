@@ -39,6 +39,7 @@
           <th>Fecha</th>
           <th>Evidencias</th>
           <th>Estatus</th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -64,25 +65,14 @@
                 [class.tickets-historial__badge--pendiente]="ticket.estatus === 'pendiente'"
                 [class.tickets-historial__badge--proceso]="ticket.estatus === 'en-proceso'"
                 [class.tickets-historial__badge--respondido]="ticket.estatus === 'respondido'"
-                (click)="toggleDetalleRespuesta(ticket.id)" [attr.aria-expanded]="esTicketExpandido(ticket.id)">
+                [routerLink]="['/tickets', ticket.folio]">
                 {{ obtenerEtiquetaEstatus(ticket.estatus) }}
               </button>
             </td>
-          </tr>
-          <tr class="tickets-historial__detalle" *ngIf="esTicketExpandido(ticket.id)">
-            <td colspan="7">
-              <div class="tickets-historial__detalle-contenido">
-                <h3>Respuesta del administrador</h3>
-                <ng-container *ngIf="ticket.respuestas?.length; else sinRespuestas">
-                  <div class="tickets-historial__detalle-respuesta" *ngFor="let respuesta of ticket.respuestas">
-                    <p>{{ respuesta.mensaje }}</p>
-                    <small>{{ formatearFecha(respuesta.fecha) }}</small>
-                  </div>
-                </ng-container>
-                <ng-template #sinRespuestas>
-                  <p>Este ticket aún no tiene respuesta.</p>
-                </ng-template>
-              </div>
+            <td data-label="Acciones">
+              <a [routerLink]="['/tickets', ticket.folio]" class="tickets-historial__ver-btn">
+                Ver detalle / Responder
+              </a>
             </td>
           </tr>
         </ng-container>

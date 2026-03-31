@@ -10,6 +10,7 @@ import { TicketsHistorialComponent } from './components/tickets-historial/ticket
 import { AuthGuard } from './guards/auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 import { LoginGuard } from './guards/login.guard';
+import { TicketDetalleComponent } from './components/ticket-detalle/ticket-detalle.component';
 import { RecuperarPasswordComponent } from './components/recuperar-password/recuperar-password.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { PreguntasFrecuentesComponent } from './components/preguntas-frecuentes/preguntas-frecuentes.component';
@@ -113,6 +114,11 @@ export const routes: Routes = [
     component: TicketsHistorialComponent,
     canActivate: [AuthGuard],
     pathMatch: 'full',
+  },
+  {
+    path: 'tickets/:folio',
+    component: TicketDetalleComponent,
+    canActivate: [AuthGuard],
   },
   /* {
     path: 'carga-masiva/detalle',
