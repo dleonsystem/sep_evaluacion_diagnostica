@@ -51,7 +51,7 @@ export const typeDefs = `#graphql
 
     """
     Listar solicitudes de carga EIA2
-    @use-case CU-05: Historial de cargas
+    @use-case CU-16: Historial de cargas
     """
     getSolicitudes(
       cct: String
@@ -265,7 +265,7 @@ export const typeDefs = `#graphql
     
     """
     Cargar archivo de evaluación
-    @use-case CU-05: Recepción de archivos (EIA2)
+    @use-case CU-16: Recepción de archivos (EIA2)
     @psp Code Review - Validación de formato Excel
     """
     uploadExcelAssessment(input: UploadExcelInput!): UploadExcelResponse!
