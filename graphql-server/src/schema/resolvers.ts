@@ -45,6 +45,7 @@ interface ContextUser {
  */
 export interface GraphQLContext {
   user?: ContextUser;
+  req?: any;
   dataSources?: Record<string, unknown>;
   loaders: ReturnType<typeof import('../utils/data-loaders.js').createDataLoaders>;
   distributionService?: DistributionService;
@@ -1285,7 +1286,7 @@ t.numero_ticket as "folio",
      * @use-case CU-01: Registro de usuario
      * @psp Design Review - Validación completa de entrada
      */
-    createUser: async (_: any, { input }: { input: CreateUserInput }) => {
+    createUser: async (_: any, { input }: { input: CreateUserInput }, context: GraphQLContext) => {
       const { email, nombre, apepaterno, apematerno, rol, password } = input;
 
       try {
@@ -1346,18 +1347,51 @@ t.numero_ticket as "folio",
 
         if (clavesCCT && clavesCCT.length > 0) {
           try {
-            const escuelas = await query(`SELECT id FROM escuelas WHERE cct = $1 LIMIT 1`, [
-              clavesCCT[0],
-            ]);
-            if (escuelas.rows.length > 0) {
-              await query('UPDATE usuarios SET escuela_id = $1 WHERE id = $2', [
-                escuelas.rows[0].id,
-                createdUser.id,
-              ]);
+            for (const cct of clavesCCT) {
+              const escuelaResult = await query(`SELECT id FROM escuelas WHERE cct = $1 LIMIT 1`, [cct]);
+              if (escuelaResult.rows.length > 0) {
+                const escuelaId = escuelaResult.rows[0].id;
+                // Asociación Muchos a Muchos
+                await query(
+                  'INSERT INTO usuarios_centros_trabajo (usuario_id, centro_trabajo_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+                  [createdUser.id, escuelaId]
+                );
+
+                // Mantener escuela_id legacy (primer CCT)
+                if (cct === clavesCCT[0]) {
+                  await query('UPDATE usuarios SET escuela_id = $1 WHERE id = $2', [
+                    escuelaId,
+                    createdUser.id,
+                  ]);
+                }
+              }
             }
           } catch (err) {
-            logger.error('Error vinculando escuela al crear usuario', err);
+            logger.error('Error vinculando escuelas al crear usuario', err);
           }
+        }
+
+        // Registro de Auditoría (Trazabilidad Issue #253)
+        try {
+          const clientIp = context.req?.headers?.['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const userAgent = context.req?.headers?.['user-agent'];
+          await query(
+            `INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, ip_address, user_agent, detalle)
+             VALUES ($1, 'CREATE_USER', 'USERS', 'SUCCESS', $2, $3, $4)`,
+            [
+              context.user?.id || null, 
+              clientIp, 
+              userAgent, 
+              JSON.stringify({ 
+                createdUserId: createdUser.id, 
+                email: createdUser.email, 
+                rol, 
+                ccts: clavesCCT 
+              })
+            ]
+          );
+        } catch (e) {
+          logger.warn('Audit record failed', e);
         }
 
         logger.info('User created successfully', { userId: createdUser.id });
@@ -2840,6 +2874,178 @@ t.numero_ticket as "folio",
         await client.query('ROLLBACK');
         logger.error('Error creating public incident DB:', { error });
         throw new Error(`Error en Base de Datos: ${(error as Error).message}`);
+      } finally {
+        client.release();
+      }
+    },
+
+    /**
+     * Crear nueva escuela
+     * @use-case CU-14: Administrar Catálogo de Escuelas
+     */
+    createEscuela: async (_: any, { input }: { input: any }, context: GraphQLContext) => {
+      const { cct, nombre, id_turno, id_nivel, id_entidad, id_ciclo, email, telefono, director, cp } = input;
+
+      // 1. Validar CCT formato y dígito verificador
+      const cctValidation = validateCCT(cct);
+      if (!cctValidation.isValid) {
+        throw new Error(cctValidation.error || 'CCT con formato inválido');
+      }
+
+      // 2. Validar Unicidad (CCT + Turno)
+      const existing = await query(
+        'SELECT id FROM escuelas WHERE cct = $1 AND id_turno = $2 LIMIT 1',
+        [cct.toUpperCase(), id_turno]
+      );
+      if (existing.rows.length > 0) {
+        throw new Error(`La escuela con CCT ${cct} y el turno especificado ya existe en el catálogo.`);
+      }
+
+      try {
+        const result = await query(
+          `INSERT INTO escuelas (
+            cct, nombre, id_turno, id_nivel, id_entidad, id_ciclo, 
+            email, telefono, director, cp, activo, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, NOW(), NOW())
+          RETURNING id`,
+          [cct.toUpperCase(), nombre, id_turno, id_nivel, id_entidad, id_ciclo, email, telefono, director, cp]
+        );
+
+        const newId = result.rows[0].id;
+
+        // Auditoría
+        try {
+          await query(
+            "INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, detalle) VALUES ($1, 'CREATE_ESCUELA', 'CATALOGOS', 'SUCCESS', $2)",
+            [context.user?.id || null, JSON.stringify({ id: newId, cct })]
+          );
+        } catch (e) { logger.warn('Audit fail', e); }
+
+        const schoolRes = await query(
+           `SELECT 
+            e.id, e.cct, e.nombre, e.cp, e.telefono, e.email, e.director, e.activo, e.created_at, e.updated_at,
+            e.id_turno, e.id_nivel, e.id_entidad, e.id_ciclo,
+            t.nombre as "turno_nombre", t.codigo as "turno_codigo",
+            REPLACE(ne.codigo, ' ', '_') as "nivel_codigo",
+            ef.nombre as "entidad_nombre",
+            ce.nombre as "ciclo_nombre"
+          FROM escuelas e
+          LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
+          LEFT JOIN cat_nivel_educativo ne ON e.id_nivel = ne.id
+          LEFT JOIN cat_entidades_federativas ef ON e.id_entidad = ef.id_entidad
+          LEFT JOIN cat_ciclos_escolares ce ON e.id_ciclo = ce.id_ciclo
+          WHERE e.id = $1`,
+          [newId]
+        );
+
+        const row = schoolRes.rows[0];
+        return {
+          id: row.id,
+          cct: row.cct,
+          nombre: row.nombre,
+          cp: row.cp,
+          telefono: row.telefono,
+          email: row.email,
+          director: row.director,
+          activo: row.activo,
+          created_at: row.created_at?.toISOString?.() || row.created_at,
+          updated_at: row.updated_at?.toISOString?.() || row.updated_at,
+          nivel: row.nivel_codigo,
+          turno: { id: row.id_turno, nombre: row.turno_nombre, codigo: row.turno_codigo },
+          entidadFederativa: { id: row.id_entidad, nombre: row.entidad_nombre },
+          cicloEscolar: { id: row.id_ciclo, nombre: row.ciclo_nombre, activo: true }
+        };
+
+      } catch (error) {
+        logger.error('Error in createEscuela', error);
+        throw new Error('Error interno al crear escuela');
+      }
+    },
+
+    /**
+     * Actualizar escuela existente
+     * @use-case CU-14: Administrar Catálogo de Escuelas
+     */
+    updateEscuela: async (_: any, { id, input }: { id: string; input: any }, context: GraphQLContext) => {
+      const entries = Object.entries(input);
+      if (entries.length === 0) throw new Error('No hay campos para actualizar');
+
+      if (input.cct) {
+        const cctValid = validateCCT(input.cct);
+        if (!cctValid.isValid) throw new Error(cctValid.error);
+      }
+
+      const client = await getClient();
+      try {
+        await client.query('BEGIN');
+        
+        let setClause = [];
+        let values = [];
+        let i = 1;
+
+        for (const [key, value] of entries) {
+           setClause.push(`${key} = $${i}`);
+           values.push(value);
+           i++;
+        }
+        
+        setClause.push(`updated_at = NOW()`);
+        values.push(id);
+        
+        const sql = `UPDATE escuelas SET ${setClause.join(', ')} WHERE id = $${i} RETURNING id`;
+        const res = await client.query(sql, values);
+        
+        if (res.rows.length === 0) throw new Error('Escuela no encontrada');
+
+        await client.query('COMMIT');
+
+        // Auditoría
+        try {
+          await query(
+            "INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, detalle) VALUES ($1, 'UPDATE_ESCUELA', 'CATALOGOS', 'SUCCESS', $2)",
+            [context.user?.id || null, JSON.stringify({ id, fields: Object.keys(input) })]
+          );
+        } catch (e) { logger.warn('Audit fail', e); }
+
+        const schoolRes = await query(
+           `SELECT 
+            e.id, e.cct, e.nombre, e.cp, e.telefono, e.email, e.director, e.activo, e.created_at, e.updated_at,
+            e.id_turno, e.id_nivel, e.id_entidad, e.id_ciclo,
+            t.nombre as "turno_nombre", t.codigo as "turno_codigo",
+            REPLACE(ne.codigo, ' ', '_') as "nivel_codigo",
+            ef.nombre as "entidad_nombre",
+            ce.nombre as "ciclo_nombre"
+          FROM escuelas e
+          LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
+          LEFT JOIN cat_nivel_educativo ne ON e.id_nivel = ne.id
+          LEFT JOIN cat_entidades_federativas ef ON e.id_entidad = ef.id_entidad
+          LEFT JOIN cat_ciclos_escolares ce ON e.id_ciclo = ce.id_ciclo
+          WHERE e.id = $1`,
+          [id]
+        );
+
+        const row = schoolRes.rows[0];
+        return {
+          id: row.id,
+          cct: row.cct,
+          nombre: row.nombre,
+          cp: row.cp,
+          telefono: row.telefono,
+          email: row.email,
+          director: row.director,
+          activo: row.activo,
+          created_at: row.created_at?.toISOString?.() || row.created_at,
+          updated_at: row.updated_at?.toISOString?.() || row.updated_at,
+          nivel: row.nivel_codigo,
+          turno: { id: row.id_turno, nombre: row.turno_nombre, codigo: row.turno_codigo },
+          entidadFederativa: { id: row.id_entidad, nombre: row.entidad_nombre },
+          cicloEscolar: { id: row.id_ciclo, nombre: row.ciclo_nombre, activo: true }
+        };
+
+      } catch (error) {
+        await client.query('ROLLBACK');
+        logger.error('Error in updateEscuela', error);
+        throw new Error('Error al actualizar escuela');
       } finally {
         client.release();
       }

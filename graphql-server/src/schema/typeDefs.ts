@@ -323,6 +323,18 @@ export const typeDefs = `#graphql
     @use-case CU-13: Mesa de ayuda (Público)
     """
     createPublicIncident(input: CreatePublicIncidentInput!): Ticket!
+
+    """
+    Crear nueva escuela
+    @use-case CU-14: Administrar Catálogo de Escuelas
+    """
+    createEscuela(input: CreateEscuelaInput!): Escuela!
+
+    """
+    Actualizar escuela existente
+    @use-case CU-14: Administrar Catálogo de Escuelas
+    """
+    updateEscuela(id: ID!, input: UpdateEscuelaInput!): Escuela!
   }
 
   """
