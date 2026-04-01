@@ -9,8 +9,8 @@
 | **Fecha de cierre Fase 1** | 14 de abril de 2026 |
 | **Metodología** | RUP / PSP — 4 Sprints × 5 días hábiles |
 | **Esfuerzo estimado** | ~100 horas |
-| **Versión del documento** | 1.1 — actualizada 18/03/2026 |
-| **Estado** | 🟡 En ejecución (Sprint 1 ✅, Sprint 2 🏗️) |
+| **Versión del documento** | 1.3 — auditada post-merge origin/dev 01/04/2026 |
+| **Estado** | 🟡 En ejecución (S1 ✅, S2 ✅, S3 🏗️ — infra integrada, 4 issues seguridad bloqueantes: #342 #343 #344 #345) |
 
 ---
 
@@ -52,6 +52,16 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 | **ISSUE-301** | Containerización completa (Docker + Compose + Healthcheck) | ✅ Resuelto | Infra |
 | **ISSUE-254** | CU-16: Persistencia robusta de evaluaciones, NIA y estudiantes | ✅ Resuelto | RF-16 |
 | **ISSUE-267** | CU-15: Gestión de Directores (CRUD completo, Estado, CCT) | 🏗️ En Verificación | S2 |
+| **SEC-NEW-01** | JWT_SECRET fallback inseguro `'your_jwt_secret_key...'` en `jwt.ts` (OWASP A02) | ❌ Pendiente — issue #342 | S3 |
+| **SEC-NEW-02** | CORS wildcard `'*'` en producción `index.ts` (OWASP A05) | ❌ Pendiente — issue #343 | S3 |
+| **SEC-NEW-03** | SFTP credentials `eia_user:eia_password` hardcodeadas en `docker-compose.yml` (repo público) | ❌ Pendiente — issue #344 | S3 |
+| **SEC-NEW-04** | `JWT_SECRET:-supersecretkey` fallback débil en sección `backend` de `docker-compose.yml` | ❌ Pendiente — absorber en #342 | S3 |
+| **SEC-NEW-05** | `SFTP_USER/PASS` hardcodeados en sección `backend` de `docker-compose.yml` (doble exposición) | ❌ Pendiente — absorber en #344 | S3 |
+| **GAP-CI-NUEVO-1** | Trigger CI: rama `develop` — excluye rama `dev` — 10/10 ejecuciones fallidas | ❌ Pendiente — issue #345 | S3 |
+| **TEST-NEW-01** | `tests/schema/authenticateUser.test.ts` no existe — auth sin cobertura de pruebas | ❌ Pendiente — issue #347 | S4 |
+| **INFRA-NEW-01** | Healthcheck del servicio `backend` ausente en `docker-compose.yml` | ❌ Pendiente — issue #348 | S3 |
+| **CLEANUP-01** | 18+ scripts debug en `graphql-server/` raíz expuestos en repo público | ❌ Pendiente — issue #346 | S4 |
+| **CLEANUP-02** | `graphql-server/.env2` duplicado sospechoso / posible credenciales reales | ⚠️ Revisar urgente | S3 |
 
 ---
 
@@ -204,9 +214,9 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 ### Tareas por día
 
 #### Día 11 · Miércoles 01/04
-- [ ] Crear `graphql-server/Dockerfile`: stage `build` (node:20-alpine, `npm ci`, `tsc`) + stage `runtime` (solo `dist/` y dependencias de producción)
-- [ ] Crear `graphql-server/.dockerignore`
-- [ ] Verificar: `docker build -t sicrer-backend .` sin errores y tamaño razonable (< 300 MB)
+- [x] Crear `graphql-server/Dockerfile`: stage `build` (node:20-alpine, `npm ci`, `tsc`) + stage `runtime` (solo `dist/` y dependencias de producción) ← verificado en `graphql-server/Dockerfile` 01/04/2026 ✅
+- [x] Crear `graphql-server/.dockerignore` ← verificado presente 01/04/2026 ✅
+- [x] Verificar: `docker build -t sicrer-backend .` sin errores y tamaño razonable (< 300 MB)
 
 **Archivos:** `graphql-server/Dockerfile`, `graphql-server/.dockerignore`
 **Entregable:** Imagen `sicrer-backend` construida en < 3 min
@@ -214,9 +224,9 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 ---
 
 #### Día 12 · Jueves 02/04
-- [ ] Crear `web/frontend/Dockerfile`: stage `build` (node:20-alpine, `ng build --configuration production`) + stage `runtime` (nginx:alpine)
-- [ ] Crear `web/frontend/nginx.conf`: configurar `try_files $uri /index.html` para SPA routing
-- [ ] Verificar: `docker build -t sicrer-frontend .` — rutas Angular no generan 404
+- [x] Crear `web/frontend/Dockerfile`: stage `build` (node:20-alpine, `ng build --configuration production`) + stage `runtime` (nginx:alpine) ← verificado en `web/frontend/Dockerfile` 01/04/2026 ✅
+- [x] Crear `web/frontend/nginx.conf`: configurar `try_files $uri /index.html` para SPA routing ← verificado `try_files $uri $uri/ /index.html` 01/04/2026 ✅
+- [x] Verificar: `docker build -t sicrer-frontend .` — rutas Angular no generan 404
 
 **Archivos:** `web/frontend/Dockerfile`, `web/frontend/nginx.conf`
 **Entregable:** Imagen `sicrer-frontend` sirviendo Angular correctamente
@@ -224,11 +234,15 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 ---
 
 #### Día 13 · Viernes 03/04
-- [ ] Crear `docker-compose.yml` en raíz: servicios `backend` (4000), `frontend` (80), `postgres:16-alpine` (5432)
-- [ ] Configurar volumen con `scripts/init-db.sql` para seed automático al levantar
-- [x] **[GAP-CI-1]** Actualizar `.github/workflows/ci.yml`: `node-version: 18` → `node-version: 20`
-- [ ] **[GAP-CAT]** Crear `graphql-server/scripts/seed-catalogs-eia2025.sql` con catálogos oficiales EIA 2025 y CCT SIGED
-- [ ] Crear `.env.example` completo: `DATABASE_URL`, `JWT_SECRET`, `SMTP_HOST/PORT/USER/PASS`, `SFTP_HOST/PORT/USER/PASS/BASE_PATH`
+- [x] Crear `docker-compose.yml` en raíz: 4 servicios `db`, `backend` (4000), `frontend` (80), `sftp` ← verificado 01/04/2026. `db` con `pg_isready` healthcheck ✅
+- [x] Configurar volumen con `scripts/init-db.sql` + `seed-catalogs-eia2025.sql` para seed automático al levantar ← verificado en `docker-compose.yml` volumes 01/04/2026 ✅
+- [x] **[GAP-CI-1]** Actualizar `.github/workflows/ci.yml`: `node-version: 18` → `node-version: 20` ← ya estaba en origin/dev ✅
+- [x] **[GAP-CAT]** Crear `graphql-server/scripts/seed-catalogs-eia2025.sql` con catálogos oficiales EIA 2025 ← referenciado en `init-db.sql` y script presente 01/04/2026 ✅
+- [x] Crear `graphql-server/.env.example` completo con 40+ variables: `DATABASE_URL`, `JWT_SECRET`, `SMTP_*`, `SFTP_*` ← verificado presente 01/04/2026 ✅
+- [ ] Crear `.env.example` en raíz del repo (junto a `docker-compose.yml`) — **AUN PENDIENTE** ❌
+- [ ] **[GAP-CI-NUEVO-1]** Corregir trigger CI: `develop` → `dev` en `.github/workflows/ci.yml` — **PENDIENTE** ❌ issue #345
+- [ ] **[SEC-NEW-01]** Eliminar fallback inseguro JWT en `jwt.ts` y `docker-compose.yml` — **PENDIENTE** ❌ issue #342
+- [ ] **[SEC-NEW-03]** Mover credenciales SFTP a variables de entorno en `docker-compose.yml` — **PENDIENTE** ❌ issue #344
 
 **Archivos:** `docker-compose.yml`, `.github/workflows/ci.yml`, `graphql-server/scripts/seed-catalogs-eia2025.sql`, `.env.example`
 **Entregable:** `docker-compose.yml` válido + CI actualizado a Node 20
@@ -236,8 +250,10 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 ---
 
 #### Día 14 · Lunes 06/04
-- [ ] Ejecutar `docker-compose up --build` — resolver errores de networking (DNS entre contenedores, wait-for-postgres)
-- [ ] Agregar healthcheck en el servicio `backend` del compose
+- [x] Estructura `docker-compose.yml` lista con 4 servicios y volumen DB ← verificado 01/04/2026 ✅
+- [x] `db` tiene healthcheck `pg_isready` con interval 10s / retries 5 ← verificado 01/04/2026 ✅
+- [ ] Agregar healthcheck en el servicio `backend` del compose — **PENDIENTE** ❌ issue #348
+- [ ] Resolver errores de networking al ejecutar `docker-compose up --build` (pendiente validación en entorno limpio)
 - [ ] Verificar: `GET http://localhost:4000/graphql?query={healthCheck{status database{connected}}}` devuelve `{status:"OK", database:{connected:true}}`
 
 **Archivos:** `docker-compose.yml`
@@ -267,8 +283,10 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 
 #### Día 16 · Miércoles 08/04
 - [ ] Ejecutar `cd graphql-server && npx jest --verbose` — triage de fallos
-- [ ] En `tests/authenticateUser.test.ts`: agregar assertion de JWT — `expect(result.token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/)`
-- [ ] En `tests/authenticateUser.test.ts`: agregar caso de bloqueo tras 5 intentos fallidos
+- [ ] **[TEST-NEW-01]** Crear `graphql-server/tests/schema/authenticateUser.test.ts` — el archivo NO EXISTE en `tests/schema/` ❌ issue #347
+  - Agregar assertion JWT: `expect(result.token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/)`
+  - Agregar caso de bloqueo tras 5 intentos fallidos
+  - Usar mocks de `pg` y `bcrypt` (sin DB real) siguiendo patrón de `generateComprobante.test.ts`
 
 **Archivos:** `graphql-server/tests/authenticateUser.test.ts`
 **Entregable:** Suite de tests corre sin errores de setup
@@ -276,32 +294,34 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 ---
 
 #### Día 17 · Jueves 09/04
-- [ ] Crear `graphql-server/tests/generateComprobante.test.ts`: mock de `solicitudId` válido, verificar `success:true`, `fileName` termina en `.pdf`, Base64 decodificable
+- [x] Crear `graphql-server/tests/schema/generateComprobante.test.ts` ← ya existe en `tests/schema/` 01/04/2026 ✅
 - [ ] Revisar `tests/createTicket.test.ts` — actualizar si cambió el schema tras Sprint 1
 - [ ] Verificar cobertura > 60% en `/src/services/` y `/src/schema/resolvers.ts`
-    - name: Run Tests
-      run: npm run test -- --ci --coverage
-e 
-**Archivos:** `graphql-server/tests/`, `.github/workflows/ci.yml`
+  - **NOTA**: `jest.config.cjs` actual tiene thresholds en `branches:15`, `functions/lines/statements:20` — NO 60% como requiere el plan ❌ Ajustar antes del tag
+- [x] **[GAP-CI-2]** Job `test` en `.github/workflows/ci.yml` con `npm test -- --ci --coverage` + artifact upload ← verificado 01/04/2026 ✅
+
+**Archivos:** `graphql-server/tests/`, `graphql-server/jest.config.cjs`, `.github/workflows/ci.yml`
 **Entregable:** `npx jest` en verde con los nuevos tests; CI ejecuta tests en pipeline
 
 ---
 
 #### Día 18 · Viernes 10/04
-- [x] **[GAP-DB-2]** Migración SQL: unificar catálogo duplicado
-  - Hacer `cat_nivel_educativo` (singular) la tabla canónica ✅
-  - Actualizar referencias en resolvers que apuntan a la versión plural (ya consumido) ✅
-- [x] **[GAP-DB-1]** En `resolvers.ts:uploadExcelAssessment` y `uploadAssessmentResults`: reemplazar ids hardcodeados (`1`, `2`) por llamadas a `fn_catalogo_id('cat_estado_validacion_eia2', 'PENDIENTE')` y `fn_catalogo_id('cat_estado_validacion_eia2', 'VALIDADO')`
+- [x] **[GAP-DB-2]** Migración SQL: unificar catálogo duplicado ← RESUELTO en origin/dev 01/04/2026
+  - `cat_nivel_educativo` (singular) única tabla canónica en `init-db.sql` ✅
+  - Sin referencias a versión plural en origin/dev ✅
+- [x] **[GAP-DB-1]** En `resolvers.ts`: sin IDs numéricos mágicos ← RESUELTO en origin/dev 01/04/2026
+  - Usa constante `SOLICITUD_ESTADO_PENDIENTE_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'PENDIENTE')"` ✅
 
-**Archivos:** `graphql-server/src/schema/resolvers.ts`, script de migración SQL
-**Entregable:** Sin ids numéricos mágicos en resolvers; un único catálogo de nivel educativo
+**Archivos:** `graphql-server/src/schema/resolvers.ts`, `graphql-server/scripts/init-db.sql`
+**Entregable:** ✅ Sin ids numéricos mágicos en resolvers; un único catálogo de nivel educativo
 
 ---
 
 #### Día 19 · Lunes 13/04
-- [x] **[GAP-DB-3]** Migración SQL NIA: crear tablas aprobadas en `RESUMEN_CORRECCIONES_CLIENTE.md`:
-  - `CAT_NIVELES_INTEGRACION` con datos oficiales (ED, EP, ES, SO) ✅
-  - `CAT_CAMPOS_FORMATIVOS` (ENS, HYC, LEN, SPC, F5) ✅
+- [x] **[GAP-DB-3]** Migración SQL NIA: tablas aprobadas ← RESUELTO COMPLETO en origin/dev 01/04/2026
+  - `cat_campos_formativos` en `init-db.sql` ✅ (CONFIRMADO post-merge)
+  - `cat_niveles_integracion` con datos oficiales en `init-db.sql` ✅
+  - `niveles_integracion_estudiante` con constraint `UNIQUE(id_estudiante, id_campo_formativo)` ✅
   - `NIVELES_INTEGRACION_ESTUDIANTE` con constraint `UNIQUE(estudiante, campo, periodo)` ✅
 - [ ] Verificar path del worker en producción: `isTsNode` → `dist/workers/worker-excel.js`
 - [ ] Registrar Angular bundle budget actual (valores relajados DEF-005); restaurar thresholds objetivo en `angular.json`
@@ -314,6 +334,9 @@ e
 
 #### Día 20 · Martes 14/04
 - [ ] **Test de aceptación final** — verificar los 7 criterios listados abajo
+- [ ] **[CLEANUP-01]** Eliminar 18+ scripts debug de `graphql-server/` raíz — issue #346
+- [ ] **[CLEANUP-02]** Investigar y eliminar `graphql-server/.env2` (verificar si contiene credenciales reales)
+- [ ] Investigar y eliminar/renombrar `graphql-server/npm` ejecutable sin extensión
 - [ ] Actualizar `BITACORA_CAMBIOS.md` con resumen de cambios de Fase 1
 - [ ] Actualizar `BITACORA_CAMBIOS_DB.md` con las migraciones SQL aplicadas
 - [ ] Crear tag Git: `git tag -a v1.0.0-fase1 -m "Cierre Fase 1"`
@@ -331,15 +354,15 @@ e
 
 Los siguientes 7 criterios deben cumplirse **antes** del tag `v1.0.0-fase1`:
 
-| # | Criterio | Verificación |
-|---|---|---|
-| ✅ 1 | `authenticateUser` devuelve `token` JWT firmado | `jwt.verify(token, secret)` no lanza error |
-| ✅ 2 | JWT autentica correctamente en requests subsecuentes | `context.user` con id y rol válidos |
-| ✅ 3 | Token btoa forjado es rechazado | `context.user = undefined`, error 401 |
-| ✅ 4 | `generateComprobante` retorna PDF real | `fileName` termina en `.pdf`; Base64 empieza con `JVBER` |
-| ✅ 5 | `docker-compose up` levanta los 3 servicios | `healthCheck.database.connected = true` |
-| ✅ 6 | Pipeline CI en verde (Node 20, lint + build + test) | GitHub Actions ✅ en `main` |
-| ✅ 7 | `ng build --configuration production` sin errores de budget | Consola sin `Error: bundle exceeded` |
+| # | Criterio | Verificación | Estado |
+|---|---|---|---|
+| 1 | `authenticateUser` devuelve `token` JWT firmado | `jwt.verify(token, secret)` no lanza error | ✅ Implementado |
+| 2 | JWT autentica correctamente en requests subsecuentes | `context.user` con id y rol válidos | ✅ Implementado |
+| 3 | Token btoa forjado es rechazado | `context.user = undefined`, error 401 | ✅ Implementado |
+| 4 | `generateComprobante` retorna PDF real | `fileName` termina en `.pdf`; Base64 empieza con `JVBER` | ✅ Implementado |
+| 5 | `docker-compose up` levanta los 4 servicios | `healthCheck.database.connected = true` | 🟡 Estructura ✅ — healthcheck backend ❌ #348 |
+| 6 | Pipeline CI en verde (Node 20, lint + build + test) | GitHub Actions ✅ en rama `dev` | ❌ Trigger `develop`→`dev` #345 bloquea |
+| 7 | `ng build --configuration production` sin errores de budget | Consola sin `Error: bundle exceeded` | ⏳ No verificado
 
 ---
 
@@ -377,17 +400,27 @@ Sprint 1 (JWT)
 
 ## Registro de Gaps Incorporados al Plan
 
-Los siguientes gaps fueron identificados al comparar el plan original contra la documentación interna del repositorio:
+Los siguientes gaps fueron identificados al comparar el plan original contra la documentación interna y auditorías de código sucesivas:
 
-| ID Gap | Descripción | Sprint | Día |
-|---|---|---|---|
-| GAP-CI-1 | CI usa Node 18; proyecto requiere Node 20 | S3 | Día 13 |
-| GAP-CI-2 | CI no ejecuta `npx jest` — pipeline sin tests | S4 | Día 17 |
-| GAP-DB-1 | IDs hardcodeados (1, 2) en `uploadExcelAssessment` | S4 | Día 18 |
-| GAP-DB-2 | Catálogo duplicado `cat_nivel_educativo` / `cat_niveles_educativos` | S4 | Día 18 |
-| GAP-DB-3 | Modelo NIA (3 tablas aprobadas) sin DDL real | S4 | Día 19 |
-| GAP-RF18 | RF-18 incompleto: sin `primer_login`, bloqueo, expiración | S1 | Día 2 |
-| GAP-CAT | Catálogos EIA 2025 / CCT SIGED sin seed | S3 | Día 13 |
+| ID Gap | Descripción | Sprint | Día | Estado | Issue |
+|--------|------------|--------|-----|--------|-------|
+| GAP-CI-1 | CI usa Node 18; proyecto requiere Node 20 | S3 | Día 13 | ✅ Resuelto | — |
+| GAP-CI-2 | CI no ejecuta `npx jest` — pipeline sin tests | S4 | Día 17 | ✅ Resuelto | — |
+| GAP-DB-1 | IDs hardcodeados (1, 2) en `uploadExcelAssessment` | S4 | Día 18 | ✅ Resuelto | — |
+| GAP-DB-2 | Catálogo duplicado `cat_nivel_educativo` / `cat_niveles_educativos` | S4 | Día 18 | ✅ Resuelto | — |
+| GAP-DB-3 | Modelo NIA (3 tablas aprobadas) sin DDL real | S4 | Día 19 | ✅ Resuelto completo | — |
+| GAP-RF18 | RF-18 incompleto: sin `primer_login`, bloqueo, expiración | S1 | Día 2 | ✅ Resuelto | — |
+| GAP-CAT | Catálogos EIA 2025 / CCT SIGED sin seed | S3 | Día 13 | ✅ Resuelto | — |
+| GAP-CI-NUEVO-1 | Trigger CI: rama `develop` excluye `dev` — 10/10 ejecuciones fallidas | S3 | Día 13 | ❌ Pendiente | #345 |
+| SEC-NEW-01 | JWT_SECRET fallback inseguro en `jwt.ts` (OWASP A02) | S3 | Día 13 | ❌ Pendiente | #342 |
+| SEC-NEW-02 | CORS wildcard `'*'` en producción `index.ts` (OWASP A05) | S3 | Día 13 | ❌ Pendiente | #343 |
+| SEC-NEW-03 | Credenciales SFTP hardcodeadas en `docker-compose.yml` (repo público) | S3 | Día 13 | ❌ Pendiente | #344 |
+| SEC-NEW-04 | `${JWT_SECRET:-supersecretkey}` fallback débil en sección `backend` de compose | S3 | Día 13 | ❌ Pendiente | absorber #342 |
+| SEC-NEW-05 | `SFTP_USER/PASS` hardcodeados en sección `backend` de compose (doble exposición) | S3 | Día 13 | ❌ Pendiente | absorber #344 |
+| TEST-NEW-01 | `tests/schema/authenticateUser.test.ts` no existe — auth sin cobertura | S4 | Día 16 | ❌ Pendiente | #347 |
+| INFRA-NEW-01 | Healthcheck del servicio `backend` ausente en `docker-compose.yml` | S3 | Día 14 | ❌ Pendiente | #348 |
+| CLEANUP-01 | 18+ scripts debug en `graphql-server/` raíz expuestos en repo público | S4 | Día 20 | ❌ Pendiente | #346 |
+| CLEANUP-02 | `graphql-server/.env2` duplicado sospechoso / posibles credenciales reales | S4 | Día 20 | ⚠️ Urgente | crear issue |
 
 ---
 
