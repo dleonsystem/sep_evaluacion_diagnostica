@@ -10,7 +10,7 @@
 | **Metodología** | RUP / PSP — 4 Sprints × 5 días hábiles |
 | **Esfuerzo estimado** | ~100 horas |
 | **Versión del documento** | 1.3 — auditada post-merge origin/dev 01/04/2026 |
-| **Estado** | 🟡 En ejecución (S1 ✅, S2 ✅, S3 🏗️ — infra integrada, 3 issues seguridad bloqueantes: #343 #344 #345) |
+| **Estado** | 🟡 En ejecución (S1 ✅, S2 ✅, S3 🏗️ — infra integrada, 2 issues seguridad bloqueantes: #344 #345) |
 
 ---
 
@@ -53,7 +53,7 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 | **ISSUE-254** | CU-16: Persistencia robusta de evaluaciones, NIA y estudiantes | ✅ Resuelto | RF-16 |
 | **ISSUE-267** | CU-15: Gestión de Directores (CRUD completo, Estado, CCT) | 🏗️ En Verificación | S2 |
 | **SEC-NEW-01** | JWT_SECRET fallback inseguro `'your_jwt_secret_key...'` en `jwt.ts` (OWASP A02) | ✅ Resuelto — issue #342 | S3 |
-| **SEC-NEW-02** | CORS wildcard `'*'` en producción `index.ts` (OWASP A05) | ❌ Pendiente — issue #343 | S3 |
+| **SEC-NEW-02** | CORS wildcard `'*'` en producción `index.ts` (OWASP A05) | ✅ Resuelto — issue #343 | S3 |
 | **SEC-NEW-03** | SFTP credentials `eia_user:eia_password` hardcodeadas en `docker-compose.yml` (repo público) | ❌ Pendiente — issue #344 | S3 |
 | **SEC-NEW-04** | `JWT_SECRET:-supersecretkey` fallback débil en sección `backend` de `docker-compose.yml` | ✅ Resuelto — issue #342 | S3 |
 | **SEC-NEW-05** | `SFTP_USER/PASS` hardcodeados en sección `backend` de `docker-compose.yml` (doble exposición) | ❌ Pendiente — absorber en #344 | S3 |
@@ -413,7 +413,7 @@ Los siguientes gaps fueron identificados al comparar el plan original contra la 
 | GAP-CAT | Catálogos EIA 2025 / CCT SIGED sin seed | S3 | Día 13 | ✅ Resuelto | — |
 | GAP-CI-NUEVO-1 | Trigger CI: rama `develop` excluye `dev` — 10/10 ejecuciones fallidas | S3 | Día 13 | ❌ Pendiente | #345 |
 | SEC-NEW-01 | JWT_SECRET fallback inseguro en `jwt.ts` (OWASP A02) | S3 | Día 13 | ✅ Resuelto | #342 |
-| SEC-NEW-02 | CORS wildcard `'*'` en producción `index.ts` (OWASP A05) | S3 | Día 13 | ❌ Pendiente | #343 |
+| SEC-NEW-02 | CORS wildcard `'*'` en producción `index.ts` (OWASP A05) | S3 | Día 13 | ✅ Resuelto | #343 |
 | SEC-NEW-03 | Credenciales SFTP hardcodeadas en `docker-compose.yml` (repo público) | S3 | Día 13 | ❌ Pendiente | #344 |
 | SEC-NEW-04 | `${JWT_SECRET:-supersecretkey}` fallback débil en sección `backend` de compose | S3 | Día 13 | ✅ Resuelto | absorber #342 |
 | SEC-NEW-05 | `SFTP_USER/PASS` hardcodeados en sección `backend` de compose (doble exposición) | S3 | Día 13 | ❌ Pendiente | absorber #344 |
