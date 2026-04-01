@@ -417,7 +417,7 @@ Los siguientes gaps fueron identificados al comparar el plan original contra la 
 | SEC-NEW-03 | Credenciales SFTP hardcodeadas en `docker-compose.yml` (repo público) | S3 | Día 13 | ✅ Resuelto | #344 |
 | SEC-NEW-04 | `${JWT_SECRET:-supersecretkey}` fallback débil en sección `backend` de compose | S3 | Día 13 | ✅ Resuelto | absorber #342 |
 | SEC-NEW-05 | `SFTP_USER/PASS` hardcodeados en sección `backend` de compose (doble exposición) | S3 | Día 13 | ✅ Resuelto | absorber #344 |
-| TEST-NEW-01 | `tests/schema/authenticateUser.test.ts` no existe — auth sin cobertura | S4 | Día 16 | ❌ Pendiente | #347 |
+| TEST-NEW-01 | `tests/schema/authenticateUser.test.ts` existe — auth con cobertura | S4 | Día 16 | ✅ Resuelto | #347 |
 | INFRA-NEW-01 | Healthcheck del servicio `backend` ausente en `docker-compose.yml` | S3 | Día 14 | ❌ Pendiente | #348 |
 | CLEANUP-01 | 18+ scripts debug en `graphql-server/` raíz expuestos en repo público | S4 | Día 20 | ❌ Pendiente | #346 |
 | CLEANUP-02 | `graphql-server/.env2` duplicado sospechoso / posibles credenciales reales | S4 | Día 20 | ⚠️ Urgente | crear issue |
