@@ -411,7 +411,7 @@ Los siguientes gaps fueron identificados al comparar el plan original contra la 
 | GAP-DB-3 | Modelo NIA (3 tablas aprobadas) sin DDL real | S4 | Día 19 | ✅ Resuelto completo | — |
 | GAP-RF18 | RF-18 incompleto: sin `primer_login`, bloqueo, expiración | S1 | Día 2 | ✅ Resuelto | — |
 | GAP-CAT | Catálogos EIA 2025 / CCT SIGED sin seed | S3 | Día 13 | ✅ Resuelto | — |
-| GAP-CI-NUEVO-1 | Trigger CI: rama `develop` excluye `dev` — 10/10 ejecuciones fallidas | S3 | Día 13 | ❌ Pendiente | #345 |
+| GAP-CI-NUEVO-1 | Trigger CI: rama `develop` excluye `dev` — 10/10 ejecuciones fallidas | S3 | Día 13 | ✅ Resuelto | #345 |
 | SEC-NEW-01 | JWT_SECRET fallback inseguro en `jwt.ts` (OWASP A02) | S3 | Día 13 | ✅ Resuelto | #342 |
 | SEC-NEW-02 | CORS wildcard `'*'` en producción `index.ts` (OWASP A05) | S3 | Día 13 | ✅ Resuelto | #343 |
 | SEC-NEW-03 | Credenciales SFTP hardcodeadas en `docker-compose.yml` (repo público) | S3 | Día 13 | ✅ Resuelto | #344 |
@@ -420,7 +420,7 @@ Los siguientes gaps fueron identificados al comparar el plan original contra la 
 | TEST-NEW-01 | `tests/schema/authenticateUser.test.ts` existe — auth con cobertura | S4 | Día 16 | ✅ Resuelto | #347 |
 | INFRA-NEW-01 | Healthcheck del servicio `backend` ausente en `docker-compose.yml` | S3 | Día 14 | ❌ Pendiente | #348 |
 | CLEANUP-01 | 18+ scripts debug en `graphql-server/` raíz expuestos en repo público | S4 | Día 20 | ❌ Pendiente | #346 |
-| CLEANUP-02 | `graphql-server/.env2` duplicado sospechoso / posibles credenciales reales | S4 | Día 20 | ⚠️ Urgente | crear issue |
+| CLEANUP-02 | `graphql-server/.env2` duplicado sospechoso / posibles credenciales reales | S4 | Día 20 | ✅ Resuelto | — |
 
 ---
 
