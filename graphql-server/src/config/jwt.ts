@@ -3,7 +3,11 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_in_production';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error('[FATAL] JWT_SECRET environment variable is required. Server cannot start without it.');
+}
 
 /**
  * Genera un token JWT para un usuario

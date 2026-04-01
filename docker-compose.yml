@@ -33,7 +33,7 @@ services:
       - "4000:4000"
     environment:
       DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-eia_db}
-      JWT_SECRET: ${JWT_SECRET:-supersecretkey}
+      JWT_SECRET: ${JWT_SECRET}
       SFTP_HOST: sftp
       SFTP_PORT: 22
       SFTP_USER: eia_user
