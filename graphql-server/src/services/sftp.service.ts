@@ -29,8 +29,8 @@ export class SftpService {
     return {
       host: process.env.SFTP_HOST || 'localhost',
       port: parseInt(process.env.SFTP_PORT || '2222'),
-      username: process.env.SFTP_USER || 'user',
-      password: process.env.SFTP_PASSWORD || 'pass',
+      username: process.env.SFTP_USER,
+      password: process.env.SFTP_PASSWORD,
     };
   }
 
@@ -46,10 +46,16 @@ export class SftpService {
     try {
       // Re-instanciar el cliente si hay problemas de estado
       try { await this.client.end(); } catch (e) {}
+      const config = this.getConfig();
+      if (!config.username || !config.password) {
+        logger.error('SFTP Connection Blocked: Missing SFTP_USER or SFTP_PASSWORD environment variables.');
+        return false;
+      }
+
       this.client = new Client();
       this.setupListeners();
       
-      await this.client.connect(this.getConfig());
+      await this.client.connect(config);
       this.isConnected = true;
       const cwd = await this.client.realPath('.');
       logger.info(`SFTP Connected. CWD: ${cwd}`);

@@ -36,9 +36,9 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       SFTP_HOST: sftp
       SFTP_PORT: 22
-      SFTP_USER: eia_user
-      SFTP_PASS: eia_password
-      SFTP_BASE_PATH: /home/eia_user/upload
+      SFTP_USER: ${SFTP_USER:-eia_user}
+      SFTP_PASSWORD: ${SFTP_PASSWORD}
+      SFTP_BASE_PATH: /home/${SFTP_USER:-eia_user}/upload
       PORT: 4000
     restart: unless-stopped
 
@@ -57,11 +57,11 @@ services:
     image: atmoz/sftp
     container_name: eia_sftp
     volumes:
-      - ./sftp-data:/home/eia_user/upload
+      - ./sftp-data:/home/${SFTP_USER:-eia_user}/upload
     ports:
       - "2222:22"
     environment:
-      SFTP_USERS: "eia_user:eia_password:1001"
+      SFTP_USERS: "${SFTP_USER:-eia_user}:${SFTP_PASSWORD}:1001"
     restart: unless-stopped
 
 volumes:
