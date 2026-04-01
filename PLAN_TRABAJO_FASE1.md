@@ -10,7 +10,7 @@
 | **Metodología** | RUP / PSP — 4 Sprints × 5 días hábiles |
 | **Esfuerzo estimado** | ~100 horas |
 | **Versión del documento** | 1.3 — auditada post-merge origin/dev 01/04/2026 |
-| **Estado** | 🟡 En ejecución (S1 ✅, S2 ✅, S3 🏗️ — infra integrada, 4 issues seguridad bloqueantes: #342 #343 #344 #345) |
+| **Estado** | 🟡 En ejecución (S1 ✅, S2 ✅, S3 🏗️ — infra integrada, 3 issues seguridad bloqueantes: #343 #344 #345) |
 
 ---
 
@@ -52,10 +52,10 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 | **ISSUE-301** | Containerización completa (Docker + Compose + Healthcheck) | ✅ Resuelto | Infra |
 | **ISSUE-254** | CU-16: Persistencia robusta de evaluaciones, NIA y estudiantes | ✅ Resuelto | RF-16 |
 | **ISSUE-267** | CU-15: Gestión de Directores (CRUD completo, Estado, CCT) | 🏗️ En Verificación | S2 |
-| **SEC-NEW-01** | JWT_SECRET fallback inseguro `'your_jwt_secret_key...'` en `jwt.ts` (OWASP A02) | ❌ Pendiente — issue #342 | S3 |
+| **SEC-NEW-01** | JWT_SECRET fallback inseguro `'your_jwt_secret_key...'` en `jwt.ts` (OWASP A02) | ✅ Resuelto — issue #342 | S3 |
 | **SEC-NEW-02** | CORS wildcard `'*'` en producción `index.ts` (OWASP A05) | ❌ Pendiente — issue #343 | S3 |
 | **SEC-NEW-03** | SFTP credentials `eia_user:eia_password` hardcodeadas en `docker-compose.yml` (repo público) | ❌ Pendiente — issue #344 | S3 |
-| **SEC-NEW-04** | `JWT_SECRET:-supersecretkey` fallback débil en sección `backend` de `docker-compose.yml` | ❌ Pendiente — absorber en #342 | S3 |
+| **SEC-NEW-04** | `JWT_SECRET:-supersecretkey` fallback débil en sección `backend` de `docker-compose.yml` | ✅ Resuelto — issue #342 | S3 |
 | **SEC-NEW-05** | `SFTP_USER/PASS` hardcodeados en sección `backend` de `docker-compose.yml` (doble exposición) | ❌ Pendiente — absorber en #344 | S3 |
 | **GAP-CI-NUEVO-1** | Trigger CI: rama `develop` — excluye rama `dev` — 10/10 ejecuciones fallidas | ❌ Pendiente — issue #345 | S3 |
 | **TEST-NEW-01** | `tests/schema/authenticateUser.test.ts` no existe — auth sin cobertura de pruebas | ❌ Pendiente — issue #347 | S4 |
@@ -241,7 +241,7 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 - [x] Crear `graphql-server/.env.example` completo con 40+ variables: `DATABASE_URL`, `JWT_SECRET`, `SMTP_*`, `SFTP_*` ← verificado presente 01/04/2026 ✅
 - [ ] Crear `.env.example` en raíz del repo (junto a `docker-compose.yml`) — **AUN PENDIENTE** ❌
 - [ ] **[GAP-CI-NUEVO-1]** Corregir trigger CI: `develop` → `dev` en `.github/workflows/ci.yml` — **PENDIENTE** ❌ issue #345
-- [ ] **[SEC-NEW-01]** Eliminar fallback inseguro JWT en `jwt.ts` y `docker-compose.yml` — **PENDIENTE** ❌ issue #342
+- [x] **[SEC-NEW-01]** Eliminar fallback inseguro JWT en `jwt.ts` y `docker-compose.yml` ← Resuelto en issue #342 ✅
 - [ ] **[SEC-NEW-03]** Mover credenciales SFTP a variables de entorno en `docker-compose.yml` — **PENDIENTE** ❌ issue #344
 
 **Archivos:** `docker-compose.yml`, `.github/workflows/ci.yml`, `graphql-server/scripts/seed-catalogs-eia2025.sql`, `.env.example`
@@ -412,10 +412,10 @@ Los siguientes gaps fueron identificados al comparar el plan original contra la 
 | GAP-RF18 | RF-18 incompleto: sin `primer_login`, bloqueo, expiración | S1 | Día 2 | ✅ Resuelto | — |
 | GAP-CAT | Catálogos EIA 2025 / CCT SIGED sin seed | S3 | Día 13 | ✅ Resuelto | — |
 | GAP-CI-NUEVO-1 | Trigger CI: rama `develop` excluye `dev` — 10/10 ejecuciones fallidas | S3 | Día 13 | ❌ Pendiente | #345 |
-| SEC-NEW-01 | JWT_SECRET fallback inseguro en `jwt.ts` (OWASP A02) | S3 | Día 13 | ❌ Pendiente | #342 |
+| SEC-NEW-01 | JWT_SECRET fallback inseguro en `jwt.ts` (OWASP A02) | S3 | Día 13 | ✅ Resuelto | #342 |
 | SEC-NEW-02 | CORS wildcard `'*'` en producción `index.ts` (OWASP A05) | S3 | Día 13 | ❌ Pendiente | #343 |
 | SEC-NEW-03 | Credenciales SFTP hardcodeadas en `docker-compose.yml` (repo público) | S3 | Día 13 | ❌ Pendiente | #344 |
-| SEC-NEW-04 | `${JWT_SECRET:-supersecretkey}` fallback débil en sección `backend` de compose | S3 | Día 13 | ❌ Pendiente | absorber #342 |
+| SEC-NEW-04 | `${JWT_SECRET:-supersecretkey}` fallback débil en sección `backend` de compose | S3 | Día 13 | ✅ Resuelto | absorber #342 |
 | SEC-NEW-05 | `SFTP_USER/PASS` hardcodeados en sección `backend` de compose (doble exposición) | S3 | Día 13 | ❌ Pendiente | absorber #344 |
 | TEST-NEW-01 | `tests/schema/authenticateUser.test.ts` no existe — auth sin cobertura | S4 | Día 16 | ❌ Pendiente | #347 |
 | INFRA-NEW-01 | Healthcheck del servicio `backend` ausente en `docker-compose.yml` | S3 | Día 14 | ❌ Pendiente | #348 |
