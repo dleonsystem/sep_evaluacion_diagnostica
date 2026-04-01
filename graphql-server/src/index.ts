@@ -256,15 +256,25 @@ async function startServer() {
     logger.info('✓ Servidor Apollo GraphQL iniciado');
 
     // 6. Configurar middleware de GraphQL
+    const allowedOrigins = (process.env.CORS_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean);
+    
+    if (process.env.NODE_ENV !== 'development' && allowedOrigins.length === 0) {
+      logger.error('[FATAL] CORS_ORIGIN environment variable is required in production.');
+      throw new Error('[FATAL] CORS_ORIGIN must be set in production. Server cannot start without it.');
+    }
+
     app.use(
       GRAPHQL_PATH,
       cors<cors.CorsRequest>({
         origin: (origin, callback) => {
           // En desarrollo, permitimos cualquier origen para evitar problemas de CORS
-          if (!origin || process.env.NODE_ENV === 'development') {
+          const isAllowed = !origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development';
+          
+          if (isAllowed) {
             callback(null, true);
           } else {
-            callback(null, process.env.CORS_ORIGIN || '*');
+            logger.warn(`🛑 CORS BLOQUEADO: Origen no permitido: ${origin}`);
+            callback(new Error('CORS policy violation'));
           }
         },
         credentials: true,
