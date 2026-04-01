@@ -60,7 +60,7 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 | **GAP-CI-NUEVO-1** | Trigger CI: rama `develop` — excluye rama `dev` — 10/10 ejecuciones fallidas | ✅ Resuelto — issue #345 | S3 |
 | **TEST-NEW-01** | `tests/schema/authenticateUser.test.ts` existe — auth con cobertura de pruebas | ✅ Resuelto — issue #347 | S4 |
 | **INFRA-NEW-01** | Healthcheck del servicio `backend` ausente en `docker-compose.yml` | ❌ Pendiente — issue #348 | S3 |
-| **CLEANUP-01** | 18+ scripts debug en `graphql-server/` raíz expuestos en repo público | ❌ Pendiente — issue #346 | S4 |
+| **CLEANUP-01** | 24+ scripts debug y dumps JSON en `graphql-server/` raíz eliminados | ✅ Resuelto — issue #346 | S4 |
 | **CLEANUP-02** | `graphql-server/.env2` duplicado sospechoso / posible credenciales reales | ✅ Resuelto | S3 |
 
 ---
@@ -419,7 +419,7 @@ Los siguientes gaps fueron identificados al comparar el plan original contra la 
 | SEC-NEW-05 | `SFTP_USER/PASS` hardcodeados en sección `backend` de compose (doble exposición) | S3 | Día 13 | ✅ Resuelto | absorber #344 |
 | TEST-NEW-01 | `tests/schema/authenticateUser.test.ts` existe — auth con cobertura | S4 | Día 16 | ✅ Resuelto | #347 |
 | INFRA-NEW-01 | Healthcheck del servicio `backend` ausente en `docker-compose.yml` | S3 | Día 14 | ❌ Pendiente | #348 |
-| CLEANUP-01 | 18+ scripts debug en `graphql-server/` raíz expuestos en repo público | S4 | Día 20 | ❌ Pendiente | #346 |
+| CLEANUP-01 | 24+ scripts debug en `graphql-server/` raíz expuestos en repo público | S4 | Día 20 | ✅ Resuelto | #346 |
 | CLEANUP-02 | `graphql-server/.env2` duplicado sospechoso / posibles credenciales reales | S4 | Día 20 | ✅ Resuelto | — |
 
 ---
