@@ -57,11 +57,11 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 | **SEC-NEW-03** | SFTP credentials `eia_user:eia_password` hardcodeadas en `docker-compose.yml` (repo público) | ✅ Resuelto — issue #344 | S3 |
 | **SEC-NEW-04** | `JWT_SECRET:-supersecretkey` fallback débil en sección `backend` de `docker-compose.yml` | ✅ Resuelto — issue #342 | S3 |
 | **SEC-NEW-05** | `SFTP_USER/PASS` hardcodeados en sección `backend` de `docker-compose.yml` (doble exposición) | ✅ Resuelto — issue #344 | S3 |
-| **GAP-CI-NUEVO-1** | Trigger CI: rama `develop` — excluye rama `dev` — 10/10 ejecuciones fallidas | ❌ Pendiente — issue #345 | S3 |
-| **TEST-NEW-01** | `tests/schema/authenticateUser.test.ts` no existe — auth sin cobertura de pruebas | ❌ Pendiente — issue #347 | S4 |
+| **GAP-CI-NUEVO-1** | Trigger CI: rama `develop` — excluye rama `dev` — 10/10 ejecuciones fallidas | ✅ Resuelto — issue #345 | S3 |
+| **TEST-NEW-01** | `tests/schema/authenticateUser.test.ts` existe — auth con cobertura de pruebas | ✅ Resuelto — issue #347 | S4 |
 | **INFRA-NEW-01** | Healthcheck del servicio `backend` ausente en `docker-compose.yml` | ❌ Pendiente — issue #348 | S3 |
 | **CLEANUP-01** | 18+ scripts debug en `graphql-server/` raíz expuestos en repo público | ❌ Pendiente — issue #346 | S4 |
-| **CLEANUP-02** | `graphql-server/.env2` duplicado sospechoso / posible credenciales reales | ⚠️ Revisar urgente | S3 |
+| **CLEANUP-02** | `graphql-server/.env2` duplicado sospechoso / posible credenciales reales | ✅ Resuelto | S3 |
 
 ---
 
