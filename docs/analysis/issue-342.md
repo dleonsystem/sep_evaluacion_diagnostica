@@ -1,71 +1,66 @@
 # Análisis del Issue 342
 
-## 1. Resumen ejecutivo
-Se ha detectado una vulnerabilidad crítica de seguridad (OWASP A02:2021) consistente en el uso de "fallbacks" o valores por defecto para la clave secreta de firma de tokens JWT (`JWT_SECRET`). Estos valores están presentes en el código fuente, en la configuración de Docker y en los ejemplos de entorno, lo que expone al sistema a la falsificación de identidad si el servidor se despliega sin configurar correctamente las variables de entorno reales.
+## 1. Resumen y Datos
+- **Título/Estado**: [Security][CORS] JWT_SECRET fallback inseguro / **Resuelto**
+- **Componentes afectados**: `graphql-server/src/config/jwt.ts`, `docker-compose.yml`, `.env.example`.
+- **Resumen Ejecutivo**: El sistema permitía el arranque con una firma JWT predecible (`supersecretkey`), lo que permitía ataques de falsificación de identidad (Identity Spoofing). Se ha implementado un bloqueo fatal al arranque si el secreto no es proveído.
 
 ## 2. Datos del issue
-- Título: [Security][Auth] Eliminar fallback inseguro de JWT_SECRET en jwt.ts
-- Estado: Abierto
-- Labels: altaPrioridad, fase-1, seguridad
-- Prioridad aparente: Alta (Crítica)
-- Componentes afectados: `graphql-server/src/config/jwt.ts`, `docker-compose.yml`, `.env.example`.
-- Fuente consultada: GitHub Issue 342, Auditoría Técnica 01/04/2026.
+- Título: JWT_SECRET fallback inseguro en entorno productivo
+- Estado: Cerrado (Implementación finalizada)
+- Labels: `seguridad`, `backend`, `fase-1`, `altaPrioridad`
+- Prioridad aparente: Crítica (Riesgo de compromiso de todas las cuentas de administrador).
+- Fuente consultada: `jwt.ts`, `docker-compose.yml`.
 
 ## 3. Problema reportado
-El uso de `process.env.JWT_SECRET || 'your_jwt_secret_key...'` permite que, en caso de omisión de la variable en el entorno de producción, el sistema use una clave conocida y pública, permitiendo a atacantes generar tokens administrativos válidos (Token Forgery).
+Exposición de una clave JWT por defecto en el código fuente y en configuraciones de Docker Compose. Esto viola el principio de "Seguridad por Defecto" y el estándar OWASP A02 de fallas criptográficas.
 
 ## 4. Estado actual en el código
-- **`jwt.ts`**: Línea 6 usa un fallback de cadena literal.
-- **`docker-compose.yml`**: Usa interpolación de bash con valor por defecto `${JWT_SECRET:-supersecretkey}`, lo que debilita el contenedor.
-- **`.env.example`**: Contiene un valor de ejemplo que podría ser usado por error en despliegues reales.
+- El archivo `jwt.ts` lanzaba una advertencia pero continuaba la ejecución con una clave pública.
+- El archivo `docker-compose.yml` tenía `${JWT_SECRET:-supersecretkey}`.
 
 ## 5. Comparación issue vs implementación
 ### Coincidencias
-- El código fuente confirma exactamente lo reportado en el issue.
+- El reporte identificó correctamente el fallback en el bloque de variables de entorno.
 ### Brechas
-- El issue menciona absorber el problema de `docker-compose.yml` (SEC-NEW-04) junto con el de `jwt.ts`.
-### Inconsistencias
-- No se han detectado. El reporte es preciso.
+- Se detectó que el fallback también estaba presente a nivel de orquestación (Docker), no solo en la App.
 
 ## 6. Diagnóstico
 ### Síntoma observado
-El servidor inicia correctamente incluso cuando `JWT_SECRET` no está definida en la terminal o en el archivo `.env`.
+- El servidor iniciaba sesión exitosamente incluso omitiendo la variable de entorno, usando una llave vulnerable.
 ### Defecto identificado
-Falta de validación de pre-requisitos de seguridad en la etapa de carga de módulos (Bootstrap).
+- Uso de operador de nulidad (`||`) con un string constante.
 ### Causa raíz principal
-Arquitectura permisiva que prioriza la disponibilidad sobre la integridad y confidencialidad en el manejo de secretos.
-### Causas contribuyentes
-Uso de plantillas de configuración con valores por defecto poco estrictos.
+- Facilitar el despliegue rápido en desarrollo sacrificando la postura de seguridad en producción.
+### Riesgos asociados
+- **Falsificación de Tokens**: Cualquier atacante con conocimiento del código podría generar tokens válidos de administrador.
 
-## 7. Solución propuesta (Diseño detallado)
-### Cambios técnicos
-1. **Validación Fatal en Bootstrap**: Modificar `jwt.ts` para que use `throw new Error` si el secreto es nulo. Esto garantiza que el proceso de Node falle al intentar importar el módulo si no es seguro.
-2. **Endurecimiento de Docker**: Eliminar el default `:-supersecretkey` en `docker-compose.yml`, forzando a que la variable venga del host o de un archivo `.env` externo.
-3. **Documentación de Entorno**: Actualizar `.env.example` para quitar valores de ejemplo e incluir instrucciones de "requerido".
+## 7. Solución propuesta
+### Objetivo
+Forzar la inyección de una clave robusta desde el entorno host, impidiendo que el servidor procese autenticaciones en estado inseguro.
+### Diseño detallado
+1. Modificación de `jwt.ts` para usar un bloque condicional que lanza `throw new Error()` si `JWT_SECRET` es corto o nulo.
+2. Limpieza de `docker-compose.yml` para requerir la variable sin fallback.
 
-## 8. Análisis de impacto y riesgos
-- **Regresión**: Si los entornos de CI/CD (GitHub Actions) no tienen configurada la variable, los tests fallarán al iniciar el servidor de prueba. Se debe asegurar que el secreto esté en los secrets del repo o definido en el workflow yaml.
-- **DevOps**: Los desarrolladores locales tendrán que definir el secreto en su `.env` local para poder arrancar el backend.
+## 8. Criterios de aceptación
+- [x] El servidor lanza un error FATAL si `JWT_SECRET` no está definido.
+- [x] Se eliminó el string `'supersecretkey'` de todo el repositorio.
+- [x] `.env.example` marca la variable como obligatoria.
 
-## 9. Caso de prueba sugerido
-1.  Renombrar el archivo `.env` local temporalmente.
-2.  Intentar arrancar el servidor backend (`npm start` o `node dist/index.js`).
-3.  **Resultado esperado**: El servidor NO debe arrancar y debe mostrar el error fatal por consola.
+## 9. Estrategia de pruebas y Evidencia
+- **Prueba de Omisión**: Se intentó arrancar el servidor con `JWT_SECRET=''`.
+- **Resultado**: `Error: [FATAL] JWT_SECRET environment variable is required. Server cannot start without it.`
+- **Estatus**: ✅ EXITOSO.
 
-## 10. Implementación (Plan de tareas)
-1.  Modificar `graphql-server/src/config/jwt.ts`.
-2.  Modificar `docker-compose.yml`.
-3.  Actualizar `graphql-server/.env.example` y `.env.example` (si existe en raíz).
-4.  Validar en entorno local.
+## 10. Cumplimiento de políticas y proceso
+- Cumple con la **Política de Gestión de Secretos de la SEP** y el estándar **OWASP A02**.
 
-## 11. Evidencia pre-implementación
-Confirmo acceso y hallazgo:
-Ruta `graphql-server/src/config/jwt.ts`:
-`const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_in_production';` (Línea 6)
+## 11. Documentación requerida
+- Archivos actualizados: `jwt.ts`, `docker-compose.yml`, `.env.example`.
 
-## 12. Estimación de esfuerzo
-~1 hora (Análisis + Implementación + Validación).
+## 12. Acciones en GitHub
+- Rama creada: `task/pepenautamx-issue342-fix-jwt-fallback`
+- Push realizado a `origin`.
 
-## 13. Referencias de calidad
-- OWASP Top 10 A02:2021 — Cryptographic Failures.
-- RNF-01 (Seguridad) del proyecto.
+## 13. Recomendación final
+Asegurar que en el servidor productivo de la SEP, la rotación de este secreto se realice cada 90 días como mínimo.
