@@ -399,6 +399,7 @@ m.id, m.nombre, m.tipo,
     ) => {
       try {
         // Obtener total de usuarios
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         const countResult = await query('SELECT COUNT(*) as total FROM usuarios');
         const totalCount = Number.parseInt(
           String((countResult.rows[0] as { total: number }).total),
