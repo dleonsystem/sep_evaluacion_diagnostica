@@ -1704,7 +1704,9 @@ t.numero_ticket as "folio",
              VALUES ($1, 'CHANGE_PASSWORD', 'AUTH', 'SUCCESS', $2, $3, $4)`,
             [userId, clientIp, userAgent, JSON.stringify({ email })]
           );
-        } catch (e) {}
+        } catch (e) {
+          // Ignorar error no crítico
+        }
 
         return { ok: true, message: 'Contraseña actualizada correctamente' };
       } catch (error: any) {
@@ -1965,7 +1967,9 @@ t.numero_ticket as "folio",
                VALUES ('RECOVER_PASSWORD_INVALID_EMAIL', 'AUTH', 'FAIL', $1, $2, $3)`,
               [clientIp, userAgent, JSON.stringify({ attemptedEmail: email })]
             );
-          } catch (e) {}
+          } catch (e) {
+            // Ignorar error no crítico
+          }
 
           await client.query('ROLLBACK');
           return 'OK';
@@ -2027,7 +2031,9 @@ t.numero_ticket as "folio",
              VALUES ($1, 'RECOVER_PASSWORD_REQUEST', 'AUTH', 'SUCCESS', $2, $3)`,
             [userId, clientIp, userAgent]
           );
-        } catch (e) {}
+        } catch (e) {
+          // Ignorar error no crítico
+        }
 
         await client.query('COMMIT');
         return 'Solicitud procesada';
@@ -2142,7 +2148,6 @@ t.numero_ticket as "folio",
 
         // Subir archivo a SFTP para auditoría (CU-04)
         try {
-          // @ts-ignore
           const sftpService = new SftpService();
           await sftpService.connect();
           await sftpService.ensureDir(remoteDir);
@@ -2600,7 +2605,7 @@ t.numero_ticket as "folio",
           }
         };
         // Ejecución en segundo plano ("fire-and-forget")
-        syncSftp().catch(() => {});
+        syncSftp().catch(() => { });
 
         const fechaHoy = new Date();
         fechaHoy.setDate(fechaHoy.getDate() + 4);
@@ -2683,7 +2688,8 @@ t.numero_ticket as "folio",
 
         // 2. Procesar cada archivo y subir a SFTP
         for (const archivo of archivos) {
-          let { nombre, base64 } = archivo;
+          const { nombre } = archivo;
+          let { base64 } = archivo;
 
           // Limpiar prefijo data URI si existe (ej. data:application/pdf;base64,...)
           if (base64.includes(';base64,')) {
@@ -2763,16 +2769,9 @@ t.numero_ticket as "folio",
 
       const client = await getClient();
       try {
-        let {
-          nombre,
-          tipo,
-          nivelEducativo,
-          cicloEscolar,
-          periodoId,
-          archivoBase64,
-          nombreArchivo,
-          overwrite,
-        } = input;
+        const { nombre, tipo, nivelEducativo, cicloEscolar, periodoId, nombreArchivo, overwrite } =
+          input;
+        let { archivoBase64 } = input;
 
         // 1. Obtener ID del nivel educativo
         const levelRes = await client.query(
@@ -3090,7 +3089,6 @@ t.numero_ticket as "folio",
         const evidenciasProcesadas = [];
         if (evidencias && evidencias.length > 0) {
           const remoteDir = '/upload/tickets/public';
-          // @ts-ignore
           const sftpService = new SftpService();
           await sftpService.ensureDir(remoteDir);
 

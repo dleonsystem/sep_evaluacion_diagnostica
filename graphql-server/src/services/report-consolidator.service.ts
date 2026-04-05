@@ -31,7 +31,9 @@ export class ReportConsolidatorService {
   private mailingService: MailingService;
 
   constructor() {
-    this.ensureDirectories();
+    this.ensureDirectories().catch((err) =>
+      logger.error('Error during initial directory creation', err)
+    );
     this.mailingService = new MailingService();
   }
 
