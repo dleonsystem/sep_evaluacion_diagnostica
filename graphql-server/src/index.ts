@@ -169,7 +169,8 @@ function configureLegacyApi(app: express.Application) {
   router.get('/stats/:cct', async (req, res) => {
     const { cct } = req.params;
     try {
-      const dbRes = await query(`
+      const dbRes = await query(
+        `
         SELECT 
           COUNT(DISTINCT e.id) as total_estudiantes,
           COUNT(v.id) as total_evaluaciones
@@ -178,7 +179,9 @@ function configureLegacyApi(app: express.Application) {
         JOIN estudiantes e ON e.grupo_id = g.id
         LEFT JOIN evaluaciones v ON v.estudiante_id = e.id
         WHERE esc.cct = $1
-      `, [cct]);
+      `,
+        [cct]
+      );
 
       if (dbRes.rows.length === 0) {
         return res.status(404).json({ error: 'CCT no encontrada' });
@@ -191,10 +194,11 @@ function configureLegacyApi(app: express.Application) {
         data: {
           total_estudiantes: parseInt(stats.total_estudiantes),
           total_evaluaciones: parseInt(stats.total_evaluaciones),
-          porcentaje_completado: stats.total_estudiantes > 0
-            ? (stats.total_evaluaciones / (stats.total_estudiantes * 4) * 100).toFixed(2) + '%'
-            : '0%'
-        }
+          porcentaje_completado:
+            stats.total_estudiantes > 0
+              ? ((stats.total_evaluaciones / (stats.total_estudiantes * 4)) * 100).toFixed(2) + '%'
+              : '0%',
+        },
       });
       return; // Added return to match code path expectation
     } catch (error) {
@@ -238,10 +242,10 @@ async function startServer() {
     // 4. Inicializar Servicios de Distribución (CU-06)
     const distributionService = new DistributionService(pool);
     const emailWatcherService = new EmailWatcherService(distributionService);
-    
+
     // Solo iniciar el watcher si están configuradas las credenciales IMAP (evita fallos en dev)
     if (process.env.IMAP_USER && process.env.IMAP_PASSWORD) {
-      emailWatcherService.start().catch(err => {
+      emailWatcherService.start().catch((err) => {
         logger.error('Error al iniciar el servicio de monitoreo de correos:', err);
       });
     } else {
@@ -256,11 +260,16 @@ async function startServer() {
     logger.info('✓ Servidor Apollo GraphQL iniciado');
 
     // 6. Configurar middleware de GraphQL
-    const allowedOrigins = (process.env.CORS_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean);
-    
+    const allowedOrigins = (process.env.CORS_ORIGIN || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
     if (process.env.NODE_ENV !== 'development' && allowedOrigins.length === 0) {
       logger.error('[FATAL] CORS_ORIGIN environment variable is required in production.');
-      throw new Error('[FATAL] CORS_ORIGIN must be set in production. Server cannot start without it.');
+      throw new Error(
+        '[FATAL] CORS_ORIGIN must be set in production. Server cannot start without it.'
+      );
     }
 
     app.use(
@@ -268,8 +277,9 @@ async function startServer() {
       cors<cors.CorsRequest>({
         origin: (origin, callback) => {
           // En desarrollo, permitimos cualquier origen para evitar problemas de CORS
-          const isAllowed = !origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development';
-          
+          const isAllowed =
+            !origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development';
+
           if (isAllowed) {
             callback(null, true);
           } else {
@@ -296,10 +306,13 @@ async function startServer() {
 
             // 1. Verificar JWT
             const decodedJwt = verifyToken(token);
-            let email = decodedJwt?.email;
+            const email = decodedJwt?.email;
 
             if (!email) {
-              logger.error('Token JWT inválido o sin email', { hasHeader: !!authHeader, tokenPrefix: token.substring(0, 10) });
+              logger.error('Token JWT inválido o sin email', {
+                hasHeader: !!authHeader,
+                tokenPrefix: token.substring(0, 10),
+              });
               return { user: undefined, loaders, distributionService };
             }
 
@@ -317,13 +330,15 @@ async function startServer() {
 
             if (result.rows.length > 0) {
               return {
-                user: result.rows[0] as any,
+                user: result.rows[0],
                 loaders,
                 distributionService,
                 req,
               };
             } else {
-              logger.error('Sesión rechazada: Usuario del token no encontrado o inactivo', { email });
+              logger.error('Sesión rechazada: Usuario del token no encontrado o inactivo', {
+                email,
+              });
             }
           } catch (error: any) {
             logger.error('Error fatal procesando token de contexto', { error: error.message });

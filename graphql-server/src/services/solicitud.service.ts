@@ -28,10 +28,10 @@ export class SolicitudService {
 
       if (existingReq.rows.length > 0) {
         solicitudId = existingReq.rows[0].id;
-        await client.query('UPDATE solicitudes_eia2 SET updated_at = NOW(), usuario_id = $1 WHERE id = $2', [
-          data.usuarioId || null,
-          solicitudId,
-        ]);
+        await client.query(
+          'UPDATE solicitudes_eia2 SET updated_at = NOW(), usuario_id = $1 WHERE id = $2',
+          [data.usuarioId || null, solicitudId]
+        );
       } else {
         const solicitudRes = await client.query(
           `INSERT INTO solicitudes_eia2 
@@ -46,7 +46,7 @@ export class SolicitudService {
             data.archivoPath,
             data.archivoSize,
             data.fileHash,
-            data.usuarioId || null
+            data.usuarioId || null,
           ]
         );
         solicitudId = solicitudRes.rows[0].id;

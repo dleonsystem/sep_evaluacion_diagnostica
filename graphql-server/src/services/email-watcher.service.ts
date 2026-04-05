@@ -25,7 +25,7 @@ export class EmailWatcherService {
         tls: process.env.IMAP_TLS === 'true' || true,
         tlsOptions: { rejectUnauthorized: false },
         authTimeout: 3000,
-      }
+      },
     };
   }
 
@@ -33,24 +33,25 @@ export class EmailWatcherService {
     if (this.isRunning) return;
     this.isRunning = true;
     logger.info('Iniciando EmailWatcherService...');
-    
+
     try {
       this.connection = await imapsimple.connect(this.getConfig());
       await this.connection.openBox('INBOX');
-      
+
       logger.info('Conectado a INBOX. Esperando correos...');
-      
+
       // Monitoreo periódico (Poll) o IDLE si el servidor lo soporta
       // Por simplicidad para este MVP, usaremos un intervalo de 1 minuto
-      setInterval(() => this.checkNewEmails(), 60000);
-      
+      setInterval(() => {
+        this.checkNewEmails().catch((err) => logger.error('Error periodic in checkNewEmails', err));
+      }, 60000);
+
       // Primer chequeo inmediato
       await this.checkNewEmails();
-      
     } catch (error: any) {
       logger.error('Error en EmailWatcherService al conectar o abrir INBOX:', {
         message: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
       this.isRunning = false;
     }
@@ -64,12 +65,12 @@ export class EmailWatcherService {
       const fetchOptions = {
         bodies: [''], // Fetch whole email
         struct: true,
-        markSeen: true
+        markSeen: true,
       };
 
       const messages = await this.connection.search(searchCriteria, fetchOptions);
       logger.info(`Búsqueda completada. Correos nuevos encontrados: ${messages.length}`);
-      
+
       for (const message of messages) {
         await this.processMessage(message);
       }
@@ -80,12 +81,12 @@ export class EmailWatcherService {
 
   private async processMessage(message: imapsimple.Message) {
     try {
-      const part = message.parts.find(p => p.which === '');
+      const part = message.parts.find((p) => p.which === '');
       if (!part) {
         logger.warn('No se encontró la parte principal del mensaje.');
         return;
       }
-      
+
       const parsed = await simpleParser(part.body);
 
       logger.info(`Nuevo correo detectado de: ${parsed.from?.text} - Asunto: ${parsed.subject}`);
@@ -105,7 +106,7 @@ export class EmailWatcherService {
     } catch (error: any) {
       logger.error('Error al procesar mensaje individual:', {
         message: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
     }
   }
@@ -118,10 +119,12 @@ export class EmailWatcherService {
     const cctMatch = fileName.match(/([0-9]{2}[A-Z]{3}[0-9]{4}[A-Z])/i);
     const cct = cctMatch ? cctMatch[1].toUpperCase() : 'DESCONOCIDO';
 
-    logger.info(`Archivo FRV detectado: ${fileName} - CCT extraído: ${cct} - Remitente: ${fromEmail}`);
+    logger.info(
+      `Archivo FRV detectado: ${fileName} - CCT extraído: ${cct} - Remitente: ${fromEmail}`
+    );
 
     const team = this.distributionService.getTeamForCCT(cct);
-    
+
     // Guardar archivo
     const uploadDir = path.join(process.cwd(), 'storage', 'uploads');
     if (!fs.existsSync(uploadDir)) {
@@ -144,7 +147,7 @@ export class EmailWatcherService {
         nivelId,
         archivoPath: `storage/uploads/${fileName}`,
         archivoSize: attachment.content.length,
-        fileHash
+        fileHash,
       });
 
       // Asignar al equipo
