@@ -1,3 +1,4 @@
+import { describe, it, expect } from '@jest/globals';
 import { generateToken, verifyToken } from './jwt';
 
 describe('JWT Utility (Sprint 1 - RF-18)', () => {

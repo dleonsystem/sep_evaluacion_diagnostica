@@ -1,3 +1,4 @@
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 // @ts-nocheck
 // Pattern matching tests/schema/generateComprobante.test.ts
 jest.mock('../../src/config/database', () => ({

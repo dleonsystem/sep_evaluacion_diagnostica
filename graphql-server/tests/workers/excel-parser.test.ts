@@ -1,3 +1,4 @@
+import { describe, it, expect } from '@jest/globals';
 import * as XLSX from 'xlsx';
 import { parseExcelAssessmentBuffer } from '../../src/workers/excel-parser';
 

@@ -39,6 +39,7 @@ jobs:
       run: npm test -- --ci --coverage
       env:
         NODE_OPTIONS: "--experimental-vm-modules"
+        JWT_SECRET: "test-secret-key-for-ci-security-validation"
 
     - name: Add Coverage to Step Summary
       if: always()

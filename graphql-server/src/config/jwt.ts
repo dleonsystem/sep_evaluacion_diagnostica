@@ -3,8 +3,6 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
 /**
  * User Payload interface for JWT
  */
@@ -14,11 +12,19 @@ interface UserPayload {
   rol: string;
 }
 
-if (!JWT_SECRET) {
-  throw new Error(
-    '[FATAL] JWT_SECRET environment variable is required. Server cannot start without it.'
-  );
-}
+/**
+ * Helper method to safely access the JWT_SECRET
+ * Implements lazy validation to avoid blocking test suites that don't use JWT
+ */
+const getSecret = (): string => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error(
+      '[FATAL] JWT_SECRET environment variable is required. Server cannot start without it.'
+    );
+  }
+  return secret;
+};
 
 /**
  * Genera un token JWT para un usuario
@@ -33,7 +39,7 @@ export const generateToken = (user: UserPayload, expiresIn: string = '8h'): stri
       email: user.email,
       rol: user.rol,
     },
-    JWT_SECRET,
+    getSecret(),
     { expiresIn: expiresIn as jwt.SignOptions['expiresIn'] }
   );
 };
@@ -45,7 +51,7 @@ export const generateToken = (user: UserPayload, expiresIn: string = '8h'): stri
  */
 export const verifyToken = (token: string): UserPayload | null => {
   try {
-    return jwt.verify(token, JWT_SECRET) as UserPayload;
+    return jwt.verify(token, getSecret()) as UserPayload;
   } catch (error) {
     return null;
   }

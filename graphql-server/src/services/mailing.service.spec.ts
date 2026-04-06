@@ -1,3 +1,4 @@
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { MailingService } from './mailing.service';
 import nodemailer from 'nodemailer';
 
@@ -6,11 +7,12 @@ jest.mock('nodemailer');
 
 describe('MailingService (Issue #315 - Refactor & Security)', () => {
   let service: MailingService;
-  let mockSendMail: jest.Mock;
+  let mockSendMail: any;
 
   beforeEach(() => {
-    mockSendMail = jest.fn().mockResolvedValue({ messageId: 'test-id' });
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({
+    mockSendMail = jest.fn() as any;
+    mockSendMail.mockResolvedValue({ messageId: 'test-id' });
+    (nodemailer.createTransport as any).mockReturnValue({
       sendMail: mockSendMail,
     });
 
