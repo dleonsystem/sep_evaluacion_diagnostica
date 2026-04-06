@@ -7,14 +7,17 @@ import { logger } from './logger.js';
  * @psp DataLoader Pattern - Performance Optimization
  */
 export const createDataLoaders = () => {
-    return {
-        /**
-         * Batch loader for centrosTrabajo (schools) linked to users.
-         */
-        userCentrosTrabajo: new DataLoader(async (userIds: readonly string[]) => {
-            logger.debug('DataLoader: Batch fetching centrosTrabajo for users', { count: userIds.length });
+  return {
+    /**
+     * Batch loader for centrosTrabajo (schools) linked to users.
+     */
+    userCentrosTrabajo: new DataLoader(async (userIds: readonly string[]) => {
+      logger.debug('DataLoader: Batch fetching centrosTrabajo for users', {
+        count: userIds.length,
+      });
 
-            const results = await query(`
+      const results = await query(
+        `
         SELECT 
           u.id as user_id,
           e.id,
@@ -46,25 +49,33 @@ export const createDataLoaders = () => {
         LEFT JOIN cat_nivel_educativo ne ON e.id_nivel = ne.id
         LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
         WHERE uct.usuario_id = ANY($1)
-      `, [userIds as string[]]);
+      `,
+        [userIds as string[]]
+      );
 
-            // Map results back to the order of requested userIds
-            const userSchoolsMap = results.rows.reduce((acc, row) => {
-                if (!acc[row.user_id]) acc[row.user_id] = [];
-                acc[row.user_id].push(row);
-                return acc;
-            }, {} as Record<string, any[]>);
+      // Map results back to the order of requested userIds
+      const userSchoolsMap = results.rows.reduce(
+        (acc, row) => {
+          if (!acc[row.user_id]) acc[row.user_id] = [];
+          acc[row.user_id].push(row);
+          return acc;
+        },
+        {} as Record<string, any[]>
+      );
 
-            return userIds.map(id => userSchoolsMap[id] || []);
-        }),
+      return userIds.map((id) => userSchoolsMap[id] || []);
+    }),
 
-        /**
-         * Batch loader for students linked to evaluations.
-         */
-        evaluationStudents: new DataLoader(async (evaluacionIds: readonly string[]) => {
-            logger.debug('DataLoader: Batch fetching students for evaluations', { count: evaluacionIds.length });
+    /**
+     * Batch loader for students linked to evaluations.
+     */
+    evaluationStudents: new DataLoader(async (evaluacionIds: readonly string[]) => {
+      logger.debug('DataLoader: Batch fetching students for evaluations', {
+        count: evaluacionIds.length,
+      });
 
-            const results = await query(`
+      const results = await query(
+        `
         SELECT 
           id,
           evaluacion_id,
@@ -76,24 +87,30 @@ export const createDataLoaders = () => {
           grupo
         FROM estudiantes
         WHERE evaluacion_id = ANY($1)
-      `, [evaluacionIds as string[]]);
+      `,
+        [evaluacionIds as string[]]
+      );
 
-            const studentsMap = results.rows.reduce((acc, row) => {
-                if (!acc[row.evaluacion_id]) acc[row.evaluacion_id] = [];
-                acc[row.evaluacion_id].push(row);
-                return acc;
-            }, {} as Record<string, any[]>);
+      const studentsMap = results.rows.reduce(
+        (acc, row) => {
+          if (!acc[row.evaluacion_id]) acc[row.evaluacion_id] = [];
+          acc[row.evaluacion_id].push(row);
+          return acc;
+        },
+        {} as Record<string, any[]>
+      );
 
-            return evaluacionIds.map(id => studentsMap[id] || []);
-        }),
+      return evaluacionIds.map((id) => studentsMap[id] || []);
+    }),
 
-        /**
-         * Batch loader for responses linked to tickets.
-         */
-        ticketResponses: new DataLoader(async (ticketIds: readonly string[]) => {
-            logger.debug('DataLoader: Batch fetching responses for tickets', { count: ticketIds.length });
+    /**
+     * Batch loader for responses linked to tickets.
+     */
+    ticketResponses: new DataLoader(async (ticketIds: readonly string[]) => {
+      logger.debug('DataLoader: Batch fetching responses for tickets', { count: ticketIds.length });
 
-            const results = await query(`
+      const results = await query(
+        `
         SELECT 
           id, 
           ticket_id,
@@ -110,18 +127,23 @@ export const createDataLoaders = () => {
         FROM comentarios_ticket
         WHERE ticket_id = ANY($1)
         ORDER BY created_at ASC
-      `, [ticketIds as string[]]);
+      `,
+        [ticketIds as string[]]
+      );
 
-            const responsesMap = results.rows.reduce((acc, row) => {
-                if (!acc[row.ticket_id]) acc[row.ticket_id] = [];
-                acc[row.ticket_id].push({
-                    ...row,
-                    fecha: row.fecha instanceof Date ? row.fecha.toISOString() : row.fecha
-                });
-                return acc;
-            }, {} as Record<string, any[]>);
+      const responsesMap = results.rows.reduce(
+        (acc, row) => {
+          if (!acc[row.ticket_id]) acc[row.ticket_id] = [];
+          acc[row.ticket_id].push({
+            ...row,
+            fecha: row.fecha instanceof Date ? row.fecha.toISOString() : row.fecha,
+          });
+          return acc;
+        },
+        {} as Record<string, any[]>
+      );
 
-            return ticketIds.map(id => responsesMap[id] || []);
-        })
-    };
+      return ticketIds.map((id) => responsesMap[id] || []);
+    }),
+  };
 };

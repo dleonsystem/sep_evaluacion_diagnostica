@@ -302,10 +302,15 @@ export const resolvers = {
      */
     checkUserExists: async (_: any, { email }: { email: string }) => {
       try {
-        const result = await query('SELECT id FROM usuarios WHERE email = $1', [email.trim().toLowerCase()]);
+        const result = await query('SELECT id FROM usuarios WHERE email = $1', [
+          email.trim().toLowerCase(),
+        ]);
         return {
           exists: result.rows.length > 0,
-          message: result.rows.length > 0 ? 'USUARIO YA REGISTRADO; INICIE SESIÓN PARA CARGAR ARCHIVOS.' : null
+          message:
+            result.rows.length > 0
+              ? 'USUARIO YA REGISTRADO; INICIE SESIÓN PARA CARGAR ARCHIVOS.'
+              : null,
         };
       } catch (error) {
         logger.error('Error checking user existence', { email, error });
@@ -443,7 +448,11 @@ m.id, m.nombre, m.tipo,
 
         return result.rows[0] as CentroTrabajoRow;
       } catch (error) {
-        logger.error('Error fetching CCT', { clave, error: (error as Error).message, stack: (error as Error).stack });
+        logger.error('Error fetching CCT', {
+          clave,
+          error: (error as Error).message,
+          stack: (error as Error).stack,
+        });
         throw new Error(`Error al obtener centro de trabajo: ${(error as Error).message}`);
       }
     },
@@ -492,7 +501,7 @@ m.id, m.nombre, m.tipo,
 
         const result = await query(sql, params);
 
-        const nodes = result.rows.map(row => ({
+        const nodes = result.rows.map((row) => ({
           id: row.id,
           cct: row.cct,
           nombre: row.nombre,
@@ -507,7 +516,7 @@ m.id, m.nombre, m.tipo,
           turno: { id: row.id_turno, nombre: row.turno_nombre, codigo: row.turno_codigo },
           nivel: row.nivel_codigo,
           entidadFederativa: { id: row.id_entidad, nombre: row.entidad_nombre },
-          cicloEscolar: { id: row.id_ciclo, nombre: row.ciclo_nombre, activo: true }
+          cicloEscolar: { id: row.id_ciclo, nombre: row.ciclo_nombre, activo: true },
         }));
 
         return { nodes, totalCount };
@@ -557,7 +566,7 @@ m.id, m.nombre, m.tipo,
           turno: { id: row.id_turno, nombre: row.turno_nombre, codigo: row.turno_codigo },
           nivel: row.nivel_codigo,
           entidadFederativa: { id: row.id_entidad, nombre: row.entidad_nombre },
-          cicloEscolar: { id: row.id_ciclo, nombre: row.ciclo_nombre, activo: true }
+          cicloEscolar: { id: row.id_ciclo, nombre: row.ciclo_nombre, activo: true },
         };
       } catch (error) {
         logger.error('Error fetching escuela', { id, error });
@@ -748,8 +757,12 @@ s.id,
         `);
         return result.rows.map((row) => ({
           ...row,
-          fechaCreacion: row.fechaCreacion instanceof Date ? row.fechaCreacion.toISOString() : row.fechaCreacion,
-          fechaActualizacion: row.fechaActualizacion instanceof Date ? row.fechaActualizacion.toISOString() : row.fechaActualizacion,
+          fechaCreacion:
+            row.fechaCreacion instanceof Date ? row.fechaCreacion.toISOString() : row.fechaCreacion,
+          fechaActualizacion:
+            row.fechaActualizacion instanceof Date
+              ? row.fechaActualizacion.toISOString()
+              : row.fechaActualizacion,
         }));
       } catch (error) {
         logger.error('Error fetching public incidents', { error });
@@ -1065,7 +1078,9 @@ t.numero_ticket as "folio",
           userId: context.user.id,
           error: error.message,
         });
-        throw new Error(knownMessages.has(error.message) ? error.message : 'Error al generar comprobante');
+        throw new Error(
+          knownMessages.has(error.message) ? error.message : 'Error al generar comprobante'
+        );
       }
     },
 
@@ -1083,7 +1098,7 @@ t.numero_ticket as "folio",
         const isAdmin = ['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol);
 
         // 1. Verificar existencia y permisos
-        let queryStr = 'SELECT resultados, usuario_id FROM solicitudes_eia2 WHERE id = $1';
+        const queryStr = 'SELECT resultados, usuario_id FROM solicitudes_eia2 WHERE id = $1';
         const params = [solicitudId];
 
         const res = await query(queryStr, params);
@@ -1110,7 +1125,8 @@ t.numero_ticket as "folio",
           buffer = await sftpService.downloadBuffer(archivoMetadata.url);
         }
 
-        if (!buffer) throw new Error('No se pudo recuperar el archivo del servidor de almacenamiento');
+        if (!buffer)
+          throw new Error('No se pudo recuperar el archivo del servidor de almacenamiento');
 
         return {
           success: true,
@@ -1136,7 +1152,8 @@ t.numero_ticket as "folio",
       if (!context.user) throw new Error('No autorizado');
 
       try {
-        const res = await query(`
+        const res = await query(
+          `
           SELECT 
             id, 
             archivo_original as "nombre", 
@@ -1149,19 +1166,24 @@ t.numero_ticket as "folio",
           FROM solicitudes_eia2 
           WHERE cct = $1
           ORDER BY fecha_carga DESC
-        `, [cct]);
+        `,
+          [cct]
+        );
 
         const reports: any[] = [];
-        res.rows.forEach(row => {
+        res.rows.forEach((row) => {
           // Reporte original de carga
           reports.push({
             id: row.id,
             nombre: row.nombre,
             tipo: 'CARGA_ORIGINAL',
-            fechaGeneracion: row.fechaGeneracion instanceof Date ? row.fechaGeneracion.toISOString() : row.fechaGeneracion,
+            fechaGeneracion:
+              row.fechaGeneracion instanceof Date
+                ? row.fechaGeneracion.toISOString()
+                : row.fechaGeneracion,
             url: row.url,
             size: row.size,
-            solicitudId: row.id
+            solicitudId: row.id,
           });
 
           // Resultados procesados
@@ -1171,10 +1193,13 @@ t.numero_ticket as "folio",
               id: `${row.id}_${r.nombre}`,
               nombre: r.nombre,
               tipo: r.tipo || 'RESULTADO_PDF',
-              fechaGeneracion: row.fechaGeneracion instanceof Date ? row.fechaGeneracion.toISOString() : row.fechaGeneracion,
+              fechaGeneracion:
+                row.fechaGeneracion instanceof Date
+                  ? row.fechaGeneracion.toISOString()
+                  : row.fechaGeneracion,
               url: r.url,
               size: r.size || 0,
-              solicitudId: row.id
+              solicitudId: row.id,
             });
           });
         });
@@ -1271,8 +1296,13 @@ t.numero_ticket as "folio",
         );
 
         if (ticketRes.rows.length === 0 && !isAdmin) {
-          logger.warn('Intento de acceso no autorizado a evidencia', { url, userId: context.user.id });
-          throw new Error('No tienes permiso para acceder a esta evidencia o el archivo no existe.');
+          logger.warn('Intento de acceso no autorizado a evidencia', {
+            url,
+            userId: context.user.id,
+          });
+          throw new Error(
+            'No tienes permiso para acceder a esta evidencia o el archivo no existe.'
+          );
         }
 
         const buffer = await sftpService.downloadBuffer(url);
@@ -1282,20 +1312,18 @@ t.numero_ticket as "folio",
 
         // 2. Registro de Auditoría (Senior)
         try {
-          const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const clientIp =
+            context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
           const userAgent = context.req?.headers['user-agent'];
           await query(
             `INSERT INTO log_actividades 
               (id_usuario, fecha_hora, accion, tabla, detalle, ip_address, user_agent, modulo, resultado)
             VALUES ($1, NOW(), 'EVIDENCIA_DESCARGADA', 'archivos_tickets', $2, $3, $4, 'SOPORTE', 'SUCCESS')`,
-            [
-              context.user.id,
-              JSON.stringify({ url, fileName }),
-              clientIp,
-              userAgent
-            ]
+            [context.user.id, JSON.stringify({ url, fileName }), clientIp, userAgent]
           );
-        } catch (logErr) { logger.warn('Audit error in downloadTicketEvidencia', logErr); }
+        } catch (logErr) {
+          logger.warn('Audit error in downloadTicketEvidencia', logErr);
+        }
 
         return {
           success: true,
@@ -1381,7 +1409,9 @@ t.numero_ticket as "folio",
         if (clavesCCT && clavesCCT.length > 0) {
           try {
             for (const cct of clavesCCT) {
-              const escuelaResult = await query(`SELECT id FROM escuelas WHERE cct = $1 LIMIT 1`, [cct]);
+              const escuelaResult = await query(`SELECT id FROM escuelas WHERE cct = $1 LIMIT 1`, [
+                cct,
+              ]);
               if (escuelaResult.rows.length > 0) {
                 const escuelaId = escuelaResult.rows[0].id;
                 // Asociación Muchos a Muchos
@@ -1406,7 +1436,8 @@ t.numero_ticket as "folio",
 
         // Registro de Auditoría (Trazabilidad Issue #253)
         try {
-          const clientIp = context.req?.headers?.['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const clientIp =
+            context.req?.headers?.['x-forwarded-for'] || context.req?.socket?.remoteAddress;
           const userAgent = context.req?.headers?.['user-agent'];
           await query(
             `INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, ip_address, user_agent, detalle)
@@ -1419,8 +1450,8 @@ t.numero_ticket as "folio",
                 createdUserId: createdUser.id,
                 email: createdUser.email,
                 rol,
-                ccts: clavesCCT
-              })
+                ccts: clavesCCT,
+              }),
             ]
           );
         } catch (e) {
@@ -1494,14 +1525,25 @@ t.numero_ticket as "folio",
 
           // Registro de auditoría de bloqueo (Issue #268)
           try {
-            const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+            const clientIp =
+              context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
             const userAgent = context.req?.headers['user-agent'];
             await query(
               `INSERT INTO log_actividades (id_usuario, fecha_hora, accion, modulo, resultado, ip_address, user_agent, detalle)
                VALUES ($1, NOW(), 'LOGIN_BLOQUEADO', 'AUTH', 'FAIL', $2, $3, $4)`,
-              [usuario.id, clientIp, userAgent, JSON.stringify({ reason: 'Attempt while blocked', expires: usuario.bloqueadoHasta })]
+              [
+                usuario.id,
+                clientIp,
+                userAgent,
+                JSON.stringify({
+                  reason: 'Attempt while blocked',
+                  expires: usuario.bloqueadoHasta,
+                }),
+              ]
             );
-          } catch (e) { logger.warn('Audit error', e); }
+          } catch (e) {
+            logger.warn('Audit error', e);
+          }
 
           return {
             ok: false,
@@ -1517,7 +1559,11 @@ t.numero_ticket as "folio",
         const hashGuardado = usuario.password_hash ?? '';
         const [salt, hash] = hashGuardado.split(':');
         if (!salt || !hash) {
-          return { ok: false, message: 'Falla en la configuración de seguridad de la cuenta', user: null };
+          return {
+            ok: false,
+            message: 'Falla en la configuración de seguridad de la cuenta',
+            user: null,
+          };
         }
 
         const storedKeyLen = Buffer.from(hash, 'hex').length;
@@ -1533,20 +1579,28 @@ t.numero_ticket as "folio",
           if (nuevosIntentos >= 5) {
             // Bloqueo tras 5 intentos (RN-18)
             await query(
-              'UPDATE usuarios SET intentos_fallidos = $1, bloqueado_hasta = NOW() + INTERVAL \'1 hour\' WHERE id = $2',
+              "UPDATE usuarios SET intentos_fallidos = $1, bloqueado_hasta = NOW() + INTERVAL '1 hour' WHERE id = $2",
               [nuevosIntentos, usuario.id]
             );
 
             // Registro de auditoría de bloqueo (Issue #268)
             try {
-              const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+              const clientIp =
+                context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
               const userAgent = context.req?.headers['user-agent'];
               await query(
                 `INSERT INTO log_actividades (id_usuario, fecha_hora, accion, modulo, resultado, ip_address, user_agent, detalle)
                  VALUES ($1, NOW(), 'CUENTA_BLOQUEADA_AUTO', 'AUTH', 'FAIL', $2, $3, $4)`,
-                [usuario.id, clientIp, userAgent, JSON.stringify({ attempts: nuevosIntentos, lockdownUntil: '1 hour' })]
+                [
+                  usuario.id,
+                  clientIp,
+                  userAgent,
+                  JSON.stringify({ attempts: nuevosIntentos, lockdownUntil: '1 hour' }),
+                ]
               );
-            } catch (e) { logger.warn('Audit error', e); }
+            } catch (e) {
+              logger.warn('Audit error', e);
+            }
 
             return {
               ok: false,
@@ -1561,14 +1615,17 @@ t.numero_ticket as "folio",
 
             // Despues de cada fallo tambien auditamos (Issue #268)
             try {
-              const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+              const clientIp =
+                context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
               const userAgent = context.req?.headers['user-agent'];
               await query(
                 `INSERT INTO log_actividades (id_usuario, fecha_hora, accion, modulo, resultado, ip_address, user_agent, detalle)
                  VALUES ($1, NOW(), 'LOGIN_FALLIDO', 'AUTH', 'FAIL', $2, $3, $4)`,
                 [usuario.id, clientIp, userAgent, JSON.stringify({ attempt: nuevosIntentos })]
               );
-            } catch (e) { logger.warn('Audit error', e); }
+            } catch (e) {
+              logger.warn('Audit error', e);
+            }
 
             return {
               ok: false,
@@ -1586,7 +1643,8 @@ t.numero_ticket as "folio",
 
         // Registro de auditoría (CU-15 / Issue #268)
         try {
-          const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const clientIp =
+            context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
           const userAgent = context.req?.headers['user-agent'];
 
           await query(
@@ -1602,7 +1660,7 @@ t.numero_ticket as "folio",
               clientIp,
               userAgent,
               'AUTH',
-              'SUCCESS'
+              'SUCCESS',
             ]
           );
         } catch (logErr) {
@@ -1619,7 +1677,7 @@ t.numero_ticket as "folio",
           user: {
             ...usuario,
             primerLogin: !!usuario.primerLogin,
-            passwordDebeCambiar: !!usuario.passwordDebeCambiar
+            passwordDebeCambiar: !!usuario.passwordDebeCambiar,
           },
         };
       } catch (error) {
@@ -1645,7 +1703,9 @@ t.numero_ticket as "folio",
       const userId = context.user.id;
 
       try {
-        const res = await query('SELECT password_hash, email FROM usuarios WHERE id = $1', [userId]);
+        const res = await query('SELECT password_hash, email FROM usuarios WHERE id = $1', [
+          userId,
+        ]);
         if (res.rows.length === 0) throw new Error('Usuario no encontrado');
 
         const { password_hash: hashActual, email } = res.rows[0];
@@ -1672,14 +1732,15 @@ t.numero_ticket as "folio",
         );
 
         try {
-          const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const clientIp =
+            context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
           const userAgent = context.req?.headers['user-agent'];
           await query(
             `INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, ip_address, user_agent, detalle)
              VALUES ($1, 'CHANGE_PASSWORD', 'AUTH', 'SUCCESS', $2, $3, $4)`,
             [userId, clientIp, userAgent, JSON.stringify({ email })]
           );
-        } catch (e) { }
+        } catch (e) {}
 
         return { ok: true, message: 'Contraseña actualizada correctamente' };
       } catch (error: any) {
@@ -1847,7 +1908,9 @@ t.numero_ticket as "folio",
             const uploaded = await sftpService.uploadBuffer(buffer, remotePath);
 
             if (!uploaded) {
-              throw new Error(`Error al subir la evidencia ${evidencia.nombre} al servidor remoto.`);
+              throw new Error(
+                `Error al subir la evidencia ${evidencia.nombre} al servidor remoto.`
+              );
             }
 
             evidenciasProcesadas.push({
@@ -1860,9 +1923,17 @@ t.numero_ticket as "folio",
 
         // Lógica de Priorización Automática (SLA)
         let prioridad = 'MEDIA';
-        const keywordsHigh = ['urgente', 'bloqueo', 'no puedo', 'error', 'credenciales', 'acceso', 'falla'];
+        const keywordsHigh = [
+          'urgente',
+          'bloqueo',
+          'no puedo',
+          'error',
+          'credenciales',
+          'acceso',
+          'falla',
+        ];
         const textToAnalyze = `${motivo} ${descripcion}`.toLowerCase();
-        if (keywordsHigh.some(kw => textToAnalyze.includes(kw))) {
+        if (keywordsHigh.some((kw) => textToAnalyze.includes(kw))) {
           prioridad = 'ALTA';
         }
 
@@ -1891,7 +1962,7 @@ t.numero_ticket as "folio",
             JSON.stringify(evidenciasProcesadas),
             context.user?.nombre || null,
             context.user?.cct || null,
-            context.user?.email || correo || null
+            context.user?.email || correo || null,
           ]
         );
 
@@ -1899,7 +1970,8 @@ t.numero_ticket as "folio",
 
         // 5. Registro de Auditoría (CU-15 / Issue #268 / Senior)
         try {
-          const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const clientIp =
+            context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
           const userAgent = context.req?.headers['user-agent'];
           await client.query(
             `INSERT INTO log_actividades 
@@ -1910,10 +1982,12 @@ t.numero_ticket as "folio",
               ticket.id,
               JSON.stringify({ numeroTicket: ticket.numeroTicket, asunto: ticket.asunto }),
               clientIp,
-              userAgent
+              userAgent,
             ]
           );
-        } catch (logErr) { logger.warn('Audit error in createTicket', logErr); }
+        } catch (logErr) {
+          logger.warn('Audit error in createTicket', logErr);
+        }
 
         await client.query('COMMIT');
 
@@ -1945,14 +2019,15 @@ t.numero_ticket as "folio",
         if (userRes.rows.length === 0) {
           // Registro de auditoría para intento fallido de recuperación (Issue #268)
           try {
-            const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+            const clientIp =
+              context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
             const userAgent = context.req?.headers['user-agent'];
             await query(
               `INSERT INTO log_actividades (accion, modulo, resultado, ip_address, user_agent, detalle)
                VALUES ('RECOVER_PASSWORD_INVALID_EMAIL', 'AUTH', 'FAIL', $1, $2, $3)`,
               [clientIp, userAgent, JSON.stringify({ attemptedEmail: email })]
             );
-          } catch (e) { }
+          } catch (e) {}
 
           await client.query('ROLLBACK');
           return 'OK';
@@ -1997,21 +2072,24 @@ t.numero_ticket as "folio",
         // 5. Enviar correo real
         const emailSent = await mailingService.sendPasswordRecovery(email, newPassword);
         if (!emailSent) {
-          throw new Error('No se pudo enviar el correo de recuperación. Por favor intenta más tarde o contacta soporte.');
+          throw new Error(
+            'No se pudo enviar el correo de recuperación. Por favor intenta más tarde o contacta soporte.'
+          );
         }
 
         logger.info(`Recovery email sent to ${email}`);
 
         // Registro de auditoría (Issue #268)
         try {
-          const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const clientIp =
+            context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
           const userAgent = context.req?.headers['user-agent'];
           await query(
             `INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, ip_address, user_agent)
              VALUES ($1, 'RECOVER_PASSWORD_REQUEST', 'AUTH', 'SUCCESS', $2, $3)`,
             [userId, clientIp, userAgent]
           );
-        } catch (e) { }
+        } catch (e) {}
 
         await client.query('COMMIT');
         return 'Solicitud procesada';
@@ -2049,7 +2127,8 @@ t.numero_ticket as "folio",
       // Helper para auditoría (Issue #254 - Trazabilidad)
       const auditLog = async (resultado: string, status: string, detalleAdicional: any = {}) => {
         try {
-          const clientIp = context.req?.headers?.['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const clientIp =
+            context.req?.headers?.['x-forwarded-for'] || context.req?.socket?.remoteAddress;
           const userAgent = context.req?.headers?.['user-agent'];
           await query(
             `INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, ip_address, user_agent, detalle)
@@ -2064,8 +2143,8 @@ t.numero_ticket as "folio",
                 archivo: nombreArchivo,
                 resultado,
                 cct: currentCct,
-                ...detalleAdicional
-              })
+                ...detalleAdicional,
+              }),
             ]
           );
         } catch (e) {
@@ -2083,7 +2162,10 @@ t.numero_ticket as "folio",
                 const runtimeEntry = process.argv[1] || '';
                 const isTsNode = runtimeEntry.endsWith('.ts') || process.env.TS_NODE_DEV === 'true';
                 const workerFileName = isTsNode ? 'worker-excel.ts' : 'worker-excel.js';
-                const workerBasePath = path.resolve(process.cwd(), isTsNode ? 'src/workers' : 'dist/workers');
+                const workerBasePath = path.resolve(
+                  process.cwd(),
+                  isTsNode ? 'src/workers' : 'dist/workers'
+                );
                 const wPath = path.join(workerBasePath, workerFileName);
 
                 const worker = new Worker(wPath);
@@ -2113,7 +2195,10 @@ t.numero_ticket as "folio",
           if (uRes.rows.length > 0) {
             const existingUserId = uRes.rows[0].id;
             userToLink = existingUserId;
-            logger.info('Viculando carga masiva a usuario existente sin sesión activa', { email: normalizedEmail, userId: existingUserId });
+            logger.info('Viculando carga masiva a usuario existente sin sesión activa', {
+              email: normalizedEmail,
+              userId: existingUserId,
+            });
           }
         }
 
@@ -2127,7 +2212,7 @@ t.numero_ticket as "folio",
           logger.info('[SFTP] Archivo de carga masiva respaldado', { remotePath });
         } catch (sftpErr) {
           logger.error('[SFTP] Error respaldando archivo de carga', { sftpErr });
-          // Continuamos aunque falle el respaldo físico si la BD es prioritaria, 
+          // Continuamos aunque falle el respaldo físico si la BD es prioritaria,
           // pero el constraint de la BD nos obliga a tener el path.
         }
 
@@ -2139,13 +2224,24 @@ t.numero_ticket as "folio",
           await auditLog(`Error worker: ${errorMsg}`, 'RECHAZADO');
           const rejRes = await query(
             `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false) RETURNING consecutivo`,
-            ['DESC', nombreArchivo, fileHash, userToLink || null, JSON.stringify([{ error: errorMsg, hoja: 'General' }]), remotePath, archivoSize]
+            [
+              'DESC',
+              nombreArchivo,
+              fileHash,
+              userToLink || null,
+              JSON.stringify([{ error: errorMsg, hoja: 'General' }]),
+              remotePath,
+              archivoSize,
+            ]
           );
           return {
             success: false,
             message: `Archivo rechazado: ${errorMsg}`,
             consecutivo: rejRes.rows[0]?.consecutivo?.toString(),
-            detalles: { errores: [errorMsg], erroresEstructurados: [{ error: errorMsg, hoja: 'General' }] },
+            detalles: {
+              errores: [errorMsg],
+              erroresEstructurados: [{ error: errorMsg, hoja: 'General' }],
+            },
           };
         }
 
@@ -2156,38 +2252,46 @@ t.numero_ticket as "folio",
           await auditLog(`Errores validación: ${erroresEstructurados.length}`, 'RECHAZADO');
           await query(
             `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false)`,
-            [cct || 'INVALID', nombreArchivo, fileHash, userToLink || null, JSON.stringify(erroresEstructurados), remotePath, archivoSize]
+            [
+              cct || 'INVALID',
+              nombreArchivo,
+              fileHash,
+              userToLink || null,
+              JSON.stringify(erroresEstructurados),
+              remotePath,
+              archivoSize,
+            ]
           );
           return {
             success: false,
             message: `Se encontraron ${erroresEstructurados.length} errores de validación en el archivo.`,
             detalles: {
               errores: erroresEstructurados.map((e: any) => e.error),
-              erroresEstructurados
-            }
+              erroresEstructurados,
+            },
           };
         }
         const excelTurno = metadata.turno?.toUpperCase() || '';
 
         // Mapeo de turnos alineado a cat_turnos id_turno
         const turnoMap: Record<string, number> = {
-          'MATUTINO': 1,
-          'VESPERTINO': 2,
-          'NOCTURNO': 3,
-          'DISCONTINUO': 4,
-          'CONTINUO': 5,
+          MATUTINO: 1,
+          VESPERTINO: 2,
+          NOCTURNO: 3,
+          DISCONTINUO: 4,
+          CONTINUO: 5,
           'TIEMPO COMPLETO': 6,
-          'JORNADA AMPLIADA': 7
+          'JORNADA AMPLIADA': 7,
         };
         const idTurno = turnoMap[excelTurno] || 1;
 
         // Mapeo de niveles alineado a cat_nivel_educativo id
         const nivelMap: Record<string, number> = {
-          'PREESCOLAR': 1,
-          'PRIMARIA': 2,
-          'SECUNDARIA': 3,
-          'TELESECUNDARIA': 4,
-          'INICIAL_GENERAL': 5
+          PREESCOLAR: 1,
+          PRIMARIA: 2,
+          SECUNDARIA: 3,
+          TELESECUNDARIA: 4,
+          INICIAL_GENERAL: 5,
         };
         const nivelDetectadoExcel = nivel.toUpperCase().replace(/ /g, '_');
         const idNivelExcel = nivelMap[nivelDetectadoExcel] || 2;
@@ -2199,7 +2303,15 @@ t.numero_ticket as "folio",
           await auditLog(errorMsg, 'RECHAZADO');
           await query(
             `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false)`,
-            [cct || 'INVALID', nombreArchivo, fileHash, userToLink || null, JSON.stringify([errorMsg]), remotePath, archivoSize]
+            [
+              cct || 'INVALID',
+              nombreArchivo,
+              fileHash,
+              userToLink || null,
+              JSON.stringify([errorMsg]),
+              remotePath,
+              archivoSize,
+            ]
           );
           return { success: false, message: errorMsg, detalles: { errores: [errorMsg] } };
         }
@@ -2215,34 +2327,55 @@ t.numero_ticket as "folio",
           const errorMsg = `La CCT ${cct} con turno "${excelTurno}" no está registrada en el catálogo oficial SIGED. Por favor, verifique sus datos.`;
           await query(
             `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false)`,
-            [cct, nombreArchivo, fileHash, userToLink || null, JSON.stringify([{ campo: 'CCT', error: errorMsg, hoja: 'ESC' }]), remotePath, archivoSize]
+            [
+              cct,
+              nombreArchivo,
+              fileHash,
+              userToLink || null,
+              JSON.stringify([{ campo: 'CCT', error: errorMsg, hoja: 'ESC' }]),
+              remotePath,
+              archivoSize,
+            ]
           );
           return {
             success: false,
             message: errorMsg,
             detalles: {
               errores: [errorMsg],
-              erroresEstructurados: [{ campo: 'CCT', error: errorMsg, hoja: 'ESC', fila: 9, columna: 'D' }]
-            }
+              erroresEstructurados: [
+                { campo: 'CCT', error: errorMsg, hoja: 'ESC', fila: 9, columna: 'D' },
+              ],
+            },
           };
         }
 
         // Validar consistencia de Nivel Educativo (RF-13.2)
         const idNivelBd = escrow.rows[0].id_nivel;
         if (idNivelBd !== idNivelExcel) {
-          const nivelNombreBd = Object.keys(nivelMap).find(key => nivelMap[key] === idNivelBd) || 'DESCONOCIDO';
+          const nivelNombreBd =
+            Object.keys(nivelMap).find((key) => nivelMap[key] === idNivelBd) || 'DESCONOCIDO';
           const errorMsg = `Inconsistencia de Nivel: El archivo es de nivel ${nivelDetectadoExcel}, pero la CCT ${cct} está registrada oficialmente como ${nivelNombreBd}.`;
           await query(
             `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false)`,
-            [cct, nombreArchivo, fileHash, userToLink || null, JSON.stringify([{ campo: 'Nivel', error: errorMsg, hoja: 'ESC' }]), remotePath, archivoSize]
+            [
+              cct,
+              nombreArchivo,
+              fileHash,
+              userToLink || null,
+              JSON.stringify([{ campo: 'Nivel', error: errorMsg, hoja: 'ESC' }]),
+              remotePath,
+              archivoSize,
+            ]
           );
           return {
             success: false,
             message: errorMsg,
             detalles: {
               errores: [errorMsg],
-              erroresEstructurados: [{ campo: 'Nivel', error: errorMsg, hoja: 'ESC', fila: 6, columna: 'C' }]
-            }
+              erroresEstructurados: [
+                { campo: 'Nivel', error: errorMsg, hoja: 'ESC', fila: 6, columna: 'C' },
+              ],
+            },
           };
         }
 
@@ -2250,24 +2383,37 @@ t.numero_ticket as "folio",
         const excelEmail = metadata.correo?.trim().toLowerCase();
         const inputEmail = normalizedEmail;
 
-        const credCheck = await query('SELECT id, correo_validado FROM credenciales_eia2 WHERE cct = $1', [cct]);
+        const credCheck = await query(
+          'SELECT id, correo_validado FROM credenciales_eia2 WHERE cct = $1',
+          [cct]
+        );
         let credencialId = credCheck.rows.length > 0 ? credCheck.rows[0].id : null;
 
         if (!credencialId) {
           // Primera carga: Loguear si hay diferencia pero permitir continuar (RF-16.2 modificado)
           if (inputEmail && excelEmail && inputEmail !== excelEmail) {
-            logger.info('Mismatch entre email de input y excel, se permite continuar', { inputEmail, excelEmail });
+            logger.info('Mismatch entre email de input y excel, se permite continuar', {
+              inputEmail,
+              excelEmail,
+            });
           }
         } else {
           // Carga posterior: El correo del Excel debe coincidir con el validado inicialmente?
-          // Según RF-16.4, las credenciales son reutilizables. 
+          // Según RF-16.4, las credenciales son reutilizables.
           // Si el usuario ya está logueado, confiamos en la sesión.
         }
 
         const escuelaIdFromDb = escrow.rows[0].id;
-        const existingReq = await query('SELECT id FROM solicitudes_eia2 WHERE hash_archivo = $1 LIMIT 1', [fileHash]);
+        const existingReq = await query(
+          'SELECT id FROM solicitudes_eia2 WHERE hash_archivo = $1 LIMIT 1',
+          [fileHash]
+        );
         if (existingReq.rows.length > 0 && !confirmarReemplazo) {
-          return { success: false, message: 'El archivo ya existe. ¿Desea reemplazarlo?', duplicadoDetectado: true };
+          return {
+            success: false,
+            message: 'El archivo ya existe. ¿Desea reemplazarlo?',
+            duplicadoDetectado: true,
+          };
         }
 
         const nivelId = idNivelExcel;
@@ -2281,8 +2427,8 @@ t.numero_ticket as "folio",
         let generatedPassword = null;
         if (!credencialId && inputEmail) {
           // Generar credenciales por primera vez
-          const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-          let retVal = "";
+          const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+          let retVal = '';
           for (let i = 0; i < 12; ++i) {
             retVal += charset.charAt(Math.floor(Math.random() * charset.length));
           }
@@ -2298,27 +2444,51 @@ t.numero_ticket as "folio",
           credencialId = newCred.rows[0].id;
 
           // También crear usuario en la tabla principal si no existe para permitir login
-          const userExist = await client.query('SELECT id FROM usuarios WHERE email = $1', [inputEmail]);
+          const userExist = await client.query('SELECT id FROM usuarios WHERE email = $1', [
+            inputEmail,
+          ]);
           if (userExist.rows.length === 0) {
             await client.query(
               'INSERT INTO usuarios (email, password_hash, rol, nombre, email_excel, password_debe_cambiar, primer_login, ultimo_cambio_password) VALUES ($1, $2, fn_catalogo_id($3, $4), $5, $6, false, false, NOW())',
-              [inputEmail, finalHash, 'cat_rol_usuario', 'RESPONSABLE_CCT', 'Director ' + cct, excelEmail]
+              [
+                inputEmail,
+                finalHash,
+                'cat_rol_usuario',
+                'RESPONSABLE_CCT',
+                'Director ' + cct,
+                excelEmail,
+              ]
             );
           } else {
             // Actualizar email_excel si no lo tiene (RF-16.x)
-            await client.query('UPDATE usuarios SET email_excel = $1 WHERE id = $2 AND email_excel IS NULL', [excelEmail, userExist.rows[0].id]);
+            await client.query(
+              'UPDATE usuarios SET email_excel = $1 WHERE id = $2 AND email_excel IS NULL',
+              [excelEmail, userExist.rows[0].id]
+            );
           }
         }
 
         if (existingReq.rows.length > 0) {
           solicitudId = existingReq.rows[0].id;
           await client.query('DELETE FROM evaluaciones WHERE solicitud_id = $1', [solicitudId]);
-          const upRes = await client.query('UPDATE solicitudes_eia2 SET updated_at = NOW(), credencial_id = $2 WHERE id = $1 RETURNING consecutivo', [solicitudId, credencialId]);
+          const upRes = await client.query(
+            'UPDATE solicitudes_eia2 SET updated_at = NOW(), credencial_id = $2 WHERE id = $1 RETURNING consecutivo',
+            [solicitudId, credencialId]
+          );
           consecutivo = upRes.rows[0].consecutivo;
         } else {
           const solRes = await client.query(
             `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, hash_archivo, usuario_id, credencial_id, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_PENDIENTE_SQL}, $3, $4, $5, $6, $7, $8, false) RETURNING id, consecutivo`,
-            [cct, nombreArchivo, nivelId, fileHash, userToLink || null, credencialId, remotePath, archivoSize]
+            [
+              cct,
+              nombreArchivo,
+              nivelId,
+              fileHash,
+              userToLink || null,
+              credencialId,
+              remotePath,
+              archivoSize,
+            ]
           );
           solicitudId = solRes.rows[0].id;
           consecutivo = solRes.rows[0].consecutivo;
@@ -2328,7 +2498,9 @@ t.numero_ticket as "folio",
         const idGrado = nivelId * 100 + grado;
 
         // 1. Obtener Periodo Activo
-        const periodRes = await client.query('SELECT id FROM periodos_evaluacion WHERE vigente = true LIMIT 1');
+        const periodRes = await client.query(
+          'SELECT id FROM periodos_evaluacion WHERE vigente = true LIMIT 1'
+        );
         const periodoId = periodRes.rows[0]?.id;
 
         if (!periodoId) {
@@ -2338,11 +2510,45 @@ t.numero_ticket as "folio",
         // 2. Mapeo de Materias por Nivel y Grado (Estructura determinista del Excel)
         // Este mapa asocia el índice del array de evaluaciones del alumno con el CÓDIGO de la materia en DB
         const MATERIA_MAP: Record<string, string[]> = {
-          'PREESCOLAR_3': ['P_L_C', 'P_L_C', 'P_S_P', 'P_S_P', 'P_S_P', 'P_E_N', 'P_E_N', 'P_E_N', 'P_D_C', 'P_D_C', 'P_D_C'],
-          'PRIMARIA_1': ['1P_L', '1P_L', '1P_L', '1P_M', '1P_M', '1P_M', '1P_NS', '1P_NS', '1P_NS', '1P_HC'],
-          'PRIMARIA_2': ['2P_L', '2P_L', '2P_L', '2P_M', '2P_M', '2P_M', '2P_NS', '2P_NS', '2P_NS', '2P_HC'],
-          'PRIMARIA_3': Array(26).fill('3P_GEN'), // Ajustar según códigos reales en DB
-          'SECUNDARIA_1': Array(21).fill('1S_GEN'),
+          PREESCOLAR_3: [
+            'P_L_C',
+            'P_L_C',
+            'P_S_P',
+            'P_S_P',
+            'P_S_P',
+            'P_E_N',
+            'P_E_N',
+            'P_E_N',
+            'P_D_C',
+            'P_D_C',
+            'P_D_C',
+          ],
+          PRIMARIA_1: [
+            '1P_L',
+            '1P_L',
+            '1P_L',
+            '1P_M',
+            '1P_M',
+            '1P_M',
+            '1P_NS',
+            '1P_NS',
+            '1P_NS',
+            '1P_HC',
+          ],
+          PRIMARIA_2: [
+            '2P_L',
+            '2P_L',
+            '2P_L',
+            '2P_M',
+            '2P_M',
+            '2P_M',
+            '2P_NS',
+            '2P_NS',
+            '2P_NS',
+            '2P_HC',
+          ],
+          PRIMARIA_3: Array(26).fill('3P_GEN'), // Ajustar según códigos reales en DB
+          SECUNDARIA_1: Array(21).fill('1S_GEN'),
           // ... mapeo completo según las sábanas oficiales
         };
 
@@ -2351,8 +2557,13 @@ t.numero_ticket as "folio",
 
         // 3. Cache de UUIDs de materias para evitar múltiples queries
         const materiasCache: Record<string, string> = {};
-        const allMaterias = await client.query('SELECT id, codigo FROM materias WHERE nivel_educativo = $1 AND activa = true', [nivelId]);
-        allMaterias.rows.forEach((m: any) => { materiasCache[m.codigo] = m.id; });
+        const allMaterias = await client.query(
+          'SELECT id, codigo FROM materias WHERE nivel_educativo = $1 AND activa = true',
+          [nivelId]
+        );
+        allMaterias.rows.forEach((m: any) => {
+          materiasCache[m.codigo] = m.id;
+        });
 
         const evaluationValues: any[] = [];
         const evaluationParams: any[] = [];
@@ -2391,7 +2602,9 @@ t.numero_ticket as "folio",
 
             if (materiaId) {
               evaluationParams.push(estudianteId, materiaId, periodoId, ev.valor, solicitudId);
-              evaluationValues.push(`($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2}, $${paramIndex + 3}, NOW(), NOW(), $${paramIndex + 4}, true)`);
+              evaluationValues.push(
+                `($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2}, $${paramIndex + 3}, NOW(), NOW(), $${paramIndex + 4}, true)`
+              );
               paramIndex += 6;
             }
           });
@@ -2429,23 +2642,35 @@ t.numero_ticket as "folio",
               if (uploaded) {
                 // Registrar en bitácora la trazabilidad (equipo_asignado en BD)
                 await context.distributionService.logDistribution(solicitudId, team.id);
-                logger.info(`Archivo FRV subido a SFTP y distribuido exitosamente: ${team.nombre} -> ${remotePath}`);
+                logger.info(
+                  `Archivo FRV subido a SFTP y distribuido exitosamente: ${team.nombre} -> ${remotePath}`
+                );
               } else {
                 throw new Error('Retorno false al subir FRV (uploadBuffer).');
               }
             } else {
-              logger.warn('distributionService no está inyectado en el contexto. Se omite envío SFTP.');
+              logger.warn(
+                'distributionService no está inyectado en el contexto. Se omite envío SFTP.'
+              );
             }
           } catch (e: any) {
-            logger.error('SFTP/Distribution sync error (CU-07)', { solicitudId, cct, error: e.message });
+            logger.error('SFTP/Distribution sync error (CU-07)', {
+              solicitudId,
+              cct,
+              error: e.message,
+            });
           }
         };
         // Ejecución en segundo plano ("fire-and-forget")
-        syncSftp().catch(() => { });
+        syncSftp().catch(() => {});
 
         const fechaHoy = new Date();
         fechaHoy.setDate(fechaHoy.getDate() + 4);
-        const fechaFutura = fechaHoy.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+        const fechaFutura = fechaHoy.toLocaleDateString('es-MX', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+        });
 
         let successMessage = `Tu archivo ha sido validado correctamente. Podrás consultar tus resultados a partir del día: ${fechaFutura}.`;
         if (generatedPassword) {
@@ -2464,8 +2689,8 @@ t.numero_ticket as "folio",
             nivel: metadata.nivelDetectado,
             grado,
             alumnosProcesados,
-            errores: []
-          }
+            errores: [],
+          },
         };
       } catch (error: any) {
         if (client) await client.query('ROLLBACK');
@@ -2480,8 +2705,8 @@ t.numero_ticket as "folio",
             grado: null,
             alumnosProcesados: 0,
             errores: [error.message],
-            erroresEstructurados: [{ error: error.message, hoja: 'General' }]
-          }
+            erroresEstructurados: [{ error: error.message, hoja: 'General' }],
+          },
         };
       } finally {
         if (client) client.release();
@@ -2702,7 +2927,12 @@ t.numero_ticket as "folio",
      */
     respondToTicket: async (
       _: any,
-      { ticketId, respuesta, cerrar, prioridad }: { ticketId: string; respuesta: string; cerrar: boolean; prioridad?: string },
+      {
+        ticketId,
+        respuesta,
+        cerrar,
+        prioridad,
+      }: { ticketId: string; respuesta: string; cerrar: boolean; prioridad?: string },
       context: GraphQLContext
     ) => {
       if (!context.user) throw new Error('No autorizado');
@@ -2761,7 +2991,8 @@ t.numero_ticket as "folio",
 
         // 3. Registro de Auditoría (CU-15 / Issue #268 / Senior)
         try {
-          const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const clientIp =
+            context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
           const userAgent = context.req?.headers['user-agent'];
           await client.query(
             `INSERT INTO log_actividades 
@@ -2772,10 +3003,12 @@ t.numero_ticket as "folio",
               ticketId,
               JSON.stringify({ estado: nuevoEstado, cerrado: cerrar }),
               clientIp,
-              userAgent
+              userAgent,
             ]
           );
-        } catch (logErr) { logger.warn('Audit error in respondToTicket', logErr); }
+        } catch (logErr) {
+          logger.warn('Audit error in respondToTicket', logErr);
+        }
 
         await client.query('COMMIT');
 
@@ -2854,7 +3087,11 @@ t.numero_ticket as "folio",
      * Simular la generación de reportes para una solicitud (Demo/Phase 1)
      * @use-case CU-08: Generar Reportes
      */
-    simulateReportGeneration: async (_: any, { solicitudId }: { solicitudId: string }, context: GraphQLContext) => {
+    simulateReportGeneration: async (
+      _: any,
+      { solicitudId }: { solicitudId: string },
+      context: GraphQLContext
+    ) => {
       if (!context.user) throw new Error('No autorizado');
       return reportConsolidatorService.simulateProcessing(solicitudId);
     },
@@ -2864,7 +3101,10 @@ t.numero_ticket as "folio",
      */
     resetUserPassword: async (_: any, { userId }: { userId: string }, context: GraphQLContext) => {
       // 1. Validar que el solicitante sea admin
-      if (!context.user || !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)) {
+      if (
+        !context.user ||
+        !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)
+      ) {
         throw new Error('No autorizado: Solo administradores pueden reiniciar contraseñas.');
       }
 
@@ -2902,7 +3142,7 @@ t.numero_ticket as "folio",
           success: true,
           message: emailSent
             ? `Contraseña reiniciada correctamente. Se ha enviado un correo a ${email}.`
-            : `Contraseña reiniciada en sistema, pero hubo un error al enviar el correo a ${email}. Informe la nueva contraseña manualmente.`
+            : `Contraseña reiniciada en sistema, pero hubo un error al enviar el correo a ${email}. Informe la nueva contraseña manualmente.`,
         };
       } catch (error: any) {
         await client.query('ROLLBACK');
@@ -2948,7 +3188,7 @@ t.numero_ticket as "folio",
               evidenciasProcesadas.push({
                 nombre: evidencia.nombre,
                 url: remotePath,
-                size: buffer.length
+                size: buffer.length,
               });
             }
           }
@@ -2967,7 +3207,7 @@ t.numero_ticket as "folio",
             nombreCompleto,
             cct,
             email,
-            JSON.stringify(evidenciasProcesadas)
+            JSON.stringify(evidenciasProcesadas),
           ]
         );
         const ticketId = insertRes.rows[0].id;
@@ -2985,7 +3225,7 @@ t.numero_ticket as "folio",
           correo: email,
           evidencias: evidenciasProcesadas,
           fechaCreacion: now.toISOString(),
-          fechaActualizacion: now.toISOString()
+          fechaActualizacion: now.toISOString(),
         };
       } catch (error) {
         await client.query('ROLLBACK');
@@ -3001,7 +3241,18 @@ t.numero_ticket as "folio",
      * @use-case CU-14: Administrar Catálogo de Escuelas
      */
     createEscuela: async (_: any, { input }: { input: any }, context: GraphQLContext) => {
-      const { cct, nombre, id_turno, id_nivel, id_entidad, id_ciclo, email, telefono, director, cp } = input;
+      const {
+        cct,
+        nombre,
+        id_turno,
+        id_nivel,
+        id_entidad,
+        id_ciclo,
+        email,
+        telefono,
+        director,
+        cp,
+      } = input;
 
       // 1. Validar CCT formato y dígito verificador
       const cctValidation = validateCCT(cct);
@@ -3015,7 +3266,9 @@ t.numero_ticket as "folio",
         [cct.toUpperCase(), id_turno]
       );
       if (existing.rows.length > 0) {
-        throw new Error(`La escuela con CCT ${cct} y el turno especificado ya existe en el catálogo.`);
+        throw new Error(
+          `La escuela con CCT ${cct} y el turno especificado ya existe en el catálogo.`
+        );
       }
 
       try {
@@ -3025,7 +3278,18 @@ t.numero_ticket as "folio",
             email, telefono, director, cp, activo, created_at, updated_at
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, NOW(), NOW())
           RETURNING id`,
-          [cct.toUpperCase(), nombre, id_turno, id_nivel, id_entidad, id_ciclo, email, telefono, director, cp]
+          [
+            cct.toUpperCase(),
+            nombre,
+            id_turno,
+            id_nivel,
+            id_entidad,
+            id_ciclo,
+            email,
+            telefono,
+            director,
+            cp,
+          ]
         );
 
         const newId = result.rows[0].id;
@@ -3036,7 +3300,9 @@ t.numero_ticket as "folio",
             "INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, detalle) VALUES ($1, 'CREATE_ESCUELA', 'CATALOGOS', 'SUCCESS', $2)",
             [context.user?.id || null, JSON.stringify({ id: newId, cct })]
           );
-        } catch (e) { logger.warn('Audit fail', e); }
+        } catch (e) {
+          logger.warn('Audit fail', e);
+        }
 
         const schoolRes = await query(
           `SELECT 
@@ -3070,9 +3336,8 @@ t.numero_ticket as "folio",
           nivel: row.nivel_codigo,
           turno: { id: row.id_turno, nombre: row.turno_nombre, codigo: row.turno_codigo },
           entidadFederativa: { id: row.id_entidad, nombre: row.entidad_nombre },
-          cicloEscolar: { id: row.id_ciclo, nombre: row.ciclo_nombre, activo: true }
+          cicloEscolar: { id: row.id_ciclo, nombre: row.ciclo_nombre, activo: true },
         };
-
       } catch (error) {
         logger.error('Error in createEscuela', error);
         throw new Error('Error interno al crear escuela');
@@ -3083,7 +3348,11 @@ t.numero_ticket as "folio",
      * Actualizar escuela existente
      * @use-case CU-14: Administrar Catálogo de Escuelas
      */
-    updateEscuela: async (_: any, { id, input }: { id: string; input: any }, context: GraphQLContext) => {
+    updateEscuela: async (
+      _: any,
+      { id, input }: { id: string; input: any },
+      context: GraphQLContext
+    ) => {
       const entries = Object.entries(input);
       if (entries.length === 0) throw new Error('No hay campos para actualizar');
 
@@ -3096,8 +3365,8 @@ t.numero_ticket as "folio",
       try {
         await client.query('BEGIN');
 
-        let setClause = [];
-        let values = [];
+        const setClause = [];
+        const values = [];
         let i = 1;
 
         for (const [key, value] of entries) {
@@ -3122,7 +3391,9 @@ t.numero_ticket as "folio",
             "INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, detalle) VALUES ($1, 'UPDATE_ESCUELA', 'CATALOGOS', 'SUCCESS', $2)",
             [context.user?.id || null, JSON.stringify({ id, fields: Object.keys(input) })]
           );
-        } catch (e) { logger.warn('Audit fail', e); }
+        } catch (e) {
+          logger.warn('Audit fail', e);
+        }
 
         const schoolRes = await query(
           `SELECT 
@@ -3156,9 +3427,8 @@ t.numero_ticket as "folio",
           nivel: row.nivel_codigo,
           turno: { id: row.id_turno, nombre: row.turno_nombre, codigo: row.turno_codigo },
           entidadFederativa: { id: row.id_entidad, nombre: row.entidad_nombre },
-          cicloEscolar: { id: row.id_ciclo, nombre: row.ciclo_nombre, activo: true }
+          cicloEscolar: { id: row.id_ciclo, nombre: row.ciclo_nombre, activo: true },
         };
-
       } catch (error) {
         await client.query('ROLLBACK');
         logger.error('Error in updateEscuela', error);
@@ -3166,7 +3436,7 @@ t.numero_ticket as "folio",
       } finally {
         client.release();
       }
-    }
+    },
   },
 
   /**

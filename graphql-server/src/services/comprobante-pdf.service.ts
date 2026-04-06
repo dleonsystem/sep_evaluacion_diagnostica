@@ -67,9 +67,7 @@ export class ComprobantePdfService {
       },
       content: [
         {
-          canvas: [
-            { type: 'rect', x: 0, y: 0, w: 515, h: 42, color: '#611232' },
-          ],
+          canvas: [{ type: 'rect', x: 0, y: 0, w: 515, h: 42, color: '#611232' }],
           margin: [0, 0, 0, 14],
         },
         {
@@ -104,7 +102,11 @@ export class ComprobantePdfService {
             ],
           },
           layout: {
-            fillColor: (rowIndex: number, _node: { table: { body: unknown[][] } }, columnIndex: number) => {
+            fillColor: (
+              rowIndex: number,
+              _node: { table: { body: unknown[][] } },
+              columnIndex: number
+            ) => {
               if (columnIndex === 0) {
                 return '#f6eddc';
               }
