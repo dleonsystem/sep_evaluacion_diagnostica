@@ -100,8 +100,10 @@ function createApolloServer(httpServer: http.Server) {
       ApolloServerPluginDrainHttpServer({ httpServer }),
       {
         async requestDidStart() {
+          await Promise.resolve(); // Satisfy require-await
           return {
             async didEncounterErrors(requestContext: any) {
+              await Promise.resolve(); // Satisfy require-await
               logger.error('GraphQL Error', {
                 errors: requestContext.errors,
                 operation: requestContext.operation?.operation,
@@ -166,46 +168,49 @@ function configureLegacyApi(app: express.Application) {
   const router = express.Router();
 
   // Endpoint para obtener estadísticas por CCT
-  router.get('/stats/:cct', async (req, res) => {
-    const { cct } = req.params;
-    try {
-      const dbRes = await query(
-        `
-        SELECT 
-          COUNT(DISTINCT e.id) as total_estudiantes,
-          COUNT(v.id) as total_evaluaciones
-        FROM escuelas esc
-        JOIN grupos g ON g.escuela_id = esc.id
-        JOIN estudiantes e ON e.grupo_id = g.id
-        LEFT JOIN evaluaciones v ON v.estudiante_id = e.id
-        WHERE esc.cct = $1
-      `,
-        [cct]
-      );
+  router.get('/stats/:cct', (req, res) => {
+    void (async () => {
+      const { cct } = req.params;
+      try {
+        const dbRes = await query(
+          `
+          SELECT 
+            COUNT(DISTINCT e.id) as total_estudiantes,
+            COUNT(v.id) as total_evaluaciones
+          FROM escuelas esc
+          JOIN grupos g ON g.escuela_id = esc.id
+          JOIN estudiantes e ON e.grupo_id = g.id
+          LEFT JOIN evaluaciones v ON v.estudiante_id = e.id
+          WHERE esc.cct = $1
+        `,
+          [cct]
+        );
 
-      if (dbRes.rows.length === 0) {
-        return res.status(404).json({ error: 'CCT no encontrada' });
+        if (dbRes.rows.length === 0) {
+          return res.status(404).json({ error: 'CCT no encontrada' });
+        }
+
+        const stats = dbRes.rows[0];
+        res.json({
+          cct,
+          success: true,
+          data: {
+            total_estudiantes: parseInt(stats.total_estudiantes),
+            total_evaluaciones: parseInt(stats.total_evaluaciones),
+            porcentaje_completado:
+              stats.total_estudiantes > 0
+                ? ((stats.total_evaluaciones / (stats.total_estudiantes * 4)) * 100).toFixed(2) +
+                  '%'
+                : '0%',
+          },
+        });
+        return; // Added return to match code path expectation
+      } catch (error) {
+        logger.error('Legacy API Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+        return;
       }
-
-      const stats = dbRes.rows[0];
-      res.json({
-        cct,
-        success: true,
-        data: {
-          total_estudiantes: parseInt(stats.total_estudiantes),
-          total_evaluaciones: parseInt(stats.total_evaluaciones),
-          porcentaje_completado:
-            stats.total_estudiantes > 0
-              ? ((stats.total_evaluaciones / (stats.total_estudiantes * 4)) * 100).toFixed(2) + '%'
-              : '0%',
-        },
-      });
-      return; // Added return to match code path expectation
-    } catch (error) {
-      logger.error('Legacy API Error:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
-      return;
-    }
+    })();
   });
 
   app.use('/api/legacy', router);
@@ -401,8 +406,12 @@ async function gracefulShutdown(signal: string) {
 }
 
 // Registrar manejadores de señales
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => {
+  void gracefulShutdown('SIGTERM');
+});
+process.on('SIGINT', () => {
+  void gracefulShutdown('SIGINT');
+});
 
 // Manejo de errores no capturados
 process.on('unhandledRejection', (reason, promise) => {

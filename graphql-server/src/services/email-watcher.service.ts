@@ -42,7 +42,9 @@ export class EmailWatcherService {
 
       // Monitoreo periódico (Poll) o IDLE si el servidor lo soporta
       // Por simplicidad para este MVP, usaremos un intervalo de 1 minuto
-      setInterval(() => this.checkNewEmails(), 60000);
+      setInterval(() => {
+        void this.checkNewEmails();
+      }, 60000);
 
       // Primer chequeo inmediato
       await this.checkNewEmails();

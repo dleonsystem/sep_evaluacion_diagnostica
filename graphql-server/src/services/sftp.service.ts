@@ -47,7 +47,9 @@ export class SftpService {
       // Re-instanciar el cliente si hay problemas de estado
       try {
         await this.client.end();
-      } catch (e) {}
+      } catch (e) {
+        // Ignored: failure to end an already disconnected or unstable client is expected
+      }
       const config = this.getConfig();
       if (!config.username || !config.password) {
         logger.error(

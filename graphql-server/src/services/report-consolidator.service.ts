@@ -31,7 +31,7 @@ export class ReportConsolidatorService {
   private mailingService: MailingService;
 
   constructor() {
-    this.ensureDirectories();
+    void this.ensureDirectories();
     this.mailingService = new MailingService();
   }
 
