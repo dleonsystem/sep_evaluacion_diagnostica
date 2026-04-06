@@ -1,12 +1,12 @@
 # REQUERIMIENTOS Y CASOS DE USO
 ## Sistema SiCRER - Evaluación Diagnóstica SEP
 
-**Fecha:** 24 de Noviembre de 2025
-**Versión:** 2.0 - Estrategia Bifásica + Stack Open Source
+**Fecha:** 05 de Abril de 2026
+**Versión:** 2.1 - Consolidación de Backlog Oficial y Stack Real Node.js
 **Sistema:** SiCRER Portal Web + Legacy Integration
 **Fase 1:** Marzo 2026 | **Fase 2:** Septiembre 2026
 
-> **Alineación tecnológica 2025:** Todas las iteraciones de diseño y construcción se basarán en **Python 3.12 + FastAPI** para backend, **Angular 17 + TypeScript 5** para frontend y **PostgreSQL 16** como base de datos. Las referencias previas a React/Node.js quedan como histórico y deberán reinterpretarse con el nuevo stack durante el refinamiento de cada módulo.
+> **Alineación tecnológica 2025/26:** Todas las iteraciones de diseño y construcción se basan en **Node.js 20 + Apollo Server (GraphQL)** para backend, **Angular 17 + TypeScript 5** para frontend y **PostgreSQL 16** como base de datos. Se mantiene la compatibilidad con el sistema legacy vía SFTP y exportaciones controladas.
 
 **Actualización EIA 2ª aplicación:** La plataforma web de recepción/validación/descarga **solo recibe y valida archivos .xlsx** después de que el usuario capture su correo (será su identificador). En la primera carga válida se valida que el correo coincida con el declarado en el Excel, se genera una **contraseña aleatoria** y el mismo correo puede usarse con múltiples CCT. Cada envío queda como solicitud independiente con consecutivo y el portal **no procesa resultados ni decide si el envío corresponde a primera o segunda aplicación**; únicamente publica ligas de descarga generadas por un sistema externo en repositorios separados para archivos recibidos y resultados.
 
@@ -1559,18 +1559,31 @@ pie title "Automatización por Fase"
 }
 ```
 
+### Frontend
+```json
+{
+  "framework": "Angular 17.1.0",
+  "language": "TypeScript 5.3.3",
+  "build": "Angular CLI (Vite/Esbuild)",
+  "state": "RxJS + BehaviorSubjects (Services)",
+  "api-client": "Apollo Angular / GraphQL",
+  "styling": "Vanilla CSS / SCSS",
+  "forms": "Reactive Forms"
+}
+```
+
 ### Backend
 ```json
 {
-  "runtime": "Node.js 20 LTS",
-  "framework": "NestJS 10.3.0",
-  "language": "TypeScript 5.3.0",
-  "orm": "Prisma 5.8.0",
-  "auth": "Passport.js + JWT",
-  "validation": "class-validator + class-transformer",
-  "queue": "Bull 4.12.0",
+  "runtime": "Node.js 20.11.5 (LTS)",
+  "framework": "Apollo Server 4.10 / Express 4.18",
+  "language": "TypeScript 5.3.3",
+  "db-driver": "pg (Node-Postgres) 8.20",
+  "auth": "JWT + Scrypt (timing-safe)",
+  "validation": "class-validator",
   "logging": "Winston 3.11.0",
-  "email": "Nodemailer 6.9.0"
+  "email": "Nodemailer 8.0.1",
+  "pdf": "pdfmake 0.3.4"
 }
 ```
 
@@ -1578,21 +1591,18 @@ pie title "Automatización por Fase"
 ```json
 {
   "database": "PostgreSQL 16",
-  "cache": "node-cache 5.1.2",
-  "jobs": "pg-boss 9.0.3",
-  "storage": "Filesystem SSD (fs/promises nativo)",
-  "web-server": "Nginx 1.24",
-  "ssl": "Let's Encrypt",
-  "containers": "Docker + Docker Compose",
-  "orchestration": "Kubernetes (opcional Fase 2)",
+  "cache": "Node-cache (Memoria) / Redis (Fase 2)",
+  "sftp": "ssh2-sftp-client 12.0.1",
+  "storage": "Filesystem SSD (Local/Docker)",
+  "server": "Nginx (Frontend) + Docker Compose",
   "ci-cd": "GitHub Actions"
 }
 ```
 
 ---
 
-**Documento generado por:** Ingeniero de Software Certificado PSP  
-**Metodología:** RUP (Rational Unified Process)  
-**Versión:** 2.0 - Estrategia Bifásica + Stack Open Source  
-**Fecha de Actualización:** 24 de Noviembre de 2025  
-**Próxima Revisión:** Diciembre 2025 (inicio Fase 1)
+**Documento actualizado por:** Arquitecto de Software Senior (Audit Issue #255)  
+**Metodología:** RUP (Rational Unified Process) / PSP 2.1  
+**Versión:** 2.1 - Estrategia de Vinculación + Stack Real Node.js/GraphQL  
+**Fecha de Actualización:** 05 de Abril de 2026  
+**Próxima Revisión:** Mayo 2026 (Cierre de Mentoría Fase 1)

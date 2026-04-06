@@ -9,8 +9,8 @@
 | **Fecha de cierre Fase 1** | 14 de abril de 2026 |
 | **Metodología** | RUP / PSP — 4 Sprints × 5 días hábiles |
 | **Esfuerzo estimado** | ~100 horas |
-| **Versión del documento** | 1.3 — auditada post-merge origin/dev 01/04/2026 |
-| **Estado** | 🟡 En ejecución (S1 ✅, S2 ✅, S3 🏗️ — infra integrada, 1 issue seguridad bloqueante: #345) |
+| **Versión del documento** | 1.4 — Consolidación de Backlog oficial (Post-Auditoría) |
+| **Estado** | 🟡 En ejecución (S1-S2 ✅, S3 🏗️, S4 📅) |
 
 ---
 
@@ -362,7 +362,7 @@ Los siguientes 7 criterios deben cumplirse **antes** del tag `v1.0.0-fase1`:
 | 4 | `generateComprobante` retorna PDF real | `fileName` termina en `.pdf`; Base64 empieza con `JVBER` | ✅ Implementado |
 | 5 | `docker-compose up` levanta los 4 servicios | `healthCheck.database.connected = true` | 🟡 Estructura ✅ — healthcheck backend ❌ #348 |
 | 6 | Pipeline CI en verde (Node 20, lint + build + test) | GitHub Actions ✅ en rama `dev` | ❌ Trigger `develop`→`dev` #345 bloquea |
-| 7 | `ng build --configuration production` sin errores de budget | Consola sin `Error: bundle exceeded` | ⏳ No verificado
+| 7 | `ng build --configuration production` sin errores de budget | Consola sin `Error: bundle exceeded` | ⏳ No verificado |
 
 ---
 
@@ -372,7 +372,7 @@ Los siguientes 7 criterios deben cumplirse **antes** del tag `v1.0.0-fase1`:
 |---|---|---|---|---|---|
 | **S1 — JWT + RF-18** | 18–24 mar | Seguridad crítica | 27 h | 🔴 Alto | Backend Dev |
 | **S2 — PDF** | 25–31 mar | CU-16 comprobante | 22 h | 🟠 Medio | Backend Dev |
-| **S3 — Docker + CI** | 01–07 abr | Infraestructura | 25 h | 🟠 Medio | DevOps / Full-stack |
+| **S3 — Docker + CI** | 01–07 abr | Infraestructura | 25 h | 🟠 Medio | DevOps |
 | **S4 — Tests + DB + Cierre** | 08–14 abr | Calidad + normalización | 26 h | 🟡 Bajo | Full-stack |
 | **TOTAL** | **18 mar – 14 abr** | | **~100 h** | | |
 

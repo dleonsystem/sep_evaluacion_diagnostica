@@ -2,6 +2,12 @@
 
 Este documento se actualiza con cada modificación relevante al proyecto para entregar el informe mensual solicitado.
 
+## 2026-04-05
+
+- **Consolidación del Backlog Funcional (Issue #255)**: Auditoría completa de los 16 casos de uso base y sincronización con el `PLAN_TRABAJO_FASE1.md`.
+- **Sincronización de Stack Técnico**: Corrección masiva en `REQUERIMIENTOS_Y_CASOS_DE_USO.md` (v2.1) para reflejar el stack real: **Node.js 20 + Apollo Server (GraphQL) + Angular 17**, eliminando referencias obsoletas a Python/FastAPI.
+- **Documentación de Análisis**: Creación de `docs/analysis/issue-255.md` con el diagnóstico de brechas y validación de trazabilidad de los 16 CUs oficiales.
+
 ## 2026-03-24
 
 - Se analizó e implementó la corrección del issue `#294` sobre `generateComprobante`, sustituyendo columnas inexistentes por `consecutivo`, `archivo_original` y `hash_archivo` en el resolver GraphQL.

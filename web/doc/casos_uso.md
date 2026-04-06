@@ -108,6 +108,7 @@ graph TB
 | CU-04v2 | 🏗️ En proceso | Lógica de validación backend en desarrollo. |
 | CU-08 | ✅ Completado | Implementada consolidación de 5 reportes oficiales y empaquetado 7z (Fase 1 Híbrida). |
 | CU-09v2 | ✅ Completado | Portal de descarga habilitado con soporte para resultados locales y vía SFTP. |
+| CU-13 | ✅ Completado | Backend de tickets (Folio, SLA, Auditoría) implementado (Issue #262). |
 
 ---
-**Nota:** Este documento se alinea con el archivo maestro `REQUERIMIENTOS_Y_CASOS_DE_USO.md` versión 2.0.
+**Nota:** Este documento se alinea con el archivo maestro `REQUERIMIENTOS_Y_CASOS_DE_USO.md` versión 2.1.
