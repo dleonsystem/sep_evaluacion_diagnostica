@@ -627,19 +627,21 @@ id,
 
         // US-2.5: Solo administradores ven todas las solicitudes, usuarios normales solo las suyas
         let sql = `SELECT
-s.id,
-  s.consecutivo,
-  s.cct,
-  s.archivo_original as "archivoOriginal",
-  s.fecha_carga as "fechaCarga",
-  s.estado_validacion as "estadoValidacion",
-  s.nivel_educativo as "nivelEducativo",
-  s.archivo_path as "archivoPath",
-  s.archivo_size as "archivoSize",
-  s.procesado_externamente as "procesadoExternamente",
-  s.detalles_error as "errores",
-  s.resultados,
-  t.nombre as turno
+            s.id,
+            s.consecutivo,
+            s.cct,
+            s.archivo_original as "archivoOriginal",
+            s.fecha_carga as "fechaCarga",
+            s.updated_at as "fechaActualizacion",
+            s.estado_validacion as "estadoValidacion",
+            s.nivel_educativo as "nivelEducativo",
+            s.archivo_path as "archivoPath",
+            s.archivo_size as "archivoSize",
+            s.hash_archivo as "hashArchivo",
+            s.procesado_externamente as "procesadoExternamente",
+            s.errores_validacion as "errores",
+            s.resultados,
+            t.nombre as turno
           FROM solicitudes_eia2 s
           LEFT JOIN escuelas e ON e.cct = s.cct
           LEFT JOIN cat_turnos t ON t.id_turno = e.id_turno`;
@@ -665,10 +667,24 @@ s.id,
         params.push(limit, offset);
 
         const result = await query(sql, params);
+
+        // Mapeo manual de estados ID -> Enum String para GQL
+        const statusMap: Record<number, string> = {
+          1: 'PENDIENTE',
+          2: 'VALIDADO',
+          3: 'RECHAZADO',
+          4: 'EN_PROCESO',
+        };
+
         return result.rows.map((row: any) => ({
           ...row,
           fechaCarga:
             row.fechaCarga instanceof Date ? row.fechaCarga.toISOString() : row.fechaCarga,
+          fechaActualizacion:
+            row.fechaActualizacion instanceof Date
+              ? row.fechaActualizacion.toISOString()
+              : row.fechaActualizacion,
+          estadoValidacion: statusMap[row.estadoValidacion] || 'PENDIENTE',
         }));
       } catch (error) {
         logger.error('Error fetching solicitudes from DB', { error });
@@ -2477,8 +2493,16 @@ t.numero_ticket as "folio",
           solicitudId = existingReq.rows[0].id;
           await client.query('DELETE FROM evaluaciones WHERE solicitud_id = $1', [solicitudId]);
           const upRes = await client.query(
-            'UPDATE solicitudes_eia2 SET updated_at = NOW(), credencial_id = $2 WHERE id = $1 RETURNING consecutivo',
-            [solicitudId, credencialId]
+            'UPDATE solicitudes_eia2 SET updated_at = NOW(), credencial_id = $2, archivo_path = $3, archivo_size = $4, hash_archivo = $5, archivo_original = $6, estado_validacion = $7 WHERE id = $1 RETURNING consecutivo',
+            [
+              solicitudId,
+              credencialId,
+              remotePath,
+              archivoSize,
+              fileHash,
+              nombreArchivo,
+              2, // VALIDADO (id 2 en catálogo)
+            ]
           );
           consecutivo = upRes.rows[0].consecutivo;
         } else {

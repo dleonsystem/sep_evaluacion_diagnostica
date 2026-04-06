@@ -26,6 +26,7 @@ Este documento detalla todas las modificaciones realizadas a la base de datos `E
 | 2026-03-25 | `escuelas` | Validación en Resolver | Se añadió validación de consistencia de nivel educativo (`id_nivel`) contra el catálogo oficial durante la carga de Excel (RF-13). |
 | 2026-04-05 | `tickets_soporte` | Secuencia y Auditoría | Adición de `seq_numero_ticket`, tabla `cat_prioridad_ticket`, campos de metadatos (`user_fullname`, `user_cct`, `user_email`) y campo `resuelto_en` para SLA (#262). |
 | 2026-04-05 | `Global` | Auditoría de Sincronización | Inclusión de tablas `usuarios_centros_trabajo` y `bitacora_sincronizacion` en DDL maestro. Corrección de discrepancias código-DDL detectadas en Auditoría de Arquitectura. |
+| 2026-04-06 | `solicitudes_eia2` | Refuerzo de Trazabilidad | Sincronización del resolver `uploadExcelAssessment` para actualizar metadatos físicos (`hash_archivo`, `archivo_path`, `archivo_size`) durante el reemplazo de solicitudes (Issue #258). |
 
 ### Notas Adicionales:
 - **Catálogos Duplicados:** Resuelto. Se consolidó el uso de `cat_nivel_educativo` como fuente única de verdad y se eliminó la tabla plural `cat_niveles_educativos` de la base de datos (GAP-DB-2).
