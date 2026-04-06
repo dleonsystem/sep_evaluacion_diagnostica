@@ -335,6 +335,12 @@ export const typeDefs = `#graphql
     @use-case CU-14: Administrar Catálogo de Escuelas
     """
     updateEscuela(id: ID!, input: UpdateEscuelaInput!): Escuela!
+
+    """
+    Borrar (desactivar) una escuela existente
+    @use-case CU-14: Administrar Catálogo de Escuelas
+    """
+    deleteEscuela(id: ID!): DeleteResponse!
   }
 
   """

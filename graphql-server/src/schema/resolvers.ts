@@ -3459,6 +3459,39 @@ t.numero_ticket as "folio",
         client.release();
       }
     },
+
+    /**
+     * Borrar escuela lógica (Soft delete)
+     * @use-case CU-14: Administrar Catálogo de Escuelas
+     */
+    deleteEscuela: async (_: any, { id }: { id: string }, context: GraphQLContext) => {
+      const client = await getClient();
+      try {
+        await client.query('BEGIN');
+        
+        const res = await client.query('UPDATE escuelas SET activo = false, updated_at = NOW() WHERE id = $1 RETURNING id', [id]);
+        if (res.rows.length === 0) throw new Error('Escuela no encontrada');
+
+        await client.query('COMMIT');
+
+        try {
+          await query(
+            "INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, detalle) VALUES ($1, 'DELETE_ESCUELA', 'CATALOGOS', 'SUCCESS', $2)",
+            [context.user?.id || null, JSON.stringify({ id })]
+          );
+        } catch (e) {
+          logger.warn('Audit fail', e);
+        }
+
+        return { success: true, message: 'Escuela eliminada exitosamente' };
+      } catch (error) {
+        await client.query('ROLLBACK');
+        logger.error('Error in deleteEscuela', error);
+        throw new Error('Error al eliminar escuela');
+      } finally {
+        client.release();
+      }
+    },
   },
 
   /**
