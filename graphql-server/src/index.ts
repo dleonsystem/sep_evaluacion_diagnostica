@@ -60,6 +60,7 @@ import { createDataLoaders } from './utils/data-loaders.js';
 import { DistributionService } from './services/distribution.service.js';
 import { EmailWatcherService } from './services/email-watcher.service.js';
 import { verifyToken } from './config/jwt.js';
+import { startSyncLegacyJob, stopSyncLegacyJob } from './jobs/sync-legacy.job.js';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -257,6 +258,9 @@ async function startServer() {
       logger.warn('EmailWatcherService no iniciado: Faltan credenciales IMAP en .env');
     }
 
+    // Iniciar CronJob de resultados legacy (CU-09v2 / Issue #259)
+    startSyncLegacyJob(pool, distributionService);
+
     // 5. Crear servidor Apollo GraphQL
     const server = createApolloServer(httpServer);
 
@@ -394,6 +398,9 @@ async function gracefulShutdown(signal: string) {
   logger.info(`Señal ${signal} recibida, cerrando servidor...`);
 
   try {
+    stopSyncLegacyJob();
+    logger.info('✓ Job de sincronización Legacy detenido');
+
     await closePool();
     logger.info('✓ Pool de base de datos cerrado');
 
