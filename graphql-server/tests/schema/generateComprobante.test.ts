@@ -1,3 +1,4 @@
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 jest.mock('../../src/config/database', () => ({
   query: jest.fn(),
   getClient: jest.fn(),
@@ -26,15 +27,17 @@ jest.mock('../../src/services/mailing.service', () => ({
 
 jest.mock('../../src/services/report-consolidator.service', () => ({
   ReportConsolidatorService: jest.fn().mockImplementation(() => ({
-    simulateProcessing: jest.fn(),
+    simulateProcessing: (jest.fn() as any).mockImplementation(() => Promise.resolve(true)),
+    consolidateReportsByCCT: (jest.fn() as any).mockImplementation(() => Promise.resolve(true)),
   })),
 }));
 
 import resolvers, { GraphQLContext } from '../../src/schema/resolvers';
-import { query } from '../../src/config/database';
+import { query, getClient } from '../../src/config/database';
 
 describe('generateComprobante resolver', () => {
-  const queryMock = query as jest.MockedFunction<typeof query>;
+  const queryMock = query as any;
+  const getClientMock = getClient as any;
 
   const createContext = (user?: GraphQLContext['user']): GraphQLContext =>
     ({
@@ -43,11 +46,24 @@ describe('generateComprobante resolver', () => {
     }) as GraphQLContext;
 
   beforeEach(() => {
-    queryMock.mockReset();
+    jest.clearAllMocks();
   });
 
+interface DatabaseQueryResult {
+  rows: Array<{
+    id: string;
+    consecutivo: number;
+    fechaCarga: Date;
+    archivoOriginal: string;
+    hashArchivo: string | null;
+    cct: string;
+    usuarioId: string;
+    email: string;
+  }>;
+}
+
   it('retorna un PDF real para el propietario de la solicitud', async () => {
-    queryMock.mockResolvedValue({
+    queryMock.mockImplementation(() => Promise.resolve({
       rows: [
         {
           id: 'sol-1',
@@ -60,7 +76,7 @@ describe('generateComprobante resolver', () => {
           email: 'director@escuela.edu.mx',
         },
       ],
-    } as Awaited<ReturnType<typeof query>>);
+    } as DatabaseQueryResult));
 
     const result = await resolvers.Query.generateComprobante(
       null,
@@ -74,7 +90,7 @@ describe('generateComprobante resolver', () => {
   });
 
   it('rechaza a un usuario sin permisos sobre la solicitud', async () => {
-    queryMock.mockResolvedValue({
+    queryMock.mockImplementation(() => Promise.resolve({
       rows: [
         {
           id: 'sol-2',
@@ -87,7 +103,7 @@ describe('generateComprobante resolver', () => {
           email: 'owner@escuela.edu.mx',
         },
       ],
-    } as Awaited<ReturnType<typeof query>>);
+    } as DatabaseQueryResult));
 
     await expect(
       resolvers.Query.generateComprobante(
@@ -99,7 +115,7 @@ describe('generateComprobante resolver', () => {
   });
 
   it('retorna error controlado cuando hash_archivo es nulo', async () => {
-    queryMock.mockResolvedValue({
+    queryMock.mockImplementation(() => Promise.resolve({
       rows: [
         {
           id: 'sol-3',
@@ -112,7 +128,7 @@ describe('generateComprobante resolver', () => {
           email: 'director@escuela.edu.mx',
         },
       ],
-    } as Awaited<ReturnType<typeof query>>);
+    } as DatabaseQueryResult));
 
     await expect(
       resolvers.Query.generateComprobante(

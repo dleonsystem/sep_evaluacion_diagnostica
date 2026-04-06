@@ -39,6 +39,11 @@ jobs:
       run: npm test -- --ci --coverage
       env:
         NODE_OPTIONS: "--experimental-vm-modules"
+        JWT_SECRET: "test-secret-key-12345"
+        DB_HOST: "localhost"
+        DB_NAME: "test_db"
+        DB_USER: "test_user"
+        DB_PASSWORD: "test_password"
 
     - name: Add Coverage to Step Summary
       if: always()

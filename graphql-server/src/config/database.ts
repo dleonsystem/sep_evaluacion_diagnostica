@@ -31,7 +31,7 @@ const poolConfig: PoolConfig = {
   max: parseInt(process.env.DB_POOL_MAX || '10', 10),
   idleTimeoutMillis: 60000,
   connectionTimeoutMillis: 30000,
-  ssl: process.env.PGSSLMODE === 'require' ? { rejectUnauthorized: false } : false
+  ssl: process.env.PGSSLMODE === 'require' ? { rejectUnauthorized: false } : false,
 };
 /**
  * Validación de configuración de base de datos
@@ -81,7 +81,9 @@ pool.on('remove', () => {
 export async function testConnection(): Promise<boolean> {
   try {
     const client = await pool.connect();
-    const result = await client.query('SELECT NOW() as current_time, version() as pg_version');
+    const result = await client.query<{ current_time: string; pg_version: string }>(
+      'SELECT NOW() as current_time, version() as pg_version'
+    );
 
     logger.info('PostgreSQL connection test successful', {
       currentTime: result.rows[0].current_time,
@@ -116,7 +118,7 @@ export async function closePool(): Promise<void> {
  * @param text SQL query
  * @param params Query parameters
  */
-export async function query(text: string, params?: any[]) {
+export async function query(text: string, params?: unknown[]) {
   const start = Date.now();
   try {
     const result = await pool.query(text, params);

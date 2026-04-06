@@ -13,7 +13,7 @@ export class MailingService {
     const config: any = {
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '465'),
-      secure: process.env.SMTP_SECURE === 'true' || (process.env.SMTP_PORT === '465'),
+      secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASSWORD,
@@ -59,7 +59,8 @@ export class MailingService {
   async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
     const isTestMode = process.env.SMTP_TEST_MODE === 'true';
     const fromName = process.env.SMTP_FROM_NAME || 'Sistema SiCRER';
-    const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'no-reply@sicrer.sep.gob.mx';
+    const fromEmail =
+      process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'no-reply@sicrer.sep.gob.mx';
 
     if (isTestMode) {
       logger.info('--- SMTP TEST MODE ACTIVE ---');
@@ -103,7 +104,11 @@ export class MailingService {
         </a>
       </div>
     `;
-    const html = this.wrapInTemplate('Recuperación de Contraseña', 'Sistema de Evaluación Diagnóstica SiCRER', content);
+    const html = this.wrapInTemplate(
+      'Recuperación de Contraseña',
+      'Sistema de Evaluación Diagnóstica SiCRER',
+      content
+    );
     return this.sendEmail(email, 'Tu Nueva Contraseña de Acceso - SiCRER', html);
   }
 
@@ -119,7 +124,11 @@ export class MailingService {
       <p>Esta contraseña es definitiva y no expira. Por seguridad, no la compartas con nadie.</p>
       <p>Acceso al sistema: <a href="${process.env.APP_URL || 'http://localhost:4200'}" style="color: #9d2449; text-decoration: underline; font-weight: 600;">Abrir Plataforma SiCRER</a></p>
     `;
-    const html = this.wrapInTemplate('Bienvenido al Sistema', 'Evaluación Diagnóstica SiCRER', content);
+    const html = this.wrapInTemplate(
+      'Bienvenido al Sistema',
+      'Evaluación Diagnóstica SiCRER',
+      content
+    );
     return this.sendEmail(email, 'Tus Credenciales de Acceso - SiCRER', html);
   }
 
@@ -136,7 +145,11 @@ export class MailingService {
         <a href="${process.env.APP_URL || 'http://localhost:4200'}" style="color: #9d2449; font-weight: 600;">Acceder al Portal</a>
       </div>
     `;
-    const html = this.wrapInTemplate('Actualización de Seguridad', 'Sistema de Evaluación Diagnóstica SiCRER', content);
+    const html = this.wrapInTemplate(
+      'Actualización de Seguridad',
+      'Sistema de Evaluación Diagnóstica SiCRER',
+      content
+    );
     return this.sendEmail(email, 'Actualización de Contraseña por Administrador - SiCRER', html);
   }
 
@@ -159,7 +172,11 @@ export class MailingService {
         <li>Expedientes del Director (Archivos Excel Procesa).</li>
       </ul>
     `;
-    const html = this.wrapInTemplate('¡Resultados de Evaluación Listos!', `CCT: ${cct} | Solicitud: ${solicitudId}`, content);
+    const html = this.wrapInTemplate(
+      '¡Resultados de Evaluación Listos!',
+      `CCT: ${cct} | Solicitud: ${solicitudId}`,
+      content
+    );
     return this.sendEmail(email, `Resultados de Evaluación Disponibles - ${cct}`, html);
   }
 }

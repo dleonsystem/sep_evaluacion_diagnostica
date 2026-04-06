@@ -1,56 +1,53 @@
 // @ts-nocheck
-import { jest } from '@jest/globals';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 jest.mock('../../src/config/database', () => ({
-  query: jest.fn(),
-  getClient: jest.fn(),
+  query: jest.fn() as any,
+  getClient: jest.fn() as any,
 }));
 
 jest.mock('../../src/services/sftp.service', () => ({
   SftpService: jest.fn().mockImplementation(() => ({
-    ensureDir: jest.fn(),
-    uploadBuffer: jest.fn(),
-    connect: jest.fn(),
+    ensureDir: jest.fn() as any,
+    uploadBuffer: jest.fn() as any,
+    connect: jest.fn() as any,
   })),
 }));
 
 jest.mock('../../src/services/mailing.service', () => ({
   MailingService: jest.fn().mockImplementation(() => ({
-    sendCredentials: jest.fn(),
-    sendPasswordRecovery: jest.fn(),
-    sendAdminPasswordReset: jest.fn(),
+    sendCredentials: jest.fn() as any,
+    sendPasswordRecovery: jest.fn() as any,
+    sendAdminPasswordReset: jest.fn() as any,
   })),
 }));
 
 jest.mock('../../src/services/report-consolidator.service', () => ({
   ReportConsolidatorService: jest.fn().mockImplementation(() => ({
-    simulateProcessing: jest.fn(),
+    simulateProcessing: jest.fn() as any,
   })),
 }));
 
 jest.mock('../../src/utils/logger', () => ({
   logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
+    info: jest.fn() as any,
+    warn: jest.fn() as any,
+    error: jest.fn() as any,
+    debug: jest.fn() as any,
   },
 }));
 
 import resolvers from '../../src/schema/resolvers';
 import { query } from '../../src/config/database';
 import { verifyToken } from '../../src/config/jwt';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
-/**
- * Suite de pruebas para authenticateUser (RN-18) y Seguridad JWT
- * Verifica la integridad de tokens y el bloqueo de cuentas para prevenir fuerza bruta.
- */
 describe('authenticateUser Resolver Tests', () => {
-  const queryMock = query as jest.MockedFunction<typeof query>;
+  const queryMock = query as any;
   
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(crypto, 'timingSafeEqual').mockImplementation(() => true);
   });
 
   describe('JWT Integrity', () => {
@@ -107,8 +104,8 @@ describe('authenticateUser Resolver Tests', () => {
         bloqueadoHasta: null
       };
 
-      queryMock.mockResolvedValueOnce({ rows: [mockUser] }); // Buscar
-      queryMock.mockResolvedValueOnce({ rows: [] });      // Update lockout
+      queryMock.mockImplementationOnce(() => Promise.resolve({ rows: [mockUser] })); // Buscar
+      queryMock.mockImplementationOnce(() => Promise.resolve({ rows: [] }));      // Update lockout
 
       jest.spyOn(crypto, 'timingSafeEqual').mockReturnValue(false);
 
@@ -140,7 +137,7 @@ describe('authenticateUser Resolver Tests', () => {
         intentosFallidos: 5
       };
 
-      queryMock.mockResolvedValueOnce({ rows: [mockUser] });
+      queryMock.mockImplementationOnce(() => Promise.resolve({ rows: [mockUser] }));
 
       const result = await (resolvers.Mutation as any).authenticateUser(
         null, 

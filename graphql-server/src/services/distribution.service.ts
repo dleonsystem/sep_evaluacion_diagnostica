@@ -17,7 +17,7 @@ export class DistributionService {
       id: i + 1,
       nombre: `Equipo de Validación ${i + 1}`,
       email: `equipo${i + 1}.validacion@nube.sep.gob.mx`,
-      sftpPath: `storage/teams/equipo${i + 1}`
+      sftpPath: `storage/teams/equipo${i + 1}`,
     }));
   }
 
@@ -44,22 +44,22 @@ export class DistributionService {
         'UPDATE solicitudes_eia2 SET equipo_asignado = $1, distributed_at = NOW() WHERE id = $2',
         [teamId, solicitudId]
       );
-      
+
       await this.pool.query(
-        "INSERT INTO log_actividades (id_usuario, accion, tabla, detalle, modulo) VALUES ($1, $2, $3, $4, $5)",
+        'INSERT INTO log_actividades (id_usuario, accion, tabla, detalle, modulo) VALUES ($1, $2, $3, $4, $5)',
         [
-          null, 
-          'FILE_DISTRIBUTED', 
-          'solicitudes_eia2', 
-          JSON.stringify({ 
+          null,
+          'FILE_DISTRIBUTED',
+          'solicitudes_eia2',
+          JSON.stringify({
             mensaje: `Solicitud ${solicitudId} asignada al Equipo ${teamId}`,
             solicitudId,
-            equipoId: teamId
-          }), 
-          'DISTRIBUCION'
+            equipoId: teamId,
+          }),
+          'DISTRIBUCION',
         ]
       );
-      
+
       logger.info(`Distribución registrada: Solicitud ${solicitudId} -> Equipo ${teamId}`);
     } catch (error) {
       logger.error('Error al registrar distribución', error);
