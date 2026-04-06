@@ -297,7 +297,7 @@ function extractStudents(
   }
 
   const alumnos: ParsedStudent[] = [];
-  data.forEach((row, index) => {
+  data.forEach((row: any, index) => {
     const numeroLista = cleanText(row.B);
     const nombre = cleanText(row.C);
     const sexo = cleanText(row.D).toUpperCase();
