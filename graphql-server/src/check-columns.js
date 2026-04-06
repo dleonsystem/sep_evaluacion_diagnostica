@@ -9,8 +9,10 @@ const pool = new Pool({
 
 async function checkColumns() {
   try {
-    const res = await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'usuarios'");
-    console.log(res.rows.map(r => r.column_name));
+    const res = await pool.query(
+      "SELECT column_name FROM information_schema.columns WHERE table_name = 'usuarios'"
+    );
+    console.log(res.rows.map((r) => r.column_name));
     process.exit(0);
   } catch (err) {
     console.error(err);

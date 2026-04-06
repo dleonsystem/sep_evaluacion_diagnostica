@@ -51,11 +51,9 @@ describe('MailingService (Issue #315 - Refactor & Security)', () => {
   describe('Generación de Plantillas (wrapInTemplate)', () => {
     it('debe incluir el título y el diseño corporativo de la SEP', () => {
       // Accedemos al método privado mediante casting para el test
-      const html = (service as unknown as { wrapInTemplate: (a: string, b: string, c: string) => string }).wrapInTemplate(
-        'Título Test',
-        'Subtítulo Test',
-        '<p>Contenido Test</p>'
-      );
+      const html = (
+        service as unknown as { wrapInTemplate: (a: string, b: string, c: string) => string }
+      ).wrapInTemplate('Título Test', 'Subtítulo Test', '<p>Contenido Test</p>');
 
       expect(html).toContain('Título Test');
       expect(html).toContain('Subtítulo Test');

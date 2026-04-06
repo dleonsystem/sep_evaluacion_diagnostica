@@ -18,7 +18,8 @@ if (parentPort) {
       const data = parseExcelAssessmentBuffer(buffer);
       parentPort?.postMessage({ success: true, data });
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error crítico en procesamiento';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Error crítico en procesamiento';
       parentPort?.postMessage({
         success: false,
         error: errorMessage,

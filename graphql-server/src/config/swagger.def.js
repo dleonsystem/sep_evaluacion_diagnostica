@@ -8,7 +8,7 @@
  * servers:
  *   - url: http://localhost:4000/api
  *     description: Servidor de Desarrollo
- * 
+ *
  * /legacy/stats/{cct}:
  *   get:
  *     summary: Obtener estadísticas de evaluación por CCT

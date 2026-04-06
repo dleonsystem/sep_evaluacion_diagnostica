@@ -19,7 +19,7 @@ module.exports = {
     jest: true,
     es2022: true,
   },
-  ignorePatterns: ['.eslintrc.cjs', 'dist', 'node_modules'],
+  ignorePatterns: ['.eslintrc.cjs', 'dist', 'node_modules', 'coverage', 'scripts'],
   rules: {
     '@typescript-eslint/interface-name-prefix': 'off',
     '@typescript-eslint/explicit-function-return-type': 'off',
