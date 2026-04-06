@@ -17,10 +17,11 @@ if (parentPort) {
       const buffer = Buffer.from(message.archivoBase64, 'base64');
       const data = parseExcelAssessmentBuffer(buffer);
       parentPort?.postMessage({ success: true, data });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error crítico en procesamiento';
       parentPort?.postMessage({
         success: false,
-        error: error?.message || 'Error crítico en procesamiento',
+        error: errorMessage,
       });
     }
   });

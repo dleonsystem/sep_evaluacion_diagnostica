@@ -1,5 +1,5 @@
-// @ts-nocheck
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import nodemailer from 'nodemailer';
 
 // Mock de nodemailer antes de los imports que puedan usarlo
 jest.mock('nodemailer', () => ({
@@ -7,15 +7,14 @@ jest.mock('nodemailer', () => ({
 }));
 
 import { MailingService } from './mailing.service';
-import nodemailer from 'nodemailer';
 
 describe('MailingService (Issue #315 - Refactor & Security)', () => {
   let service: MailingService;
-  let mockSendMail: jest.Mock;
+  let mockSendMail: jest.Mock<(args: any) => Promise<{ messageId: string }>>;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockSendMail = jest.fn();
+    mockSendMail = jest.fn() as jest.Mock<(args: any) => Promise<{ messageId: string }>>;
     mockSendMail.mockResolvedValue({ messageId: 'test-id' });
     (nodemailer.createTransport as jest.Mock).mockReturnValue({
       sendMail: mockSendMail,
@@ -52,7 +51,7 @@ describe('MailingService (Issue #315 - Refactor & Security)', () => {
   describe('Generación de Plantillas (wrapInTemplate)', () => {
     it('debe incluir el título y el diseño corporativo de la SEP', () => {
       // Accedemos al método privado mediante casting para el test
-      const html = (service as any).wrapInTemplate(
+      const html = (service as unknown as { wrapInTemplate: (a: string, b: string, c: string) => string }).wrapInTemplate(
         'Título Test',
         'Subtítulo Test',
         '<p>Contenido Test</p>'
@@ -70,7 +69,7 @@ describe('MailingService (Issue #315 - Refactor & Security)', () => {
     it('sendPasswordRecovery NO debe contener lenguaje de temporalidad o expiración', async () => {
       await service.sendPasswordRecovery('user@test.com', 'newpass123');
 
-      const sentHtml = mockSendMail.mock.calls[0][0].html;
+      const sentHtml = (mockSendMail.mock.calls[0][0] as { html: string }).html;
 
       // Verificación de lo que NO debe estar (Issue #268)
       expect(sentHtml.toLowerCase()).not.toContain('temporal');
@@ -84,7 +83,7 @@ describe('MailingService (Issue #315 - Refactor & Security)', () => {
 
     it('sendAdminPasswordReset debe indicar que es definitiva', async () => {
       await service.sendAdminPasswordReset('user@test.com', 'adminpass');
-      const sentHtml = mockSendMail.mock.calls[0][0].html;
+      const sentHtml = (mockSendMail.mock.calls[0][0] as { html: string }).html;
 
       expect(sentHtml).toContain('ya no requiere cambios obligatorios');
     });
