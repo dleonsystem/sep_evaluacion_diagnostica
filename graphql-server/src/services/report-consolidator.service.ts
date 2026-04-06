@@ -16,14 +16,12 @@ import path from 'path';
 import fs from 'fs/promises';
 import { existsSync } from 'fs';
 import { exec } from 'child_process';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const baseDir = process.cwd();
 const SOLICITUD_ESTADO_VALIDO_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'VALIDO')";
 
 export class ReportConsolidatorService {
-  private baseStoragePath = path.resolve(__dirname, '../../storage/results');
+  private baseStoragePath = path.resolve(baseDir, 'storage/results');
   private rawPath = path.join(this.baseStoragePath, 'raw');
   private packagesPath = path.join(this.baseStoragePath, 'packages');
   private zipBinary = 'C:\\Program Files\\7-Zip\\7z.exe';

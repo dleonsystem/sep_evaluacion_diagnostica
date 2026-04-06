@@ -35,7 +35,7 @@ import resolvers, { GraphQLContext } from '../../src/schema/resolvers';
 import { query } from '../../src/config/database';
 
 describe('generateComprobante resolver', () => {
-  const queryMock = query as jest.MockedFunction<typeof query>;
+  const queryMock = query as any;
 
   const createContext = (user?: GraphQLContext['user']): GraphQLContext =>
     ({
@@ -44,7 +44,7 @@ describe('generateComprobante resolver', () => {
     }) as GraphQLContext;
 
   beforeEach(() => {
-    queryMock.mockReset();
+    jest.clearAllMocks();
   });
 
   it('retorna un PDF real para el propietario de la solicitud', async () => {
