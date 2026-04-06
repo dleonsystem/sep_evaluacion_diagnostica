@@ -238,7 +238,7 @@ async function startServer() {
     // 4. Inicializar Servicios de Distribución (CU-06)
     const distributionService = new DistributionService(pool);
     const emailWatcherService = new EmailWatcherService(distributionService);
-    
+
     // Solo iniciar el watcher si están configuradas las credenciales IMAP (evita fallos en dev)
     if (process.env.IMAP_USER && process.env.IMAP_PASSWORD) {
       emailWatcherService.start().catch(err => {
@@ -257,7 +257,7 @@ async function startServer() {
 
     // 6. Configurar middleware de GraphQL
     const allowedOrigins = (process.env.CORS_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean);
-    
+
     if (process.env.NODE_ENV !== 'development' && allowedOrigins.length === 0) {
       logger.error('[FATAL] CORS_ORIGIN environment variable is required in production.');
       throw new Error('[FATAL] CORS_ORIGIN must be set in production. Server cannot start without it.');
@@ -269,7 +269,7 @@ async function startServer() {
         origin: (origin, callback) => {
           // En desarrollo, permitimos cualquier origen para evitar problemas de CORS
           const isAllowed = !origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development';
-          
+
           if (isAllowed) {
             callback(null, true);
           } else {
@@ -308,9 +308,12 @@ async function startServer() {
               `SELECT 
                 u.id, 
                 u.email, 
-                r.codigo as rol 
+                r.codigo as rol,
+                u.nombre,
+                e.cct
                FROM usuarios u
                INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
+               LEFT JOIN escuelas e ON u.escuela_id = e.id
                WHERE LOWER(u.email) = LOWER($1) AND u.activo = true`,
               [email.trim()]
             );
