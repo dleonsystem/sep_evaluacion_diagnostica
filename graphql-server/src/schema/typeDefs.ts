@@ -720,10 +720,12 @@ export const typeDefs = `#graphql
     turno: String
     archivoOriginal: String!
     fechaCarga: String!
-    estadoValidacion: Int!
+    fechaActualizacion: String
+    estadoValidacion: EstadoValidacion!
     nivelEducativo: Int
     archivoPath: String
     archivoSize: Int
+    hashArchivo: String
     procesadoExternamente: Boolean!
     errores: [String!]
     resultados: [TicketEvidencia!]
