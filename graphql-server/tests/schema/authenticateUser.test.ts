@@ -2,38 +2,38 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 jest.mock('../../src/config/database', () => ({
-  query: jest.fn() as any,
-  getClient: jest.fn() as any,
+  query: jest.fn(),
+  getClient: jest.fn(),
 }));
 
 jest.mock('../../src/services/sftp.service', () => ({
   SftpService: jest.fn().mockImplementation(() => ({
-    ensureDir: jest.fn() as any,
-    uploadBuffer: jest.fn() as any,
-    connect: jest.fn() as any,
+    ensureDir: jest.fn(),
+    uploadBuffer: jest.fn(),
+    connect: jest.fn(),
   })),
 }));
 
 jest.mock('../../src/services/mailing.service', () => ({
   MailingService: jest.fn().mockImplementation(() => ({
-    sendCredentials: jest.fn() as any,
-    sendPasswordRecovery: jest.fn() as any,
-    sendAdminPasswordReset: jest.fn() as any,
+    sendCredentials: jest.fn(),
+    sendPasswordRecovery: jest.fn(),
+    sendAdminPasswordReset: jest.fn(),
   })),
 }));
 
 jest.mock('../../src/services/report-consolidator.service', () => ({
   ReportConsolidatorService: jest.fn().mockImplementation(() => ({
-    simulateProcessing: jest.fn() as any,
+    simulateProcessing: jest.fn(),
   })),
 }));
 
 jest.mock('../../src/utils/logger', () => ({
   logger: {
-    info: jest.fn() as any,
-    warn: jest.fn() as any,
-    error: jest.fn() as any,
-    debug: jest.fn() as any,
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
   },
 }));
 
@@ -43,7 +43,7 @@ import { verifyToken } from '../../src/config/jwt';
 import * as crypto from 'crypto';
 
 describe('authenticateUser Resolver Tests', () => {
-  const queryMock = query as any;
+  const queryMock = query as jest.Mock;
   
   beforeEach(() => {
     jest.clearAllMocks();

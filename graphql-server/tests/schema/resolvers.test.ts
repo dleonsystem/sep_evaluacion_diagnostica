@@ -1,33 +1,33 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 // @ts-nocheck
-// Pattern matching tests/schema/generateComprobante.test.ts
+
 jest.mock('../../src/config/database', () => ({
-  query: jest.fn() as any,
-  getClient: jest.fn() as any,
+  query: jest.fn(),
+  getClient: jest.fn(),
 }));
 
 jest.mock('../../src/services/sftp.service', () => ({
   SftpService: jest.fn().mockImplementation(() => ({
-    ensureDir: (jest.fn() as any).mockResolvedValue(true),
-    uploadBuffer: (jest.fn() as any).mockResolvedValue(true),
-    connect: (jest.fn() as any).mockResolvedValue(true),
+    ensureDir: jest.fn().mockResolvedValue(true),
+    uploadBuffer: jest.fn().mockResolvedValue(true),
+    connect: jest.fn().mockResolvedValue(true),
   })),
 }));
 
 jest.mock('../../src/services/mailing.service', () => ({
   MailingService: jest.fn().mockImplementation(() => ({
-    sendCredentials: (jest.fn() as any).mockResolvedValue(true),
-    sendPasswordRecovery: (jest.fn() as any).mockResolvedValue(true),
-    sendAdminPasswordReset: (jest.fn() as any).mockResolvedValue(true),
+    sendCredentials: jest.fn().mockResolvedValue(true),
+    sendPasswordRecovery: jest.fn().mockResolvedValue(true),
+    sendAdminPasswordReset: jest.fn().mockResolvedValue(true),
   })),
 }));
 
 jest.mock('../../src/utils/logger', () => ({
   logger: {
-    info: jest.fn() as any,
-    warn: jest.fn() as any,
-    debug: jest.fn() as any,
-    error: jest.fn() as any,
+    info: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    error: jest.fn(),
   },
 }));
 
@@ -36,8 +36,8 @@ import { query, getClient } from '../../src/config/database';
 import * as crypto from 'crypto';
 
 describe('Resolvers GraphQL - Coverage #272', () => {
-  const queryMock = query as any;
-  const getClientMock = getClient as any;
+  const queryMock = query as jest.Mock;
+  const getClientMock = getClient as jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();

@@ -1,4 +1,6 @@
+// @ts-nocheck
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+
 jest.mock('../../src/config/database', () => ({
   query: jest.fn(),
   getClient: jest.fn(),
@@ -27,8 +29,8 @@ jest.mock('../../src/services/mailing.service', () => ({
 
 jest.mock('../../src/services/report-consolidator.service', () => ({
   ReportConsolidatorService: jest.fn().mockImplementation(() => ({
-    simulateProcessing: (jest.fn() as any).mockImplementation(() => Promise.resolve(true)),
-    consolidateReportsByCCT: (jest.fn() as any).mockImplementation(() => Promise.resolve(true)),
+    simulateProcessing: jest.fn().mockImplementation(() => Promise.resolve(true)),
+    consolidateReportsByCCT: jest.fn().mockImplementation(() => Promise.resolve(true)),
   })),
 }));
 
@@ -36,8 +38,8 @@ import resolvers, { GraphQLContext } from '../../src/schema/resolvers';
 import { query, getClient } from '../../src/config/database';
 
 describe('generateComprobante resolver', () => {
-  const queryMock = query as any;
-  const getClientMock = getClient as any;
+  const queryMock = query as jest.Mock;
+  const getClientMock = getClient as jest.Mock;
 
   const createContext = (user?: GraphQLContext['user']): GraphQLContext =>
     ({

@@ -1,18 +1,23 @@
+// @ts-nocheck
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+
+// Mock de nodemailer antes de los imports que puedan usarlo
+jest.mock('nodemailer', () => ({
+  createTransport: jest.fn(),
+}));
+
 import { MailingService } from './mailing.service';
 import nodemailer from 'nodemailer';
 
-// Mock de nodemailer
-jest.mock('nodemailer');
-
 describe('MailingService (Issue #315 - Refactor & Security)', () => {
   let service: MailingService;
-  let mockSendMail: any;
+  let mockSendMail: jest.Mock;
 
   beforeEach(() => {
-    mockSendMail = jest.fn() as any;
+    jest.clearAllMocks();
+    mockSendMail = jest.fn();
     mockSendMail.mockResolvedValue({ messageId: 'test-id' });
-    (nodemailer.createTransport as any).mockReturnValue({
+    (nodemailer.createTransport as jest.Mock).mockReturnValue({
       sendMail: mockSendMail,
     });
 
