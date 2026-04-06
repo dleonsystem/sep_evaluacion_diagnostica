@@ -2,7 +2,7 @@
 ## Sistema SiCRER - Evaluación Diagnóstica SEP
 
 **Fecha:** 05 de Abril de 2026
-**Versión:** 2.1 - Inclusión de Vinculación y Stack Real Node.js
+**Versión:** 2.1 - Consolidación de Backlog Oficial y Stack Real Node.js
 **Sistema:** SiCRER Portal Web + Legacy Integration
 **Fase 1:** Marzo 2026 | **Fase 2:** Septiembre 2026
 
@@ -319,13 +319,6 @@
 - **RF-24.3** El sistema debe validar que número de alumnos en archivo no exceda capacidad declarada de escuela.
 - **RF-24.4** El sistema debe prevenir eliminación de periodo de evaluación con datos asociados.
 - **RF-24.5** El sistema debe validar que fecha de carga de archivo esté dentro del periodo activo.
-
-### RF-25: Sistema de Vinculación Comunitaria y Mentoría (NUEVO)
-- **RF-25.1** El sistema debe permitir el registro de alumnos destacados para el "Laboratorio de Mentoría Digital".
-- **RF-25.2** El sistema debe permitir a los mentores (DGADAE/Externos) registrar y validar horas de prácticas profesionales y servicio social.
-- **RF-25.3** El sistema debe integrarse con CMS externo (WordPress) para la publicación de crónicas y patrimonio cultural digital.
-- **RF-25.4** El sistema debe emitir constancias con validez curricular generadas automáticamente tras completar objetivos de aprendizaje.
-- **RF-25.5** El sistema debe proteger los datos personales de alumnos mentoreados bajo políticas estrictas de LGPDP.
 
 ---
 
@@ -677,25 +670,6 @@ graph TB
 
 **Frecuencia:** Picos concentrados durante segunda aplicación EIA.
 **Prioridad:** 🔴 Crítica (Plataforma EIA)
-
----
-
-### CU-17: Vinculación Comunitaria y Laboratorio de Aprendizaje (NUEVO)
-**Actor Principal:** Mentor (Programador Full Stack) / Administrador
-**Actores Secundarios:** Alumnos destacados, Directores de Escuela
-**Precondiciones:** Alumno ha sido seleccionado por su desempeño destacado en la Evaluación Diagnóstica.
-
-**Flujo Principal:**
-1. El Mentor o Administrador invita al alumno al Laboratorio de Tecnología.
-2. El sistema crea un perfil de "Aprendiz" vinculado a su registro de estudiante.
-3. El Mentor registra actividades y competencias desarrolladas (WordPress, Redacción Digital, Patrimonio).
-4. El sistema trackea el progreso y las horas acumuladas para Servicio Social / Prácticas.
-5. Tras cumplir el ciclo de mentoría, el sistema genera PDF de constancia con firma digital.
-6. El alumno puede visualizar sus crónicas publicadas en el portal a través de un link al CMS.
-
-**Postcondiciones:** Registro de mentoría actualizado, objetivos curriculares validados.
-**Frecuencia:** Iterativa (Ciclo de mentoría por semestre).
-**Prioridad:** 🟢 Estratégica (Impacto Social)
 
 ---
 

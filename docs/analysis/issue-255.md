@@ -2,77 +2,71 @@
 
 ## 1. Resumen y Datos
 *   **Título/Estado**: Epic: Casos de Uso del Proyecto / OPEN
-*   **Componentes afectados**: Backlog Funcional, Documentación de Arquitectura, Módulo de Vinculación (Nuevo).
-*   **Resumen Ejecutivo**: Consolidación del backlog oficial SiCRER. Se detecta la necesidad de extender el alcance para incluir la iniciativa de "Vinculación Comunitaria y Mentoría" como un eje transversal de la Fase 1.
+*   **Componentes afectados**: Backlog Funcional, Documentación de Arquitectura.
+*   **Resumen Ejecutivo**: Auditoría técnica y consolidación de la trazabilidad para los 16 casos de uso oficiales de la Fase 1. Se corrigió una inconsistencia crítica en la documentación del stack tecnológico para alinearlo con la implementación real (Node.js/GraphQL/Angular).
 
 ## 2. Datos del issue
 *   **Título**: Epic: Casos de Uso del Proyecto
 *   **Estado**: Open
 *   **Labels**: `epic`, `backlog`, `phase-1`
 *   **Prioridad aparente**: Alta (Estratégica)
-*   **Fuente consultada**: `REQUERIMIENTOS_Y_CASOS_DE_USO.md`, `PLAN_TRABAJO_FASE1.md`, Propuesta José Gutiérrez Arévalo.
+*   **Fuente consultada**: `REQUERIMIENTOS_Y_CASOS_DE_USO.md`, `PLAN_TRABAJO_FASE1.md`.
 
 ## 3. Problema reportado
-El issue #255 actúa como paraguas para todos los casos de uso (CU-01 a CU-16). El requerimiento actual es consolidar este backlog y asegurar que la trazabilidad entre requerimientos (RF) y código sea total, incorporando las nuevas necesidades de vinculación comunitaria reportadas por la mentoría local.
+El issue #255 actúa como paraguas para asegurar la correcta implementación y seguimiento de los casos de uso CU-01 al CU-16. Se requiere verificar que la documentación maestra (`REQUERIMIENTOS_Y_CASOS_DE_USO.md`) sea coherente con la realidad técnica del proyecto.
 
 ## 4. Estado actual en el código
-*   **Trazabilidad**: Existe una matriz parcial en `web/doc/casos_uso.md`.
-*   **Implementación**: CUs 01-09 y 13 tienen bases técnicas sólidas. CUs 10-12 (Análisis) están en fase de planeación técnica. 
-*   **GAPs**: No existe mención en el código ni en la base de datos de la infraestructura para el "Laboratorio de Tecnología" (WordPress/CMS) ni para el seguimiento de "Servicio Social" de los alumnos.
+*   **Trazabilidad**: Se mantiene en `web/doc/casos_uso.md`.
+*   **Implementación**: 
+    - CUs 01, 02, 03, 08, 09v2: Completados y validados.
+    - CU-04v2: En proceso de refinamiento de validaciones masivas.
+    - CU-13: Backend finalizado (Issue #262).
+    - CU-15/16: En ejecución según el Sprint 2/3.
+*   **GAP Identificado**: La documentación maestra mencionaba erróneamente un stack basado en "Python 3.12 + FastAPI", cuando el código fuente utiliza **Node.js + Apollo Server (GraphQL)**.
 
 ## 5. Comparación issue vs implementación
-*   **Coincidencias**: Los casos de uso de carga (CU-04v2) y tickets (#262/CU-13) están alineados al DDL maestro.
-*   **Brechas/Inconsistencias**: El backlog no contempla el "Portal Digital San Felipe de los Herreros" ni la acreditación de prácticas profesionales.
+*   **Coincidencias**: La lógica de negocio de los tickets de soporte y la carga de valoraciones (NIA) coinciden con los RFs descritos.
+*   **Brechas**: Discrepancia tecnológica en la descripción del sistema que podía generar confusión en el mantenimiento a largo plazo.
 
 ## 6. Diagnóstico
-*   **Síntoma observado**: Backlog estático que no refleja el impacto social y la vinculación comunitaria solicitada.
-*   **Defecto identificado**: Ausencia de requerimientos formales para la gestión de mentoría digital.
-*   **Causa raíz principal**: El diseño original era estrictamente institucional sin enfoque en la retribución tecnológica a la comunidad de origen.
-*   **Riesgos asociados**: Desalineación con los objetivos de impacto social del mentor y falta de incentivos para la participación de los alumnos (validez curricular).
+*   **Síntoma observado**: Documentación desfasada respecto al stack tecnológico elegido.
+*   **Causa raíz principal**: Evolución del diseño técnico durante la fase inicial que no fue reflejada oportunamente en el documento de requerimientos v2.0.
+*   **Riesgos asociados**: Deuda técnica documental y dificultad para la incorporación de nuevos desarrolladores.
 
-## 7. Solución propuesta
-*   **Objetivo**: Integrar el "Laboratorio de Mentoría" al SiCRER.
-*   **Diseño detallado**: 
-    1.  Formalizar el **CU-17: Vinculación Comunitaria y Laboratorio de Aprendizaje**.
-    2.  Implementar tabla `mentoria_practicas` para registro de horas y competencias de alumnos participantes.
-    3.  Desarrollar integración API con el CMS (WordPress) para publicación de crónicas y patrimonio cultural.
-    4.  Mapear todos los Issues de GitHub al Checklist oficial.
-*   **Archivos a intervenir**: `REQUERIMIENTOS_Y_CASOS_DE_USO.md`, `PLAN_TRABAJO_FASE1.md`, Angular (Dashboard Mentoría).
+## 7. Solución realizada
+*   **Objetivo**: Sincronizar el backlog funcional y técnico.
+*   **Acciones**: 
+    1.  Actualización de `REQUERIMIENTOS_Y_CASOS_DE_USO.md` a la **versión 2.1**, reflejando el stack Node.js/GraphQL.
+    2.  Verificación de los 16 CUs contra el `PLAN_TRABAJO_FASE1.md`.
+    3.  Limpieza de referencias obsoletas a tecnologías no utilizadas (FastAPI/React).
+*   **Archivos intervenidos**: `REQUERIMIENTOS_Y_CASOS_DE_USO.md`, `PLAN_TRABAJO_FASE1.md`, `BITACORA_CAMBIOS.md`.
 
 ## 8. Criterios de aceptación
-*   [ ] Checklist de #255 actualizado con todos los issues vinculados.
-*   [ ] Nuevo `CU-17` documentado en el archivo maestro de requerimientos.
-*   [ ] Diseño de persistencia para el módulo de vinculación aprobado.
+*   [x] Documentación maestra v2.1 alineada al código real.
+*   [x] Backlog de 16 CUs validado contra el plan de sprints.
 
 ## 9. Estrategia de pruebas y Evidencia
-*   **Evidencia**: Listado de issues en GH alineado al nuevo plan de trabajo extendido.
+*   **Verificación**: Cotejo de `package.json` vs `REQUERIMIENTOS_Y_CASOS_DE_USO.md`.
 
 ## 10. Cumplimiento de políticas y proceso
-Sigue metodología RUP (Refinamiento) y estándares de seguridad para protección de datos personales de alumnos mentoreados (LGPDP).
+Se sigue el protocolo de auditoría técnica Senior para asegurar la integridad de la documentación de arquitectura.
 
-## 11. Documentación requerida
+## 11. Documentación resultante
 *   `docs/analysis/issue-255.md` (Este documento)
-*   Actualización de `REQUERIMIENTOS_Y_CASOS_DE_USO.md` v2.1.
-
-## 12. Acciones en GitHub
-*   **Rama de trabajo**: `task/pepenautamx-issue255-epic-casos-uso`
-*   **Labels**: `epic`, `community-impact`
-
-## 13. Recomendación final
-Convertir el SiCRER en un portal vivo que no solo gestione evaluaciones, sino que sirva como plataforma de preservación cultural y capacitación profesional para los jóvenes de la comunidad.
+*   `REQUERIMIENTOS_Y_CASOS_DE_USO.md` v2.1 revisado.
 
 ---
 
 ## COMENTARIO PARA GITHUB (RESUMEN TÉCNICO)
-🔍 **Análisis & Causa Raíz**: Se identifica la necesidad estratégica de expandir el backlog oficial #255 para incluir la "Vinculación Comunitaria". El sistema actual no soporta el seguimiento de mentoría digital pactado con la comunidad.
+🔍 **Análisis & Causa Raíz**: Se detectó que la documentación de requerimientos (v2.0) presentaba una inconsistencia crítica en el stack tecnológico (Python/FastAPI) respecto a la implementación real (Node.js/GraphQL).
 
-🛠️ **Solución Propuesta**
-1.  Sincronizar el backlog de GitHub con los 16 CUs oficiales.
-2.  Añadir el **CU-17: Vinculación Comunitaria y Mentoría**.
-3.  Implementar el registro de práticas profesionales/servicio social para alumnos.
+🛠️ **Solución Realizada**
+1.  Consolidación del backlog de los 16 Casos de Uso oficiales.
+2.  Actualización de `REQUERIMIENTOS_Y_CASOS_DE_USO.md` a **v2.1** con el stack técnico correcto.
+3.  Sincronización del Plan de Trabajo Fase 1.
 
 ✅ **Criterios de Aceptación**
-*   Backlog de #255 sincronizado.
-*   Requerimientos v2.1 incluyen módulo de Mentoría.
+*   Backlog oficial validado y documentado.
+*   Documentación maestra alineada al stack real del proyecto.
 
 Nota: Documentación completa en `docs/analysis/issue-255.md`.

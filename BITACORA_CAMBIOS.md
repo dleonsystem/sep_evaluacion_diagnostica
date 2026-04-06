@@ -5,10 +5,8 @@ Este documento se actualiza con cada modificación relevante al proyecto para en
 ## 2026-04-05
 
 - **Consolidación del Backlog Funcional (Issue #255)**: Auditoría completa de los 16 casos de uso base y sincronización con el `PLAN_TRABAJO_FASE1.md`.
-- **Extensión de Vinculación Comunitaria (CU-17)**: Se incorporó formalmente el requerimiento de "Laboratorio de Mentoría Digital" y seguimiento de prácticas profesionales para alumnos destacados, derivado de la propuesta de impacto social en San Felipe de los Herreros.
 - **Sincronización de Stack Técnico**: Corrección masiva en `REQUERIMIENTOS_Y_CASOS_DE_USO.md` (v2.1) para reflejar el stack real: **Node.js 20 + Apollo Server (GraphQL) + Angular 17**, eliminando referencias obsoletas a Python/FastAPI.
-- **Plan de Trabajo Fase 1**: Se añadió el **Sprint 5 (Vinculación)** extendiendo el cierre de la Fase 1 al 21 de abril de 2026.
-- **Documentación de Análisis**: Creación de `docs/analysis/issue-255.md` con el diagnóstico de brechas y propuesta de solución técnica para mentoría.
+- **Documentación de Análisis**: Creación de `docs/analysis/issue-255.md` con el diagnóstico de brechas y validación de trazabilidad de los 16 CUs oficiales.
 
 ## 2026-03-24
 

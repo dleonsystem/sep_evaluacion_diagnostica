@@ -6,11 +6,11 @@
 | **Proyecto** | SiCRER — Sistema de Recepción de Evidencias EIA |
 | **Responsable** | Equipo de Desarrollo |
 | **Fecha de inicio** | 18 de marzo de 2026 |
-| **Fecha de cierre Fase 1** | 21 de abril de 2026 |
-| **Metodología** | RUP / PSP — 5 Sprints × 5 días hábiles |
-| **Esfuerzo estimado** | ~125 horas |
-| **Versión del documento** | 1.4 — Inclusión de Vinculación Comunitaria (Sprint 5) |
-| **Estado** | 🟡 En ejecución (S1-S2 ✅, S3-S4 🏗️, S5 📅) |
+| **Fecha de cierre Fase 1** | 14 de abril de 2026 |
+| **Metodología** | RUP / PSP — 4 Sprints × 5 días hábiles |
+| **Esfuerzo estimado** | ~100 horas |
+| **Versión del documento** | 1.4 — Consolidación de Backlog oficial (Post-Auditoría) |
+| **Estado** | 🟡 En ejecución (S1-S2 ✅, S3 🏗️, S4 📅) |
 
 ---
 
@@ -34,7 +34,6 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 | Autenticación con scrypt | ✅ Real | `timingSafeEqual` |
 | Autenticación JWT (RF-18) | ✅ Real | Generación, Verificación, Bloqueo |
 | Resolvers de lectura | ✅ Real | getSolicitudes, listUsers, etc. |
-| **Vinculación Comunitaria** | 📅 Pendiente | Sprint 5: Módulo de Mentoría |
 
 ### Brechas críticas detectadas 🔴
 
@@ -364,7 +363,6 @@ Los siguientes 7 criterios deben cumplirse **antes** del tag `v1.0.0-fase1`:
 | 5 | `docker-compose up` levanta los 4 servicios | `healthCheck.database.connected = true` | 🟡 Estructura ✅ — healthcheck backend ❌ #348 |
 | 6 | Pipeline CI en verde (Node 20, lint + build + test) | GitHub Actions ✅ en rama `dev` | ❌ Trigger `develop`→`dev` #345 bloquea |
 | 7 | `ng build --configuration production` sin errores de budget | Consola sin `Error: bundle exceeded` | ⏳ No verificado |
-| 8 | CU-17: Registro de mentoría funcional | Query `getMentoria(alumnoId)` retorna datos | 📅 Sprint 5 |
 
 ---
 
@@ -376,8 +374,7 @@ Los siguientes 7 criterios deben cumplirse **antes** del tag `v1.0.0-fase1`:
 | **S2 — PDF** | 25–31 mar | CU-16 comprobante | 22 h | 🟠 Medio | Backend Dev |
 | **S3 — Docker + CI** | 01–07 abr | Infraestructura | 25 h | 🟠 Medio | DevOps |
 | **S4 — Tests + DB + Cierre** | 08–14 abr | Calidad + normalización | 26 h | 🟡 Bajo | Full-stack |
-| **S5 — Vinculación** | 15–21 abr | Impacto Social (CU-17) | 25 h | 🟠 Medio | Full-stack |
-| **TOTAL** | **18 mar – 21 abr** | | **~125 h** | | |
+| **TOTAL** | **18 mar – 14 abr** | | **~100 h** | | |
 
 ### Puntos de mayor riesgo técnico
 
@@ -424,39 +421,6 @@ Los siguientes gaps fueron identificados al comparar el plan original contra la 
 | INFRA-NEW-01 | Healthcheck del servicio `backend` ausente en `docker-compose.yml` | S3 | Día 14 | ❌ Pendiente | #348 |
 | CLEANUP-01 | 24+ scripts debug en `graphql-server/` raíz expuestos en repo público | S4 | Día 20 | ✅ Resuelto | #346 |
 | CLEANUP-02 | `graphql-server/.env2` duplicado sospechoso / posibles credenciales reales | S4 | Día 20 | ✅ Resuelto | — |
-
----
-
-## Sprint 5 — Vinculación Comunitaria y Mentoría (CU-17)
-
-**Fechas:** 15 – 21 de abril de 2026
-**Objetivo:** Implementar el módulo de retribución social que permita el seguimiento de alumnos mentoreados y la integración con el CMS comunitario.
-
-### Tareas por día
-
-#### Día 21 · Miércoles 15/04
-- [ ] Diseño de DDL para tabla `mentoria_practicas` (folio, horas, competencias).
-- [ ] Migración SQL: `scripts/015_mentoria_schema.sql`.
-- [ ] Seed de competencias digitales base.
-
-#### Día 22 · Jueves 16/04
-- [ ] Resolvers GraphQL: `registrarActividadMentoria`, `getHistorialAprendiz`.
-- [ ] TypeDefs: Definir tipos `Mentoria` y `Competencia`.
-- [ ] Implementar validación de horas (máx 8 diarias).
-
-#### Día 23 · Viernes 17/04
-- [ ] Frontend: Crear módulo `Community` en Angular.
-- [ ] Dashboard de Alumno: Visualización de progreso y horas validadas.
-- [ ] Componente `CronicasList`: Consumo de RSS/API de WordPress.
-
-#### Día 24 · Lunes 20/04
-- [ ] Integración API CMS: Proxy seguro en Backend para evitar CORS con WordPress.
-- [ ] Implementar búsqueda de crónicas por etiquetas de patrimonio.
-
-#### Día 25 · Martes 21/04
-- [ ] Generación de Constancias PDF (pdfmake) con logo del Laboratorio.
-- [ ] Smoke test: Flujo completo de asignación de mentoría → registro → constancia.
-- [ ] Cierre definitivo de Fase 1 con auditoría de impacto.
 
 ---
 
