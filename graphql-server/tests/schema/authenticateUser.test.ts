@@ -44,10 +44,14 @@ import * as crypto from 'crypto';
 
 describe('authenticateUser Resolver Tests', () => {
   const queryMock = query as any;
+  const buildPasswordHash = (password: string, salt = 'fixed-salt-for-tests') => {
+    const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+    return `${salt}:${hash}`;
+  };
   
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(crypto, 'timingSafeEqual').mockImplementation(() => true);
+    process.env.JWT_SECRET = 'test-secret-jwt';
   });
 
   describe('JWT Integrity', () => {
@@ -69,7 +73,7 @@ describe('authenticateUser Resolver Tests', () => {
       const mockUser = {
         id: 'u-1',
         email: 'test@example.com',
-        password_hash: 'salt:hash',
+        password_hash: buildPasswordHash('correct'),
         rol: 'COORDINADOR_FEDERAL',
         activo: true,
         intentosFallidos: 0,
@@ -78,9 +82,6 @@ describe('authenticateUser Resolver Tests', () => {
 
       queryMock.mockResolvedValueOnce({ rows: [mockUser] }); // Buscar
       queryMock.mockResolvedValueOnce({ rows: [] });      // Update success
-
-      jest.spyOn(crypto, 'timingSafeEqual').mockReturnValue(true);
-      jest.spyOn(crypto, 'scryptSync').mockReturnValue(Buffer.from('hash', 'hex'));
 
       const result = await (resolvers.Mutation as any).authenticateUser(
         null, 
@@ -97,7 +98,7 @@ describe('authenticateUser Resolver Tests', () => {
       const mockUser = {
         id: 'u-1',
         email: 'attacker@example.com',
-        password_hash: 'salt:hash',
+        password_hash: buildPasswordHash('correct'),
         rol: 'CONSULTA',
         activo: true,
         intentosFallidos: 4,
@@ -106,8 +107,6 @@ describe('authenticateUser Resolver Tests', () => {
 
       queryMock.mockImplementationOnce(() => Promise.resolve({ rows: [mockUser] })); // Buscar
       queryMock.mockImplementationOnce(() => Promise.resolve({ rows: [] }));      // Update lockout
-
-      jest.spyOn(crypto, 'timingSafeEqual').mockReturnValue(false);
 
       const result = await (resolvers.Mutation as any).authenticateUser(
         null, 

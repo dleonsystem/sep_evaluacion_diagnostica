@@ -3,7 +3,12 @@ import { MailingService } from './mailing.service';
 import nodemailer from 'nodemailer';
 
 // Mock de nodemailer
-jest.mock('nodemailer');
+jest.mock('nodemailer', () => ({
+  __esModule: true,
+  default: {
+    createTransport: jest.fn(),
+  },
+}));
 
 describe('MailingService (Issue #315 - Refactor & Security)', () => {
   let service: MailingService;
@@ -12,7 +17,7 @@ describe('MailingService (Issue #315 - Refactor & Security)', () => {
   beforeEach(() => {
     mockSendMail = jest.fn() as any;
     mockSendMail.mockResolvedValue({ messageId: 'test-id' });
-    (nodemailer.createTransport as any).mockReturnValue({
+    (nodemailer.createTransport as jest.Mock).mockReturnValue({
       sendMail: mockSendMail,
     });
 

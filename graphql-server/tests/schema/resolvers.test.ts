@@ -38,10 +38,14 @@ import * as crypto from 'crypto';
 describe('Resolvers GraphQL - Coverage #272', () => {
   const queryMock = query as any;
   const getClientMock = getClient as any;
+  const buildPasswordHash = (password: string, salt = 'fixed-salt-for-tests') => {
+    const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+    return `${salt}:${hash}`;
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(crypto, 'timingSafeEqual').mockImplementation(() => true);
+    process.env.JWT_SECRET = 'test-secret-jwt';
   });
 
   describe('Query.getMyTickets', () => {
@@ -63,7 +67,7 @@ describe('Resolvers GraphQL - Coverage #272', () => {
       const mockUser = {
         id: 'u1',
         email: 'admin@sep.gob.mx',
-        password_hash: 'salt:hash',
+        password_hash: buildPasswordHash('p'),
         rol: 'ADMIN',
         activo: true,
         intentosFallidos: 0,

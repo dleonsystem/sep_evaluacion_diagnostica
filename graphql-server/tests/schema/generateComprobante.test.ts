@@ -33,11 +33,10 @@ jest.mock('../../src/services/report-consolidator.service', () => ({
 }));
 
 import resolvers, { GraphQLContext } from '../../src/schema/resolvers';
-import { query, getClient } from '../../src/config/database';
+import { query } from '../../src/config/database';
 
 describe('generateComprobante resolver', () => {
   const queryMock = query as any;
-  const getClientMock = getClient as any;
 
   const createContext = (user?: GraphQLContext['user']): GraphQLContext =>
     ({
