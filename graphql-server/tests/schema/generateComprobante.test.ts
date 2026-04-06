@@ -27,7 +27,8 @@ jest.mock('../../src/services/mailing.service', () => ({
 
 jest.mock('../../src/services/report-consolidator.service', () => ({
   ReportConsolidatorService: jest.fn().mockImplementation(() => ({
-    simulateProcessing: jest.fn(),
+    simulateProcessing: (jest.fn() as any).mockImplementation(() => Promise.resolve(true)),
+    consolidateReportsByCCT: (jest.fn() as any).mockImplementation(() => Promise.resolve(true)),
   })),
 }));
 
@@ -62,7 +63,7 @@ interface DatabaseQueryResult {
 }
 
   it('retorna un PDF real para el propietario de la solicitud', async () => {
-    queryMock.mockResolvedValue({
+    queryMock.mockImplementation(() => Promise.resolve({
       rows: [
         {
           id: 'sol-1',
@@ -75,7 +76,7 @@ interface DatabaseQueryResult {
           email: 'director@escuela.edu.mx',
         },
       ],
-    } as DatabaseQueryResult);
+    } as DatabaseQueryResult));
 
     const result = await resolvers.Query.generateComprobante(
       null,
@@ -89,7 +90,7 @@ interface DatabaseQueryResult {
   });
 
   it('rechaza a un usuario sin permisos sobre la solicitud', async () => {
-    queryMock.mockResolvedValue({
+    queryMock.mockImplementation(() => Promise.resolve({
       rows: [
         {
           id: 'sol-2',
@@ -102,7 +103,7 @@ interface DatabaseQueryResult {
           email: 'owner@escuela.edu.mx',
         },
       ],
-    } as DatabaseQueryResult);
+    } as DatabaseQueryResult));
 
     await expect(
       resolvers.Query.generateComprobante(
@@ -114,7 +115,7 @@ interface DatabaseQueryResult {
   });
 
   it('retorna error controlado cuando hash_archivo es nulo', async () => {
-    queryMock.mockResolvedValue({
+    queryMock.mockImplementation(() => Promise.resolve({
       rows: [
         {
           id: 'sol-3',
@@ -127,7 +128,7 @@ interface DatabaseQueryResult {
           email: 'director@escuela.edu.mx',
         },
       ],
-    } as DatabaseQueryResult);
+    } as DatabaseQueryResult));
 
     await expect(
       resolvers.Query.generateComprobante(

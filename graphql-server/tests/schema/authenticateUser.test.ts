@@ -40,17 +40,14 @@ jest.mock('../../src/utils/logger', () => ({
 import resolvers from '../../src/schema/resolvers';
 import { query } from '../../src/config/database';
 import { verifyToken } from '../../src/config/jwt';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
-/**
- * Suite de pruebas para authenticateUser (RN-18) y Seguridad JWT
- * Verifica la integridad de tokens y el bloqueo de cuentas para prevenir fuerza bruta.
- */
 describe('authenticateUser Resolver Tests', () => {
   const queryMock = query as any;
   
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(crypto, 'timingSafeEqual').mockImplementation(() => true);
   });
 
   describe('JWT Integrity', () => {
@@ -107,8 +104,8 @@ describe('authenticateUser Resolver Tests', () => {
         bloqueadoHasta: null
       };
 
-      queryMock.mockResolvedValueOnce({ rows: [mockUser] }); // Buscar
-      queryMock.mockResolvedValueOnce({ rows: [] });      // Update lockout
+      queryMock.mockImplementationOnce(() => Promise.resolve({ rows: [mockUser] })); // Buscar
+      queryMock.mockImplementationOnce(() => Promise.resolve({ rows: [] }));      // Update lockout
 
       jest.spyOn(crypto, 'timingSafeEqual').mockReturnValue(false);
 
@@ -140,7 +137,7 @@ describe('authenticateUser Resolver Tests', () => {
         intentosFallidos: 5
       };
 
-      queryMock.mockResolvedValueOnce({ rows: [mockUser] });
+      queryMock.mockImplementationOnce(() => Promise.resolve({ rows: [mockUser] }));
 
       const result = await (resolvers.Mutation as any).authenticateUser(
         null, 
