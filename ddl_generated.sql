@@ -10,6 +10,12 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 SET search_path TO public;
 
+-- =====================================================================
+-- SEQUENCES
+-- =====================================================================
+
+CREATE SEQUENCE IF NOT EXISTS seq_numero_ticket START WITH 1000;
+
 
 -- =====================================================================
 -- ENUM CATALOG MIRRORS (ENUM types replaced by catalog FKs)
@@ -297,6 +303,21 @@ SELECT val,
 FROM unnest(ARRAY['ACTIVO','ELIMINADO','CORRUPTO','EN_CUARENTENA']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
+CREATE TABLE cat_prioridad_ticket (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_prioridad_ticket (codigo, descripcion, orden)
+SELECT val,
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
+	   ord
+FROM unnest(ARRAY['BAJA','MEDIA','ALTA','CRITICA']::TEXT[]) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
 -- Helper para obtener IDs de catálogos por código canónico
 CREATE OR REPLACE FUNCTION fn_catalogo_id(p_catalogo TEXT, p_codigo TEXT)
 RETURNS SMALLINT
@@ -495,6 +516,16 @@ CREATE TABLE usuarios (
 	intentos_fallidos      INT DEFAULT 0,
 	CONSTRAINT uq_usuarios_email UNIQUE (email)
 );
+
+-- Relación Muchos-a-Muchos entre Usuarios y CCTs (Centros de Trabajo)
+CREATE TABLE usuarios_centros_trabajo (
+	usuario_id        UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+	centro_trabajo_id UUID NOT NULL REFERENCES escuelas(id) ON DELETE CASCADE,
+	PRIMARY KEY (usuario_id, centro_trabajo_id)
+);
+
+CREATE INDEX idx_usuarios_ct_usuario ON usuarios_centros_trabajo(usuario_id);
+CREATE INDEX idx_usuarios_ct_centro ON usuarios_centros_trabajo(centro_trabajo_id);
 
 CREATE TABLE historico_passwords (
 	id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -756,6 +787,19 @@ CREATE TABLE tickets_soporte (
 	created_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );
+
+-- Bitácora de trazabilidad de sincronización y consolidación (RF-15.5)
+CREATE TABLE bitacora_sincronizacion (
+	id           BIGSERIAL PRIMARY KEY,
+	solicitud_id UUID REFERENCES solicitudes_eia2(id) ON DELETE SET NULL,
+	cct          VARCHAR(10) NOT NULL,
+	archivos     TEXT,
+	estado       VARCHAR(50) NOT NULL,
+	created_at   TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_bit_sinc_sol_id ON bitacora_sincronizacion(solicitud_id);
+CREATE INDEX idx_bit_sinc_cct ON bitacora_sincronizacion(cct);
 
 CREATE TABLE comentarios_ticket (
 	id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),

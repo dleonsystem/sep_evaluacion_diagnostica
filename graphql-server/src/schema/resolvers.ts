@@ -37,6 +37,8 @@ interface ContextUser {
   id: string;
   email: string;
   rol: string;
+  nombre?: string;
+  cct?: string;
 }
 
 /**
@@ -432,7 +434,7 @@ m.id, m.nombre, m.tipo,
           LEFT JOIN cat_nivel_educativo ne ON e.id_nivel = ne.id
           LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
           WHERE e.cct = $1`;
-        
+
         const result = await query(sql, [clave]);
 
         if (result.rows.length === 0) {
@@ -1255,14 +1257,45 @@ t.numero_ticket as "folio",
      * @use-case CU-13: Mesa de ayuda
      */
     downloadTicketEvidencia: async (_: any, { url }: { url: string }, context: GraphQLContext) => {
-      // Nota: Idealmente validaríamos que el usuario tiene acceso a este ticket
       if (!context.user) throw new Error('No autorizado');
 
+      const isAdmin = ['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol);
+
       try {
+        // 1. Validar propiedad del ticket que contiene esta evidencia (Anti-IDOR / OWASP A01)
+        const ticketRes = await query(
+          `SELECT id FROM tickets_soporte 
+           WHERE evidencias @> $1::jsonb 
+           AND (usuario_id = $2 OR $3 = true)`,
+          [JSON.stringify([{ url }]), context.user.id, isAdmin]
+        );
+
+        if (ticketRes.rows.length === 0 && !isAdmin) {
+          logger.warn('Intento de acceso no autorizado a evidencia', { url, userId: context.user.id });
+          throw new Error('No tienes permiso para acceder a esta evidencia o el archivo no existe.');
+        }
+
         const buffer = await sftpService.downloadBuffer(url);
         if (!buffer) throw new Error('No se pudo encontrar el archivo en el servidor SFTP');
 
         const fileName = url.split('/').pop() || 'evidencia';
+
+        // 2. Registro de Auditoría (Senior)
+        try {
+          const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const userAgent = context.req?.headers['user-agent'];
+          await query(
+            `INSERT INTO log_actividades 
+              (id_usuario, fecha_hora, accion, tabla, detalle, ip_address, user_agent, modulo, resultado)
+            VALUES ($1, NOW(), 'EVIDENCIA_DESCARGADA', 'archivos_tickets', $2, $3, $4, 'SOPORTE', 'SUCCESS')`,
+            [
+              context.user.id,
+              JSON.stringify({ url, fileName }),
+              clientIp,
+              userAgent
+            ]
+          );
+        } catch (logErr) { logger.warn('Audit error in downloadTicketEvidencia', logErr); }
 
         return {
           success: true,
@@ -1379,14 +1412,14 @@ t.numero_ticket as "folio",
             `INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, ip_address, user_agent, detalle)
              VALUES ($1, 'CREATE_USER', 'USERS', 'SUCCESS', $2, $3, $4)`,
             [
-              context.user?.id || null, 
-              clientIp, 
-              userAgent, 
-              JSON.stringify({ 
-                createdUserId: createdUser.id, 
-                email: createdUser.email, 
-                rol, 
-                ccts: clavesCCT 
+              context.user?.id || null,
+              clientIp,
+              userAgent,
+              JSON.stringify({
+                createdUserId: createdUser.id,
+                email: createdUser.email,
+                rol,
+                ccts: clavesCCT
               })
             ]
           );
@@ -1614,7 +1647,7 @@ t.numero_ticket as "folio",
       try {
         const res = await query('SELECT password_hash, email FROM usuarios WHERE id = $1', [userId]);
         if (res.rows.length === 0) throw new Error('Usuario no encontrado');
-        
+
         const { password_hash: hashActual, email } = res.rows[0];
         const [salt, storedHash] = hashActual.split(':');
 
@@ -1836,8 +1869,9 @@ t.numero_ticket as "folio",
         // 4. Insertar Ticket
         const insertRes = await client.query(
           `INSERT INTO tickets_soporte 
-            (numero_ticket, usuario_id, asunto, descripcion, estado, prioridad, evidencias, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, fn_catalogo_id('cat_estado_ticket', 'ABIERTO'), $5, $6, NOW(), NOW())
+            (numero_ticket, usuario_id, asunto, descripcion, estado, prioridad, evidencias, 
+             user_fullname, user_cct, user_email, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, fn_catalogo_id('cat_estado_ticket', 'ABIERTO'), $5, $6, $7, $8, $9, NOW(), NOW())
            RETURNING 
             id, 
             numero_ticket as "numeroTicket", 
@@ -1848,13 +1882,42 @@ t.numero_ticket as "folio",
             updated_at as "fechaActualizacion",
             prioridad,
             estado`,
-          [numeroTicket, userId, motivo, descripcion, prioridad, JSON.stringify(evidenciasProcesadas)]
+          [
+            numeroTicket,
+            userId,
+            motivo,
+            descripcion,
+            prioridad,
+            JSON.stringify(evidenciasProcesadas),
+            context.user?.nombre || null,
+            context.user?.cct || null,
+            context.user?.email || correo || null
+          ]
         );
+
+        const ticket = insertRes.rows[0];
+
+        // 5. Registro de Auditoría (CU-15 / Issue #268 / Senior)
+        try {
+          const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const userAgent = context.req?.headers['user-agent'];
+          await client.query(
+            `INSERT INTO log_actividades 
+              (id_usuario, fecha_hora, accion, tabla, registro_id, detalle, ip_address, user_agent, modulo, resultado)
+            VALUES ($1, NOW(), 'TICKET_CREADO', 'tickets_soporte', $2, $3, $4, $5, 'SOPORTE', 'SUCCESS')`,
+            [
+              userId || null,
+              ticket.id,
+              JSON.stringify({ numeroTicket: ticket.numeroTicket, asunto: ticket.asunto }),
+              clientIp,
+              userAgent
+            ]
+          );
+        } catch (logErr) { logger.warn('Audit error in createTicket', logErr); }
 
         await client.query('COMMIT');
 
-        const row = insertRes.rows[0];
-        return row;
+        return ticket;
       } catch (error) {
         await client.query('ROLLBACK');
         logger.error('Error creating ticket', { input, error });
@@ -1890,7 +1953,7 @@ t.numero_ticket as "folio",
               [clientIp, userAgent, JSON.stringify({ attemptedEmail: email })]
             );
           } catch (e) { }
-          
+
           await client.query('ROLLBACK');
           return 'OK';
         }
@@ -1993,15 +2056,15 @@ t.numero_ticket as "folio",
              VALUES ($1, 'UPLOAD_EIA2', 'EVALUACION', $2, $3, $4, $5)`,
             [
               context.user?.id || null,
-              status, 
-              clientIp, 
-              userAgent, 
-              JSON.stringify({ 
-                email: email || normalizedEmail, 
-                archivo: nombreArchivo, 
+              status,
+              clientIp,
+              userAgent,
+              JSON.stringify({
+                email: email || normalizedEmail,
+                archivo: nombreArchivo,
                 resultado,
                 cct: currentCct,
-                ...detalleAdicional 
+                ...detalleAdicional
               })
             ]
           );
@@ -2119,10 +2182,10 @@ t.numero_ticket as "folio",
         const idTurno = turnoMap[excelTurno] || 1;
 
         // Mapeo de niveles alineado a cat_nivel_educativo id
-        const nivelMap: Record<string, number> = { 
-          'PREESCOLAR': 1, 
-          'PRIMARIA': 2, 
-          'SECUNDARIA': 3, 
+        const nivelMap: Record<string, number> = {
+          'PREESCOLAR': 1,
+          'PRIMARIA': 2,
+          'SECUNDARIA': 3,
           'TELESECUNDARIA': 4,
           'INICIAL_GENERAL': 5
         };
@@ -2260,7 +2323,7 @@ t.numero_ticket as "folio",
           solicitudId = solRes.rows[0].id;
           consecutivo = solRes.rows[0].consecutivo;
         }
- 
+
         const escuelaId = escuelaIdFromDb;
         const idGrado = nivelId * 100 + grado;
 
@@ -2299,10 +2362,10 @@ t.numero_ticket as "folio",
         for (const alumno of alumnos) {
           // 4. Asegurar Grupo
           const gRes = await client.query(
-            'SELECT id FROM grupos WHERE escuela_id = $1 AND grado_id = $2 AND nombre = $3 LIMIT 1', 
+            'SELECT id FROM grupos WHERE escuela_id = $1 AND grado_id = $2 AND nombre = $3 LIMIT 1',
             [escuelaId, idGrado, alumno.grupo]
           );
-          
+
           let grupoId;
           if (gRes.rows.length > 0) {
             grupoId = gRes.rows[0].id;
@@ -2341,7 +2404,7 @@ t.numero_ticket as "folio",
             `INSERT INTO evaluaciones (estudiante_id, materia_id, periodo_id, valoracion, fecha_evaluacion, updated_at, solicitud_id, validado) 
              VALUES ${evaluationValues.join(', ')} 
              ON CONFLICT (estudiante_id, materia_id, periodo_id, solicitud_id) 
-             DO UPDATE SET valoracion = EXCLUDED.valoracion, updated_at = NOW(), validado = true`, 
+             DO UPDATE SET valoracion = EXCLUDED.valoracion, updated_at = NOW(), validado = true`,
             evaluationParams
           );
         }
@@ -2355,14 +2418,14 @@ t.numero_ticket as "folio",
               const team = context.distributionService.getTeamForCCT(cct);
               // Sanitizamos el nombre eliminando espacios por precaución
               const fileName = `${Date.now()}_${nombreArchivo.replace(/\s+/g, '_')}`;
-              
+
               // Aseguramos que la carpeta compartida exista antes de subir
               await sftpService.ensureDir(team.sftpPath);
-              
+
               const remotePath = `${team.sftpPath}/${fileName}`;
-              
+
               const uploaded = await sftpService.uploadBuffer(buffer, remotePath);
-              
+
               if (uploaded) {
                 // Registrar en bitácora la trazabilidad (equipo_asignado en BD)
                 await context.distributionService.logDistribution(solicitudId, team.id);
@@ -2660,7 +2723,7 @@ t.numero_ticket as "folio",
 
         const ownerId = ticketOwnerQuery.rows[0].usuario_id;
         const isAdmin = ['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol);
-        
+
         if (!isAdmin && ownerId !== context.user.id) {
           throw new Error('No tienes permiso para responder a este ticket');
         }
@@ -2679,6 +2742,7 @@ t.numero_ticket as "folio",
         let updateQuery = `
           UPDATE tickets_soporte
           SET estado = (SELECT id FROM cat_estado_ticket WHERE codigo = $1),
+              resuelto_en = ${cerrar ? 'NOW()' : 'resuelto_en'},
               updated_at = NOW()
         `;
         const params: any[] = [nuevoEstado];
@@ -2692,8 +2756,26 @@ t.numero_ticket as "folio",
         }
 
         updateQuery += ` WHERE id = $2`;
-        
+
         await client.query(updateQuery, params);
+
+        // 3. Registro de Auditoría (CU-15 / Issue #268 / Senior)
+        try {
+          const clientIp = context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const userAgent = context.req?.headers['user-agent'];
+          await client.query(
+            `INSERT INTO log_actividades 
+              (id_usuario, fecha_hora, accion, tabla, registro_id, detalle, ip_address, user_agent, modulo, resultado)
+            VALUES ($1, NOW(), 'TICKET_RESPONDIDO', 'tickets_soporte', $2, $3, $4, $5, 'SOPORTE', 'SUCCESS')`,
+            [
+              context.user.id,
+              ticketId,
+              JSON.stringify({ estado: nuevoEstado, cerrado: cerrar }),
+              clientIp,
+              userAgent
+            ]
+          );
+        } catch (logErr) { logger.warn('Audit error in respondToTicket', logErr); }
 
         await client.query('COMMIT');
 
@@ -2813,12 +2895,12 @@ t.numero_ticket as "folio",
 
         // 5. Enviar notificación por correo
         const emailSent = await mailingService.sendAdminPasswordReset(email, newPassword);
-        
+
         await client.query('COMMIT');
 
         return {
           success: true,
-          message: emailSent 
+          message: emailSent
             ? `Contraseña reiniciada correctamente. Se ha enviado un correo a ${email}.`
             : `Contraseña reiniciada en sistema, pero hubo un error al enviar el correo a ${email}. Informe la nueva contraseña manualmente.`
         };
@@ -2879,11 +2961,11 @@ t.numero_ticket as "folio",
             user_fullname, user_cct, user_email, evidencias, created_at, updated_at, usuario_id
           ) VALUES ($1, $2, $3, fn_catalogo_id('cat_estado_ticket', 'ABIERTO'), 'ALTA', $4, $5, $6, $7, NOW(), NOW(), NULL) RETURNING id`,
           [
-            numeroTicket, 
-            'Incidencia en Carga Masiva', 
-            descripcion, 
-            nombreCompleto, 
-            cct, 
+            numeroTicket,
+            'Incidencia en Carga Masiva',
+            descripcion,
+            nombreCompleto,
+            cct,
             email,
             JSON.stringify(evidenciasProcesadas)
           ]
@@ -2957,7 +3039,7 @@ t.numero_ticket as "folio",
         } catch (e) { logger.warn('Audit fail', e); }
 
         const schoolRes = await query(
-           `SELECT 
+          `SELECT 
             e.id, e.cct, e.nombre, e.cp, e.telefono, e.email, e.director, e.activo, e.created_at, e.updated_at,
             e.id_turno, e.id_nivel, e.id_entidad, e.id_ciclo,
             t.nombre as "turno_nombre", t.codigo as "turno_codigo",
@@ -3013,23 +3095,23 @@ t.numero_ticket as "folio",
       const client = await getClient();
       try {
         await client.query('BEGIN');
-        
+
         let setClause = [];
         let values = [];
         let i = 1;
 
         for (const [key, value] of entries) {
-           setClause.push(`${key} = $${i}`);
-           values.push(value);
-           i++;
+          setClause.push(`${key} = $${i}`);
+          values.push(value);
+          i++;
         }
-        
+
         setClause.push(`updated_at = NOW()`);
         values.push(id);
-        
+
         const sql = `UPDATE escuelas SET ${setClause.join(', ')} WHERE id = $${i} RETURNING id`;
         const res = await client.query(sql, values);
-        
+
         if (res.rows.length === 0) throw new Error('Escuela no encontrada');
 
         await client.query('COMMIT');
@@ -3043,7 +3125,7 @@ t.numero_ticket as "folio",
         } catch (e) { logger.warn('Audit fail', e); }
 
         const schoolRes = await query(
-           `SELECT 
+          `SELECT 
             e.id, e.cct, e.nombre, e.cp, e.telefono, e.email, e.director, e.activo, e.created_at, e.updated_at,
             e.id_turno, e.id_nivel, e.id_entidad, e.id_ciclo,
             t.nombre as "turno_nombre", t.codigo as "turno_codigo",

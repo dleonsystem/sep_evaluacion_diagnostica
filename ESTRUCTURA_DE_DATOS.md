@@ -11,18 +11,18 @@ Este documento describe la estructura completa y fidedigna de la base de datos P
 
 | Categoría | Cantidad | Notas |
 |-----------|----------|-------|
-| **Catálogos ENUM Mirror** | 18 | Reemplazan tipos ENUM por tablas con FKs (incluye NIAs) |
+| **Catálogos ENUM Mirror** | 19 | Reemplazan tipos ENUM por tablas con FKs (incluye NIAs) |
 | **Catálogos Tradicionales** | 5 | CAT_CICLOS_ESCOLARES, CAT_ENTIDADES_FEDERATIVAS, CAT_TURNOS, CAT_GRADOS, CAT_ROLES_USUARIO |
 | **Entidades Core** | 2 | MATERIAS, COMPETENCIAS |
 | **Entidades Principales** | 3 | ESCUELAS, GRUPOS, ESTUDIANTES |
-| **Usuarios y Seguridad** | 7 | USUARIOS, HISTORICO_PASSWORDS, BLOQUEOS_IP, SESIONES, INTENTOS_LOGIN, CAMBIOS_AUDITORIA, LOG_ACTIVIDADES |
-| **Archivos y Validación** | 5 | ARCHIVOS_FRV, ARCHIVOS_TEMPORALES, ARCHIVOS_TICKETS, CREDENCIALES_EIA2, SOLICITUDES_EIA2 |
+| **Usuarios y Seguridad** | 8 | USUARIOS, USUARIOS_CENTROS_TRABAJO, HISTORICO_PASSWORDS, BLOQUEOS_IP, SESIONES, INTENTOS_LOGIN, CAMBIOS_AUDITORIA, LOG_ACTIVIDADES |
+| **Archivos y Validación** | 6 | ARCHIVOS_FRV, ARCHIVOS_TEMPORALES, ARCHIVOS_TICKETS, CREDENCIALES_EIA2, SOLICITUDES_EIA2, BITACORA_SINCRONIZACION |
 | **Evaluaciones y NIA** | 4 | EVALUACIONES, RESULTADOS_COMPETENCIAS, PERIODOS_EVALUACION, NIVELES_INTEGRACION_ESTUDIANTE |
 | **Reportes y Notificaciones** | 4 | REPORTES_GENERADOS, NOTIFICACIONES_EMAIL, PLANTILLAS_EMAIL, PREGUNTAS_FRECUENTES |
-| **Tickets de Soporte** | 2 | TICKETS_SOPORTE, COMENTARIOS_TICKET |
+| **Tickets de Soporte** | 3 | TICKETS_SOPORTE, COMENTARIOS_TICKET, CAT_PRIORIDAD_TICKET |
 | **Configuración** | 2 | CONFIGURACIONES_SISTEMA, CONSENTIMIENTOS_LGPDP |
 | **Staging DBF** | 10 | PRE3, PRI1-PRI6, SEC1-SEC3 |
-| **TOTAL** | **62** | Todas documentadas aquí |
+| **TOTAL** | **66** | Todas documentadas aquí |
 
 ---
 
@@ -176,7 +176,15 @@ Usado por: `archivos_tickets(estado)`
 
 ---
 
-### 17. CAT_NIVELES_INTEGRACION
+### 17. CAT_PRIORIDAD_TICKET
+
+**Valores**: `BAJA`, `MEDIA`, `ALTA`, `CRITICA`
+
+Usado por: `tickets_soporte(prioridad)`
+
+---
+
+### 18. CAT_NIVELES_INTEGRACION
 
 **Valores**: `ED` (En Desarrollo), `EP` (En Proceso), `ES` (Esperado), `SO` (Sobresaliente)
 
@@ -505,7 +513,24 @@ Usuarios del sistema (consolidado: incluye preferencias de notificación).
 
 **Relaciones:**
 - FK: `cat_roles_usuario(id_rol)`, `escuelas(id)`
-- Referenciado por: `historico_passwords(usuario_id)`, `sesiones(usuario_id)`, `intentos_login(usuario_id)`, `log_actividades(id_usuario)`, `notificaciones_email(usuario_id)`, `tickets_soporte(usuario_id, asignado_a)`, `comentarios_ticket(usuario_id)`, `evaluaciones(registrado_por, validado_por)`, `archivos_frv(usuario_id)`, `archivos_temporales(usuario_id)`, `solicitudes_eia2(usuario_id)`, `reportes_generados(descargado_por)`, `plantillas_email(actualizado_por)`, `configuraciones_sistema(actualizado_por)`, `bloqueos_ip(desbloqueado_por)`
+- Referenciado por: `usuarios_centros_trabajo(usuario_id)`, `historico_passwords(usuario_id)`, `sesiones(usuario_id)`, `intentos_login(usuario_id)`, `log_actividades(id_usuario)`, `notificaciones_email(usuario_id)`, `tickets_soporte(usuario_id, asignado_a)`, `comentarios_ticket(usuario_id)`, `evaluaciones(registrado_por, validado_por)`, `archivos_frv(usuario_id)`, `archivos_temporales(usuario_id)`, `solicitudes_eia2(usuario_id)`, `reportes_generados(descargado_por)`, `plantillas_email(actualizado_por)`, `configuraciones_sistema(actualizado_por)`, `bloqueos_ip(desbloqueado_por)`
+
+---
+
+### USUARIOS_CENTROS_TRABAJO
+
+Relación Muchos-a-Muchos entre Usuarios y Centros de Trabajo (CCTs). Permite que un usuario gestione múltiples escuelas.
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| usuario_id | UUID | FK a `usuarios(id)` ON DELETE CASCADE |
+| centro_trabajo_id | UUID | FK a `escuelas(id)` ON DELETE CASCADE |
+
+**Constraints:**
+- `PRIMARY KEY (usuario_id, centro_trabajo_id)`
+
+**Relaciones:**
+- FK: `usuarios(id)`, `escuelas(id)`
 
 ---
 
@@ -841,7 +866,25 @@ Solicitudes de procesamiento de archivos EIA2 (plataforma externa).
 
 **Relaciones:**
 - FK: `credenciales_eia2(id)`, `cat_estado_validacion_eia2(id)`, `cat_nivel_educativo(id)`, `usuarios(id)`
-- Referenciado por: `evaluaciones(solicitud_id)`
+- Referenciado por: `evaluaciones(solicitud_id)`, `bitacora_sincronizacion(solicitud_id)`
+
+---
+
+### BITACORA_SINCRONIZACION
+
+Bitácora de trazabilidad de sincronización y consolidación de reportes.
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | BIGSERIAL | PK autoincremental |
+| solicitud_id | UUID | FK a `solicitudes_eia2(id)` ON DELETE SET NULL |
+| cct | VARCHAR(10) | CCT de la escuela |
+| archivos | TEXT | Lista de archivos procesados |
+| estado | VARCHAR(50) | Estado de la sincronización (COMPLETADO/ERROR) |
+| created_at | TIMESTAMP | Fecha de registro DEFAULT NOW() |
+
+**Relaciones:**
+- FK: `solicitudes_eia2(id)`
 
 ---
 
@@ -1137,7 +1180,7 @@ Tickets de soporte técnico gestionados por operadores SEP.
 | asunto | VARCHAR(200) | Asunto del ticket |
 | descripcion | TEXT | Descripción detallada |
 | estado | SMALLINT | FK a `cat_estado_ticket(id)` DEFAULT fn_catalogo_id('cat_estado_ticket','ABIERTO') |
-| prioridad | VARCHAR(10) | Prioridad (ALTA/MEDIA/BAJA) |
+| prioridad | VARCHAR(10) | Prioridad (ALTA/MEDIA/BAJA). Futuro: FK a `cat_prioridad_ticket` |
 | asignado_a | UUID | FK a `usuarios(id)` (operador asignado) |
 | asignado_en | TIMESTAMP | Fecha de asignación |
 | resolucion | TEXT | Descripción de la resolución |
