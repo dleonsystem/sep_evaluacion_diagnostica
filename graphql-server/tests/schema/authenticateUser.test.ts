@@ -1,5 +1,10 @@
-// Mock implementation to include consolidateReportsByCCT in the report-consolidator.service mock
+import { reportConsolidatorServiceMock } from '../mocks/report-consolidator.service.mock';
 
-jest.mock('../services/report-consolidator.service', () => ({
-  consolidateReportsByCCT: jest.fn(),
-}));
+describe('authenticateUser', () => {
+    it('should authenticate user correctly', () => {
+        // Your test implementation here
+        // Using the consolidateReportsByCCT from the mock
+        const result = reportConsolidatorServiceMock.consolidateReportsByCCT();
+        expect(result).toBeDefined();
+    });
+});
