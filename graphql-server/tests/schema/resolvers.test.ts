@@ -1,24 +1,34 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-// @ts-nocheck
+
+process.env.JWT_SECRET = 'test-secret';
+
+jest.mock('crypto', () => {
+  const actual = jest.requireActual('crypto') as any;
+  return {
+    ...actual,
+    timingSafeEqual: jest.fn().mockReturnValue(true),
+    scryptSync: jest.fn().mockReturnValue(Buffer.from('hash', 'hex')),
+  };
+});
 
 jest.mock('../../src/config/database', () => ({
-  query: jest.fn(),
-  getClient: jest.fn(),
+  query: jest.fn<(text: string, params?: any[]) => Promise<{ rows: any[] }>>(),
+  getClient: jest.fn<() => Promise<any>>(),
 }));
 
 jest.mock('../../src/services/sftp.service', () => ({
   SftpService: jest.fn().mockImplementation(() => ({
-    ensureDir: jest.fn().mockResolvedValue(true),
-    uploadBuffer: jest.fn().mockResolvedValue(true),
-    connect: jest.fn().mockResolvedValue(true),
+    ensureDir: jest.fn<(path: string) => Promise<boolean>>().mockResolvedValue(true),
+    uploadBuffer: jest.fn<(buf: Buffer, path: string) => Promise<boolean>>().mockResolvedValue(true),
+    connect: jest.fn<() => Promise<boolean>>().mockResolvedValue(true),
   })),
 }));
 
 jest.mock('../../src/services/mailing.service', () => ({
   MailingService: jest.fn().mockImplementation(() => ({
-    sendCredentials: jest.fn().mockResolvedValue(true),
-    sendPasswordRecovery: jest.fn().mockResolvedValue(true),
-    sendAdminPasswordReset: jest.fn().mockResolvedValue(true),
+    sendCredentials: jest.fn<(email: string, cct: string, pass: string) => Promise<boolean>>().mockResolvedValue(true),
+    sendPasswordRecovery: jest.fn<(email: string, pass: string) => Promise<boolean>>().mockResolvedValue(true),
+    sendAdminPasswordReset: jest.fn<(email: string, pass: string) => Promise<boolean>>().mockResolvedValue(true),
   })),
 }));
 
@@ -36,8 +46,8 @@ import { query, getClient } from '../../src/config/database';
 import * as crypto from 'crypto';
 
 describe('Resolvers GraphQL - Coverage #272', () => {
-  const queryMock = query as jest.Mock;
-  const getClientMock = getClient as jest.Mock;
+  const queryMock = query as unknown as jest.Mock<(text: string, params?: any[]) => Promise<{ rows: any[] }>>;
+  const getClientMock = getClient as unknown as jest.Mock<() => Promise<any>>;
 
   beforeEach(() => {
     jest.clearAllMocks();

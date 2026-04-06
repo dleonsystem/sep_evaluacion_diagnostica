@@ -1,39 +1,49 @@
-// @ts-nocheck
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
+process.env.JWT_SECRET = 'test-secret';
+
+jest.mock('crypto', () => {
+  const actual = jest.requireActual('crypto') as any;
+  return {
+    ...actual,
+    timingSafeEqual: jest.fn().mockReturnValue(true),
+    scryptSync: jest.fn(),
+  };
+});
+
 jest.mock('../../src/config/database', () => ({
-  query: jest.fn(),
-  getClient: jest.fn(),
+  query: jest.fn<(text: string, params?: any[]) => Promise<{ rows: any[] }>>(),
+  getClient: jest.fn<() => Promise<any>>(),
 }));
 
 jest.mock('../../src/services/sftp.service', () => ({
   SftpService: jest.fn().mockImplementation(() => ({
-    ensureDir: jest.fn(),
-    uploadBuffer: jest.fn(),
-    connect: jest.fn(),
+    ensureDir: jest.fn<(path: string) => Promise<boolean>>(),
+    uploadBuffer: jest.fn<(buf: Buffer, path: string) => Promise<boolean>>(),
+    connect: jest.fn<() => Promise<boolean>>(),
   })),
 }));
 
 jest.mock('../../src/services/mailing.service', () => ({
   MailingService: jest.fn().mockImplementation(() => ({
-    sendCredentials: jest.fn(),
-    sendPasswordRecovery: jest.fn(),
-    sendAdminPasswordReset: jest.fn(),
+    sendCredentials: jest.fn<(email: string, cct: string, pass: string) => Promise<boolean>>(),
+    sendPasswordRecovery: jest.fn<(email: string, pass: string) => Promise<boolean>>(),
+    sendAdminPasswordReset: jest.fn<(email: string, pass: string) => Promise<boolean>>(),
   })),
 }));
 
 jest.mock('../../src/services/report-consolidator.service', () => ({
   ReportConsolidatorService: jest.fn().mockImplementation(() => ({
-    simulateProcessing: jest.fn(),
+    simulateProcessing: jest.fn<(id: string) => Promise<boolean>>(),
   })),
 }));
 
 jest.mock('../../src/utils/logger', () => ({
   logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
+    info: jest.fn<(msg: string) => void>(),
+    warn: jest.fn<(msg: string) => void>(),
+    error: jest.fn<(msg: string, err?: any) => void>(),
+    debug: jest.fn<(msg: string) => void>(),
   },
 }));
 
@@ -43,11 +53,10 @@ import { verifyToken } from '../../src/config/jwt';
 import * as crypto from 'crypto';
 
 describe('authenticateUser Resolver Tests', () => {
-  const queryMock = query as jest.Mock;
+  const queryMock = query as unknown as jest.Mock<(text: string, params?: any[]) => Promise<{ rows: any[] }>>;
   
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(crypto, 'timingSafeEqual').mockImplementation(() => true);
   });
 
   describe('JWT Integrity', () => {
@@ -79,8 +88,7 @@ describe('authenticateUser Resolver Tests', () => {
       queryMock.mockResolvedValueOnce({ rows: [mockUser] }); // Buscar
       queryMock.mockResolvedValueOnce({ rows: [] });      // Update success
 
-      jest.spyOn(crypto, 'timingSafeEqual').mockReturnValue(true);
-      jest.spyOn(crypto, 'scryptSync').mockReturnValue(Buffer.from('hash', 'hex'));
+      (crypto.scryptSync as unknown as jest.Mock).mockReturnValue(Buffer.from('hash', 'hex'));
 
       const result = await (resolvers.Mutation as any).authenticateUser(
         null, 
@@ -107,7 +115,7 @@ describe('authenticateUser Resolver Tests', () => {
       queryMock.mockImplementationOnce(() => Promise.resolve({ rows: [mockUser] })); // Buscar
       queryMock.mockImplementationOnce(() => Promise.resolve({ rows: [] }));      // Update lockout
 
-      jest.spyOn(crypto, 'timingSafeEqual').mockReturnValue(false);
+      (crypto.timingSafeEqual as unknown as jest.Mock).mockReturnValue(false);
 
       const result = await (resolvers.Mutation as any).authenticateUser(
         null, 
@@ -119,10 +127,12 @@ describe('authenticateUser Resolver Tests', () => {
       expect(result.message).toContain('bloqueada');
       
       const lastUpdateCall = queryMock.mock.calls.find(call => 
-        call[0].includes('UPDATE usuarios') && call[0].includes('bloqueado_hasta')
+        (call[0] as string).includes('UPDATE usuarios') && (call[0] as string).includes('bloqueado_hasta')
       );
       expect(lastUpdateCall).toBeDefined();
-      expect(lastUpdateCall[1][0]).toBe(5);
+      if (lastUpdateCall) {
+        expect((lastUpdateCall[1] as any[])[0]).toBe(5);
+      }
     });
 
     it('debería rechazar login si la cuenta ya está bloqueada', async () => {

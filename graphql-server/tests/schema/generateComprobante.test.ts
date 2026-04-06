@@ -1,9 +1,10 @@
-// @ts-nocheck
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
+process.env.JWT_SECRET = 'test-secret';
+
 jest.mock('../../src/config/database', () => ({
-  query: jest.fn(),
-  getClient: jest.fn(),
+  query: jest.fn<(text: string, params?: any[]) => Promise<{ rows: any[] }>>(),
+  getClient: jest.fn<() => Promise<any>>(),
 }));
 
 jest.mock('../../src/utils/logger', () => ({
@@ -29,27 +30,13 @@ jest.mock('../../src/services/mailing.service', () => ({
 
 jest.mock('../../src/services/report-consolidator.service', () => ({
   ReportConsolidatorService: jest.fn().mockImplementation(() => ({
-    simulateProcessing: jest.fn().mockImplementation(() => Promise.resolve(true)),
     consolidateReportsByCCT: jest.fn().mockImplementation(() => Promise.resolve(true)),
+    simulateProcessing: jest.fn().mockImplementation(() => Promise.resolve(true)),
   })),
 }));
 
+import { query } from '../../src/config/database';
 import resolvers, { GraphQLContext } from '../../src/schema/resolvers';
-import { query, getClient } from '../../src/config/database';
-
-describe('generateComprobante resolver', () => {
-  const queryMock = query as jest.Mock;
-  const getClientMock = getClient as jest.Mock;
-
-  const createContext = (user?: GraphQLContext['user']): GraphQLContext =>
-    ({
-      user,
-      loaders: {} as GraphQLContext['loaders'],
-    }) as GraphQLContext;
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
 
 interface DatabaseQueryResult {
   rows: Array<{
@@ -63,6 +50,19 @@ interface DatabaseQueryResult {
     email: string;
   }>;
 }
+
+describe('generateComprobante resolver', () => {
+  const queryMock = query as unknown as jest.Mock<(text: string, params?: any[]) => Promise<{ rows: any[] }>>;
+
+  const createContext = (user?: GraphQLContext['user']): GraphQLContext =>
+    ({
+      user,
+      loaders: {} as GraphQLContext['loaders'],
+    } as GraphQLContext);
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
   it('retorna un PDF real para el propietario de la solicitud', async () => {
     queryMock.mockImplementation(() => Promise.resolve({

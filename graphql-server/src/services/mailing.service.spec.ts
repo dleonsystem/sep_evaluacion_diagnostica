@@ -1,11 +1,10 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import nodemailer from 'nodemailer';
 
-// Mock de nodemailer antes de los imports que puedan usarlo
 jest.mock('nodemailer', () => ({
   createTransport: jest.fn(),
 }));
 
+import nodemailer from 'nodemailer';
 import { MailingService } from './mailing.service';
 
 describe('MailingService (Issue #315 - Refactor & Security)', () => {
