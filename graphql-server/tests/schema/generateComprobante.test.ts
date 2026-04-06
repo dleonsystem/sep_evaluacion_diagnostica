@@ -48,6 +48,19 @@ describe('generateComprobante resolver', () => {
     jest.clearAllMocks();
   });
 
+interface DatabaseQueryResult {
+  rows: Array<{
+    id: string;
+    consecutivo: number;
+    fechaCarga: Date;
+    archivoOriginal: string;
+    hashArchivo: string | null;
+    cct: string;
+    usuarioId: string;
+    email: string;
+  }>;
+}
+
   it('retorna un PDF real para el propietario de la solicitud', async () => {
     queryMock.mockResolvedValue({
       rows: [
@@ -62,7 +75,7 @@ describe('generateComprobante resolver', () => {
           email: 'director@escuela.edu.mx',
         },
       ],
-    } as Awaited<ReturnType<typeof query>>);
+    } as DatabaseQueryResult);
 
     const result = await resolvers.Query.generateComprobante(
       null,
@@ -89,7 +102,7 @@ describe('generateComprobante resolver', () => {
           email: 'owner@escuela.edu.mx',
         },
       ],
-    } as Awaited<ReturnType<typeof query>>);
+    } as DatabaseQueryResult);
 
     await expect(
       resolvers.Query.generateComprobante(
@@ -114,7 +127,7 @@ describe('generateComprobante resolver', () => {
           email: 'director@escuela.edu.mx',
         },
       ],
-    } as Awaited<ReturnType<typeof query>>);
+    } as DatabaseQueryResult);
 
     await expect(
       resolvers.Query.generateComprobante(

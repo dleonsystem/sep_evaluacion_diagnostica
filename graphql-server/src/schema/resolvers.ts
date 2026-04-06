@@ -2162,7 +2162,7 @@ t.numero_ticket as "folio",
         logger.info('Iniciando carga masiva con Worker', { nombreArchivo });
 
         const runWorker = () =>
-          new Promise<any>((resolve, reject) => {
+          new Promise<unknown>((resolve, reject) => {
             import('worker_threads')
               .then(({ Worker }) => {
                 const runtimeEntry = process.argv[1] || '';
@@ -2223,9 +2223,9 @@ t.numero_ticket as "folio",
 
         let workerResult;
         try {
-          workerResult = await runWorker();
-        } catch (workerError: any) {
-          const errorMsg = workerError.message || 'Error de validación desconocido';
+          workerResult = (await runWorker()) as any;
+        } catch (workerError: unknown) {
+          const errorMsg = (workerError as any).message || 'Error de validación desconocido';
           await auditLog(`Error worker: ${errorMsg}`, 'RECHAZADO');
           const rejRes = await query(
             `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false) RETURNING consecutivo`,
@@ -2271,7 +2271,7 @@ t.numero_ticket as "folio",
             success: false,
             message: `Se encontraron ${erroresEstructurados.length} errores de validación en el archivo.`,
             detalles: {
-              errores: erroresEstructurados.map((e: any) => e.error),
+              errores: erroresEstructurados.map((e: { error: string }) => e.error),
               erroresEstructurados,
             },
           };
