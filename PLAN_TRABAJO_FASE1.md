@@ -239,10 +239,10 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 - [x] **[GAP-CI-1]** Actualizar `.github/workflows/ci.yml`: `node-version: 18` → `node-version: 20` ← ya estaba en origin/dev ✅
 - [x] **[GAP-CAT]** Crear `graphql-server/scripts/seed-catalogs-eia2025.sql` con catálogos oficiales EIA 2025 ← referenciado en `init-db.sql` y script presente 01/04/2026 ✅
 - [x] Crear `graphql-server/.env.example` completo con 40+ variables: `DATABASE_URL`, `JWT_SECRET`, `SMTP_*`, `SFTP_*` ← verificado presente 01/04/2026 ✅
-- [ ] Crear `.env.example` en raíz del repo (junto a `docker-compose.yml`) — **AUN PENDIENTE** ❌
-- [ ] **[GAP-CI-NUEVO-1]** Corregir trigger CI: `develop` → `dev` en `.github/workflows/ci.yml` — **PENDIENTE** ❌ issue #345
+- [x] Crear `.env.example` en raíz del repo (junto a `docker-compose.yml`)
+- [x] **[GAP-CI-NUEVO-1]** Corregir trigger CI: `develop` → `dev` en `.github/workflows/ci.yml`
 - [x] **[SEC-NEW-01]** Eliminar fallback inseguro JWT en `jwt.ts` y `docker-compose.yml` ← Resuelto en issue #342 ✅
-- [ ] **[SEC-NEW-03]** Mover credenciales SFTP a variables de entorno en `docker-compose.yml` — **PENDIENTE** ❌ issue #344
+- [x] **[SEC-NEW-03]** Mover credenciales SFTP a variables de entorno en `docker-compose.yml`
 
 **Archivos:** `docker-compose.yml`, `.github/workflows/ci.yml`, `graphql-server/scripts/seed-catalogs-eia2025.sql`, `.env.example`
 **Entregable:** `docker-compose.yml` válido + CI actualizado a Node 20
@@ -252,7 +252,7 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 #### Día 14 · Lunes 06/04
 - [x] Estructura `docker-compose.yml` lista con 4 servicios y volumen DB ← verificado 01/04/2026 ✅
 - [x] `db` tiene healthcheck `pg_isready` con interval 10s / retries 5 ← verificado 01/04/2026 ✅
-- [ ] Agregar healthcheck en el servicio `backend` del compose — **PENDIENTE** ❌ issue #348
+- [x] Agregar healthcheck en el servicio `backend` del compose
 - [ ] Resolver errores de networking al ejecutar `docker-compose up --build` (pendiente validación en entorno limpio)
 - [ ] Verificar: `GET http://localhost:4000/graphql?query={healthCheck{status database{connected}}}` devuelve `{status:"OK", database:{connected:true}}`
 
@@ -283,7 +283,7 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 
 #### Día 16 · Miércoles 08/04
 - [ ] Ejecutar `cd graphql-server && npx jest --verbose` — triage de fallos
-- [ ] **[TEST-NEW-01]** Crear `graphql-server/tests/schema/authenticateUser.test.ts` — el archivo NO EXISTE en `tests/schema/` ❌ issue #347
+- [x] **[TEST-NEW-01]** Crear `graphql-server/tests/schema/authenticateUser.test.ts`
   - Agregar assertion JWT: `expect(result.token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/)`
   - Agregar caso de bloqueo tras 5 intentos fallidos
   - Usar mocks de `pg` y `bcrypt` (sin DB real) siguiendo patrón de `generateComprobante.test.ts`
@@ -323,7 +323,7 @@ La mayor parte del backend está implementada y conectada a base de datos real:
   - `cat_niveles_integracion` con datos oficiales en `init-db.sql` ✅
   - `niveles_integracion_estudiante` con constraint `UNIQUE(id_estudiante, id_campo_formativo)` ✅
   - `NIVELES_INTEGRACION_ESTUDIANTE` con constraint `UNIQUE(estudiante, campo, periodo)` ✅
-- [ ] Verificar path del worker en producción: `isTsNode` → `dist/workers/worker-excel.js`
+- [x] Verificar path del worker en producción: `isTsNode` → `dist/workers/worker-excel.js`
 - [ ] Registrar Angular bundle budget actual (valores relajados DEF-005); restaurar thresholds objetivo en `angular.json`
 - [ ] Ejecutar `ng build --configuration production` en frontend — 0 errores de budget
 
@@ -334,9 +334,9 @@ La mayor parte del backend está implementada y conectada a base de datos real:
 
 #### Día 20 · Martes 14/04
 - [ ] **Test de aceptación final** — verificar los 7 criterios listados abajo
-- [ ] **[CLEANUP-01]** Eliminar 18+ scripts debug de `graphql-server/` raíz — issue #346
-- [ ] **[CLEANUP-02]** Investigar y eliminar `graphql-server/.env2` (verificar si contiene credenciales reales)
-- [ ] Investigar y eliminar/renombrar `graphql-server/npm` ejecutable sin extensión
+- [x] **[CLEANUP-01]** Eliminar 18+ scripts debug de `graphql-server/` raíz — issue #346
+- [x] **[CLEANUP-02]** Investigar y eliminar `graphql-server/.env2` (verificar si contiene credenciales reales)
+- [x] Investigar y eliminar/renombrar `graphql-server/npm` ejecutable sin extensión
 - [ ] Actualizar `BITACORA_CAMBIOS.md` con resumen de cambios de Fase 1
 - [ ] Actualizar `BITACORA_CAMBIOS_DB.md` con las migraciones SQL aplicadas
 - [ ] Crear tag Git: `git tag -a v1.0.0-fase1 -m "Cierre Fase 1"`
@@ -360,8 +360,8 @@ Los siguientes 7 criterios deben cumplirse **antes** del tag `v1.0.0-fase1`:
 | 2 | JWT autentica correctamente en requests subsecuentes | `context.user` con id y rol válidos | ✅ Implementado |
 | 3 | Token btoa forjado es rechazado | `context.user = undefined`, error 401 | ✅ Implementado |
 | 4 | `generateComprobante` retorna PDF real | `fileName` termina en `.pdf`; Base64 empieza con `JVBER` | ✅ Implementado |
-| 5 | `docker-compose up` levanta los 4 servicios | `healthCheck.database.connected = true` | 🟡 Estructura ✅ — healthcheck backend ❌ #348 |
-| 6 | Pipeline CI en verde (Node 20, lint + build + test) | GitHub Actions ✅ en rama `dev` | ❌ Trigger `develop`→`dev` #345 bloquea |
+| 5 | `docker-compose up` levanta los 4 servicios | `healthCheck.database.connected = true` | ✅ Implementado |
+| 6 | Pipeline CI en verde (Node 20, lint + build + test) | GitHub Actions ✅ en rama `dev` | 🟡 Trigger resuelto — En espera de tests verdes |
 | 7 | `ng build --configuration production` sin errores de budget | Consola sin `Error: bundle exceeded` | ⏳ No verificado |
 
 ---
