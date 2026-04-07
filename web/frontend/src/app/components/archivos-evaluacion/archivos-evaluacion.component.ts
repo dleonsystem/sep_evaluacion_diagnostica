@@ -52,7 +52,7 @@ export class ArchivosEvaluacionComponent implements OnInit {
       // El resolver filtra por usuario_id del token para usuarios normales.
       // El CCT se pasa como filtro opcional adicional cuando esté disponible.
       this.registros = await firstValueFrom(
-        this.evaluacionesService.getSolicitudes(this.cctActivo ?? undefined)
+        this.evaluacionesService.getSolicitudes(this.cctActivo ?? undefined, 200)
       );
     } catch (error) {
       console.error('Error cargando historial del backend:', error);
