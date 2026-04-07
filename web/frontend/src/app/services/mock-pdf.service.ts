@@ -84,15 +84,24 @@ export class MockPdfService {
         firstPage.drawText((p.alumnosValidados || 0).toString(), { x: xValue, y: yPos, ...configVal });
 
         // --- BLOQUE DE CONTRASEÑA ---
-        yPos = height - 350;
-        firstPage.drawText('CONTRASEÑA PROVISIONAL:', {
-          x: 160, y: yPos, size: 12, font: fontBold, color: rgb(0.41, 0.11, 0.2)
-        });
+        if (p.contrasena && p.contrasena !== '********') {
+          yPos = height - 350;
+          firstPage.drawText('CONTRASEÑA DE ACCESO:', {
+            x: 160, y: yPos, size: 12, font: fontBold, color: rgb(0.41, 0.11, 0.2)
+          });
 
-        yPos -= 30;
-        firstPage.drawText(p.contrasena || '', {
-          x: 190, y: yPos, size: 22, font: fontBold, color: rgb(0.41, 0.11, 0.2)
-        });
+          yPos -= 30;
+          firstPage.drawText(p.contrasena, {
+            x: 190, y: yPos, size: 22, font: fontBold, color: rgb(0.41, 0.11, 0.2)
+          });
+        } else {
+          // Si es un usuario logueado o ya tiene credenciales previas
+          yPos = height - 350;
+          firstPage.drawText('SU CONTRASEÑA ES LA QUE YA TIENE REGISTRADA EN EL SISTEMA', {
+            x: 100, y: yPos, size: 12, font: fontBold, color: rgb(0.41, 0.11, 0.2)
+          });
+          yPos -= 30; // mantener el espaciado
+        }
 
         // --- NOTA FINAL ---
         yPos -= 60;

@@ -70,6 +70,13 @@ export class LoginComponent implements OnInit {
         this.adminAuthService.establecerSesion(this.correo, token, usuario.rol);
       } else {
         this.authService.iniciarSesion(this.correo, token, usuario);
+
+        // Sync the newly used valid password to the frontend's credential stores 
+        // to overwrite any stale auto-generated passwords.
+        this.estadoCredencialesService.actualizar(this.correo, this.contrasena);
+
+        const currentCct = this.authService.obtenerCctSesion() || '';
+        this.authService.registrarCredenciales(currentCct, this.correo, this.contrasena);
       }
 
       // 3. Notificar y Redirigir según Rol (Ajuste Issue #352 - Revertido por requerimiento)

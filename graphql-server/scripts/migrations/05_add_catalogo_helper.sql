@@ -8,23 +8,28 @@ RETURNS integer AS $$
 DECLARE
     v_id integer;
 BEGIN
-    -- Validación de entrada para prevenir inyección (aunque se usa %I)
-    IF p_tabla IS NULL OR p_clave IS NULL THEN
-        RETURN NULL;
+    -- 1. Intentar con columna 'clave' (predeterminado)
+    BEGIN
+        EXECUTE format('SELECT id FROM %I WHERE clave = $1', p_tabla)
+        INTO v_id
+        USING p_clave;
+    EXCEPTION WHEN undefined_column THEN
+        v_id := NULL;
+    END;
+
+    -- 2. Intentar con columna 'codigo' if v_id is still null
+    IF v_id IS NULL THEN
+        BEGIN
+            EXECUTE format('SELECT id FROM %I WHERE codigo = $1', p_tabla)
+            INTO v_id
+            USING p_clave;
+        EXCEPTION WHEN undefined_column THEN
+            v_id := NULL;
+        END;
     END IF;
 
-    -- Ejecución dinámica segura
-    EXECUTE format('SELECT id FROM %I WHERE clave = $1', p_tabla)
-    INTO v_id
-    USING p_clave;
-
-    -- Si no se encuentra, intentar con id_nivel, id_entidad, etc. (variaciones de esquema legacy)
+    -- 3. Variaciones de esquema legacy (id_nivel, id_entidad, etc.)
     IF v_id IS NULL THEN
-        -- Intentar con 'id_' + nombre corto si aplica, o simplemente fallar si no es estándar
-        -- Para Fase 1, la mayoría de las nuevas tablas usan 'id' o 'id_<nombre>'
-        -- Por ahora, el estándar de normalización GAP-DB-3 usa 'id' para campos formativos
-        -- y 'id_nia' para niveles de integración.
-        
         IF p_tabla = 'cat_niveles_integracion' THEN
             SELECT id_nia INTO v_id FROM cat_niveles_integracion WHERE clave = p_clave;
         ELSIF p_tabla = 'cat_nivel_educativo' THEN
@@ -33,7 +38,7 @@ BEGIN
     END IF;
 
     IF v_id IS NULL THEN
-        RAISE EXCEPTION 'No se encontró el elemento con clave % en la tabla %', p_clave, p_tabla;
+        RAISE EXCEPTION 'No se encontró el elemento con clave/codigo % en la tabla %', p_clave, p_tabla;
     END IF;
 
     RETURN v_id;

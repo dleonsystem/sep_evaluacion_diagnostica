@@ -39,7 +39,7 @@ const poolConfig: PoolConfig = {
  */
 function validateDatabaseConfig(): void {
   const requiredEnvVars = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD'];
-  const missingVars = requiredEnvVars.filter((varName) => !process.env[varName]);
+  const missingVars = requiredEnvVars.filter((varName) => process.env[varName] === undefined);
 
   if (missingVars.length > 0) {
     logger.warn(`Missing required environment variables: ${missingVars.join(', ')}`);

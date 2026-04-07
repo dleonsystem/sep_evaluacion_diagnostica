@@ -2528,12 +2528,12 @@ t.numero_ticket as "folio",
 
         // 1. Obtener Periodo Activo
         const periodRes = await client.query(
-          'SELECT id FROM periodos_evaluacion WHERE vigente = true LIMIT 1'
+          'SELECT id FROM periodos_evaluacion WHERE activo = true LIMIT 1'
         );
         const periodoId = periodRes.rows[0]?.id;
 
         if (!periodoId) {
-          throw new Error('No hay un periodo de evaluación vigente configurado en el sistema.');
+          throw new Error('No hay un periodo de evaluación activo configurado en el sistema.');
         }
 
         // 2. Mapeo de Materias por Nivel y Grado (Estructura determinista del Excel)
@@ -2691,7 +2691,7 @@ t.numero_ticket as "folio",
           }
         };
         // Ejecución en segundo plano ("fire-and-forget")
-        syncSftp().catch(() => {});
+        syncSftp().catch(() => { });
 
         const fechaHoy = new Date();
         fechaHoy.setDate(fechaHoy.getDate() + 4);
