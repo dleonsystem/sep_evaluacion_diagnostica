@@ -9,10 +9,30 @@
 | **Fecha de cierre Fase 1** | 14 de abril de 2026 |
 | **Metodología** | RUP / PSP — 4 Sprints × 5 días hábiles |
 | **Esfuerzo estimado** | ~100 horas |
-| **Versión del documento** | 1.4 — Consolidación de Backlog oficial (Post-Auditoría) |
-| **Estado** | 🟡 En ejecución (S1-S2 ✅, S3 🏗️, S4 📅) |
+| **Versión del documento** | 1.5 — Auditoría Técnica y Plan de Remediación (Cierre) |
+| **Estado** | 🟡 Fase 1 funcional pero NO cerrable — pendiente remediación crítica |
 
 ---
+
+## 1.1 Auditoría Técnica de Validación (6-abr-2026)
+
+**Auditor:** Antigravity (Ingeniero Senior & Arquitecto de Software)
+**Estado Global:** 🟡 **Cumplimiento Parcial (Aproximadamente 89%)**
+
+### Resumen Ejecutivo
+Se ha realizado una auditoría exhaustiva del código fuente, base de datos, infraestructura y pipelines. El proyecto presenta una base arquitectónica sólida y cumple con los requerimientos críticos de seguridad (JWT) y generación de documentos (PDF). Sin embargo, se han identificado **brechas críticas** en la base de datos (DDL faltante) y en la configuración de la infraestructura que impiden el cierre definitivo de la Fase 1.
+
+### Hallazgos Críticos (Bloqueadores)
+- **GAP DE INTEGRIDAD SQL:** La función `fn_catalogo_id` es referenciada en el código (`resolvers.ts`, `sync-legacy.job.ts`) pero **no existe** en ningún script de inicialización o migración.
+- **INFRAESTRUCTURA INCOMPLETA:** El archivo `docker-compose.yml` carece de *healthchecks* para los servicios de DB y Backend, lo cual es un requerimiento de estabilidad para Fase 1.
+- **LÓGICA DE NEGOCIO PENDIENTE:** La redirección por `primerLogin` en el frontend no está implementada en el `LoginComponent`.
+
+### Veredicto de Auditoría
+❌ **RECHAZADO PARA CIERRE (CUMPLIMIENTO PARCIAL)**
+La Fase 1 no puede cerrarse bajo el tag `v1.0.0-fase1` hasta completar el Plan de Remediación adjunto.
+
+---
+
 
 ## Contexto y Estado Actual
 
@@ -360,9 +380,10 @@ Los siguientes 7 criterios deben cumplirse **antes** del tag `v1.0.0-fase1`:
 | 2 | JWT autentica correctamente en requests subsecuentes | `context.user` con id y rol válidos | ✅ Implementado |
 | 3 | Token btoa forjado es rechazado | `context.user = undefined`, error 401 | ✅ Implementado |
 | 4 | `generateComprobante` retorna PDF real | `fileName` termina en `.pdf`; Base64 empieza con `JVBER` | ✅ Implementado |
-| 5 | `docker-compose up` levanta los 4 servicios | `healthCheck.database.connected = true` | 🟡 Estructura ✅ — healthcheck backend ❌ #348 |
+| 5 | `docker-compose up` levanta los 4 servicios | `healthCheck.database.connected = true` | ❌ Incompleto (Healthcheck backend/db ausentes) |
 | 6 | Pipeline CI en verde (Node 20, lint + build + test) | GitHub Actions ✅ en rama `dev` | ❌ Trigger `develop`→`dev` #345 bloquea |
 | 7 | `ng build --configuration production` sin errores de budget | Consola sin `Error: bundle exceeded` | ⏳ No verificado |
+| 8 | Integridad Referencial de Catálogos (SQL) | Función `fn_catalogo_id` operativa | ❌ CRÍTICO (Función faltante en DDL) |
 
 ---
 
@@ -423,6 +444,44 @@ Los siguientes gaps fueron identificados al comparar el plan original contra la 
 | CLEANUP-02 | `graphql-server/.env2` duplicado sospechoso / posibles credenciales reales | S4 | Día 20 | ✅ Resuelto | — |
 
 ---
+
+---
+
+## Plan de Remediación para Cierre de Fase 1
+
+### Clasificación por severidad
+
+1. 🔴 **Críticos:** Bloquean el cierre técnico y el tag `v1.0.0-fase1`.
+2. 🟠 **Importantes:** Pendientes técnicos que afectan la mantenibilidad y estándares.
+3. 🟡 **Mejora / Calidad:** Documentación y ajustes menores.
+
+### Detalle de Problemas y Soluciones
+
+| ID | Severidad | Descripción | Causa Raíz | Solución Propuesta | Esfuerzo |
+|---|---|---|---|---|---|
+| **REM-DB-01** | 🔴 | `fn_catalogo_id` faltante | Omisión en el DDL de `init-db.sql`. | Crear la función en `scripts/migrations/05_add_catalogo_helper.sql`. | 2h |
+| **REM-INF-01** | 🔴 | Healthchecks Docker ausentes | No implementado durante el Sprint 3. | Agregar bloques `healthcheck` en `docker-compose.yml` para los servicios `db` y `backend`. | 2h |
+| **REM-FE-01** | 🟠 | Lógica `primerLogin` | Falta de integración en `LoginComponent`. | Implementar guardia de navegación o lógica de redirección basada en el campo `primerLogin` del JWT. | 4h |
+| **REM-DOC-01** | 🟡 | Métricas PSP faltantes | Falta de consolidación de bits de tiempo reales. | Crear `docs/METRICAS_PSP_ITERACIONES.md` con los tiempos auditados. | 3h |
+| **REM-VAL-01** | 🔴 | Validación Final & Smoke Test | Ausencia de prueba formal post-remediación. | Ejecutar suite de validación completa en entorno de contenedores limpio. | 4h |
+
+---
+
+## Registro de Auditoría y Remediación (RUP/PSP)
+
+| Fecha | Evento | Decisión Técnica | Impacto | Issues Referenciados |
+|---|---|---|---|---|
+| 06-abr-2026 | Auditoría Técnica | Ejecución de inspección de código y DDL. | Veredicto: RECHAZADO para cierre. | #340, #341 |
+| 06-abr-2026 | Creación de Plan de Remediación | Definición de 5 tareas críticas para permitir el cierre. | Fase 1 extendida hasta remediación satisfactoria. | REM-DB-01 al REM-VAL-01 |
+| 06-abr-2026 | Resolución REM-DB-01 (Issue #350) | Implementación de `fn_catalogo_id` en PostgreSQL. | GAP Crítico cerrado. Integridad de catálogos restaurada. | #350 |
+
+---
+
+## Veredicto Final Actualizado (6-abr-2026)
+
+- **Porcentaje Real de Avance:** ~89%
+- **Estado:** ❌ **NO CERRABLE**
+- **Condición para Cierre:** Se requiere la resolución exitosa de los 3 issues Críticos (🔴) y el verificado de salud en contenedores para emitir el tag `v1.0.0-fase1`.
 
 ---
 
