@@ -47,17 +47,16 @@ export class ArchivosEvaluacionComponent implements OnInit {
     this.cargando = true;
     this.mensajeInfo = null;
 
-    let registrosBackend: SolicitudEia2[] = [];
-
-    // 1. Cargar del backend si hay CCT
-    if (this.cctActivo) {
-      try {
-        this.registros = await firstValueFrom(this.evaluacionesService.getSolicitudes(this.cctActivo));
-      } catch (error) {
-        console.error('Error cargando historial del backend:', error);
-        this.mensajeError = 'No se pudo conectar con el servidor para obtener tu historial.';
-      }
-    } else {
+    try {
+      // Siempre cargar del backend usando el JWT del usuario.
+      // El resolver filtra por usuario_id del token para usuarios normales.
+      // El CCT se pasa como filtro opcional adicional cuando esté disponible.
+      this.registros = await firstValueFrom(
+        this.evaluacionesService.getSolicitudes(this.cctActivo ?? undefined)
+      );
+    } catch (error) {
+      console.error('Error cargando historial del backend:', error);
+      this.mensajeError = 'No se pudo conectar con el servidor para obtener tu historial.';
       this.registros = [];
     }
 
@@ -193,7 +192,7 @@ export class ArchivosEvaluacionComponent implements OnInit {
       }
     } catch (error: any) {
       console.error('Error al generar comprobante:', error);
-      
+
       let mensajeFinal = 'No se pudo generar el comprobante de recepcion en este momento.';
       if (error.message?.includes('hash_archivo')) {
         mensajeFinal = 'Tu solicitud aún está siendo procesada por el servidor. Por favor, espera unos minutos e intenta de nuevo.';
