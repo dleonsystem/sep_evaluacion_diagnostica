@@ -475,6 +475,7 @@ Los siguientes gaps fueron identificados al comparar el plan original contra la 
 | 06-abr-2026 | Creación de Plan de Remediación | Definición de 5 tareas críticas para permitir el cierre. | Fase 1 extendida hasta remediación satisfactoria. | REM-DB-01 al REM-VAL-01 |
 | 06-abr-2026 | Resolución REM-DB-01 (Issue #350) | Implementación de `fn_catalogo_id` en PostgreSQL. | GAP Crítico cerrado. Integridad de catálogos restaurada. | #350 |
 | 06-abr-2026 | Resolución REM-INF-01 (Issue #351) | Configuración de Healthchecks en Docker Compose. | Sincronización de arranque garantizada (Node native). | #351 |
+| 06-abr-2026 | Resolución REM-FE-01 (Issue #352) | Lógica de redirección por `primerLogin` en Frontend. | Cumplimiento RF-18.1 (Cambio de pass obligatorio). | #352 |
 
 ---
 

@@ -72,7 +72,7 @@ export class LoginComponent implements OnInit {
         this.authService.iniciarSesion(this.correo, token, usuario);
       }
 
-      // 3. Notificar y Redirigir según Rol (Ajuste Issue #268)
+      // 3. Notificar y Redirigir según Rol y Estado de Seguridad (Ajuste Issue #352)
       await Swal.fire({
         icon: 'success',
         title: '¡Bienvenido!',
@@ -80,6 +80,12 @@ export class LoginComponent implements OnInit {
         timer: 1500,
         showConfirmButton: false
       });
+
+      // Prioridad: Si es primer login, forzar cambio de contraseña (RF-18.1)
+      if (usuario.primerLogin) {
+        await this.router.navigateByUrl('/cambiar-password');
+        return;
+      }
 
       if (esAdmin) {
         await this.router.navigateByUrl('/admin/dashboard');
