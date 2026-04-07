@@ -15,6 +15,12 @@ services:
       - ./graphql-server/scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
       - ./graphql-server/scripts/seed-catalogs-eia2025.sql:/docker-entrypoint-initdb.d/02-seed.sql
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-eia_db}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   backend:
     build:
@@ -22,7 +28,8 @@ services:
       dockerfile: Dockerfile
     container_name: sicrer-backend
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     ports:
       - "4000:4000"
     environment:
@@ -43,6 +50,12 @@ services:
       SFTP_BASE_PATH: /home/${SFTP_USER:-eia_user}/upload
       PORT: 4000
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:4000/health', (r) => { if (r.statusCode !== 200) process.exit(1); r.resume(); }).on('error', () => process.exit(1))" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   frontend:
     build:
@@ -52,7 +65,8 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
 
   sftp:

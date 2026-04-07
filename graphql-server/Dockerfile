@@ -3,10 +3,7 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Instalar dependencias necesarias para node-gyp o compilaciones nativas si fuera necesario
-RUN apk add --no-cache python3 make g++
-
-COPY package*.json ./
+# COPY package*.json ./
 RUN npm install
 
 COPY . .
