@@ -69,6 +69,41 @@ CREATE TABLE usuarios (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- =============================================================================
+-- FUNCIONES AUXILIARES
+-- =============================================================================
+
+CREATE OR REPLACE FUNCTION fn_catalogo_id(p_tabla text, p_clave text)
+RETURNS integer AS $$
+DECLARE
+    v_id integer;
+BEGIN
+    IF p_tabla IS NULL OR p_clave IS NULL THEN
+        RETURN NULL;
+    END IF;
+
+    -- Ejecución dinámica segura
+    EXECUTE format('SELECT id FROM %I WHERE clave = $1', p_tabla)
+    INTO v_id
+    USING p_clave;
+
+    IF v_id IS NULL THEN
+        -- Fallbacks para tablas con nombres de ID no estándar en Phase 1/Legacy
+        IF p_tabla = 'cat_niveles_integracion' THEN
+            SELECT id_nia INTO v_id FROM cat_niveles_integracion WHERE clave = p_clave;
+        ELSIF p_tabla = 'cat_nivel_educativo' THEN
+            SELECT id_nivel INTO v_id FROM cat_nivel_educativo WHERE clave = p_clave;
+        END IF;
+    END IF;
+
+    IF v_id IS NULL THEN
+        RAISE EXCEPTION 'No se encontró el elemento con clave % en la tabla %', p_clave, p_tabla;
+    END IF;
+
+    RETURN v_id;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
 CREATE TABLE materias (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     codigo VARCHAR(20) NOT NULL UNIQUE,
