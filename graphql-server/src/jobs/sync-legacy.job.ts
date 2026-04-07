@@ -10,7 +10,7 @@ const SYNC_INTERVAL_MS = parseInt(process.env.LEGACY_SYNC_INTERVAL_MS || '300000
  * Inicia el cronjob nativo (setInterval) para sondear solicitudes PENDIENTES o EN_PROCESO
  * y consolidar sus resultados si los archivos esperados (PDFs) ya fueron generados.
  */
-export function startSyncLegacyJob(pool: Pool, distributionService?: DistributionService) {
+export function startSyncLegacyJob(pool: Pool, _distributionService?: DistributionService) {
   if (syncInterval) {
     logger.warn('El Job de sincronización legacy ya se encuentra en ejecución.');
     return;

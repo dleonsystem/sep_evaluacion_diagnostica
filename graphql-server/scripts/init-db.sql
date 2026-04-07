@@ -58,9 +58,9 @@ CREATE TABLE escuelas (
 
 CREATE TABLE usuarios (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    correo VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
     nombre VARCHAR(100),
-    contrasena_hash VARCHAR(255),
+    password_hash VARCHAR(255),
     rol VARCHAR(50),
     activo BOOLEAN DEFAULT TRUE,
     primer_login BOOLEAN DEFAULT TRUE,
@@ -104,20 +104,10 @@ CREATE TABLE niveles_integracion_estudiante (
     id_campo_formativo INT REFERENCES cat_campos_formativos(id),
     id_nia INT REFERENCES cat_niveles_integracion(id_nia),
     valoracion_promedio NUMERIC(4,2),
-    total_materias INT,
-    materias_evaluadas INT,
-    calculado_en TIMESTAMP DEFAULT NOW(),
-    CONSTRAINT uq_est_campo_periodo UNIQUE (id_estudiante, id_campo_formativo)
-);
-
--- 4. Carga de Catálogos Oficiales (Invocación al seed oficial)
-\i graphql-server/scripts/seed-catalogs-eia2025.sql
-
--- 5. Creación de Usuario Administrador Base
--- (Se asume existencia de crear_usuario_admin.sql o similar)
-INSERT INTO usuarios (correo, nombre, rol, contrasena_hash, activo, primer_login)
-VALUES ('admin@sep.gob.mx', 'Administrador Sistema', 'COORDINADOR_FEDERAL', 'SC/A...', TRUE, TRUE)
-ON CONFLICT (correo) DO NOTHING;
+-- Usuario del evaluador
+INSERT INTO usuarios (email, nombre, rol, password_hash, activo, primer_login)
+VALUES ('joseg.gutierrez@nube.sep.gob.mx', 'José Guadalupe Gutiérrez', 'COORDINADOR_FEDERAL', 'a093b0cb8497ed3b2299112d3ec2931f:1720668b5a76985160c918c575001bd80e60824b260907a72d733156be79308be7338e55e0a0a575cb75f56b26d36e2f18398e29a8a30a846f49969062ea6323', TRUE, TRUE)
+ON CONFLICT (email) DO NOTHING;
 
 COMMIT;
 
