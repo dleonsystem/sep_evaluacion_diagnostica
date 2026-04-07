@@ -474,6 +474,7 @@ Los siguientes gaps fueron identificados al comparar el plan original contra la 
 | 06-abr-2026 | Auditoría Técnica | Ejecución de inspección de código y DDL. | Veredicto: RECHAZADO para cierre. | #340, #341 |
 | 06-abr-2026 | Creación de Plan de Remediación | Definición de 5 tareas críticas para permitir el cierre. | Fase 1 extendida hasta remediación satisfactoria. | REM-DB-01 al REM-VAL-01 |
 | 06-abr-2026 | Resolución REM-FE-01 (Issue #352) | Verificación de `primerLogin` en Frontend. | Lógica analizada; se mantiene flujo estándar por requerimiento. | #352 |
+| 06-abr-2026 | Resolución REM-DB-02 (Issue #354) | Sincronización de catálogo de validación. | Corregido: `VALIDO` y `RECHAZADO` agregados. Cierre de GAP de datos. | #354 |
 
 ---
 
