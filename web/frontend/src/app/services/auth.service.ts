@@ -51,6 +51,13 @@ export class AuthService {
     localStorage.removeItem(this.sesionCorreoKey);
     localStorage.removeItem(this.sesionRolKey);
     localStorage.removeItem(this.sesionCctKey);
+
+    // Seguridad: Limpieza profunda de cualquier rastro de credenciales
+    localStorage.removeItem('eia-last-credentials');
+    localStorage.removeItem('estado-credenciales-preescolar');
+    localStorage.removeItem('estado-credenciales-primaria');
+    localStorage.removeItem('estado-credenciales-secundaria');
+
     this.autenticadoSubject.next(false);
   }
 
@@ -86,7 +93,11 @@ export class AuthService {
       contrasena,
       esNueva: true 
     };
-    localStorage.setItem('eia-last-credentials', JSON.stringify(credenciales));
+    
+    // Seguridad: Persistir metadata EXCEPTO la contraseña sensible
+    const { contrasena: _, ...persistible } = credenciales;
+    localStorage.setItem('eia-last-credentials', JSON.stringify(persistible));
+    
     return credenciales;
   }
 

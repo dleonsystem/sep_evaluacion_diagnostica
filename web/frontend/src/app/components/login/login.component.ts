@@ -71,12 +71,9 @@ export class LoginComponent implements OnInit {
       } else {
         this.authService.iniciarSesion(this.correo, token, usuario);
 
-        // Sync the newly used valid password to the frontend's credential stores 
-        // to overwrite any stale auto-generated passwords.
-        this.estadoCredencialesService.actualizar(this.correo, this.contrasena);
-
-        const currentCct = this.authService.obtenerCctSesion() || '';
-        this.authService.registrarCredenciales(currentCct, this.correo, this.contrasena);
+        // Ya no guardamos la contraseña en el localStorage por seguridad.
+        // Solo actualizamos el correo en el estado si es necesario.
+        this.estadoCredencialesService.actualizar(this.correo, '');
       }
 
       // 3. Notificar y Redirigir según Rol (Ajuste Issue #352 - Revertido por requerimiento)

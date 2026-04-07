@@ -232,7 +232,7 @@ async function startServer() {
     logger.info('Verificando conexión a PostgreSQL...');
     const dbConnected = await testConnection();
     if (dbConnected) {
-      logger.info('✓ Conexión a PostgreSQL establecida');
+      logger.info(`✓ Conexión a PostgreSQL establecida en host: ${process.env.DB_HOST || 'localhost'}`);
     } else {
       logger.error('❌ Falló la conexión a PostgreSQL. El servidor requiere una BD activa.');
       process.exit(1);

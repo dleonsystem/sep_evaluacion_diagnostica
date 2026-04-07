@@ -1,74 +1,22 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:16-alpine
-    container_name: sicrer-db
-    environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-eia_db}
-    ports:
-      - "${DB_PORT:-5432}:5432"
-    volumes:
-      - sicrer-db-data:/var/lib/postgresql/data
-      - ./graphql-server/scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
-      - ./graphql-server/scripts/seed-catalogs-eia2025.sql:/docker-entrypoint-initdb.d/02-seed.sql
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-eia_db}" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+  # Base de datos desactivada para usar siempre la IP externa 168.255.101.99
+  # evitamos que Docker genere una base de datos local que cause confusión.
+  # db:
+  #   image: postgres:16-alpine
+  #   container_name: sicrer-db
+  #   environment:
+  #     POSTGRES_USER: ${DB_USER:-postgres}
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+  #     POSTGRES_DB: ${DB_NAME:-eia_db}
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - sicrer-db-data:/var/lib/postgresql/data
+  #   restart: unless-stopped
 
-  backend:
-    build:
-      context: ./graphql-server
-      dockerfile: Dockerfile
-    container_name: sicrer-backend
-    depends_on:
-      db:
-        condition: service_healthy
-    ports:
-      - "4000:4000"
-    environment:
-      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-eia_db}
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_NAME: ${DB_NAME:-eia_db}
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      NODE_ENV: development
-      HOST: 0.0.0.0
-      CORS_ORIGIN: http://localhost:4200,http://localhost:80
-      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_key_change_in_production}
-      SFTP_HOST: sftp
-      SFTP_PORT: 22
-      SFTP_USER: ${SFTP_USER:-eia_user}
-      SFTP_PASSWORD: ${SFTP_PASSWORD:-eia_password}
-      SFTP_BASE_PATH: /home/${SFTP_USER:-eia_user}/upload
-      PORT: 4000
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:4000/health', (r) => { if (r.statusCode !== 200) process.exit(1); r.resume(); }).on('error', () => process.exit(1))" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  frontend:
-    build:
-      context: ./web/frontend
-      dockerfile: Dockerfile
-    container_name: sicrer-frontend
-    ports:
-      - "80:80"
-    depends_on:
-      backend:
-        condition: service_healthy
-    restart: unless-stopped
-
+  # SFTP activo para subida de archivos institucional
   sftp:
     image: atmoz/sftp
     container_name: eia_sftp
