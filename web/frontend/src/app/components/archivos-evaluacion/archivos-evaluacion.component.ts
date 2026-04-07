@@ -48,12 +48,15 @@ export class ArchivosEvaluacionComponent implements OnInit {
     this.mensajeInfo = null;
 
     try {
-      // Siempre cargar del backend usando el JWT del usuario.
-      // El resolver filtra por usuario_id del token para usuarios normales.
-      // El CCT se pasa como filtro opcional adicional cuando esté disponible.
+      // Cargar TODOS los registros del usuario autenticado.
+      // El resolver del backend filtra por usuario_id del JWT automáticamente.
+      // NO se pasa cctActivo aqui ya que el usuario puede tener cargas de distintas escuelas.
+      // El CCT (cuando existe) se usa solo como filtro de busqueda en la UI.
+      console.log('[DEBUG] Cargando historial. cctActivo:', this.cctActivo, 'correoActivo:', this.correoActivo);
       this.registros = await firstValueFrom(
-        this.evaluacionesService.getSolicitudes(this.cctActivo ?? undefined, 200)
+        this.evaluacionesService.getSolicitudes(undefined, 200)
       );
+      console.log('[DEBUG] Registros recibidos del API:', this.registros.length, this.registros);
     } catch (error) {
       console.error('Error cargando historial del backend:', error);
       this.mensajeError = 'No se pudo conectar con el servidor para obtener tu historial.';
