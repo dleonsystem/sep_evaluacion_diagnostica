@@ -505,22 +505,13 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       this.correoControl.setValue(this.correoSesion);
     }
 
-    // Al intentar guardar, ocultamos la caja de credenciales viejas para que solo se vea 
-    // lo nuevo o lo que corresponda a este envío.
-    this.credencialesMostradas = null;
+    // Solo ocultamos la caja de credenciales si el correo es distinto
+    // así evitamos que "desaparezca" visualmente la contraseña durante la subida.
+    if (this.credencialesMostradas?.usuario !== this.correoControl.value) {
+      this.credencialesMostradas = null;
+    }
 
     try {
-      resultado.mensajeInformativo = 'Registrando usuario y generando credenciales de acceso...';
-      const credencialesListas = await this.registrarUsuarioYCredenciales(resultado);
-
-      if (credencialesListas) {
-        // Ya no iniciamos sesión automáticamente para permitir que el usuario 
-        // pueda cambiar el correo si desea subir archivos de otra persona.
-        this.actualizarEstadoSesion();
-      } else {
-        throw new Error('No se pudieron establecer las credenciales de acceso.');
-      }
-
       resultado.mensajeInformativo = 'Sincronizando con base de datos y SFTP institucional...';
       const base64 = await this.fileToBase64(resultado.archivoOriginal);
 
@@ -554,6 +545,19 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       resultado.guardado = true;
       resultado.estado = 'exito';
       resultado.mensajeInformativo = `El archivo se recibió correctamente. Folio de seguimiento: ${respuestaApi.consecutivo || 'Pendiente'}`;
+
+      // CRÍTICO: SOLO AHORA QUE EL SERVIDOR ACEPTÓ EL ARCHIVO, REGISTRAMOS USUARIO
+      resultado.mensajeInformativo = 'Generando credenciales de acceso oficiales...';
+      const credencialesListas = await this.registrarUsuarioYCredenciales(resultado);
+      
+      if (!credencialesListas) {
+         console.warn('Advertencia: El archivo se subió pero hubo un problema generando la vista de credenciales.');
+      }
+
+      // Seguridad: Marcar éxito real para requerir login en futuras subidas distintas
+      if (this.correoControl.value) {
+        this.authService.confirmarCargaExitosa(this.correoControl.value);
+      }
 
       const textoExito = respuestaApi.consecutivo
         ? `La información se ha sincronizado. Tu folio de seguimiento es: ${respuestaApi.consecutivo}`
@@ -692,9 +696,25 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         errorMessage.includes('ya está registrado') ||
         errorMessage.includes('already exists')
       ) {
-        // Si el usuario ya existe, permitimos continuar. 
-        // El backend ahora vincula automáticamente si se envía el correo.
-        console.log('El usuario ya existe, vinculando automáticamente en el servidor.');
+        // Recuperar la contraseña de la memoria de esta misma sesión 
+        const credsSesion = this.authService.obtenerCredenciales();
+        const tieneContrasenaEnMemoria = !!(credsSesion && credsSesion.contrasena && credsSesion.contrasena.length > 3 && credsSesion.contrasena !== '********');
+
+        resultado.resultadoExito.credenciales = {
+          usuario: this.correoControl.value,
+          contrasena: tieneContrasenaEnMemoria ? credsSesion!.contrasena! : '********',
+          esNueva: tieneContrasenaEnMemoria
+        };
+        
+        // Reforzamos que la UI vea la contraseña real recuperada
+        if (tieneContrasenaEnMemoria) {
+           this.credencialesMostradas = resultado.resultadoExito.credenciales;
+           this.authService.registrarCredenciales(resultado.escDatos.cct, this.correoControl.value, credsSesion!.contrasena!);
+        } else {
+           this.credencialesMostradas = null;
+        }
+        
+        console.log('El usuario ya existe, continuando con credenciales de sesión.');
         return true;
       } else {
         resultado.errorGuardado =
@@ -802,16 +822,23 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     resultadoArchivo.mensajeInformativo =
       'Validación exitosa. Podrás consultar tus resultados a partir del día: ' +
       fechaDisponible.toLocaleDateString();
+
+    const credsExistentes = this.authService.obtenerCredenciales();
+    const esMismoCorreo = credsExistentes?.correo === this.correoControl.value;
+    const passParaUI = (esMismoCorreo && credsExistentes?.contrasena && credsExistentes.contrasena !== '********') 
+       ? credsExistentes.contrasena 
+       : '';
+
     resultadoArchivo.resultadoExito = {
       mensaje: `Podrás consultar tus resultados a partir del día: ${fechaDisponible.toLocaleDateString()}`,
       fechaDisponible,
       credenciales: {
         usuario: this.correoControl.value,
-        contrasena: '',
-        esNueva: false
+        contrasena: passParaUI,
+        esNueva: !!passParaUI
       },
       totalAlumnos: resultado.alumnos?.length ?? 0,
-      consecutivo: '0' // Se actualizará al guardar
+      consecutivo: '0' // Se actualizará al guardar real
     };
   }
 

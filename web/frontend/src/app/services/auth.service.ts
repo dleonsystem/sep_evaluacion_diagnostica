@@ -20,6 +20,11 @@ export class AuthService {
   private autenticadoSubject = new BehaviorSubject<boolean>(this.estaAutenticadoInicial());
   public autenticado$ = this.autenticadoSubject.asObservable();
 
+  // Memoria volátil: Solo dura mientras la pestaña está abierta.
+  // Esto permite que el PDF y el componente vean la contraseña en el flujo de registro
+  // sin comprometer la seguridad de persistencia en disco.
+  private _contrasenaTransitoria: string | null = null;
+
   private estaAutenticadoInicial(): boolean {
     return localStorage.getItem(this.sesionKey) === 'true';
   }
@@ -58,6 +63,7 @@ export class AuthService {
     localStorage.removeItem('estado-credenciales-primaria');
     localStorage.removeItem('estado-credenciales-secundaria');
 
+    this._contrasenaTransitoria = null;
     this.autenticadoSubject.next(false);
   }
 
@@ -94,7 +100,10 @@ export class AuthService {
       esNueva: true 
     };
     
-    // Seguridad: Persistir metadata EXCEPTO la contraseña sensible
+    // Guardar en memoria volátil para uso inmediato (PDF, UI)
+    this._contrasenaTransitoria = contrasena;
+
+    // Seguridad: Persistir metadata EXCEPTO la contraseña sensible en disco
     const { contrasena: _, ...persistible } = credenciales;
     localStorage.setItem('eia-last-credentials', JSON.stringify(persistible));
     
@@ -103,12 +112,31 @@ export class AuthService {
 
   public obtenerCredenciales(): CredencialesGuardadas | null {
     const guardadas = localStorage.getItem('eia-last-credentials');
-    if (!guardadas) return null;
+    if (!guardadas) {
+      // Si no hay nada en disco, pero tenemos algo en memoria volátil, 
+      // intentamos reconstruir lo mínimo para la UI.
+      if (this._contrasenaTransitoria) {
+        return {
+          cct: 'N/D',
+          correo: 'N/D',
+          contrasena: this._contrasenaTransitoria,
+          esNueva: true
+        };
+      }
+      return null;
+    }
+
     try {
       const parsed = JSON.parse(guardadas);
+      // Prioridad absoluta a la memoria volátil sobre lo que haya en disco
+      const passwordReal = (this._contrasenaTransitoria && this._contrasenaTransitoria.length > 0) 
+        ? this._contrasenaTransitoria 
+        : (parsed.contrasena || '********');
+
       return {
         ...parsed,
-        esNueva: !!parsed.esNueva
+        contrasena: passwordReal,
+        esNueva: !!parsed.esNueva || (this._contrasenaTransitoria ? true : false)
       };
     } catch {
       return null;
@@ -124,6 +152,21 @@ export class AuthService {
     return (correo ?? '').trim().toLowerCase();
   }
 
+  /**
+   * Registra localmente que un correo ha completado una carga exitosa al menos una vez.
+   * Esto sirve para evitar bloqueos innecesarios si la carga falla a la mitad del proceso.
+   */
+  public confirmarCargaExitosa(correo: string): void {
+    localStorage.setItem(`eia-exito-${this.normalizarCorreo(correo)}`, 'true');
+  }
+
+  /**
+   * Verifica si este correo ya ha realizado una carga exitosa en este navegador.
+   */
+  public tieneCargaExitosa(correo: string): boolean {
+    return localStorage.getItem(`eia-exito-${this.normalizarCorreo(correo)}`) === 'true';
+  }
+
   public requiereLoginParaNuevaCarga(correo?: string): boolean {
     const autenticado = this.estaAutenticado();
     const correoInput = correo ? this.normalizarCorreo(correo) : null;
@@ -134,11 +177,9 @@ export class AuthService {
       return !!correoInput && !!correoSesion && correoSesion !== correoInput;
     }
 
-    // Si NO está autenticado, el componente CargaMasivaComponent maneja la verificación
-    // asíncrona con el servidor para ver si el correo ya existe.
-    // Aquí solo bloqueamos si tenemos evidencia LOCAL (en el mismo navegador) de que ya tiene cuenta.
-    const credenciales = this.obtenerCredenciales();
-    if (credenciales && correoInput && credenciales.correo === correoInput) {
+    // Si NO está autenticado, solo requerimos login si ya tenemos registro local 
+    // de que este navegador completó una carga EXITOSA con este mismo correo.
+    if (correoInput && this.tieneCargaExitosa(correoInput)) {
       return true;
     }
 

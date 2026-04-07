@@ -2243,22 +2243,10 @@ t.numero_ticket as "folio",
         } catch (workerError: unknown) {
           const errorMsg = (workerError as any).message || 'Error de validación desconocido';
           await auditLog(`Error worker: ${errorMsg}`, 'RECHAZADO');
-          const rejRes = await query(
-            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false) RETURNING consecutivo`,
-            [
-              'DESC',
-              nombreArchivo,
-              fileHash,
-              userToLink || null,
-              JSON.stringify([{ error: errorMsg, hoja: 'General' }]),
-              remotePath,
-              archivoSize,
-            ]
-          );
+
           return {
             success: false,
             message: `Archivo rechazado: ${errorMsg}`,
-            consecutivo: rejRes.rows[0]?.consecutivo?.toString(),
             detalles: {
               errores: [errorMsg],
               erroresEstructurados: [{ error: errorMsg, hoja: 'General' }],
@@ -2271,18 +2259,7 @@ t.numero_ticket as "folio",
 
         if (erroresEstructurados && erroresEstructurados.length > 0) {
           await auditLog(`Errores validación: ${erroresEstructurados.length}`, 'RECHAZADO');
-          await query(
-            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false)`,
-            [
-              cct || 'INVALID',
-              nombreArchivo,
-              fileHash,
-              userToLink || null,
-              JSON.stringify(erroresEstructurados),
-              remotePath,
-              archivoSize,
-            ]
-          );
+
           return {
             success: false,
             message: `Se encontraron ${erroresEstructurados.length} errores de validación en el archivo.`,
@@ -2346,18 +2323,8 @@ t.numero_ticket as "folio",
 
         if (escrow.rows.length === 0) {
           const errorMsg = `La CCT ${cct} con turno "${excelTurno}" no está registrada en el catálogo oficial SIGED. Por favor, verifique sus datos.`;
-          await query(
-            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false)`,
-            [
-              cct,
-              nombreArchivo,
-              fileHash,
-              userToLink || null,
-              JSON.stringify([{ campo: 'CCT', error: errorMsg, hoja: 'ESC' }]),
-              remotePath,
-              archivoSize,
-            ]
-          );
+          await auditLog(errorMsg, 'RECHAZADO');
+
           return {
             success: false,
             message: errorMsg,
@@ -2376,18 +2343,11 @@ t.numero_ticket as "folio",
           const nivelNombreBd =
             Object.keys(nivelMap).find((key) => nivelMap[key] === idNivelBd) || 'DESCONOCIDO';
           const errorMsg = `Inconsistencia de Nivel: El archivo es de nivel ${nivelDetectadoExcel}, pero la CCT ${cct} está registrada oficialmente como ${nivelNombreBd}.`;
-          await query(
-            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false)`,
-            [
-              cct,
-              nombreArchivo,
-              fileHash,
-              userToLink || null,
-              JSON.stringify([{ campo: 'Nivel', error: errorMsg, hoja: 'ESC' }]),
-              remotePath,
-              archivoSize,
-            ]
-          );
+
+          logger.warn('[CCT Validation] Reingreso rechazado por inconsistencia de nivel', { cct, nivelExcel: nivelDetectadoExcel, nivelBd: nivelNombreBd });
+          await auditLog(errorMsg, 'RECHAZADO');
+
+          // CRÍTICO: NO INSERTAR NADA EN solicitudes_eia2. Retornar error de inmediato.
           return {
             success: false,
             message: errorMsg,
@@ -2470,13 +2430,14 @@ t.numero_ticket as "folio",
           ]);
           if (userExist.rows.length === 0) {
             await client.query(
-              'INSERT INTO usuarios (email, password_hash, rol, nombre, email_excel, password_debe_cambiar, primer_login, ultimo_cambio_password) VALUES ($1, $2, fn_catalogo_id($3, $4), $5, $6, false, false, NOW())',
+              'INSERT INTO usuarios (email, password_hash, rol, nombre, apepaterno, apematerno, email_excel, password_debe_cambiar, primer_login, ultimo_cambio_password, activo, fecha_registro) VALUES ($1, $2, (SELECT id_rol FROM cat_roles_usuario WHERE codigo = $3), $4, $5, $6, $7, false, false, NOW(), true, NOW())',
               [
                 inputEmail,
                 finalHash,
-                'cat_rol_usuario',
                 'RESPONSABLE_CCT',
                 'Director ' + cct,
+                '',
+                '',
                 excelEmail,
               ]
             );
