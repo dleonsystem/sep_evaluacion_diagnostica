@@ -698,6 +698,7 @@ CREATE TABLE solicitudes_eia2 (
 	distributed_at           TIMESTAMP WITHOUT TIME ZONE,
 	created_at               TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at               TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	id_turno                 INT REFERENCES cat_turnos(id_turno),
 	UNIQUE (consecutivo)
 );
 
