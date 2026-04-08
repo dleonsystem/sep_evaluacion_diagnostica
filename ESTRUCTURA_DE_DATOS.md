@@ -860,12 +860,13 @@ Solicitudes de procesamiento de archivos EIA2 (plataforma externa).
 | distributed_at | TIMESTAMP | Fecha/hora de distribución al equipo |
 | created_at | TIMESTAMP | Fecha de creación DEFAULT NOW() |
 | updated_at | TIMESTAMP | Fecha de actualización DEFAULT NOW() |
+| id_turno | INT | FK a `cat_turnos(id_turno)` |
 
 **Índices:**
 - `idx_solicitudes_eia2_consecutivo UNIQUE (consecutivo)`
 
 **Relaciones:**
-- FK: `credenciales_eia2(id)`, `cat_estado_validacion_eia2(id)`, `cat_nivel_educativo(id)`, `usuarios(id)`
+- FK: `credenciales_eia2(id)`, `cat_estado_validacion_eia2(id)`, `cat_nivel_educativo(id)`, `usuarios(id)`, `cat_turnos(id_turno)`
 - Referenciado por: `evaluaciones(solicitud_id)`, `bitacora_sincronizacion(solicitud_id)`
 
 ---

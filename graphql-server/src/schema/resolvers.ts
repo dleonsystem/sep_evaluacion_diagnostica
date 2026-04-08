@@ -2385,14 +2385,18 @@ t.numero_ticket as "folio",
         }
 
         const escuelaIdFromDb = escrow.rows[0].id;
+
+        // RF-16.5: Detección de duplicados basada en CCT + Turno + Usuario (Regla prioritaria)
+        // Un usuario sólo puede tener un archivo activo para una escuela y turno específicos.
         const existingReq = await query(
-          'SELECT id FROM solicitudes_eia2 WHERE hash_archivo = $1 LIMIT 1',
-          [fileHash]
+          'SELECT id FROM solicitudes_eia2 WHERE cct = $1 AND id_turno = $2 AND usuario_id = $3 LIMIT 1',
+          [cct, idTurno, userToLink || null]
         );
+
         if (existingReq.rows.length > 0 && !confirmarReemplazo) {
           return {
             success: false,
-            message: 'El archivo ya existe. ¿Desea reemplazarlo?',
+            message: `Ya existe una carga activa para la escuela ${cct} - ${excelTurno}. ¿Desea reemplazarla con este nuevo archivo?`,
             duplicadoDetectado: true,
           };
         }
@@ -2429,8 +2433,8 @@ t.numero_ticket as "folio",
             inputEmail,
           ]);
           if (userExist.rows.length === 0) {
-            await client.query(
-              'INSERT INTO usuarios (email, password_hash, rol, nombre, apepaterno, apematerno, email_excel, password_debe_cambiar, primer_login, ultimo_cambio_password, activo, fecha_registro) VALUES ($1, $2, (SELECT id_rol FROM cat_roles_usuario WHERE codigo = $3), $4, $5, $6, $7, false, false, NOW(), true, NOW())',
+            const newUser = await client.query(
+              'INSERT INTO usuarios (email, password_hash, rol, nombre, apepaterno, apematerno, email_excel, password_debe_cambiar, primer_login, ultimo_cambio_password, activo, fecha_registro) VALUES ($1, $2, (SELECT id_rol FROM cat_roles_usuario WHERE codigo = $3), $4, $5, $6, $7, false, false, NOW(), true, NOW()) RETURNING id',
               [
                 inputEmail,
                 finalHash,
@@ -2441,6 +2445,8 @@ t.numero_ticket as "folio",
                 excelEmail,
               ]
             );
+            userToLink = newUser.rows[0].id;
+            logger.info('Nuevo usuario creado y vinculado a la carga', { email: inputEmail, userId: userToLink });
           } else {
             // Actualizar email_excel si no lo tiene (RF-16.x)
             await client.query(
@@ -2454,7 +2460,7 @@ t.numero_ticket as "folio",
           solicitudId = existingReq.rows[0].id;
           await client.query('DELETE FROM evaluaciones WHERE solicitud_id = $1', [solicitudId]);
           const upRes = await client.query(
-            'UPDATE solicitudes_eia2 SET updated_at = NOW(), credencial_id = $2, archivo_path = $3, archivo_size = $4, hash_archivo = $5, archivo_original = $6, estado_validacion = $7 WHERE id = $1 RETURNING consecutivo',
+            'UPDATE solicitudes_eia2 SET updated_at = NOW(), credencial_id = $2, archivo_path = $3, archivo_size = $4, hash_archivo = $5, archivo_original = $6, estado_validacion = $7, usuario_id = $8, id_turno = $9 WHERE id = $1 RETURNING consecutivo',
             [
               solicitudId,
               credencialId,
@@ -2463,12 +2469,14 @@ t.numero_ticket as "folio",
               fileHash,
               nombreArchivo,
               2, // VALIDADO (id 2 en catálogo)
+              userToLink || null,
+              idTurno,
             ]
           );
           consecutivo = upRes.rows[0].consecutivo;
         } else {
           const solRes = await client.query(
-            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, hash_archivo, usuario_id, credencial_id, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_PENDIENTE_SQL}, $3, $4, $5, $6, $7, $8, false) RETURNING id, consecutivo`,
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, hash_archivo, usuario_id, credencial_id, archivo_path, archivo_size, id_turno, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_PENDIENTE_SQL}, $3, $4, $5, $6, $7, $8, $9, false) RETURNING id, consecutivo`,
             [
               cct,
               nombreArchivo,
@@ -2478,6 +2486,7 @@ t.numero_ticket as "folio",
               credencialId,
               remotePath,
               archivoSize,
+              idTurno,
             ]
           );
           solicitudId = solRes.rows[0].id;
