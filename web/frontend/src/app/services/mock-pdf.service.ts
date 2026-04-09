@@ -80,7 +80,7 @@ export class MockPdfService {
         firstPage.drawText(p.fechaValidacion || '', { x: xValue, y: yPos, ...configVal });
 
         yPos -= 20;
-        firstPage.drawText('Alumnos validados:', { x: xLabel, y: yPos, ...configLabel });
+        firstPage.drawText('Estudiantes validados:', { x: xLabel, y: yPos, ...configLabel });
         firstPage.drawText((p.alumnosValidados || 0).toString(), { x: xValue, y: yPos, ...configVal });
 
         // --- BLOQUE DE CONTRASEÑA ---

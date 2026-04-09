@@ -49,7 +49,7 @@ export class MailingService {
         
         <!-- Pie de página informativo -->
         <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #f1f5f9; font-size: 0.85em; color: #94a3b8; text-align: center;">
-          <p style="margin-bottom: 8px;">Este es un correo automático generado por el Sistema SiCRER.</p>
+          <p style="margin-bottom: 8px;">Este es un correo automático generado por el Sistema SiRVER.</p>
           <p style="margin: 0; font-weight: 600;">&copy; 2026 Secretaría de Educación Pública (SEP)</p>
         </div>
       </div>
@@ -58,9 +58,9 @@ export class MailingService {
 
   async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
     const isTestMode = process.env.SMTP_TEST_MODE === 'true';
-    const fromName = process.env.SMTP_FROM_NAME || 'Sistema SiCRER';
+    const fromName = process.env.SMTP_FROM_NAME || 'Sistema SiRVER';
     const fromEmail =
-      process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'no-reply@sicrer.sep.gob.mx';
+      process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'no-reply@sirver.sep.gob.mx';
 
     if (isTestMode) {
       logger.info('--- SMTP TEST MODE ACTIVE ---');
@@ -91,7 +91,7 @@ export class MailingService {
   async sendPasswordRecovery(email: string, passwordNew: string): Promise<boolean> {
     const content = `
       <p>Hola,</p>
-      <p>Has solicitado restablecer tu contraseña para acceder a la plataforma <strong>SiCRER</strong>.</p>
+      <p>Has solicitado restablecer tu contraseña para acceder a la plataforma <strong>SiRVER</strong>.</p>
       <div style="background: #f8fafc; padding: 25px; border-radius: 12px; text-align: center; margin: 30px 0; border: 1px dashed #cbd5e1;">
         <p style="margin-bottom: 12px; font-size: 0.95em; color: #64748b;">Tu nueva contraseña de acceso es:</p>
         <span style="font-size: 1.8em; font-weight: 700; color: #1e40af; letter-spacing: 3px;">${passwordNew}</span>
@@ -106,36 +106,36 @@ export class MailingService {
     `;
     const html = this.wrapInTemplate(
       'Recuperación de Contraseña',
-      'Sistema de Evaluación Diagnóstica SiCRER',
+      'Sistema de Evaluación Diagnóstica SiRVER',
       content
     );
-    return this.sendEmail(email, 'Tu Nueva Contraseña de Acceso - SiCRER', html);
+    return this.sendEmail(email, 'Tu Nueva Contraseña de Acceso - SiRVER', html);
   }
 
   async sendCredentials(email: string, cct: string, passwordNew: string): Promise<boolean> {
     const content = `
       <p>Estimado Director/Usuario,</p>
-      <p>Se han generado oficialmente tus credenciales para participar en el proceso de Evaluación Diagnóstica EIA 2025.</p>
+      <p>Se han generado oficialmente sus credenciales para la plataforma SiRVER</p>
       <div style="background: #f1f5f9; padding: 25px; border-radius: 12px; margin: 25px 0; border: 1px solid #e2e8f0;">
         <p style="margin: 8px 0;"><strong>Escuela (CCT):</strong> ${cct}</p>
         <p style="margin: 8px 0;"><strong>Usuario/Email:</strong> ${email}</p>
         <p style="margin: 8px 0;"><strong>Contraseña inicial:</strong> <span style="font-family: monospace; color: #0f172a; font-weight: bold; font-size: 1.1em;">${passwordNew}</span></p>
       </div>
       <p>Esta contraseña es definitiva y no expira. Por seguridad, no la compartas con nadie.</p>
-      <p>Acceso al sistema: <a href="${process.env.APP_URL || 'http://localhost:4200'}" style="color: #9d2449; text-decoration: underline; font-weight: 600;">Abrir Plataforma SiCRER</a></p>
+      <p>Puede acceder al sistema en la siguiente dirección: <a href="${process.env.APP_URL || 'http://localhost:4200'}" style="color: #9d2449; text-decoration: underline; font-weight: 600;">Ir al Sistema SiRVER</a></p>
     `;
     const html = this.wrapInTemplate(
-      'Bienvenido al Sistema',
-      'Evaluación Diagnóstica SiCRER',
+      'Bienvenido al Sistema SiRVER',
+      'Evaluación Diagnóstica SiRVER',
       content
     );
-    return this.sendEmail(email, 'Tus Credenciales de Acceso - SiCRER', html);
+    return this.sendEmail(email, 'Tus Credenciales de Acceso - SiRVER', html);
   }
 
   async sendAdminPasswordReset(email: string, passwordNew: string): Promise<boolean> {
     const content = `
       <p>Hola,</p>
-      <p>Un administrador del sistema ha actualizado tu contraseña de acceso para el portal SiCRER.</p>
+      <p>Un administrador del sistema ha actualizado tu contraseña de acceso para el portal SiRVER.</p>
       <div style="background: #fef2f2; padding: 25px; border-radius: 12px; margin: 30px 0; border: 1px solid #fee2e2;">
         <p style="margin-bottom: 12px; color: #991b1b; font-weight: 600; font-size: 0.9em;">NUEVA CREDENCIAL ACTUALIZADA:</p>
         <span style="font-size: 1.5em; font-family: monospace; font-weight: 700; color: #dc2626;">${passwordNew}</span>
@@ -147,10 +147,10 @@ export class MailingService {
     `;
     const html = this.wrapInTemplate(
       'Actualización de Seguridad',
-      'Sistema de Evaluación Diagnóstica SiCRER',
+      'Sistema de Evaluación Diagnóstica SiRVER',
       content
     );
-    return this.sendEmail(email, 'Actualización de Contraseña por Administrador - SiCRER', html);
+    return this.sendEmail(email, 'Actualización de Contraseña por Administrador - SiRVER', html);
   }
 
   async sendResultsNotification(email: string, cct: string, solicitudId: string): Promise<boolean> {

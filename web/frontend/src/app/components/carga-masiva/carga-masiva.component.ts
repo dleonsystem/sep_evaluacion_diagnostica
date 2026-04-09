@@ -574,15 +574,6 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         text: textoExito,
       });
 
-      // Limpiar el correo tras éxito para evitar que el mensaje de "ya tienes credenciales" 
-      // confunda al usuario si desea hacer una carga nueva/distinta.
-      if (!this.sesionActiva) {
-        this.correoControl.setValue('');
-        this.correoControl.markAsPristine();
-        this.correoControl.markAsUntouched();
-        this.actualizarEstadoSesion();
-      }
-
       if (resultado.escDatos && resultado.resultadoExito && resultado.pdfTipo !== 'exito') {
         await this.generarPdfExito(
           resultado,
@@ -590,6 +581,15 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
           resultado.resultadoExito.fechaDisponible,
           resultado.resultadoExito.totalAlumnos,
         );
+      }
+
+      // Limpiar el correo tras éxito para evitar que el mensaje de "ya tienes credenciales" 
+      // confunda al usuario si desea hacer una carga nueva/distinta.
+      if (!this.sesionActiva) {
+        this.correoControl.setValue('');
+        this.correoControl.markAsPristine();
+        this.correoControl.markAsUntouched();
+        this.actualizarEstadoSesion();
       }
     } catch (error: any) {
       resultado.estado = 'error';
@@ -935,12 +935,12 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     try {
       const blob = await this.mockPdfService.generarPdfExito({
-        correo: this.correoControl.value,
+        correo: this.correoSesion || this.correoControl.getRawValue() || this.correoControl.value || '',
         contrasena: resultadoArchivo.resultadoExito?.credenciales.contrasena ?? '',
-        fechaDisponible: fechaDisponible.toLocaleDateString(),
+        fechaDisponible: this.formatearFechaLarga(fechaDisponible),
         alumnosValidados: totalAlumnos,
         cct: esc.cct,
-        fechaValidacion: new Date().toLocaleString(),
+        fechaValidacion: this.formatearFechaLarga(new Date()),
         consecutivo: resultadoArchivo.resultadoExito?.consecutivo ?? 'N/D'
       });
       resultadoArchivo.pdfEstado = 'descargando';
@@ -1149,4 +1149,10 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     return `Archivo detectado: ${etiqueta}.`;
   }
 
+  private formatearFechaLarga(fecha: Date): string {
+    return new Intl.DateTimeFormat('es-MX', {
+      dateStyle: 'long',
+      timeZone: 'America/Mexico_City'
+    }).format(fecha);
+  }
 }
