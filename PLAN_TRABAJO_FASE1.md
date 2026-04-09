@@ -617,7 +617,7 @@ Antes del tag `v1.0.0-fase1` (Día 20), crear los siguientes issues en GitHub pa
 617: | [#387](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/387) | [Fase 1] Bug: Reconocimiento de sesión en nuevas pestañas | Alta | Pendiente |
 618: | [#388](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/388) | [Fase 1] Bug: Generación redundante de credenciales en reintentos | Media | Pendiente |
 619: | [#389](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/389) | [Fase 1] Bug: Modal de credenciales aparece antes de validación exitosa | Alta | Pendiente |
-620: | [#390](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/390) | [Fase 1] Bug: Enlace "IR AL SISTEMA" roto y fallo en generación de PDF/Correo | Alta | Pendiente |
+620: | [#390](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/390) | [Fase 1] Bug: Enlace "IR AL SISTEMA" roto y fallo en generación de PDF/Correo | Alta | Completado |
 621: | [#391](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/391) | [Fase 1] Bug: Error "Failed to fetch" en creación de tickets | Alta | Pendiente |
 622: | [#392](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/392) | [Fase 1] Bug: Fallo en adjuntos y apertura de evidencias en tickets | Media | Pendiente |
 623: | [#393](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/393) | [Fase 1] Bug: Limitación de Historial de Cargas a 2 documentos | Media | Pendiente |

@@ -937,10 +937,10 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       const blob = await this.mockPdfService.generarPdfExito({
         correo: this.correoControl.value,
         contrasena: resultadoArchivo.resultadoExito?.credenciales.contrasena ?? '',
-        fechaDisponible: fechaDisponible.toLocaleDateString(),
+        fechaDisponible: this.formatearFechaLarga(fechaDisponible),
         alumnosValidados: totalAlumnos,
         cct: esc.cct,
-        fechaValidacion: new Date().toLocaleString(),
+        fechaValidacion: this.formatearFechaLarga(new Date()),
         consecutivo: resultadoArchivo.resultadoExito?.consecutivo ?? 'N/D'
       });
       resultadoArchivo.pdfEstado = 'descargando';
@@ -1149,4 +1149,10 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     return `Archivo detectado: ${etiqueta}.`;
   }
 
+  private formatearFechaLarga(fecha: Date): string {
+    return new Intl.DateTimeFormat('es-MX', {
+      dateStyle: 'long',
+      timeZone: 'America/Mexico_City'
+    }).format(fecha);
+  }
 }

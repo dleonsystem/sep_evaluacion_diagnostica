@@ -84,7 +84,7 @@ export class ComprobantePdfService {
           absolutePosition: { x: 48, y: 68 },
         },
         {
-          text: 'Este documento certifica la recepcion del archivo en la plataforma SiCRER.',
+          text: 'Este documento certifica la recepcion del archivo en la plataforma SiRVER.',
           margin: [0, 26, 0, 18],
           lineHeight: 1.3,
         },
@@ -166,7 +166,7 @@ export class ComprobantePdfService {
     }
 
     return new Intl.DateTimeFormat('es-MX', {
-      dateStyle: 'medium',
+      dateStyle: 'long',
       timeStyle: 'short',
       timeZone: 'America/Mexico_City',
     }).format(fecha);
