@@ -24,6 +24,22 @@ export class AuthService {
   // Esto permite que el PDF y el componente vean la contraseña en el flujo de registro
   // sin comprometer la seguridad de persistencia en disco.
   private _contrasenaTransitoria: string | null = null;
+  private storageListener: any;
+
+  constructor() {
+    this.inicializarSincronizacionPestanias();
+  }
+
+  private inicializarSincronizacionPestanias(): void {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', (event) => {
+        // Si cambia la sesión o el token en otra pestaña, notificamos a los suscriptores
+        if (event.key === this.sesionKey || event.key === 'eia-jwt' || event.key === null) {
+          this.autenticadoSubject.next(this.estaAutenticadoInicial());
+        }
+      });
+    }
+  }
 
   private estaAutenticadoInicial(): boolean {
     return localStorage.getItem(this.sesionKey) === 'true';

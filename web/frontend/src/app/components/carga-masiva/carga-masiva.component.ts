@@ -184,8 +184,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.authService.requiereLoginParaNuevaCarga(this.correoControl.value)) {
-      await this.mostrarAvisoLogin();
+    if (this.authService.requiereLoginParaNuevaCarga(this.correoControl.value) || await this.verificarExistenciaUsuario(this.correoControl.value)) {
       this.limpiarSeleccion(input);
       return;
     }
@@ -230,8 +229,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.authService.requiereLoginParaNuevaCarga(this.correoControl.value)) {
-      await this.mostrarAvisoLogin();
+    if (this.authService.requiereLoginParaNuevaCarga(this.correoControl.value) || await this.verificarExistenciaUsuario(this.correoControl.value)) {
       return;
     }
 
@@ -864,8 +862,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     });
   }
 
-  private async verificarExistenciaUsuario(email: string): Promise<void> {
-    if (this.sesionActiva) return; // Si ya hay sesión, no bloqueamos
+  private async verificarExistenciaUsuario(email: string): Promise<boolean> {
+    if (this.sesionActiva) return false; // Si ya hay sesión, no bloqueamos
 
     try {
       const response = await firstValueFrom(
@@ -882,9 +880,12 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
           allowOutsideClick: false
         });
         void this.router.navigate(['/login'], { queryParams: { correo: email, redirect: '/carga-masiva' } });
+        return true;
       }
+      return false;
     } catch (error) {
       console.warn('Error verificando existencia de usuario:', error);
+      return false;
     }
   }
 
