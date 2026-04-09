@@ -935,7 +935,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     try {
       const blob = await this.mockPdfService.generarPdfExito({
-        correo: this.correoControl.getRawValue(),
+        correo: this.correoSesion || this.correoControl.getRawValue() || this.correoControl.value || '',
         contrasena: resultadoArchivo.resultadoExito?.credenciales.contrasena ?? '',
         fechaDisponible: this.formatearFechaLarga(fechaDisponible),
         alumnosValidados: totalAlumnos,
