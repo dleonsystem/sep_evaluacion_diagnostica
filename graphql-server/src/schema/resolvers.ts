@@ -2217,7 +2217,7 @@ t.numero_ticket as "folio",
           if (uRes.rows.length > 0) {
             const existingUserId = uRes.rows[0].id;
             userToLink = existingUserId;
-            logger.info('Viculando carga masiva a usuario existente sin sesión activa', {
+            logger.info('Viculando carga masiva a usuario existente por email', {
               email: normalizedEmail,
               userId: existingUserId,
             });
@@ -2400,7 +2400,6 @@ t.numero_ticket as "folio",
             duplicadoDetectado: true,
           };
         }
-
         const nivelId = idNivelExcel;
         let solicitudId: string = '';
         let consecutivo: any = null;
@@ -2410,14 +2409,56 @@ t.numero_ticket as "folio",
         await client.query('BEGIN');
 
         let generatedPassword = null;
-        if (!credencialId && inputEmail) {
-          // Generar credenciales por primera vez
-          const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-          let retVal = '';
-          for (let i = 0; i < 12; ++i) {
-            retVal += charset.charAt(Math.floor(Math.random() * charset.length));
+        // RF-16.x: Asegurar que el usuario esté vinculado/creado (fuera del bloque if !credencialId)
+        if (!userToLink && inputEmail) {
+          const uCheck = await client.query('SELECT id FROM usuarios WHERE email = $1', [inputEmail]);
+          if (uCheck.rows.length > 0) {
+            userToLink = uCheck.rows[0].id;
+            // Asegurar que tenga vinculada la escuela si es Responsable CCT
+            await client.query(
+              'UPDATE usuarios SET escuela_id = $1 WHERE id = $2 AND escuela_id IS NULL',
+              [escuelaIdFromDb, userToLink]
+            );
+            logger.info('Usuario vinculado en transacción', { email: inputEmail, userId: userToLink });
+          } else {
+            // Generar password real para el nuevo usuario
+            const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+            let retVal = '';
+            for (let i = 0; i < 12; ++i) {
+              retVal += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+            generatedPassword = retVal;
+
+            const salt = crypto.randomBytes(16).toString('hex');
+            const hash = crypto.scryptSync(generatedPassword, salt, 64).toString('hex');
+            const finalHash = `${salt}:${hash}`;
+
+            const newUser = await client.query(
+              'INSERT INTO usuarios (email, password_hash, rol, nombre, apepaterno, apematerno, email_excel, escuela_id, password_debe_cambiar, primer_login, ultimo_cambio_password, activo, fecha_registro) VALUES ($1, $2, (SELECT id_rol FROM cat_roles_usuario WHERE codigo = $3), \'\', \'\', \'\', $4, $5, false, false, NOW(), true, NOW()) RETURNING id',
+              [
+                inputEmail,
+                finalHash,
+                'RESPONSABLE_CCT',
+                excelEmail || inputEmail,
+                escuelaIdFromDb,
+              ]
+            );
+            userToLink = newUser.rows[0].id;
+            logger.info('Nuevo usuario creado preventivamente en transacción', { email: inputEmail, userId: userToLink });
           }
-          generatedPassword = retVal;
+        }
+
+        if (!credencialId && inputEmail) {
+          // Generar credenciales por primera vez (Solo si no existen)
+          if (!generatedPassword) {
+            const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+            let retVal = '';
+            for (let i = 0; i < 12; ++i) {
+              retVal += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+            generatedPassword = retVal;
+          }
+
           const salt = crypto.randomBytes(16).toString('hex');
           const hash = crypto.scryptSync(generatedPassword, salt, 64).toString('hex');
           const finalHash = `${salt}:${hash}`;
@@ -2428,32 +2469,11 @@ t.numero_ticket as "folio",
           );
           credencialId = newCred.rows[0].id;
 
-          // También crear usuario en la tabla principal si no existe para permitir login
-          const userExist = await client.query('SELECT id FROM usuarios WHERE email = $1', [
-            inputEmail,
-          ]);
-          if (userExist.rows.length === 0) {
-            const newUser = await client.query(
-              'INSERT INTO usuarios (email, password_hash, rol, nombre, apepaterno, apematerno, email_excel, password_debe_cambiar, primer_login, ultimo_cambio_password, activo, fecha_registro) VALUES ($1, $2, (SELECT id_rol FROM cat_roles_usuario WHERE codigo = $3), $4, $5, $6, $7, false, false, NOW(), true, NOW()) RETURNING id',
-              [
-                inputEmail,
-                finalHash,
-                'RESPONSABLE_CCT',
-                'Director ' + cct,
-                '',
-                '',
-                excelEmail,
-              ]
-            );
-            userToLink = newUser.rows[0].id;
-            logger.info('Nuevo usuario creado y vinculado a la carga', { email: inputEmail, userId: userToLink });
-          } else {
-            // Actualizar email_excel si no lo tiene (RF-16.x)
-            await client.query(
-              'UPDATE usuarios SET email_excel = $1 WHERE id = $2 AND email_excel IS NULL',
-              [excelEmail, userExist.rows[0].id]
-            );
-          }
+          // Asegurar que el usuario tenga el pass hash sincronizado si se acaba de crear la credencial
+          await client.query(
+            'UPDATE usuarios SET password_hash = $1 WHERE email = $2 AND (password_hash IS NULL OR password_hash = \'\')',
+            [finalHash, inputEmail]
+          );
         }
 
         if (existingReq.rows.length > 0) {
@@ -2622,6 +2642,18 @@ t.numero_ticket as "folio",
         }
 
         await client.query('COMMIT');
+        logger.info('[Progreso Carga] Transacción completada con éxito');
+
+        // RF-16.7: Notificar credenciales por correo si el usuario es nuevo/generó pass
+        if (generatedPassword && inputEmail) {
+          mailingService.sendCredentials(inputEmail, cct, generatedPassword).catch((err) => {
+            logger.error('Error enviando correo de credenciales en carga masiva', {
+              email: inputEmail,
+              cct,
+              error: err.message
+            });
+          });
+        }
 
         // Sincronización SFTP en background (Fase 1 Legacy - CU-07)
         const syncSftp = async () => {
@@ -2683,6 +2715,7 @@ t.numero_ticket as "folio",
           message: successMessage,
           solicitudId,
           consecutivo: consecutivo?.toString(),
+          generatedPassword,
           detalles: {
             cct,
             nivel: metadata.nivelDetectado,

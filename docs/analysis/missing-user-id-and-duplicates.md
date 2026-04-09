@@ -34,3 +34,4 @@ Para dar soporte al requerimiento de Turno, es necesario persistir el `id_turno`
 - Actualización de `BITACORA_CAMBIOS_DB.md` con la nueva migración.
 - Actualización de `ddl_generated.sql` para incluir la nueva columna.
 - Actualización de `ESTRUCTURA_DE_DATOS.md` para reflejar el cambio de esquema.
+- **Sincronización de Esquema (CORREGIDO)**: Se detectó un error `400 Bad Request` debido a que la mutación en el frontend solicitaba `generatedPassword` pero este campo no estaba definido en el `typeDefs.ts` del servidor. Se sincronizaron ambos archivos para permitir el flujo de contraseñas.
