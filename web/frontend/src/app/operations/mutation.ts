@@ -39,6 +39,8 @@ export const UPLOAD_EXCEL_MUTATION = `
       success
       message
       solicitudId
+      consecutivo
+      generatedPassword
       duplicadoDetectado
       detalles {
         cct

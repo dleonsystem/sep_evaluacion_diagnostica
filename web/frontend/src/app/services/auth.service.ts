@@ -40,10 +40,10 @@ export class AuthService {
     localStorage.setItem('eia-jwt', token); // Mantener sincronía con GraphqlService
     localStorage.setItem(this.sesionCorreoKey, this.normalizarCorreo(correo));
     localStorage.setItem(this.sesionRolKey, user.rol);
-    
+
     // Extraer CCT de la estructura de GraphQL si está presente
     const cct = user.cct || (user.centrosTrabajo && user.centrosTrabajo.length > 0 ? user.centrosTrabajo[0].claveCCT : null);
-    
+
     if (cct) {
       localStorage.setItem(this.sesionCctKey, cct);
     }
@@ -63,8 +63,22 @@ export class AuthService {
     localStorage.removeItem('estado-credenciales-primaria');
     localStorage.removeItem('estado-credenciales-secundaria');
 
+    // RF-16: Limpiar registros de éxito para que sea "sin rastro" tras logout
+    this.limpiarRegistrosExito();
+
     this._contrasenaTransitoria = null;
     this.autenticadoSubject.next(false);
+  }
+
+  private limpiarRegistrosExito(): void {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('eia-exito-')) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
   }
 
   estaAutenticado(): boolean {
@@ -87,26 +101,26 @@ export class AuthService {
   obtenerRolSesion(): string | null {
     return localStorage.getItem(this.sesionRolKey);
   }
-  
+
   obtenerCctSesion(): string | null {
     return localStorage.getItem(this.sesionCctKey);
   }
 
   public registrarCredenciales(cct: string, correo: string, contrasena: string): CredencialesGuardadas {
-    const credenciales: CredencialesGuardadas = { 
-      cct, 
-      correo: this.normalizarCorreo(correo), 
+    const credenciales: CredencialesGuardadas = {
+      cct,
+      correo: this.normalizarCorreo(correo),
       contrasena,
-      esNueva: true 
+      esNueva: true
     };
-    
+
     // Guardar en memoria volátil para uso inmediato (PDF, UI)
     this._contrasenaTransitoria = contrasena;
 
     // Seguridad: Persistir metadata EXCEPTO la contraseña sensible en disco
     const { contrasena: _, ...persistible } = credenciales;
     localStorage.setItem('eia-last-credentials', JSON.stringify(persistible));
-    
+
     return credenciales;
   }
 
@@ -129,8 +143,8 @@ export class AuthService {
     try {
       const parsed = JSON.parse(guardadas);
       // Prioridad absoluta a la memoria volátil sobre lo que haya en disco
-      const passwordReal = (this._contrasenaTransitoria && this._contrasenaTransitoria.length > 0) 
-        ? this._contrasenaTransitoria 
+      const passwordReal = (this._contrasenaTransitoria && this._contrasenaTransitoria.length > 0)
+        ? this._contrasenaTransitoria
         : (parsed.contrasena || '********');
 
       return {

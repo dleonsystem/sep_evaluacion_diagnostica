@@ -99,7 +99,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   readonly umbralFallosTicket = 3;
   mostrarModalIncidencia = false;
   isDragging = false;
-  
+
   evidenciasIncidencia: any[] = [];
   readonly maxEvidenciasIncidencia = 5;
   readonly extensionesEvidencias = ['.pdf', '.jpg', '.jpeg', '.png'];
@@ -340,7 +340,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     console.log('--- Registro de Intento Fallido ---');
     this.intentosFallidos++;
     console.log('Contador de intentos fallidos:', this.intentosFallidos);
-    
+
     if (this.intentosFallidos >= this.umbralFallosTicket) {
       console.log(`Umbral alcanzado (>=${this.umbralFallosTicket}). Abriendo modal de incidencia...`);
       this.abrirModalIncidencia(resultadoArchivo);
@@ -352,7 +352,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     if (resultadoArchivo) {
       const errString = resultadoArchivo.errores.map((e, index) => `${index + 1}. ${e}`).join('\n');
       preDescripcion = `Registro técnico (Fallos de Validación):\n${errString}\n\n`;
-      
+
       // Auto-adjuntar la evidencia generada en PDF del dictamen técnico,
       // dado que los archivos .xlsx no están permitidos por el formulario de tickets.
       if (resultadoArchivo.pdfBlob && resultadoArchivo.pdfNombre) {
@@ -368,8 +368,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
 
     this.incidenciaForm.patchValue({
-       email: this.correoControl.value,
-       descripcion: preDescripcion
+      email: this.correoControl.value,
+      descripcion: preDescripcion
     });
     this.mostrarModalIncidencia = true;
   }
@@ -399,8 +399,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
 
     this.evidenciasIncidencia.push({
-       id: Math.random().toString(36).substring(2),
-       archivo
+      id: Math.random().toString(36).substring(2),
+      archivo
     });
   }
 
@@ -428,7 +428,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     try {
       const data = this.incidenciaForm.getRawValue();
-      
+
       const evidenciasBase64 = await Promise.all(
         this.evidenciasIncidencia.map(async ev => ({
           nombre: ev.archivo.name,
@@ -444,7 +444,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
           }
         }
       `;
-      
+
       const variables = {
         input: {
           nombreCompleto: data.nombreCompleto,
@@ -544,14 +544,19 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
       resultado.guardado = true;
       resultado.estado = 'exito';
+
+      if (resultado.resultadoExito && respuestaApi.consecutivo) {
+        resultado.resultadoExito.consecutivo = respuestaApi.consecutivo;
+      }
+
       resultado.mensajeInformativo = `El archivo se recibió correctamente. Folio de seguimiento: ${respuestaApi.consecutivo || 'Pendiente'}`;
 
-      // CRÍTICO: SOLO AHORA QUE EL SERVIDOR ACEPTÓ EL ARCHIVO, REGISTRAMOS USUARIO
-      resultado.mensajeInformativo = 'Generando credenciales de acceso oficiales...';
-      const credencialesListas = await this.registrarUsuarioYCredenciales(resultado);
-      
+      // CRÍTICO: SOLO AHORA QUE EL SERVIDOR ACEPTÓ EL ARCHIVO, VINCULAMOS USUARIO
+      resultado.mensajeInformativo = 'Sincronizando claves de acceso...';
+      const credencialesListas = await this.registrarUsuarioYCredenciales(resultado, respuestaApi.generatedPassword);
+
       if (!credencialesListas) {
-         console.warn('Advertencia: El archivo se subió pero hubo un problema generando la vista de credenciales.');
+        console.warn('Advertencia: El archivo se subió pero hubo un problema vinculando las credenciales.');
       }
 
       // Seguridad: Marcar éxito real para requerir login en futuras subidas distintas
@@ -562,10 +567,6 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       const textoExito = respuestaApi.consecutivo
         ? `La información se ha sincronizado. Tu folio de seguimiento es: ${respuestaApi.consecutivo}`
         : 'La información se ha sincronizado correctamente con el servidor.';
-
-      if (resultado.resultadoExito && respuestaApi.consecutivo) {
-        resultado.resultadoExito.consecutivo = respuestaApi.consecutivo;
-      }
 
       await Swal.fire({
         icon: 'success',
@@ -636,7 +637,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     );
   }
 
-  private async registrarUsuarioYCredenciales(resultado: ResultadoArchivo): Promise<boolean> {
+  private async registrarUsuarioYCredenciales(resultado: ResultadoArchivo, passwordFromServer?: string): Promise<boolean> {
     if (!resultado.escDatos || !resultado.resultadoExito) {
       resultado.errorGuardado = 'No se encontró la información de la escuela para registrar tus credenciales.';
       await Swal.fire({
@@ -645,6 +646,19 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         text: resultado.errorGuardado
       });
       return false;
+    }
+
+    // SI EL SERVIDOR YA NOS DIO LA CONTRASEÑA (USUARIO NUEVO CREADO EN MUTATION)
+    if (passwordFromServer) {
+      resultado.resultadoExito.credenciales = {
+        usuario: this.correoControl.value,
+        contrasena: passwordFromServer,
+        esNueva: true
+      };
+      this.credencialesMostradas = resultado.resultadoExito.credenciales;
+      this.authService.registrarCredenciales(resultado.escDatos.cct, this.correoControl.value, passwordFromServer);
+      this.actualizarEstadoSesion();
+      return true;
     }
 
     if (this.sesionActiva && this.correoSesion) {
@@ -657,7 +671,6 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
 
     const credencialesExistentes = this.authService.obtenerCredenciales();
-
     const correoActual = this.authService.normalizarCorreo(this.correoControl.value);
 
     if (credencialesExistentes && credencialesExistentes.correo === correoActual) {
@@ -679,91 +692,25 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       return true;
     }
 
-    const contrasenaGenerada = this.authService.generarContrasenaTemporal();
+    // SI LLEGAMOS AQUÍ Y NO TENEMOS PASSWORD DEL SERVIDOR, EL USUARIO YA EXISTE
+    // Recuperar la contraseña de la memoria de esta misma sesión si es posible
+    const credsSesion = this.authService.obtenerCredenciales();
+    const tieneContrasenaEnMemoria = !!(credsSesion && credsSesion.contrasena && credsSesion.contrasena.length > 3 && credsSesion.contrasena !== '********');
 
-    try {
-      await firstValueFrom(
-        this.usuariosService.crearUsuario({
-          email: this.correoControl.value,
-          rol: 'RESPONSABLE_CCT',
-          clavesCCT: [resultado.escDatos.cct],
-          password: contrasenaGenerada,
-        }),
-      );
-    } catch (error: any) {
-      const errorMessage = error?.message || '';
-      if (
-        errorMessage.includes('ya está registrado') ||
-        errorMessage.includes('already exists')
-      ) {
-        // Recuperar la contraseña de la memoria de esta misma sesión 
-        const credsSesion = this.authService.obtenerCredenciales();
-        const tieneContrasenaEnMemoria = !!(credsSesion && credsSesion.contrasena && credsSesion.contrasena.length > 3 && credsSesion.contrasena !== '********');
+    resultado.resultadoExito.credenciales = {
+      usuario: this.correoControl.value,
+      contrasena: tieneContrasenaEnMemoria ? credsSesion!.contrasena! : '********',
+      esNueva: tieneContrasenaEnMemoria
+    };
 
-        resultado.resultadoExito.credenciales = {
-          usuario: this.correoControl.value,
-          contrasena: tieneContrasenaEnMemoria ? credsSesion!.contrasena! : '********',
-          esNueva: tieneContrasenaEnMemoria
-        };
-        
-        // Reforzamos que la UI vea la contraseña real recuperada
-        if (tieneContrasenaEnMemoria) {
-           this.credencialesMostradas = resultado.resultadoExito.credenciales;
-           this.authService.registrarCredenciales(resultado.escDatos.cct, this.correoControl.value, credsSesion!.contrasena!);
-        } else {
-           this.credencialesMostradas = null;
-        }
-        
-        console.log('El usuario ya existe, continuando con credenciales de sesión.');
-        return true;
-      } else {
-        resultado.errorGuardado =
-          error instanceof Error
-            ? error.message
-            : 'No pudimos registrar el usuario en el sistema. Intenta nuevamente.';
-        await Swal.fire({
-          icon: 'error',
-          title: 'No se pudo registrar',
-          text: resultado.errorGuardado,
-        });
-        return false;
-      }
+    if (tieneContrasenaEnMemoria) {
+      this.credencialesMostradas = resultado.resultadoExito.credenciales;
+      this.authService.registrarCredenciales(resultado.escDatos.cct, this.correoControl.value, credsSesion!.contrasena!);
+    } else {
+      this.credencialesMostradas = null;
     }
 
-    try {
-      const nuevasCredenciales = this.authService.registrarCredenciales(
-        resultado.escDatos.cct,
-        this.correoControl.value,
-        contrasenaGenerada
-      );
-      this.estadoCredencialesService.actualizar(
-        this.correoControl.value,
-        nuevasCredenciales.contrasena
-      );
-      resultado.resultadoExito.credenciales = {
-        usuario: this.correoControl.value,
-        contrasena: nuevasCredenciales.contrasena,
-        esNueva: nuevasCredenciales.esNueva
-      };
-      this.credencialesMostradas = {
-        usuario: this.correoControl.value,
-        contrasena: nuevasCredenciales.contrasena,
-        esNueva: nuevasCredenciales.esNueva
-      };
-      this.actualizarEstadoSesion();
-      return true;
-    } catch (error) {
-      resultado.errorGuardado =
-        error instanceof Error
-          ? error.message
-          : 'No pudimos registrar tus credenciales. Intenta nuevamente.';
-      await Swal.fire({
-        icon: 'error',
-        title: 'No se pudo registrar',
-        text: resultado.errorGuardado
-      });
-      return false;
-    }
+    return true;
   }
 
   async guardarTodo(): Promise<void> {
@@ -825,9 +772,9 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     const credsExistentes = this.authService.obtenerCredenciales();
     const esMismoCorreo = credsExistentes?.correo === this.correoControl.value;
-    const passParaUI = (esMismoCorreo && credsExistentes?.contrasena && credsExistentes.contrasena !== '********') 
-       ? credsExistentes.contrasena 
-       : '';
+    const passParaUI = (esMismoCorreo && credsExistentes?.contrasena && credsExistentes.contrasena !== '********')
+      ? credsExistentes.contrasena
+      : '';
 
     resultadoArchivo.resultadoExito = {
       mensaje: `Podrás consultar tus resultados a partir del día: ${fechaDisponible.toLocaleDateString()}`,

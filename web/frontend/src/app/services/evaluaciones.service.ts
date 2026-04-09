@@ -37,6 +37,7 @@ export interface UploadExcelResponse {
         message: string;
         solicitudId?: string;
         consecutivo?: string;
+        generatedPassword?: string;
         detalles?: ExcelUploadResult;
         duplicadoDetectado?: boolean;
     };
