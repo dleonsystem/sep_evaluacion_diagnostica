@@ -2414,35 +2414,44 @@ t.numero_ticket as "folio",
         await client.query('BEGIN');
 
         let generatedPassword = null;
+        let isNewUser = false; // Flag para mailing
+
         // RF-16.x: Asegurar que el usuario esté vinculado/creado (fuera del bloque if !credencialId)
         if (!userToLink && inputEmail) {
-          const uCheck = await client.query('SELECT id FROM usuarios WHERE email = $1', [inputEmail]);
+          const uCheck = await client.query('SELECT id, password_hash FROM usuarios WHERE email = $1', [inputEmail]);
           if (uCheck.rows.length > 0) {
             userToLink = uCheck.rows[0].id;
+            userHasPassword = !!uCheck.rows[0].password_hash;
             // Asegurar que tenga vinculada la escuela si es Responsable CCT
             await client.query(
               'UPDATE usuarios SET escuela_id = $1 WHERE id = $2 AND escuela_id IS NULL',
               [escuelaIdFromDb, userToLink]
             );
-            logger.info('Usuario vinculado en transacción', { email: inputEmail, userId: userToLink });
+            logger.info('Usuario vinculado en transacción', { email: inputEmail, userId: userToLink, hasPass: userHasPassword });
           } else {
-            // Generar password real para el nuevo usuario
-            const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-            let retVal = '';
-            for (let i = 0; i < 12; ++i) {
-              retVal += charset.charAt(Math.floor(Math.random() * charset.length));
+            isNewUser = true;
+            // BUG FIX #GhostPassword: No generar si ya sabemos que el usuario existe y tiene pass
+            if (!userHasPassword) {
+              const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+              let retVal = '';
+              for (let i = 0; i < 12; ++i) {
+                retVal += charset.charAt(Math.floor(Math.random() * charset.length));
+              }
+              generatedPassword = retVal;
             }
-            generatedPassword = retVal;
 
-            const salt = crypto.randomBytes(16).toString('hex');
-            const hash = crypto.scryptSync(generatedPassword, salt, 64).toString('hex');
-            const finalHash = `${salt}:${hash}`;
+            let finalHash = '';
+            if (generatedPassword) {
+              const salt = crypto.randomBytes(16).toString('hex');
+              const hash = crypto.scryptSync(generatedPassword, salt, 64).toString('hex');
+              finalHash = `${salt}:${hash}`;
+            }
 
             const newUser = await client.query(
               'INSERT INTO usuarios (email, password_hash, rol, nombre, apepaterno, apematerno, email_excel, escuela_id, password_debe_cambiar, primer_login, ultimo_cambio_password, activo, fecha_registro) VALUES ($1, $2, (SELECT id_rol FROM cat_roles_usuario WHERE codigo = $3), \'\', \'\', \'\', $4, $5, false, false, NOW(), true, NOW()) RETURNING id',
               [
                 inputEmail,
-                finalHash,
+                finalHash || null,
                 'RESPONSABLE_CCT',
                 excelEmail || inputEmail,
                 escuelaIdFromDb,
@@ -2454,8 +2463,16 @@ t.numero_ticket as "folio",
         }
 
         if (!credencialId && inputEmail) {
+          // RE-CHECK DEFINITIVO: Si el usuario ya está vinculado, nos aseguramos al 100% de si tiene password en DB
+          if (userToLink && !userHasPassword) {
+            const upCheck = await client.query('SELECT password_hash FROM usuarios WHERE id = $1', [userToLink]);
+            if (upCheck.rows[0]?.password_hash) {
+              userHasPassword = true;
+              logger.info('[FixGhostPassword] Password detectado en re-check DB. Cancelando generación.');
+            }
+          }
+
           // Generar credenciales por primera vez (Solo si no existen)
-          // BUG FIX #GhostPassword: Si el usuario ya existe y tiene password, NO generar uno nuevo.
           if (!generatedPassword && !userHasPassword) {
             const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
             let retVal = '';
@@ -2660,8 +2677,8 @@ t.numero_ticket as "folio",
         await client.query('COMMIT');
         logger.info('[Progreso Carga] Transacción completada con éxito');
 
-        // RF-16.7: Notificar credenciales por correo si el usuario es nuevo/generó pass
-        if (generatedPassword && inputEmail) {
+        // RF-16.7: Notificar credenciales por correo SOLO si el usuario es nuevo y se generó pass
+        if (generatedPassword && inputEmail && isNewUser) {
           mailingService.sendCredentials(inputEmail, cct, generatedPassword).catch((err) => {
             logger.error('Error enviando correo de credenciales en carga masiva', {
               email: inputEmail,

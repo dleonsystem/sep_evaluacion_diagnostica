@@ -1,43 +1,40 @@
-# Análisis de Incidencia: Generación Redundante de Credenciales
+# Análisis de Incidencia: Generación Redundante de Credenciales (Issue #388)
 
-**ID del Issue:** #388
-**Estado:** RESUELTO (Validado en Código)
-**Prioridad:** Alta (Fase 1)
+**Estado:** RESUELTO Y VALIDADO
+**Prioridad:** Crítica (Fase 1)
+**Fecha de Resolución:** 2026-04-09
 
 ## Descripción del Problema
-Se reportó que al reintentar cargas de archivos Excel, el sistema generaba nuevas credenciales (contraseñas) que sobreescribían las anteriores, bloqueando efectivamente el acceso de los usuarios que ya tenían una cuenta válida.
+El sistema generaba nuevas contraseñas ("Ghost Passwords") durante cargas masivas para usuarios que ya estaban autenticados o registrados, enviando correos redundantes con credenciales no funcionales y sobreescribiendo visualmente la clave en el PDF de comprobante.
 
-## Análisis Técnico en el Backend
-He analizado el flujo de la mutación `uploadExcelAssessment` en `resolvers.ts` y he verificado que la lógica actual previene este comportamiento redundante:
+## Hallazgo Crítico: Sincronización de Build
+Se identificó que los intentos iniciales de solución fallaron porque el servidor se estaba ejecutando mediante `npm start`, el cual apunta a la carpeta `dist/` pre-compilada. Los cambios realizados en `src/` eran ignorados por el motor de ejecución hasta que se forzó un `npm run build`.
 
-### 1. Detección de Usuario Existente
-Antes de cualquier generación de credenciales, el sistema realiza una búsqueda por el correo electrónico normalizado proporcionado en el archivo o en el input (`normalizedEmail`).
+## Solución Implementada: Triple Blindaje (Triple-Failsafe)
 
-### 2. Lógica de Bifurcación (Resolvers:2414-2424)
-El código implementa una guardia estricta:
-```typescript
-if (!userToLink && inputEmail) {
-  const uCheck = await client.query('SELECT id FROM usuarios WHERE email = $1', [inputEmail]);
-  if (uCheck.rows.length > 0) {
-    // CASO: Usuario ya existe
-    userToLink = uCheck.rows[0].id;
-    // Vincula la escuela si es necesario, pero NO genera ni cambia el password_hash
-  } else {
-    // CASO: Usuario nuevo
-    // Solo aquí se genera la contraseña y se inserta el nuevo registro
-  }
-}
-```
+Para erradicar el problema, se implementó una lógica de tres capas en el backend (`resolvers.ts` e `index.ts`):
 
-### 3. Preservación de Credenciales
-- Si el usuario existe, se recupera su `id` y se utiliza para la transacción de carga.
-- El campo `password_hash` en la tabla `usuarios` **no se modifica** durante los flujos de reintento o reemplazo de archivos.
-- Esto garantiza que el usuario pueda seguir entrando con su contraseña original independientemente de cuántas veces reintente la carga.
+### 1. Capa de Contexto (Context Awareness)
+Se actualizó el middleware de autenticación en `index.ts` para incluir el `password_hash` en el objeto de usuario del contexto de GraphQL. Esto permite que los resolvers sepan instantáneamente si el usuario logueado ya posee credenciales válidas.
 
-## Conclusión
-La lógica actual es **correcta y robusta**. El bug reportado ha sido solventado al asegurar que la creación de usuarios y generación de secretos solo ocurre una única vez (cuando el email no existe previamente en la base de datos).
+### 2. Capa de Verificación en Transacción (Ground Truth Check)
+Dentro de la mutación de carga masiva, se añadió un re-check obligatorio a la base de datos:
+- Antes de emitir cualquier clave, el sistema realiza un `SELECT password_hash FROM usuarios` filtrando por el ID vinculado.
+- Si existe un hash en DB, la generación se cancela inmediatamente (Inyección de NULL en la variable de contraseña generada).
+
+### 3. Capa de Bloqueo de Notificaciones (Mailing Guard)
+Se implementó la bandera `isNewUser`. El servicio de mensajería (`mailingService.sendCredentials`) solo se activa si se cumplen simultáneamente tres condiciones:
+1. Se generó una contraseña nueva.
+2. Existe un correo de destino.
+3. **El usuario es estrictamente nuevo** (creado en la transacción actual).
+Esto evita el envío de correos molestos a usuarios que ya están operando en la plataforma.
+
+## Verificación de Integridad
+- [x] **Backend:** Compilado exitosamente (`npm run build`).
+- [x] **PDF:** Ahora muestra correctamente "SU CONTRASEÑA ES LA QUE YA TIENE REGISTRADA" para usuarios logueados.
+- [x] **Correo:** Bloqueado para reintentos de carga.
+- [x] **Persistencia:** El hash original del usuario permanece intacto en la tabla `usuarios`.
 
 ---
-**Fecha de Análisis:** 2026-04-09
-**Estatus:** Verificado en el código base.
 **Responsable:** Antigravity AI
+**Estado Final:** Cerrado

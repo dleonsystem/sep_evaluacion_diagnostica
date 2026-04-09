@@ -332,7 +332,8 @@ async function startServer() {
                 u.email, 
                 r.codigo as rol,
                 u.nombre,
-                e.cct
+                e.cct,
+                u.password_hash
                FROM usuarios u
                INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
                LEFT JOIN escuelas e ON u.escuela_id = e.id
