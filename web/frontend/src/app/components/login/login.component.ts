@@ -88,7 +88,7 @@ export class LoginComponent implements OnInit {
       if (esAdmin) {
         await this.router.navigateByUrl('/admin/dashboard');
       } else {
-        await this.router.navigateByUrl('/archivos-evaluacion');
+        await this.router.navigateByUrl(this.redirect);
       }
 
     } catch (error: any) {
