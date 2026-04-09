@@ -2300,7 +2300,7 @@ t.numero_ticket as "folio",
           const errorMsg = `Formato de CCT inválido en el archivo: ${cctValidation.error}`;
           await auditLog(errorMsg, 'RECHAZADO');
           await query(
-            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, false)`,
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, id_turno, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, $8, false)`,
             [
               cct || 'INVALID',
               nombreArchivo,
@@ -2309,6 +2309,7 @@ t.numero_ticket as "folio",
               JSON.stringify([errorMsg]),
               remotePath,
               archivoSize,
+              idTurno
             ]
           );
           return { success: false, message: errorMsg, detalles: { errores: [errorMsg] } };
