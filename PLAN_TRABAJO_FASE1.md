@@ -592,3 +592,40 @@ Antes del tag `v1.0.0-fase1` (Día 20), crear los siguientes issues en GitHub pa
 
 *Documento generado el 18 de marzo de 2026. Actualizar al cierre de cada sprint.*
 *Responsable de actualización: Equipo de Desarrollo — próxima revisión: 24/03/2026*
+595: 
+596: ---
+597: 
+598: ## 1.2 Remediación de Hallazgos Técnicos - Fase 1 (8-abr-2026)
+599: 
+600: | ID Issue | Descripción | Prioridad | Estado |
+601: |---|---|---|---|
+602: | [#372](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/372) | [Fase 1] Bug: Drag & Drop limitado en carga de archivos | Media | Completado |
+603: | [#373](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/373) | [Fase 1] Bug: Intercepción del navegador al soltar archivos fuera del botón | Media | Pendiente |
+604: | [#374](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/374) | [Fase 1] Bug: Incompatibilidad de navegadores (Firefox y JIRAF) | Alta | Pendiente |
+605: | [#375](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/375) | [Fase 1] Requerimiento: Validación de sesión obligatoria para carga de archivos | Alta | Pendiente |
+606: | [#376](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/376) | [Fase 1] Lógica de Negocio: Validación de duplicidad por CCT y Turno | Alta | Pendiente |
+607: | [#377](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/377) | [Fase 1] Lógica de Negocio: Reemplazo de archivo si coincide nombre y CCT | Media | Pendiente |
+608: | [#378](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/378) | [Fase 1] Lógica de Negocio: Restricción de duplicidad por usuario | Media | Pendiente |
+609: | [#379](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/379) | [Fase 1] Bug: Inconsistencias entre errores web y PDF de resultados | Alta | Pendiente |
+610: | [#380](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/380) | [Fase 1] Bug: Desfase de filas/columnas en reporte PDF | Media | Pendiente |
+611: | [#381](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/381) | [Fase 1] Bug: Fallo de validación de encabezados en Secundaria (B5-F8) | Alta | Pendiente |
+612: | [#382](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/382) | [Fase 1] Requerimiento: Formatos específicos para Telesecundarias | Alta | Pendiente |
+613: | [#383](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/383) | [Fase 1] Regla de Negocio: Validación de Columna A (Matrícula) | Media | Pendiente |
+614: | [#384](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/384) | [Fase 1] Regla de Negocio: Carga de alumnos con valoraciones parciales | Media | Pendiente |
+615: | [#385](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/385) | [Fase 1] Requerimiento: Sanitización de archivos Excel | Media | Pendiente |
+616: | [#386](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/386) | [Fase 1] Bug: Error en correos institucionales (@nube.sep.gob.mx, @comunidad.unam.mx) | Alta | Pendiente |
+617: | [#387](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/387) | [Fase 1] Bug: Reconocimiento de sesión en nuevas pestañas | Alta | Pendiente |
+618: | [#388](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/388) | [Fase 1] Bug: Generación redundante de credenciales en reintentos | Media | Pendiente |
+619: | [#389](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/389) | [Fase 1] Bug: Modal de credenciales aparece antes de validación exitosa | Alta | Pendiente |
+620: | [#390](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/390) | [Fase 1] Bug: Enlace "IR AL SISTEMA" roto y fallo en generación de PDF/Correo | Alta | Pendiente |
+621: | [#391](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/391) | [Fase 1] Bug: Error "Failed to fetch" en creación de tickets | Alta | Pendiente |
+622: | [#392](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/392) | [Fase 1] Bug: Fallo en adjuntos y apertura de evidencias en tickets | Media | Pendiente |
+623: | [#393](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/393) | [Fase 1] Bug: Limitación de Historial de Cargas a 2 documentos | Media | Pendiente |
+624: | [#394](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/394) | [Fase 1] Requerimiento: Visualización previa del archivo cargado | Baja | Pendiente |
+625: | [#395](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/395) | [Fase 1] Bug: Filtros de búsqueda inoperativos en Panel Admin | Media | Pendiente |
+626: | [#396](https://github.com/dleonsystem/sep_evaluacion_diagnostica/issues/396) | [Fase 1] Privacidad: Eliminación de logs internos SiRVER en panel de usuario | Media | Pendiente |
+627: 
+628: ---
+629: 
+630: *Documento actualizado el 8 de abril de 2026.*
+631: *Responsable de actualización: Lead Developer (Antigravity)*
