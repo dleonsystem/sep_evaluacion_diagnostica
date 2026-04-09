@@ -214,6 +214,19 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     this.isDragging = false;
   }
 
+  // Issue #373: Evitar que el navegador abra el archivo si se suelta fuera del área de drop
+  @HostListener('window:dragover', ['$event'])
+  onWindowDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  @HostListener('window:drop', ['$event'])
+  onWindowDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
   async onDrop(event: DragEvent): Promise<void> {
     event.preventDefault();
     event.stopPropagation();
