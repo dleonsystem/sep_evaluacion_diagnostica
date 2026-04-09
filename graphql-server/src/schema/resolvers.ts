@@ -39,6 +39,7 @@ interface ContextUser {
   rol: string;
   nombre?: string;
   cct?: string;
+  password_hash?: string;
 }
 
 /**
@@ -2211,15 +2212,18 @@ t.numero_ticket as "folio",
         const remotePath = `${remoteDir}/${Date.now()}_${nombreArchivo.replace(/\s+/g, '_')}`;
 
         let userToLink = context.user?.id;
+        let userHasPassword = !!context.user?.password_hash; // Si viene del context ya logueado
 
         if (normalizedEmail) {
-          const uRes = await query('SELECT id FROM usuarios WHERE email = $1', [normalizedEmail]);
+          const uRes = await query('SELECT id, password_hash FROM usuarios WHERE email = $1', [normalizedEmail]);
           if (uRes.rows.length > 0) {
-            const existingUserId = uRes.rows[0].id;
-            userToLink = existingUserId;
+            const row = uRes.rows[0];
+            userToLink = row.id;
+            userHasPassword = !!row.password_hash;
             logger.info('Viculando carga masiva a usuario existente por email', {
               email: normalizedEmail,
-              userId: existingUserId,
+              userId: userToLink,
+              hasPassword: userHasPassword
             });
           }
         }
@@ -2451,7 +2455,8 @@ t.numero_ticket as "folio",
 
         if (!credencialId && inputEmail) {
           // Generar credenciales por primera vez (Solo si no existen)
-          if (!generatedPassword) {
+          // BUG FIX #GhostPassword: Si el usuario ya existe y tiene password, NO generar uno nuevo.
+          if (!generatedPassword && !userHasPassword) {
             const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
             let retVal = '';
             for (let i = 0; i < 12; ++i) {
@@ -2460,21 +2465,31 @@ t.numero_ticket as "folio",
             generatedPassword = retVal;
           }
 
-          const salt = crypto.randomBytes(16).toString('hex');
-          const hash = crypto.scryptSync(generatedPassword, salt, 64).toString('hex');
-          const finalHash = `${salt}:${hash}`;
+          if (generatedPassword) {
+            const salt = crypto.randomBytes(16).toString('hex');
+            const hash = crypto.scryptSync(generatedPassword, salt, 64).toString('hex');
+            const finalHash = `${salt}:${hash}`;
 
-          const newCred = await client.query(
-            'INSERT INTO credenciales_eia2 (cct, correo_validado, password_hash) VALUES ($1, $2, $3) RETURNING id',
-            [cct, inputEmail, finalHash]
-          );
-          credencialId = newCred.rows[0].id;
+            const newCred = await client.query(
+              'INSERT INTO credenciales_eia2 (cct, correo_validado, password_hash) VALUES ($1, $2, $3) RETURNING id',
+              [cct, inputEmail, finalHash]
+            );
+            credencialId = newCred.rows[0].id;
 
-          // Asegurar que el usuario tenga el pass hash sincronizado si se acaba de crear la credencial
-          await client.query(
-            'UPDATE usuarios SET password_hash = $1 WHERE email = $2 AND (password_hash IS NULL OR password_hash = \'\')',
-            [finalHash, inputEmail]
-          );
+            // Asegurar que el usuario tenga el pass hash sincronizado si se acaba de crear la credencial
+            await client.query(
+              'UPDATE usuarios SET password_hash = $1 WHERE email = $2 AND (password_hash IS NULL OR password_hash = \'\')',
+              [finalHash, inputEmail]
+            );
+          } else {
+            // Si el usuario ya tenía password, simplemente creamos la credencial CCT (legacy) sin password_hash redundante
+            // o mejor, vinculamos la que ya tenga si el sistema permite credenciales sin hash propio (usando el del usuario)
+            const newCred = await client.query(
+              'INSERT INTO credenciales_eia2 (cct, correo_validado, password_hash) VALUES ($1, $2, (SELECT password_hash FROM usuarios WHERE id = $3)) RETURNING id',
+              [cct, inputEmail, userToLink]
+            );
+            credencialId = newCred.rows[0].id;
+          }
         }
 
         if (existingReq.rows.length > 0) {
