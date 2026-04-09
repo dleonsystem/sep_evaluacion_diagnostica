@@ -50,12 +50,13 @@
 •	**Consideraciones de seguridad/rendimiento:** Los cambios son principalmente estéticos (strings). No hay impacto en rendimiento.
 
 ## 8. Criterios de aceptación
-•	[ ] Correo de bienvenida muestra "Bienvenido al Sistema SiRVER".
-•	[ ] Correo de bienvenida usa el texto: "Se han generado oficialmente sus credenciales para la plataforma SiRVER".
-•	[ ] Enlace de acceso en correo dice: "Puede acceder al sistema en la siguiente dirección: Ir al Sistema SiRVER".
-•	[ ] PDF de éxito muestra "Estudiantes validados".
-•	[ ] PDF de éxito muestra la fecha en formato largo (Ej: 24 de marzo de 2026).
-•	[ ] PDF de recepción (backend) utiliza "SiRVER".
+•	[x] Correo de bienvenida muestra "Bienvenido al Sistema SiRVER".
+•	[x] Correo de bienvenida usa el texto: "Se han generado oficialmente sus credenciales para la plataforma SiRVER".
+•	[x] Enlace de acceso en correo dice: "Puede acceder al sistema en la siguiente dirección: Ir al Sistema SiRVER".
+•	[x] PDF de éxito muestra "Estudiantes validados".
+•	[x] PDF de éxito muestra la fecha en formato largo (Ej: 24 de marzo de 2026).
+•	[x] PDF de éxito muestra el correo electrónico correctamente (getRawValue fix).
+•	[x] PDF de recepción (backend) utiliza "SiRVER".
 
 ## 9. Estrategia de pruebas y Evidencia
 •	**Definición de tests:** Verificación visual de correos (vía logs en terminal o Mailtrap si está configurado) y descarga de PDFs de prueba.
