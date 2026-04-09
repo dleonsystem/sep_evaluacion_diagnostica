@@ -574,15 +574,6 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         text: textoExito,
       });
 
-      // Limpiar el correo tras éxito para evitar que el mensaje de "ya tienes credenciales" 
-      // confunda al usuario si desea hacer una carga nueva/distinta.
-      if (!this.sesionActiva) {
-        this.correoControl.setValue('');
-        this.correoControl.markAsPristine();
-        this.correoControl.markAsUntouched();
-        this.actualizarEstadoSesion();
-      }
-
       if (resultado.escDatos && resultado.resultadoExito && resultado.pdfTipo !== 'exito') {
         await this.generarPdfExito(
           resultado,
@@ -590,6 +581,15 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
           resultado.resultadoExito.fechaDisponible,
           resultado.resultadoExito.totalAlumnos,
         );
+      }
+
+      // Limpiar el correo tras éxito para evitar que el mensaje de "ya tienes credenciales" 
+      // confunda al usuario si desea hacer una carga nueva/distinta.
+      if (!this.sesionActiva) {
+        this.correoControl.setValue('');
+        this.correoControl.markAsPristine();
+        this.correoControl.markAsUntouched();
+        this.actualizarEstadoSesion();
       }
     } catch (error: any) {
       resultado.estado = 'error';
