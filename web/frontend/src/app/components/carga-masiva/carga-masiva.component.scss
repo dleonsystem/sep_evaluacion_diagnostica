@@ -72,6 +72,7 @@
   line-height: 1.6;
   color: #4b5563;
 }
+
 /*
 .carga__sesion {
   display: flex;
@@ -105,7 +106,7 @@
 .carga__sesion--inactiva {
   border-color: #f59e0b;
   background: #e6e6c8;
-  background: linear-gradient(180deg,rgba(230, 230, 200, 1) 0%, rgba(225, 245, 228, 0.04) 23%, rgba(182, 225, 151, 0.17) 47%, rgba(191, 255, 166, 0.12) 98%);
+  background: linear-gradient(180deg, rgba(230, 230, 200, 1) 0%, rgba(225, 245, 228, 0.04) 23%, rgba(182, 225, 151, 0.17) 47%, rgba(191, 255, 166, 0.12) 98%);
 
 }
 
@@ -218,7 +219,7 @@
   border-radius: 16px;
   padding: 1.75rem;
   background: #e6e6c8;
-  background: linear-gradient(360deg,rgba(230, 230, 200, 1) 0%, rgba(225, 245, 228, 0.04) 23%, rgba(182, 225, 151, 0.17) 47%, rgba(191, 255, 166, 0.12) 98%);
+  background: linear-gradient(360deg, rgba(230, 230, 200, 1) 0%, rgba(225, 245, 228, 0.04) 23%, rgba(182, 225, 151, 0.17) 47%, rgba(191, 255, 166, 0.12) 98%);
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -298,6 +299,11 @@
   transform: scale(1.005);
   box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.1);
   transition: all 0.2s ease-in-out;
+
+  /* Garantizar que los hijos no intercepten el evento de soltado */
+  * {
+    pointer-events: none;
+  }
 }
 
 .carga__input {
@@ -383,7 +389,7 @@
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.03);
 }
 
-.carga__detalle + .carga__detalle {
+.carga__detalle+.carga__detalle {
   margin-top: 0.35rem;
 }
 
@@ -773,7 +779,7 @@
 }
 
 .carga__guia {
-  background: linear-gradient(180deg,rgba(230, 230, 200, 1) 0%, rgba(230, 206, 154, 0.04) 96%, rgba(225, 205, 151, 1) 35%, rgba(153, 41, 3, 0.63) 100%);
+  background: linear-gradient(180deg, rgba(230, 230, 200, 1) 0%, rgba(230, 206, 154, 0.04) 96%, rgba(225, 205, 151, 1) 35%, rgba(153, 41, 3, 0.63) 100%);
   border: 1px solid #e5e7eb;
   border-radius: 14px;
   padding: 1.5rem;
@@ -790,7 +796,7 @@
 
 .carga__card {
   background: #e6e6c8;
-  background: linear-gradient(360deg,rgba(230, 230, 200, 1) 0%, rgba(230, 206, 154, 0.04) 96%, rgba(225, 205, 151, 1) 35%, rgba(153, 41, 3, 0.63) 100%);
+  background: linear-gradient(360deg, rgba(230, 230, 200, 1) 0%, rgba(230, 206, 154, 0.04) 96%, rgba(225, 205, 151, 1) 35%, rgba(153, 41, 3, 0.63) 100%);
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 1rem;
@@ -815,7 +821,9 @@
 /* --- US-1.2: Feedback Visual de Carga --- */
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .spinner {
@@ -884,8 +892,13 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 // --- MODAL DE INCIDENCIAS ---
@@ -950,8 +963,10 @@
   color: #64748b;
   cursor: pointer;
   line-height: 1;
-  
-  &:hover { color: #0f172a; }
+
+  &:hover {
+    color: #0f172a;
+  }
 }
 
 .carga__modal-body {
@@ -968,7 +983,9 @@
   line-height: 1.5;
   margin-bottom: 1.5rem;
 
-  strong { color: #78350f; }
+  strong {
+    color: #78350f;
+  }
 }
 
 .carga__modal-form {
@@ -1004,8 +1021,14 @@
   display: flex;
   gap: 0.5rem;
 
-  i { color: #0f766e; font-size: 1.1rem; }
-  strong { color: #0f172a; }
+  i {
+    color: #0f766e;
+    font-size: 1.1rem;
+  }
+
+  strong {
+    color: #0f172a;
+  }
 }
 
 .carga__modal-acciones {
@@ -1064,7 +1087,9 @@
     align-items: center;
     gap: 0.4rem;
 
-    i { color: #0f766e; }
+    i {
+      color: #0f766e;
+    }
   }
 
   .carga__evidencia-quitar {
@@ -1076,7 +1101,9 @@
     padding: 0;
     line-height: 1;
 
-    &:hover { color: #ef4444; }
+    &:hover {
+      color: #ef4444;
+    }
   }
 }
 
@@ -1103,14 +1130,22 @@
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-20px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @media (max-width: 640px) {
   .carga__modal-row {
     grid-template-columns: 1fr;
   }
+
   .carga__modal-body {
     padding: 1.25rem 1.5rem;
   }
