@@ -134,10 +134,11 @@ export class UsuariosService {
   listarUsuarios(
     limit = 10,
     offset = 0,
+    search?: string
   ): Observable<{ nodes: UsuarioCreado[]; totalCount: number }> {
     const query = `
-      query ListUsers($limit: Int, $offset: Int) {
-        listUsers(limit: $limit, offset: $offset) {
+      query ListUsers($limit: Int, $offset: Int, $search: String) {
+        listUsers(limit: $limit, offset: $offset, search: $search) {
           nodes {
             id
             email
@@ -155,7 +156,7 @@ export class UsuariosService {
     return this.graphqlService
       .execute<{
         listUsers: { nodes: UsuarioCreado[]; totalCount: number };
-      }>(query, { limit, offset })
+      }>(query, { limit, offset, search })
       .pipe(
         map((res) => {
           if (res.errors) throw new Error(res.errors[0].message);

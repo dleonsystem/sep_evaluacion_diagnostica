@@ -35,6 +35,7 @@ export const typeDefs = `#graphql
     listUsers(
       limit: Int = 10
       offset: Int = 0
+      search: String
     ): UserConnection!
     
     """
