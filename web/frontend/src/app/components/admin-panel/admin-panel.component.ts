@@ -516,7 +516,7 @@ export class AdminPanelComponent implements OnInit {
     try {
       const offset = (this.paginaUsuariosActual - 1) * this.tamanioPagina;
       const resultado = await firstValueFrom(
-        this.usuariosService.listarUsuarios(this.tamanioPagina, offset),
+        this.usuariosService.listarUsuarios(this.tamanioPagina, offset, this.filtroUsuarioTexto),
       );
       this.usuarios = resultado.nodes;
       this.totalUsuarios = resultado.totalCount;
@@ -683,14 +683,7 @@ export class AdminPanelComponent implements OnInit {
   }
 
   get usuariosFiltrados(): UsuarioCreado[] {
-    if (!this.filtroUsuarioTexto) return this.usuarios;
-    const texto = this.filtroUsuarioTexto.toLowerCase();
-    return this.usuarios.filter(
-      (u) =>
-        u.email.toLowerCase().includes(texto) ||
-        u.nombre.toLowerCase().includes(texto) ||
-        (u.apepaterno && u.apepaterno.toLowerCase().includes(texto)),
-    );
+    return this.usuarios;
   }
 
   get totalPaginasUsuarios(): number {

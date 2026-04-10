@@ -398,24 +398,40 @@ m.id, m.nombre, m.tipo,
      */
     listUsers: async (
       _: unknown,
-      { limit = 10, offset = 0 }: { limit?: number; offset?: number }
+      { limit = 10, offset = 0, search }: { limit?: number; offset?: number; search?: string }
     ) => {
       try {
+        const queryParams: any[] = [];
+        let whereClause = '';
+
+        if (search) {
+          queryParams.push(`%${search}%`);
+          whereClause = `WHERE (u.email ILIKE $1 OR u.nombre ILIKE $1 OR u.apepaterno ILIKE $1 OR u.apematerno ILIKE $1)`;
+        }
+
         // Obtener total de usuarios
-        const countResult = await query('SELECT COUNT(*) as total FROM usuarios');
+        const countResult = await query(
+          `SELECT COUNT(*) as total FROM usuarios u ${whereClause}`,
+          queryParams
+        );
         const totalCount = Number.parseInt(
           String((countResult.rows[0] as { total: number }).total),
           10
         );
+
+        // Añadir parámetros de paginación
+        queryParams.push(limit);
+        queryParams.push(offset);
 
         // Obtener usuarios paginados
         const usersResult = await query(
           `SELECT ${BASE_USER_FIELDS}
           FROM usuarios u
           INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
+          ${whereClause}
           ORDER BY u.fecha_registro DESC
-          LIMIT $1 OFFSET $2`,
-          [limit, offset]
+          LIMIT $${queryParams.length - 1} OFFSET $${queryParams.length}`,
+          queryParams
         );
 
         return {
@@ -424,7 +440,7 @@ m.id, m.nombre, m.tipo,
           hasNextPage: offset + limit < totalCount,
         };
       } catch (error) {
-        logger.error('Error listing users', { limit, offset, error });
+        logger.error('Error listing users', { limit, offset, search, error });
         throw new Error('Error al listar usuarios');
       }
     },

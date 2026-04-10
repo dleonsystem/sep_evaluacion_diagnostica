@@ -6,7 +6,7 @@
       <label class="admin-panel__upload-label" for="nivel-select">
         <i class="bi bi-layers-fill"></i> Selecciona el nivel educativo
       </label>
-      <select id="nivel-select" class="admin-panel__upload-input" [(ngModel)]="selectedNivel">
+      <select id="nivel-select" class="admin-panel__upload-input" [(ngModel)]="selectedNivel" (ngModelChange)="onFiltrosActualizados()">
         <option value="" disabled>Selecciona un nivel</option>
         <option value="preescolar">Educación Preescolar</option>
         <option value="primaria">Educación Primaria</option>
@@ -192,11 +192,11 @@
           <label class="admin-panel__filters-field">
             <span class="admin-panel__filters-label">Buscar</span>
             <input class="admin-panel__filters-input" type="text" [(ngModel)]="filtroTicketTexto"
-              placeholder="Folio, correo o motivo" />
+              (ngModelChange)="paginaSoporteActual = 1" placeholder="Folio, correo o motivo" />
           </label>
           <label class="admin-panel__filters-field">
             <span class="admin-panel__filters-label">Estatus</span>
-            <select class="admin-panel__filters-input" [(ngModel)]="filtroTicketEstatus">
+            <select class="admin-panel__filters-input" [(ngModel)]="filtroTicketEstatus" (ngModelChange)="paginaSoporteActual = 1">
               <option value="todos">Todos</option>
               <option value="pendiente">Pendiente</option>
               <option value="en-proceso">En proceso</option>
@@ -322,11 +322,11 @@
           <label class="admin-panel__filters-field">
             <span class="admin-panel__filters-label">Buscar</span>
             <input class="admin-panel__filters-input" type="text" [(ngModel)]="filtroIncidenciaTexto"
-              placeholder="Folio, nombre o CCT" />
+              (ngModelChange)="paginaIncidenciasActual = 1" placeholder="Folio, correo o nombre" />
           </label>
           <label class="admin-panel__filters-field">
             <span class="admin-panel__filters-label">Estatus</span>
-            <select class="admin-panel__filters-input" [(ngModel)]="filtroIncidenciaEstatus">
+            <select class="admin-panel__filters-input" [(ngModel)]="filtroIncidenciaEstatus" (ngModelChange)="paginaIncidenciasActual = 1">
               <option value="todos">Todos</option>
               <option value="pendiente">Pendiente</option>
               <option value="en-proceso">En proceso</option>
@@ -472,7 +472,7 @@
         <label class="admin-panel__filters-field">
           <span class="admin-panel__filters-label">Buscar escuela</span>
           <input class="admin-panel__filters-input" type="text" [(ngModel)]="filtroEscuelaTexto"
-            (ngModelChange)="cargarEscuelas()" placeholder="CCT o Nombre" />
+            (ngModelChange)="paginaEscuelasActual = 1; cargarEscuelas()" placeholder="CCT o Nombre" />
         </label>
         <div class="admin-panel__users-actions" *ngIf="esCoordinadorFederal">
           <button class="admin-panel__upload-button" (click)="abrirModalEscuela()">
@@ -540,7 +540,7 @@
         <label class="admin-panel__filters-field">
           <span class="admin-panel__filters-label">Buscar usuario</span>
           <input class="admin-panel__filters-input" type="text" [(ngModel)]="filtroUsuarioTexto"
-            placeholder="Nombre o correo" />
+            (ngModelChange)="paginaUsuariosActual = 1; cargarUsuarios()" placeholder="Nombre o correo" />
         </label>
         <div class="admin-panel__users-actions" *ngIf="esCoordinadorFederal">
           <button class="admin-panel__upload-button" (click)="abrirModalUsuario()">
