@@ -90,14 +90,9 @@
       <div class="tickets__card" *ngFor="let ticket of ticketsCreados">
         <div class="tickets__card-header">
           <span class="tickets__card-folio">#{{ ticket.folio }}</span>
-          <div class="tickets__card-badges">
-            <span class="tickets__badge tickets__badge--prioridad" [ngClass]="'tickets__badge--' + ticket.prioridad.toLowerCase()">
-              {{ ticket.prioridad }}
-            </span>
-            <span class="tickets__badge tickets__badge--estatus" [ngClass]="'tickets__badge--' + ticket.estatus">
-              {{ ticket.estatus | uppercase }}
-            </span>
-          </div>
+          <span class="tickets__badge tickets__badge--estatus" [ngClass]="'tickets__badge--' + ticket.estatus">
+            {{ ticket.estatus | uppercase }}
+          </span>
         </div>
 
         <div class="tickets__card-body">

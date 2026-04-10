@@ -21,7 +21,6 @@ interface TicketSoporte {
   motivoDetalle?: string;
   descripcion: string;
   fecha: string;
-  prioridad: string;
   estatus: 'pendiente' | 'en-proceso' | 'respondido';
   respuestas: Array<{ mensaje: string; fecha: string; autor: 'admin' }>;
   evidencias: Array<{ nombre: string; tamano: number; tipo: string; url: string }>;
@@ -212,7 +211,6 @@ export class TicketsComponent implements OnInit {
         descripcion: t.descripcion,
         fecha: t.fechaCreacion,
         estatus: this.mapEstatus(t.estado),
-        prioridad: t.prioridad,
         respuestas: (t.respuestas || []).map((r: any) => ({
           mensaje: r.mensaje,
           fecha: r.fecha,
