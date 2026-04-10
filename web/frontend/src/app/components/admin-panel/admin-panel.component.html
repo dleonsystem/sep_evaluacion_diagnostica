@@ -203,6 +203,12 @@
               <option value="respondido">Respondido</option>
             </select>
           </label>
+          <label class="admin-panel__filters-field">
+            <span class="admin-panel__filters-label">Mostrar</span>
+            <select class="admin-panel__filters-input" [(ngModel)]="tamanioPaginaSoporte" (ngModelChange)="paginaSoporteActual = 1">
+              <option *ngFor="let opt of opcionesTamanioPagina" [ngValue]="opt">{{ opt }} registros</option>
+            </select>
+          </label>
           <div class="admin-panel__tickets-actions">
             <button class="admin-panel__upload-button" (click)="exportarTickets()">
               <i class="bi bi-file-earmark-spreadsheet"></i> Exportar a CSV
@@ -220,7 +226,6 @@
               <tr>
                 <th scope="col">Folio</th>
                 <th scope="col">Estatus</th>
-                <th scope="col">Prioridad</th>
                 <th scope="col">Correo</th>
                 <th scope="col">Motivo</th>
                 <th scope="col">Fecha</th>
@@ -228,7 +233,7 @@
               </tr>
             </thead>
             <tbody>
-              <ng-container *ngFor="let ticket of ticketsSoporteFiltrados">
+              <ng-container *ngFor="let ticket of ticketsSoportePaginados">
                 <tr [class.admin-panel__table-row--selected]="ticket.id === ticketSeleccionadoId"
                   (click)="seleccionarTicket(ticket)" style="cursor: pointer;">
                   <td><strong>{{ ticket.folio }}</strong></td>
@@ -237,14 +242,6 @@
                       [class.admin-panel__badge--processing]="ticket.estatus === 'en-proceso'"
                       [class.admin-panel__badge--resolved]="ticket.estatus === 'respondido'">
                       {{ ticket.estatus | titlecase }}
-                    </span>
-                  </td>
-                  <td>
-                    <span class="admin-panel__badge" 
-                      [class.admin-panel__badge--resolved]="ticket.prioridad === 'BAJA'"
-                      [class.admin-panel__badge--processing]="ticket.prioridad === 'MEDIA'"
-                      [class.admin-panel__badge--pending]="ticket.prioridad === 'ALTA' || ticket.prioridad === 'URGENTE'">
-                      {{ ticket.prioridad || 'NORMAL' }}
                     </span>
                   </td>
                   <td>{{ ticket.correo }}</td>
@@ -265,7 +262,7 @@
                   </td>
                 </tr>
                 <tr *ngIf="ticket.id === ticketSeleccionadoId" class="admin-panel__table-expanded-row">
-                  <td colspan="6">
+                  <td colspan="5">
                     <div class="admin-panel__expanded-content">
                       <div class="admin-panel__detail-grid">
                         <div class="admin-panel__detail-info">
@@ -304,6 +301,19 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Paginación Tickets Usuarios -->
+        <div class="admin-panel__pagination" *ngIf="totalPaginasSoporte > 1" style="margin-top: 1rem;">
+          <button class="admin-panel__pagination-button" type="button" [disabled]="paginaSoporteActual === 1"
+            (click)="irAPaginaSoporte(paginaSoporteActual - 1)">
+            Anterior
+          </button>
+          <span class="admin-panel__pagination-text" style="margin: 0 1rem; color: #666;">Página {{ paginaSoporteActual }} de {{ totalPaginasSoporte }}</span>
+          <button class="admin-panel__pagination-button" type="button"
+            [disabled]="paginaSoporteActual === totalPaginasSoporte" (click)="irAPaginaSoporte(paginaSoporteActual + 1)">
+            Siguiente
+          </button>
+        </div>
       </div>
 
       <!-- VISTA INCIDENCIAS PÚBLICAS -->
@@ -323,6 +333,12 @@
               <option value="respondido">Respondido</option>
             </select>
           </label>
+          <label class="admin-panel__filters-field">
+            <span class="admin-panel__filters-label">Mostrar</span>
+            <select class="admin-panel__filters-input" [(ngModel)]="tamanioPaginaSoporte" (ngModelChange)="paginaIncidenciasActual = 1">
+              <option *ngFor="let opt of opcionesTamanioPagina" [ngValue]="opt">{{ opt }} registros</option>
+            </select>
+          </label>
         </div>
 
         <p class="admin-panel__tickets-empty" *ngIf="!incidenciasPublicasFiltradas.length">
@@ -338,13 +354,12 @@
                 <th scope="col">CCT</th>
                 <th scope="col">Correo</th>
                 <th scope="col">Estatus</th>
-                <th scope="col">Prioridad</th>
                 <th scope="col">Fecha</th>
                 <th scope="col">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              <ng-container *ngFor="let incidencia of incidenciasPublicasFiltradas">
+              <ng-container *ngFor="let incidencia of incidenciasPublicasPaginadas">
                 <tr [class.admin-panel__table-row--selected]="incidencia.id === incidenciaSeleccionadaId"
                   (click)="seleccionarIncidencia(incidencia)" style="cursor: pointer;">
                   <td><strong>{{ incidencia.folio }}</strong></td>
@@ -358,12 +373,6 @@
                       {{ incidencia.estatus | titlecase }}
                     </span>
                   </td>
-                  <td>
-                    <span class="admin-panel__badge" 
-                      [class.admin-panel__badge--pending]="incidencia.prioridad === 'ALTA' || incidencia.prioridad === 'CRITICA'">
-                      {{ incidencia.prioridad || 'NORMAL' }}
-                    </span>
-                  </td>
                   <td>{{ formatearFecha(incidencia.fecha) }}</td>
                   <td>
                     <button class="admin-panel__action-btn primary-guinda" (click)="abrirModalRespuesta(incidencia, $event)"
@@ -373,7 +382,7 @@
                   </td>
                 </tr>
                 <tr *ngIf="incidencia.id === incidenciaSeleccionadaId" class="admin-panel__table-expanded-row">
-                  <td colspan="8">
+                  <td colspan="7">
                     <div class="admin-panel__expanded-content">
                       <div class="admin-panel__detail-grid">
                         <div class="admin-panel__detail-info">
@@ -408,6 +417,19 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Paginación Incidencias Públicas -->
+        <div class="admin-panel__pagination" *ngIf="totalPaginasIncidencias > 1" style="margin-top: 1rem;">
+          <button class="admin-panel__pagination-button" type="button" [disabled]="paginaIncidenciasActual === 1"
+            (click)="irAPaginaIncidencias(paginaIncidenciasActual - 1)">
+            Anterior
+          </button>
+          <span class="admin-panel__pagination-text" style="margin: 0 1rem; color: #666;">Página {{ paginaIncidenciasActual }} de {{ totalPaginasIncidencias }}</span>
+          <button class="admin-panel__pagination-button" type="button"
+            [disabled]="paginaIncidenciasActual === totalPaginasIncidencias" (click)="irAPaginaIncidencias(paginaIncidenciasActual + 1)">
+            Siguiente
+          </button>
+        </div>
       </div>
 
       <!-- Ticket Response Modal -->
@@ -424,15 +446,6 @@
                 <option value="pendiente">Pendiente</option>
                 <option value="en-proceso">En proceso</option>
                 <option value="respondido">Respondido</option>
-              </select>
-            </div>
-            <div class="admin-panel__action-group">
-              <label for="modal-priority">Asignar Prioridad</label>
-              <select id="modal-priority" class="admin-panel__filters-input" [(ngModel)]="prioridadTicketSeleccionado">
-                <option value="BAJA">Baja</option>
-                <option value="MEDIA">Normal / Media</option>
-                <option value="ALTA">Alta</option>
-                <option value="URGENTE">Urgente</option>
               </select>
             </div>
             <div class="admin-panel__action-group">

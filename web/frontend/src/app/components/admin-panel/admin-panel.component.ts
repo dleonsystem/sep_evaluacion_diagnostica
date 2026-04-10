@@ -46,9 +46,13 @@ export class AdminPanelComponent implements OnInit {
   ticketSeleccionadoId: string | null = null;
   respuestaAdmin = '';
   estatusTicketSeleccionado: TicketSoporte['estatus'] = 'pendiente';
-  prioridadTicketSeleccionado = 'MEDIA';
   filtroTicketTexto = '';
   filtroTicketEstatus: 'todos' | TicketSoporte['estatus'] = 'todos';
+  
+  // Paginación Soporte
+  paginaSoporteActual = 1;
+  paginaIncidenciasActual = 1;
+  tamanioPaginaSoporte = 10;
   
   // Incidencias Públicas
   incidenciasPublicas: TicketSoporte[] = [];
@@ -309,6 +313,20 @@ export class AdminPanelComponent implements OnInit {
     });
   }
 
+  get ticketsSoportePaginados(): TicketSoporte[] {
+    const inicio = (this.paginaSoporteActual - 1) * this.tamanioPaginaSoporte;
+    return this.ticketsSoporteFiltrados.slice(inicio, inicio + this.tamanioPaginaSoporte);
+  }
+
+  get totalPaginasSoporte(): number {
+    return Math.ceil(this.ticketsSoporteFiltrados.length / this.tamanioPaginaSoporte);
+  }
+
+  irAPaginaSoporte(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginasSoporte) return;
+    this.paginaSoporteActual = pagina;
+  }
+
   seleccionarTicket(ticket: TicketSoporte): void {
     if (this.ticketSeleccionadoId === ticket.id) {
       this.ticketSeleccionadoId = null;
@@ -328,7 +346,6 @@ export class AdminPanelComponent implements OnInit {
       this.ticketSeleccionadoId = ticket.id;
     }
     this.estatusTicketSeleccionado = ticket.estatus;
-    this.prioridadTicketSeleccionado = ticket.prioridad || 'MEDIA';
     this.respuestaAdmin = '';
     this.mostrarModalRespuesta = true;
   }
@@ -356,8 +373,7 @@ export class AdminPanelComponent implements OnInit {
         this.ticketsService.respondToTicket(
           this.ticketSeleccionadoId,
           mensaje,
-          cerrar,
-          this.prioridadTicketSeleccionado
+          cerrar
         ),
       );
 
@@ -1141,6 +1157,20 @@ export class AdminPanelComponent implements OnInit {
       return cumpleTexto && cumpleEstatus;
     });
   }
+
+  get incidenciasPublicasPaginadas(): TicketSoporte[] {
+    const inicio = (this.paginaIncidenciasActual - 1) * this.tamanioPaginaSoporte;
+    return this.incidenciasPublicasFiltradas.slice(inicio, inicio + this.tamanioPaginaSoporte);
+  }
+
+  get totalPaginasIncidencias(): number {
+    return Math.ceil(this.incidenciasPublicasFiltradas.length / this.tamanioPaginaSoporte);
+  }
+
+  irAPaginaIncidencias(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginasIncidencias) return;
+    this.paginaIncidenciasActual = pagina;
+  }
 }
 
 interface ExcelDisponible {
@@ -1166,7 +1196,6 @@ interface TicketSoporte {
   motivoDetalle: string;
   descripcion: string;
   fecha: string;
-  prioridad?: string;
   estatus: 'pendiente' | 'en-proceso' | 'respondido';
   respuestas: Array<{ mensaje: string; fecha: string; autor: string }>;
   evidencias: Array<{ nombre: string; tamano: number; tipo: string; url: string }>;
