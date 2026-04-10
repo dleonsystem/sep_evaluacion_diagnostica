@@ -76,7 +76,7 @@
         </article>
       </div>
 
-      <!-- REPLY FORM -->
+      <!-- REPLY FORM (Habilitado solo si admin ya respondió) -->
       <div *ngIf="puedeResponder" class="ticket-reply">
         <h3>Escribir respuesta</h3>
         <p class="ticket-reply__hint" *ngIf="mensajeExito || mensajeInfo"
@@ -101,7 +101,7 @@
         </form>
       </div>
 
-      <div *ngIf="!puedeResponder" class="ticket-reply ticket-reply--closed">
+      <div *ngIf="estaCerrado" class="ticket-reply ticket-reply--closed">
         <i class="bi bi-info-circle"></i>
         Este reporte técnico ha sido cerrado. Si tienes una nueva incidencia, por favor abre un nuevo ticket.
       </div>

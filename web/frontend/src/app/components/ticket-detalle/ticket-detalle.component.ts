@@ -37,7 +37,15 @@ export class TicketDetalleComponent implements OnInit {
   }
 
   get puedeResponder(): boolean {
-    return this.ticket?.estado !== 'CERRADO' && this.ticket?.estado !== 'RESUELTO';
+    if (this.estaCerrado) return false;
+
+    // REGLA: No aparecer hasta que el administrador haya respondido
+    const tieneRespuestaAdmin = this.ticket?.respuestas?.some(r => r.esInterno || r.autor === 'admin');
+    return !!tieneRespuestaAdmin;
+  }
+
+  get estaCerrado(): boolean {
+    return this.ticket?.estado === 'CERRADO' || this.ticket?.estado === 'RESUELTO';
   }
 
   ngOnInit(): void {
