@@ -11,7 +11,7 @@ Este documento describe la estructura completa y fidedigna de la base de datos P
 
 | Categoría | Cantidad | Notas |
 |-----------|----------|-------|
-| **Catálogos ENUM Mirror** | 19 | Reemplazan tipos ENUM por tablas con FKs (incluye NIAs) |
+| **Catálogos ENUM Mirror** | 20 | Reemplazan tipos ENUM por tablas con FKs (incluye NIAs) |
 | **Catálogos Tradicionales** | 5 | CAT_CICLOS_ESCOLARES, CAT_ENTIDADES_FEDERATIVAS, CAT_TURNOS, CAT_GRADOS, CAT_ROLES_USUARIO |
 | **Entidades Core** | 2 | MATERIAS, COMPETENCIAS |
 | **Entidades Principales** | 3 | ESCUELAS, GRUPOS, ESTUDIANTES |
@@ -22,7 +22,7 @@ Este documento describe la estructura completa y fidedigna de la base de datos P
 | **Tickets de Soporte** | 3 | TICKETS_SOPORTE, COMENTARIOS_TICKET, CAT_PRIORIDAD_TICKET |
 | **Configuración** | 2 | CONFIGURACIONES_SISTEMA, CONSENTIMIENTOS_LGPDP |
 | **Staging DBF** | 10 | PRE3, PRI1-PRI6, SEC1-SEC3 |
-| **TOTAL** | **66** | Todas documentadas aquí |
+| **TOTAL** | **67** | Todas documentadas aquí |
 
 ---
 
@@ -204,7 +204,21 @@ Usado por: `niveles_integracion_estudiante(id_nia)`
 
 ---
 
-### 18. CAT_CAMPOS_FORMATIVOS
+### 19. CAT_MOTIVOS_TICKET
+
+**Valores**: `ENV_RFV_INCOMPLETO`, `RES_NO_APARECEN`, `INCONS_RESULTADOS`, `PROB_INTERPR_COMP`, `NO_DESC_REPORTE`, `NO_ABRIR_ARCHIVO`, `DUDA_COMPATIBILIDAD`, `FRV_INCORRECTO`
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | SMALLINT | PK autoincremental |
+| codigo | VARCHAR(50) | Código único (UNIQUE) |
+| descripcion | VARCHAR(200) | Descripción legible del motivo |
+| orden | SMALLINT | Orden de visualización |
+| activo | BOOLEAN | Indica si el motivo está vigente |
+
+---
+
+### 20. CAT_CAMPOS_FORMATIVOS
 
 **Valores**: `ENS` (Enseñanza), `HYC` (Historia y Civismo), `LEN` (Lenguaje), `SPC` (Saberes), `F5` (Formato 5)
 

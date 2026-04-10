@@ -804,6 +804,23 @@ id,
     },
 
     /**
+     * Obtener catálogo de motivos de tickets
+     * @use-case CU-13: Mesa de ayuda
+     */
+    getMotivosTicket: async () => {
+      try {
+        const result = await query(
+          'SELECT id, codigo, descripcion, orden FROM cat_motivos_ticket WHERE activo = true ORDER BY orden ASC'
+        );
+        logger.debug('Motivos ticket recuperados:', { count: result.rows.length, rows: result.rows });
+        return result.rows;
+      } catch (error) {
+        logger.error('Error fetching motives', error);
+        throw new Error('Error al obtener catálogo de motivos');
+      }
+    },
+
+    /**
      * Obtener métricas para el dashboard
      * @use-case CU-14: Dashboard
      */
@@ -979,17 +996,17 @@ t.numero_ticket as "folio",
             t.numero_ticket as "numeroTicket",
             t.asunto,
             t.descripcion,
-            cet.codigo as estado,
+            COALESCE(cet.codigo, 'ABIERTO') as estado,
             t.prioridad,
             t.evidencias,
             t.created_at as "fechaCreacion",
             t.updated_at as "fechaActualizacion"
            FROM tickets_soporte t
-           JOIN cat_estado_ticket cet ON t.estado = cet.id
-           WHERE t.usuario_id = $1
+           LEFT JOIN cat_estado_ticket cet ON t.estado = cet.id
+           WHERE (t.usuario_id = $1 OR LOWER(t.user_email) = LOWER($2))
            AND t.deleted_at IS NULL
            ORDER BY t.created_at DESC`,
-          [userId]
+          [userId, correo || context.user?.email || '']
         );
 
         return result.rows.map((row) => ({

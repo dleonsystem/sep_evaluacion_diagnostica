@@ -34,7 +34,7 @@
       <span>Motivo del ticket</span>
       <select [formControl]="motivoControl">
         <option value="" disabled>Selecciona una opción</option>
-        <option *ngFor="let motivo of motivos" [value]="motivo">{{ motivo }}</option>
+        <option *ngFor="let motivo of motivos" [value]="motivo.descripcion">{{ motivo.descripcion }}</option>
       </select>
       <small class="tickets__error" *ngIf="motivoControl.invalid && motivoControl.touched">
         Selecciona un motivo.

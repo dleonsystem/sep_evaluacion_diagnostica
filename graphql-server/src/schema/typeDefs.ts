@@ -65,6 +65,7 @@ export const typeDefs = `#graphql
     @use-case CU-13: Mesa de ayuda
     """
     getMyTickets(correo: String): [Ticket!]!
+    getMotivosTicket: [MotivoTicket!]!
     
     """
     Obtener métricas para el dashboard administrativo
@@ -769,6 +770,16 @@ export const typeDefs = `#graphql
     nombre: String!
     url: String!
     size: Int
+  }
+
+  """
+  Motivo de Ticket (Catálogo)
+  """
+  type MotivoTicket {
+    id: ID!
+    codigo: String!
+    descripcion: String!
+    orden: Int
   }
 
   """

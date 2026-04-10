@@ -18,6 +18,13 @@ export interface Ticket {
   respuestas?: Array<{ id: string; mensaje: string; fecha: string; autor: string; esInterno: boolean }>;
 }
 
+export interface MotivoTicket {
+  id: string;
+  codigo: string;
+  descripcion: string;
+  orden?: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TicketsService {
   constructor(private readonly graphqlService: GraphqlService) { }
@@ -236,6 +243,25 @@ export class TicketsService {
         if (res.errors) throw new Error(res.errors[0].message);
         if (!res.data?.createPublicIncident) throw new Error('No se pudo crear la incidencia');
         return res.data.createPublicIncident;
+      })
+    );
+  }
+
+  getMotivosTicket(): Observable<MotivoTicket[]> {
+    const query = `
+      query GetMotivosTicket {
+        getMotivosTicket {
+          id
+          codigo
+          descripcion
+          orden
+        }
+      }
+    `;
+    return this.graphqlService.execute<{ getMotivosTicket: MotivoTicket[] }>(query).pipe(
+      map(res => {
+        if (res.errors) throw new Error(res.errors[0].message);
+        return res.data?.getMotivosTicket || [];
       })
     );
   }

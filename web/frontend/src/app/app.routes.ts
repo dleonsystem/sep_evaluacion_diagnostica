@@ -100,7 +100,7 @@ export const routes: Routes = [
   {
     path: 'descargas',
     component: DescargasComponent,
-    canActivate: [AuthGuard],
+    canActivate: [AdminGuard],
     pathMatch: 'full',
   },
   {
