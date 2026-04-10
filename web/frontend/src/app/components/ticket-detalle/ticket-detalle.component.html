@@ -48,12 +48,12 @@
         </div>
         
         <div class="ticket-message__attachments" *ngIf="ticket.evidencias && ticket.evidencias.length">
-          <h4>Evidencias iniciales</h4>
-          <ul>
-            <li *ngFor="let evidencia of ticket.evidencias">
-              <a [href]="evidencia.url" target="_blank" rel="noopener">
-                <i class="bi bi-file-earmark-text"></i> {{ evidencia.nombre }}
-              </a>
+          <h4>Evidencias adjuntas</h4>
+          <ul class="ticket-message__attachments-list">
+            <li *ngFor="let evidencia of ticket.evidencias" (click)="descargarEvidencia(evidencia.url, evidencia.nombre)" class="ticket-attachment-item">
+              <i class="bi bi-file-earmark-arrow-down"></i>
+              <span>{{ evidencia.nombre }}</span>
+              <small class="ticket-attachment-size" *ngIf="evidencia.size">({{ (evidencia.size / 1024).toFixed(1) }} KB)</small>
             </li>
           </ul>
         </div>

@@ -5,6 +5,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { TicketsService, Ticket } from '../../services/tickets.service';
 import { AuthService } from '../../services/auth.service';
 import { firstValueFrom } from 'rxjs';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-ticket-detalle',
@@ -131,8 +132,56 @@ export class TicketDetalleComponent implements OnInit {
     }).format(parsed);
   }
 
-  descargarEvidencia(url: string, nombre: string): void {
-    // Helper functionality if needed for downloading (you can import shared download helpers)
-    window.open(url, '_blank');
+  async descargarEvidencia(url: string, nombre: string): Promise<void> {
+    try {
+      Swal.fire({
+        title: 'Descargando evidencia...',
+        text: 'Obteniendo archivo del servidor seguro',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const result = await firstValueFrom(this.ticketsService.downloadTicketEvidencia(url));
+      
+      if (!result.success) {
+        throw new Error('El servidor no pudo entregar el archivo');
+      }
+
+      // 1. Convertir base64 a Buffer/Blob
+      const byteCharacters = atob(result.contentBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      
+      // 2. Determinar MIME type
+      let mimeType = 'application/octet-stream';
+      const ext = nombre.toLowerCase().split('.').pop();
+      if (['jpg', 'jpeg'].includes(ext!)) mimeType = 'image/jpeg';
+      else if (ext === 'png') mimeType = 'image/png';
+      else if (ext === 'pdf') mimeType = 'application/pdf';
+      else if (ext === 'doc') mimeType = 'application/msword';
+      else if (ext === 'docx') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+      const blob = new Blob([byteArray], { type: mimeType });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      
+      // 3. Disparar descarga
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = result.fileName || nombre;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(downloadUrl);
+      document.body.removeChild(a);
+
+      Swal.close();
+    } catch (error: any) {
+      console.error('Error descargando evidencia:', error);
+      Swal.fire('Error', error.message || 'No se pudo descargar el archivo', 'error');
+    }
   }
 }
