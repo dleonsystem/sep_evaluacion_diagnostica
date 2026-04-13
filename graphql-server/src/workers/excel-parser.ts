@@ -4,6 +4,7 @@ export interface ParsedStudent {
   curp: string;
   nombre: string;
   grupo: string;
+  grado: number;
   evaluaciones: { materiaIndex: number; valor: number }[];
 }
 
@@ -85,8 +86,8 @@ export function parseExcelAssessmentBuffer(buffer: Buffer): ParsedAssessmentData
     });
   }
 
-  const dataSheetName = nivel ? findDataSheetName(workbook.SheetNames, nivel) : null;
-  if (nivel && !dataSheetName) {
+  const dataSheetNames = findAllDataSheetNames(workbook.SheetNames, nivel);
+  if (nivel && dataSheetNames.length === 0) {
     allErrors.push({
       error:
         'No se encontró la hoja de captura de evaluaciones (ej. PREESCOLAR, PRIMERO, SEGUNDO, TERCERO).',
@@ -96,26 +97,36 @@ export function parseExcelAssessmentBuffer(buffer: Buffer): ParsedAssessmentData
 
   if (allErrors.some((e) => ['CCT', 'Turno', 'Email'].includes(e.campo || ''))) {
     // No continuamos si hay errores críticos en ESC
-  } else if (nivel && dataSheetName) {
-    const sheetData = workbook.Sheets[dataSheetName];
-    const grado = detectGrade(dataSheetName, nivel);
-    const alumnos = extractStudents(sheetData, dataSheetName, nivel, escData.cct, grado, allErrors);
+  } else if (nivel) {
+    const candidateSheets = findAllDataSheetNames(workbook.SheetNames, nivel);
+    const alumnos: ParsedStudent[] = [];
+    let primerGradoDetectado = 0;
 
-    if (!alumnos.length && !allErrors.some((e) => e.hoja === dataSheetName)) {
+    for (const sheetName of candidateSheets) {
+      const sheetData = workbook.Sheets[sheetName];
+      const grado = detectGrade(sheetName, nivel);
+      const alumnosHoja = extractStudents(sheetData, sheetName, nivel, escData.cct, grado, allErrors);
+      if (alumnosHoja.length > 0) {
+        if (!primerGradoDetectado) primerGradoDetectado = grado;
+        alumnos.push(...alumnosHoja);
+      }
+    }
+
+    if (!alumnos.length && !allErrors.length) {
       allErrors.push({
-        error: `No se encontraron estudiantes capturados en la hoja ${dataSheetName}.`,
-        hoja: dataSheetName,
+        error: `No se encontraron estudiantes capturados en ninguna de las hojas de grado del nivel ${nivel}.`,
+        hoja: 'General',
       });
     }
 
     return {
       cct: escData.cct,
       nivel: nivel,
-      grado,
+      grado: primerGradoDetectado || 0,
       alumnos,
       metadata: {
         nivelDetectado: nivel,
-        gradoDetectado: dataSheetName.toUpperCase(),
+        gradoDetectado: nivel,
         turno: escData.turno,
         nombreEscuela: escData.nombreEscuela,
         correo: escData.correo,
@@ -247,19 +258,25 @@ function detectLevel(sheetNames: string[], escSheet: XLSX.WorkSheet): string | n
   return null;
 }
 
-function findDataSheetName(sheetNames: string[], nivel: string | null): string | undefined {
+function findAllDataSheetNames(sheetNames: string[], nivel: string | null): string[] {
   const normalizedMap = new Map(sheetNames.map((name) => [name.toUpperCase(), name]));
-  if (nivel === 'PREESCOLAR')
-    return normalizedMap.get('TERCERO') || normalizedMap.get('PREESCOLAR');
-  if (nivel === 'PRIMARIA') {
-    return ['PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO']
-      .map((name) => normalizedMap.get(name))
-      .find(Boolean);
+  const sheets: string[] = [];
+
+  if (nivel === 'PREESCOLAR') {
+    const s = normalizedMap.get('TERCERO') || normalizedMap.get('PREESCOLAR');
+    if (s) sheets.push(s);
+  } else if (nivel === 'PRIMARIA') {
+    ['PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO'].forEach((name) => {
+      const s = normalizedMap.get(name);
+      if (s) sheets.push(s);
+    });
+  } else if (nivel === 'SECUNDARIA' || nivel === 'TELESECUNDARIA') {
+    ['PRIMERO', 'SEGUNDO', 'TERCERO'].forEach((name) => {
+      const s = normalizedMap.get(name);
+      if (s) sheets.push(s);
+    });
   }
-  if (nivel === 'SECUNDARIA' || nivel === 'TELESECUNDARIA') {
-    return ['PRIMERO', 'SEGUNDO', 'TERCERO'].map((name) => normalizedMap.get(name)).find(Boolean);
-  }
-  return undefined;
+  return sheets;
 }
 
 function detectGrade(sheetName: string, nivel: string): number {
@@ -411,6 +428,7 @@ function extractStudents(
       curp: buildSyntheticCurp(cct, grado, grupo, Number(numeroLista), nombre),
       nombre,
       grupo,
+      grado,
       evaluaciones,
     });
   });
