@@ -13,7 +13,7 @@ import { EscDatos } from '../../services/excel-validation.service';
 import { Subject, firstValueFrom, takeUntil } from 'rxjs';
 import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
 import { GraphqlService } from '../../services/graphql.service';
-import { MockPdfService } from '../../services/mock-pdf.service';
+import { MockPdfService, GrupoErrores } from '../../services/mock-pdf.service';
 import { UsuariosService } from '../../services/usuarios.service';
 import { EvaluacionesService, ExcelValidationError } from '../../services/evaluaciones.service';
 import { timeout, catchError, throwError, debounceTime, distinctUntilChanged } from 'rxjs';
@@ -56,13 +56,6 @@ interface ResultadoArchivo {
   pdfBlob?: Blob;
 }
 
-interface GrupoErrores {
-  hoja: string;
-  ubicaciones: Array<{
-    titulo: string;
-    items: string[];
-  }>;
-}
 
 interface CredencialesMostradas {
   usuario: string;
@@ -980,7 +973,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     try {
       const blob = await this.mockPdfService.generarPdfErrores({
         correo: this.correoControl.value,
-        errores: resultadoArchivo.errores,
+        erroresAgrupados: resultadoArchivo.erroresAgrupados,
         advertencias: resultadoArchivo.advertencias,
         archivo: resultadoArchivo.archivo.name
       });
