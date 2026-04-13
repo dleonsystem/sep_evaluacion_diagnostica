@@ -392,6 +392,14 @@ function extractStudents(
       });
 
     const evaluaciones: { materiaIndex: number; valor: number }[] = [];
+    const nonNullCount = valoraciones.filter((v) => v !== null).length;
+
+    if (nonNullCount === 0) {
+      // Regla de Negocio Issue #384: Si no hay ninguna valoración en toda la fila, 
+      // el archivo está correcto pero omitimos al alumno.
+      return;
+    }
+
     valoraciones.forEach((valor, idx) => {
       const colName = columnas[idx];
       if (valor === null) {
