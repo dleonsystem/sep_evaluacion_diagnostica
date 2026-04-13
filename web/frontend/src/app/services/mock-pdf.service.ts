@@ -66,6 +66,9 @@ export class MockPdfService {
       let currentPage = pages[0];
       const { width, height } = currentPage.getSize();
 
+      // Embeber la primera página para usarla como fondo en páginas nuevas si hay desbordamiento
+      const [backgroundPage] = await pdfDoc.embedPages([pages[0]]);
+
       if (esExito) {
         const p = payload as PdfExitoPayload;
         const xLabel = 100; // Posición de las etiquetas
@@ -131,31 +134,38 @@ export class MockPdfService {
         const marginX = 80;
         const lineSpacing = 12;
 
-        for (const grupo of p.erroresAgrupados) {
-          // Control de salto de página
+        // Función auxiliar para manejar el salto de página con fondo institucional
+        const manejarSaltoPagina = async () => {
           if (yPos < 60) {
             currentPage = pdfDoc.addPage([width, height]);
-            yPos = height - 60;
+            // Dibujar el fondo institucional (el diseño de la plantilla)
+            currentPage.drawPage(backgroundPage, {
+              x: 0,
+              y: 0,
+              width: width,
+              height: height,
+            });
+            yPos = height - 120; // Empezar un poco más abajo para no chocar con el encabezado
+            return true;
           }
+          return false;
+        };
+
+        for (const grupo of p.erroresAgrupados) {
+          await manejarSaltoPagina();
 
           const tituloHoja = grupo.hoja === 'General' ? 'General' : `Hoja ${grupo.hoja}`;
           currentPage.drawText(tituloHoja, { x: marginX, y: yPos, size: 9, font: fontBold });
           yPos -= lineSpacing + 2;
 
           for (const ubicacion of grupo.ubicaciones) {
-            if (yPos < 60) {
-              currentPage = pdfDoc.addPage([width, height]);
-              yPos = height - 60;
-            }
+            await manejarSaltoPagina();
 
             currentPage.drawText(ubicacion.titulo, { x: marginX + 10, y: yPos, size: 8, font: fontBold, color: rgb(0, 0.4, 0.4) });
             yPos -= lineSpacing;
 
             for (const item of ubicacion.items) {
-              if (yPos < 60) {
-                currentPage = pdfDoc.addPage([width, height]);
-                yPos = height - 60;
-              }
+              await manejarSaltoPagina();
 
               // Dibujar punto y texto (con wrap manual simple si es muy largo)
               const text = `• ${item}`;
@@ -174,6 +184,7 @@ export class MockPdfService {
           yPos -= 8; // Espacio entre grupos
         }
       }
+
 
       const pdfBytes = await pdfDoc.save();
       return new Blob([pdfBytes], { type: 'application/pdf' });
