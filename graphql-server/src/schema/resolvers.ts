@@ -660,7 +660,7 @@ id,
             s.resultados,
             t.nombre as turno
           FROM solicitudes_eia2 s
-          LEFT JOIN escuelas e ON e.cct = s.cct
+          LEFT JOIN escuelas e ON e.cct = s.cct AND e.id_turno = s.id_turno
           LEFT JOIN cat_turnos t ON t.id_turno = e.id_turno`;
 
         const params: any[] = [];
@@ -2580,7 +2580,6 @@ t.numero_ticket as "folio",
         }
 
         const escuelaId = escuelaIdFromDb;
-        const idGrado = nivelId * 100 + grado;
 
         // 1. Obtener Periodo Activo
         const periodRes = await client.query(
@@ -2637,8 +2636,14 @@ t.numero_ticket as "folio",
           // ... mapeo completo según las sábanas oficiales
         };
 
-        const nivelMapeoKey = `${nivelDetectadoExcel}_${grado}`;
-        const codigosMateriasConfigurados = MATERIA_MAP[nivelMapeoKey] || [];
+        const materiaMapCache: Record<string, string[]> = {};
+        const getMateriasConfiguradas = (g: number) => {
+          const key = `${nivelDetectadoExcel}_${g}`;
+          if (!materiaMapCache[key]) {
+            materiaMapCache[key] = MATERIA_MAP[key] || [];
+          }
+          return materiaMapCache[key];
+        };
 
         // 3. Cache de UUIDs de materias para evitar múltiples queries
         const materiasCache: Record<string, string> = {};
@@ -2656,6 +2661,9 @@ t.numero_ticket as "folio",
         let alumnosProcesados = 0;
 
         for (const alumno of alumnos) {
+          const idGrado = nivelId * 100 + alumno.grado;
+          const codigosMateriasConfigurados = getMateriasConfiguradas(alumno.grado);
+
           // 4. Asegurar Grupo
           const gRes = await client.query(
             'SELECT id FROM grupos WHERE escuela_id = $1 AND grado_id = $2 AND nombre = $3 LIMIT 1',
@@ -2668,7 +2676,7 @@ t.numero_ticket as "folio",
           } else {
             const newG = await client.query(
               'INSERT INTO grupos (escuela_id, grado_id, nombre, nivel_educativo, grado_numero, turno) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-              [escuelaId, idGrado, alumno.grupo, nivelId, grado, excelTurno]
+              [escuelaId, idGrado, alumno.grupo, nivelId, alumno.grado, excelTurno]
             );
             grupoId = newG.rows[0].id;
           }

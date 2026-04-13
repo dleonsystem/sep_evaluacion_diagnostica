@@ -599,9 +599,14 @@ export class ExcelValidationService {
     resultado.errores.push(...alumnos.errores);
 
     if (!resultado.errores.length) {
-      resultado.ok = true;
-      resultado.esc = esc.datos!;
-      resultado.alumnos = alumnos.registros;
+      if (alumnos.registros.length === 0) {
+        resultado.ok = false;
+        resultado.errores.push('El archivo no contiene ningún estudiante capturado en la hoja de grado de Preescolar.');
+      } else {
+        resultado.ok = true;
+        resultado.esc = esc.datos!;
+        resultado.alumnos = alumnos.registros;
+      }
     }
 
     return resultado;
@@ -645,9 +650,14 @@ export class ExcelValidationService {
     resultado.errores.push(...alumnos.errores);
 
     if (!resultado.errores.length) {
-      resultado.ok = true;
-      resultado.esc = esc.datos!;
-      resultado.alumnos = alumnos.registros;
+      if (alumnos.registros.length === 0) {
+        resultado.ok = false;
+        resultado.errores.push('El archivo no contiene ningún estudiante capturado en las hojas de grado de Primaria.');
+      } else {
+        resultado.ok = true;
+        resultado.esc = esc.datos!;
+        resultado.alumnos = alumnos.registros;
+      }
     }
 
     return resultado;
@@ -821,7 +831,9 @@ export class ExcelValidationService {
           return;
         }
 
-        resultado.errores.push(...this.validarEncabezadosSecundaria(hojaSheet, hoja));
+        // Se omite la validación de encabezados en secundaria por solicitud del usuario (Issue #381)
+        // para dar mayor flexibilidad al formato visual, iniciando directamente en Fila 10.
+        // resultado.errores.push(...this.validarEncabezadosSecundaria(hojaSheet, hoja));
 
         const resultadoHoja = this.validarHojaSecundaria(xlsx, hojaSheet, hoja);
         resultado.errores.push(...resultadoHoja.errores);
@@ -829,9 +841,14 @@ export class ExcelValidationService {
       });
 
     if (!resultado.errores.length) {
-      resultado.ok = true;
-      resultado.esc = esc.datos!;
-      resultado.alumnos = alumnos;
+      if (alumnos.length === 0) {
+        resultado.ok = false;
+        resultado.errores.push('El archivo no contiene ningún estudiante capturado en las hojas de grado de Secundaria.');
+      } else {
+        resultado.ok = true;
+        resultado.esc = esc.datos!;
+        resultado.alumnos = alumnos;
+      }
     }
 
     return resultado;
@@ -1003,9 +1020,8 @@ export class ExcelValidationService {
       }
     });
 
-    if (!registros.length) {
-      errores.push(`No se encontraron estudiantes capturados en la hoja ${nombreHoja}.`);
-    }
+    // Se elimina el error fatal por hoja vacía para permitir archivos con grados sin alumnos (Issue #381)
+    // La validación de que el archivo tenga al menos un registro se hace a nivel de Workbook.
 
     return { registros, errores };
   }
@@ -1274,9 +1290,7 @@ export class ExcelValidationService {
       }
     });
 
-    if (!registros.length) {
-      errores.push(`Primaria ${hoja}: no se encontraron estudiantes capturados en la hoja.`);
-    }
+    // Comportamiento Issue #381: Hoja sin alumnos no es error fatal
 
     return { registros, errores };
   }
@@ -1371,9 +1385,7 @@ export class ExcelValidationService {
       }
     });
 
-    if (!registros.length) {
-      errores.push(`Secundaria ${hoja}: no se encontraron estudiantes capturados en la hoja.`);
-    }
+    // Comportamiento Issue #381: Hoja sin alumnos no es error fatal
 
     return { registros, errores };
   }
