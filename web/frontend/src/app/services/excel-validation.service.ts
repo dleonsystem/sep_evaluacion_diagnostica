@@ -967,7 +967,13 @@ export class ExcelValidationService {
       });
 
       const filaExcel = filasIniciales + indice;
-      const filaVacia = !numeroLista && !nombre && !sexo && !grupo && valoraciones.every((v) => v === null);
+
+      // Regla de Negocio Issue #384: Si no hay ninguna valoración, omitir fila (aunque tenga metadatos)
+      if (valoraciones.every((v) => v === null)) {
+        return;
+      }
+
+      const filaVacia = !numeroLista && !nombre && !sexo && !grupo;
       if (filaVacia) {
         return;
       }
@@ -1187,7 +1193,6 @@ export class ExcelValidationService {
       errores.push(`Secundaria ${hoja}: no se encontró la configuración de disciplinas.`);
       return errores;
     }
-
     disciplinas.forEach((disciplina, idx) => {
       const celda = `${columnas[idx]}9`;
       const encontrado = this.normalizarEncabezado(this.obtenerValorCelda(sheet, celda));
@@ -1200,7 +1205,8 @@ export class ExcelValidationService {
     return errores;
   }
 
-  private validarHojaPrimaria(xlsx: any, sheet: any, hoja: string): {
+  private validarHojaPrimaria(
+    xlsx: any, sheet: any, hoja: string): {
     registros: AlumnoValidado[];
     errores: string[];
   } {
@@ -1218,6 +1224,7 @@ export class ExcelValidationService {
     const datos = xlsx.utils.sheet_to_json(sheet, {
       range: 9,
       header: 'A',
+      blankrows: true,
       defval: ''
     }) as Array<Record<string, string>>;
 
@@ -1236,8 +1243,13 @@ export class ExcelValidationService {
       });
 
       const filaExcel = filasIniciales + indice;
-      const filaVacia =
-        !numeroLista && !nombre && !sexo && !grupo && valoraciones.every((valor) => valor === null);
+
+      // Regla de Negocio Issue #384: Si no hay ninguna valoración, omitir fila (aunque tenga metadatos)
+      if (valoraciones.every((valor) => valor === null)) {
+        return;
+      }
+
+      const filaVacia = !numeroLista && !nombre && !sexo && !grupo;
       if (filaVacia) {
         return;
       }
@@ -1295,7 +1307,11 @@ export class ExcelValidationService {
     return { registros, errores };
   }
 
-  private validarHojaSecundaria(xlsx: any, sheet: any, hoja: string): {
+  private validarHojaSecundaria(
+    xlsx: any,
+    sheet: any,
+    hoja: string
+  ): {
     registros: AlumnoValidado[];
     errores: string[];
   } {
@@ -1313,6 +1329,7 @@ export class ExcelValidationService {
     const datos = xlsx.utils.sheet_to_json(sheet, {
       range: 9,
       header: 'A',
+      blankrows: true,
       defval: ''
     }) as Array<Record<string, string>>;
 
@@ -1331,8 +1348,13 @@ export class ExcelValidationService {
       });
 
       const filaExcel = filasIniciales + indice;
-      const filaVacia =
-        !numeroLista && !nombre && !sexo && !grupo && valoraciones.every((valor) => valor === null);
+
+      // Regla de Negocio Issue #384: Si no hay ninguna valoración, omitir fila (aunque tenga metadatos)
+      if (valoraciones.every((valor) => valor === null)) {
+        return;
+      }
+
+      const filaVacia = !numeroLista && !nombre && !sexo && !grupo;
       if (filaVacia) {
         return;
       }
