@@ -11,9 +11,17 @@ interface PdfExitoPayload {
   consecutivo: string; // Trazabilidad CU-04v2
 }
 
+export interface GrupoErrores {
+  hoja: string;
+  ubicaciones: Array<{
+    titulo: string;
+    items: string[];
+  }>;
+}
+
 interface PdfErroresPayload {
   correo: string;
-  errores: string[];
+  erroresAgrupados: GrupoErrores[];
   advertencias?: string[];
   archivo: string;
 }
@@ -55,8 +63,11 @@ export class MockPdfService {
       const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
       const pages = pdfDoc.getPages();
-      const firstPage = pages[0];
-      const { height } = firstPage.getSize();
+      let currentPage = pages[0];
+      const { width, height } = currentPage.getSize();
+
+      // Embeber la primera página para usarla como fondo en páginas nuevas si hay desbordamiento
+      const [backgroundPage] = await pdfDoc.embedPages([pages[0]]);
 
       if (esExito) {
         const p = payload as PdfExitoPayload;
@@ -68,36 +79,36 @@ export class MockPdfService {
         const configVal = { size: 10, font: fontRegular, color: rgb(0, 0, 0) };
 
         // --- IMPRESIÓN DE DATOS CON ETIQUETAS ---
-        firstPage.drawText('CCT:', { x: xLabel, y: yPos, ...configLabel });
-        firstPage.drawText(p.cct || '', { x: xValue, y: yPos, ...configVal });
+        currentPage.drawText('CCT:', { x: xLabel, y: yPos, ...configLabel });
+        currentPage.drawText(p.cct || '', { x: xValue, y: yPos, ...configVal });
 
         yPos -= 20;
-        firstPage.drawText('Correo electrónico:', { x: xLabel, y: yPos, ...configLabel });
-        firstPage.drawText(p.correo || '', { x: xValue, y: yPos, ...configVal });
+        currentPage.drawText('Correo electrónico:', { x: xLabel, y: yPos, ...configLabel });
+        currentPage.drawText(p.correo || '', { x: xValue, y: yPos, ...configVal });
 
         yPos -= 20;
-        firstPage.drawText('Fecha de validación:', { x: xLabel, y: yPos, ...configLabel });
-        firstPage.drawText(p.fechaValidacion || '', { x: xValue, y: yPos, ...configVal });
+        currentPage.drawText('Fecha de validación:', { x: xLabel, y: yPos, ...configLabel });
+        currentPage.drawText(p.fechaValidacion || '', { x: xValue, y: yPos, ...configVal });
 
         yPos -= 20;
-        firstPage.drawText('Estudiantes validados:', { x: xLabel, y: yPos, ...configLabel });
-        firstPage.drawText((p.alumnosValidados || 0).toString(), { x: xValue, y: yPos, ...configVal });
+        currentPage.drawText('Estudiantes validados:', { x: xLabel, y: yPos, ...configLabel });
+        currentPage.drawText((p.alumnosValidados || 0).toString(), { x: xValue, y: yPos, ...configVal });
 
         // --- BLOQUE DE CONTRASEÑA ---
         if (p.contrasena && p.contrasena !== '********') {
           yPos = height - 350;
-          firstPage.drawText('CONTRASEÑA DE ACCESO:', {
+          currentPage.drawText('CONTRASEÑA DE ACCESO:', {
             x: 160, y: yPos, size: 12, font: fontBold, color: rgb(0.41, 0.11, 0.2)
           });
 
           yPos -= 30;
-          firstPage.drawText(p.contrasena, {
+          currentPage.drawText(p.contrasena, {
             x: 190, y: yPos, size: 22, font: fontBold, color: rgb(0.41, 0.11, 0.2)
           });
         } else {
           // Si es un usuario logueado o ya tiene credenciales previas
           yPos = height - 350;
-          firstPage.drawText('SU CONTRASEÑA ES LA QUE YA TIENE REGISTRADA EN EL SISTEMA', {
+          currentPage.drawText('SU CONTRASEÑA ES LA QUE YA TIENE REGISTRADA EN EL SISTEMA', {
             x: 100, y: yPos, size: 12, font: fontBold, color: rgb(0.41, 0.11, 0.2)
           });
           yPos -= 30; // mantener el espaciado
@@ -105,7 +116,7 @@ export class MockPdfService {
 
         // --- NOTA FINAL ---
         yPos -= 60;
-        firstPage.drawText(`Sus resultados estarán disponibles el: ${p.fechaDisponible}`, {
+        currentPage.drawText(`Sus resultados estarán disponibles el: ${p.fechaDisponible}`, {
           x: 130, y: yPos, size: 11, font: fontBold
         });
 
@@ -113,19 +124,67 @@ export class MockPdfService {
         // --- CASO DE ERRORES/INCONSISTENCIAS ---
         const p = payload as PdfErroresPayload;
 
-        firstPage.drawText('REPORTE DE INCONSISTENCIAS DETECTADAS', {
-          x: 120, y: height - 150, size: 14, font: fontBold, color: rgb(0.41, 0.11, 0.2)
+        currentPage.drawText('REPORTE DE INCONSISTENCIAS DETECTADAS', {
+          x: 120, y: height - 120, size: 14, font: fontBold, color: rgb(0.41, 0.11, 0.2)
         });
 
-        firstPage.drawText(`Archivo: ${p.archivo}`, { x: 120, y: height - 180, size: 10, font: fontBold });
+        currentPage.drawText(`Archivo: ${p.archivo}`, { x: 120, y: height - 150, size: 10, font: fontBold });
 
-        let yPos = height - 210;
-        // Listar los primeros 20 errores
-        p.errores.slice(0, 20).forEach(err => {
-          firstPage.drawText(`• ${err.substring(0, 95)}`, { x: 120, y: yPos, size: 8, font: fontRegular });
-          yPos -= 12;
-        });
+        let yPos = height - 180;
+        const marginX = 80;
+        const lineSpacing = 12;
+
+        // Función auxiliar para manejar el salto de página con fondo institucional
+        const manejarSaltoPagina = async () => {
+          if (yPos < 60) {
+            currentPage = pdfDoc.addPage([width, height]);
+            // Dibujar el fondo institucional (el diseño de la plantilla)
+            currentPage.drawPage(backgroundPage, {
+              x: 0,
+              y: 0,
+              width: width,
+              height: height,
+            });
+            yPos = height - 120; // Empezar un poco más abajo para no chocar con el encabezado
+            return true;
+          }
+          return false;
+        };
+
+        for (const grupo of p.erroresAgrupados) {
+          await manejarSaltoPagina();
+
+          const tituloHoja = grupo.hoja === 'General' ? 'General' : `Hoja ${grupo.hoja}`;
+          currentPage.drawText(tituloHoja, { x: marginX, y: yPos, size: 9, font: fontBold });
+          yPos -= lineSpacing + 2;
+
+          for (const ubicacion of grupo.ubicaciones) {
+            await manejarSaltoPagina();
+
+            currentPage.drawText(ubicacion.titulo, { x: marginX + 10, y: yPos, size: 8, font: fontBold, color: rgb(0, 0.4, 0.4) });
+            yPos -= lineSpacing;
+
+            for (const item of ubicacion.items) {
+              await manejarSaltoPagina();
+
+              // Dibujar punto y texto (con wrap manual simple si es muy largo)
+              const text = `• ${item}`;
+              const maxLength = 100;
+              if (text.length > maxLength) {
+                 currentPage.drawText(text.substring(0, maxLength), { x: marginX + 20, y: yPos, size: 8, font: fontRegular });
+                 yPos -= lineSpacing;
+                 currentPage.drawText(text.substring(maxLength), { x: marginX + 28, y: yPos, size: 8, font: fontRegular });
+              } else {
+                 currentPage.drawText(text, { x: marginX + 20, y: yPos, size: 8, font: fontRegular });
+              }
+              yPos -= lineSpacing;
+            }
+            yPos -= 4; // Espacio entre ubicaciones
+          }
+          yPos -= 8; // Espacio entre grupos
+        }
       }
+
 
       const pdfBytes = await pdfDoc.save();
       return new Blob([pdfBytes], { type: 'application/pdf' });
@@ -135,6 +194,7 @@ export class MockPdfService {
       throw error;
     }
   }
+
 
   /**
    * Método para descargar el archivo en el navegador
