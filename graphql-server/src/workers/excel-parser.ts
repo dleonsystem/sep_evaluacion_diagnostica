@@ -314,7 +314,9 @@ function extractStudents(
   }
 
   const alumnos: ParsedStudent[] = [];
-  data.forEach((row: any, index) => {
+  let index = -1;
+  for (const row of data as any[]) {
+    index++;
     const numeroLista = cleanText(row.B);
     const nombre = cleanText(row.C);
     const sexo = cleanText(row.D).toUpperCase();
@@ -324,16 +326,17 @@ function extractStudents(
       const raw = cleanText(row[col]);
       return raw === '' ? null : Number(raw);
     });
+
     const filaVacia =
       !numeroLista && !nombre && !sexo && !grupo && valoraciones.every((valor) => valor === null);
-    if (filaVacia) return;
+    if (filaVacia) continue;
 
     // Regla de Negocio Issue #384: Determinar si hay alguna valoración en la fila
     const tieneAlgunaValoracion = valoraciones.some((v) => v !== null);
 
     if (!tieneAlgunaValoracion) {
       // Si no hay ninguna valoración en toda la fila, el archivo está correcto pero omitimos al alumno.
-      return;
+      continue;
     }
 
     const erroresFila: ExcelValidationError[] = [];
@@ -430,7 +433,7 @@ function extractStudents(
 
     if (erroresFila.length > 0) {
       errors.push(...erroresFila);
-      return;
+      continue;
     }
 
     alumnos.push({
@@ -440,7 +443,7 @@ function extractStudents(
       grado,
       evaluaciones,
     });
-  });
+  }
 
   return alumnos;
 }
