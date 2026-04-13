@@ -16,12 +16,12 @@ describe('Issue #384: Carga de alumnos con valoraciones parciales', () => {
     return workbook;
   };
 
-  it('debe saltar alumnos sin valoraciones sin marcar error', () => {
+  it('debe saltar alumnos sin valoraciones sin marcar error (incluso si tienen metadatos)', () => {
     const workbook = createBaseWorkbook();
     const data = [
       [], [], [], [], [], [], [], [], [], // Filas 1-9
       ['', 1, 'ALUMNO COMPLETO', 'H', 'A', 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // Fila 10: OK
-      ['', 2, 'ALUMNO SIN EVALUACIONES', 'M', 'A', '', '', '', '', '', '', '', '', '', '', ''], // Fila 11: Sin evaluaciones
+      ['', 2, 'VAZQUEZ REYES MIGUEL ANGEL', 'H', 'B', '', '', '', '', '', '', '', '', '', '', ''], // Fila 11: Metadatos presentes, evaluaciones vacías
     ];
     const sheet = XLSX.utils.aoa_to_sheet(data);
     sheet['!ref'] = 'A1:P11';

@@ -328,6 +328,14 @@ function extractStudents(
       !numeroLista && !nombre && !sexo && !grupo && valoraciones.every((valor) => valor === null);
     if (filaVacia) return;
 
+    // Regla de Negocio Issue #384: Determinar si hay alguna valoración en la fila
+    const tieneAlgunaValoracion = valoraciones.some((v) => v !== null);
+
+    if (!tieneAlgunaValoracion) {
+      // Si no hay ninguna valoración en toda la fila, el archivo está correcto pero omitimos al alumno.
+      return;
+    }
+
     const erroresFila: ExcelValidationError[] = [];
     if (!numeroLista)
       erroresFila.push({
@@ -392,13 +400,6 @@ function extractStudents(
       });
 
     const evaluaciones: { materiaIndex: number; valor: number }[] = [];
-    const nonNullCount = valoraciones.filter((v) => v !== null).length;
-
-    if (nonNullCount === 0) {
-      // Regla de Negocio Issue #384: Si no hay ninguna valoración en toda la fila, 
-      // el archivo está correcto pero omitimos al alumno.
-      return;
-    }
 
     valoraciones.forEach((valor, idx) => {
       const colName = columnas[idx];
