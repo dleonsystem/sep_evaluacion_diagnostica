@@ -303,7 +303,7 @@ function extractStudents(
   grado: number,
   errors: ExcelValidationError[]
 ): ParsedStudent[] {
-  const data = XLSX.utils.sheet_to_json(sheet, { range: 9, header: 'A', defval: '' });
+  const data = XLSX.utils.sheet_to_json(sheet, { range: 9, header: 'A', blankrows: true });
   const columnas = resolveEvaluationColumns(nivel, sheetName.toUpperCase());
   if (!columnas.length) {
     errors.push({
@@ -315,29 +315,34 @@ function extractStudents(
 
   const alumnos: ParsedStudent[] = [];
   let index = -1;
+
   for (const row of data as any[]) {
     index++;
+    const filaExcel = 10 + index;
+
+    // 1. Extraer y limpiar valoraciones primero
+    const valoraciones = columnas.map((col) => {
+      const val = row[col];
+      // Si el valor es null, undefined o solo espacios, es nulo
+      if (val === undefined || val === null || String(val).trim() === '') {
+        return null;
+      }
+      const parsed = Number(val);
+      return Number.isNaN(parsed) ? null : parsed;
+    });
+
+    // 2. Regla de Negocio Issue #384: Si todas las valoraciones son nulas, omitir fila sin importar metadatos
+    if (valoraciones.every((v) => v === null)) {
+      continue;
+    }
+
     const numeroLista = cleanText(row.B);
     const nombre = cleanText(row.C);
     const sexo = cleanText(row.D).toUpperCase();
     const grupo = cleanText(row.E).toUpperCase();
-    const filaExcel = 10 + index;
-    const valoraciones = columnas.map((col) => {
-      const raw = cleanText(row[col]);
-      return raw === '' ? null : Number(raw);
-    });
 
-    const filaVacia =
-      !numeroLista && !nombre && !sexo && !grupo && valoraciones.every((valor) => valor === null);
+    const filaVacia = !numeroLista && !nombre && !sexo && !grupo;
     if (filaVacia) continue;
-
-    // Regla de Negocio Issue #384: Determinar si hay alguna valoración en la fila
-    const tieneAlgunaValoracion = valoraciones.some((v) => v !== null);
-
-    if (!tieneAlgunaValoracion) {
-      // Si no hay ninguna valoración en toda la fila, el archivo está correcto pero omitimos al alumno.
-      continue;
-    }
 
     const erroresFila: ExcelValidationError[] = [];
     if (!numeroLista)
@@ -416,7 +421,7 @@ function extractStudents(
         });
         return;
       }
-      if (Number.isNaN(valor) || valor < 0 || valor > 3) {
+      if (valor < 0 || valor > 3) {
         erroresFila.push({
           fila: filaExcel,
           columna: colName,
@@ -444,6 +449,7 @@ function extractStudents(
       evaluaciones,
     });
   }
+
 
   return alumnos;
 }
