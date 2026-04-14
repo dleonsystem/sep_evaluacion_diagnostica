@@ -88,7 +88,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   credencialesAsociadas = false;
   contrasenaAsociada: string | null = null;
   guardandoTodo = false;
-  intentosFallidos = 0;
+  private historialFallos: Map<string, Map<string, number>> = new Map();
+  private contextoFalloActual: { correo: string, idArchivo: string } | null = null;
   readonly umbralFallosTicket = 3;
   mostrarModalIncidencia = false;
   isDragging = false;
@@ -340,13 +341,30 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
   }
 
-  private registrarIntentoFallido(resultadoArchivo?: ResultadoArchivo): void {
-    console.log('--- Registro de Intento Fallido ---');
-    this.intentosFallidos++;
-    console.log('Contador de intentos fallidos:', this.intentosFallidos);
+  private generarIdArchivo(file: File): string {
+    return `${file.name}-${file.size}-${file.lastModified}`;
+  }
 
-    if (this.intentosFallidos >= this.umbralFallosTicket) {
+  private registrarIntentoFallido(resultadoArchivo: ResultadoArchivo): void {
+    const correo = this.authService.normalizarCorreo(this.correoControl.value || this.correoSesion || '');
+    if (!correo || !resultadoArchivo.archivoOriginal) return;
+
+    const idArchivo = this.generarIdArchivo(resultadoArchivo.archivoOriginal);
+    
+    if (!this.historialFallos.has(correo)) {
+      this.historialFallos.set(correo, new Map<string, number>());
+    }
+
+    const fallosUsuario = this.historialFallos.get(correo)!;
+    const conteoActual = (fallosUsuario.get(idArchivo) || 0) + 1;
+    fallosUsuario.set(idArchivo, conteoActual);
+
+    console.log(`--- Registro de Intento Fallido [${correo}] ---`);
+    console.log(`Archivo: ${resultadoArchivo.archivo.name} | Fallos: ${conteoActual}`);
+
+    if (conteoActual >= this.umbralFallosTicket) {
       console.log(`Umbral alcanzado (>=${this.umbralFallosTicket}). Abriendo modal de incidencia...`);
+      this.contextoFalloActual = { correo, idArchivo };
       this.abrirModalIncidencia(resultadoArchivo);
     }
   }
@@ -380,7 +398,14 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
   cerrarModalIncidencia(): void {
     this.mostrarModalIncidencia = false;
-    this.intentosFallidos = 0; // Resetear tras cerrar o enviar
+    
+    // Resetear solo el contador del contexto que disparó el modal
+    if (this.contextoFalloActual) {
+      const { correo, idArchivo } = this.contextoFalloActual;
+      this.historialFallos.get(correo)?.delete(idArchivo);
+      this.contextoFalloActual = null;
+    }
+
     this.evidenciasIncidencia = [];
   }
 
@@ -615,7 +640,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         title: 'Error de carga',
         text: resultado.errorGuardado,
       });
-      this.registrarIntentoFallido();
+      this.registrarIntentoFallido(resultado);
     } finally {
       resultado.guardando = false;
     }
