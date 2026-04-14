@@ -60,7 +60,31 @@ const COLUMNAS_SECUNDARIA: Record<string, string[]> = {
 };
 
 export function parseExcelAssessmentBuffer(buffer: Buffer): ParsedAssessmentData {
-  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  let workbook: XLSX.WorkBook;
+  try {
+    workbook = XLSX.read(buffer, { type: 'buffer' });
+  } catch (error: any) {
+    const errorMsg = error?.message?.toLowerCase() || '';
+    let friendlyError = 'El archivo está dañado o no es un formato Excel válido.';
+    if (
+      errorMsg.includes('password') ||
+      errorMsg.includes('decrypt') ||
+      errorMsg.includes('encrypted') ||
+      errorMsg.includes('secure')
+    ) {
+      friendlyError =
+        'El archivo está protegido con contraseña o encriptado. Por favor, quita la protección antes de subirlo.';
+    }
+    return {
+      cct: '',
+      nivel: '',
+      grado: 0,
+      alumnos: [],
+      metadata: {} as any,
+      erroresEstructurados: [{ error: friendlyError, hoja: 'General' }],
+    };
+  }
+
   const allErrors: ExcelValidationError[] = [];
 
   if (!workbook.SheetNames.includes('ESC')) {
@@ -86,7 +110,7 @@ export function parseExcelAssessmentBuffer(buffer: Buffer): ParsedAssessmentData
     });
   }
 
-  const dataSheetNames = findAllDataSheetNames(workbook.SheetNames, nivel);
+  const dataSheetNames = findAllDataSheetNames(workbook.SheetNames, nivel, allErrors);
   if (nivel && dataSheetNames.length === 0) {
     allErrors.push({
       error:
@@ -98,7 +122,7 @@ export function parseExcelAssessmentBuffer(buffer: Buffer): ParsedAssessmentData
   if (allErrors.some((e) => ['CCT', 'Turno', 'Email'].includes(e.campo || ''))) {
     // No continuamos si hay errores críticos en ESC
   } else if (nivel) {
-    const candidateSheets = findAllDataSheetNames(workbook.SheetNames, nivel);
+    const candidateSheets = dataSheetNames;
     const alumnos: ParsedStudent[] = [];
     let primerGradoDetectado = 0;
 
@@ -114,7 +138,7 @@ export function parseExcelAssessmentBuffer(buffer: Buffer): ParsedAssessmentData
 
     if (!alumnos.length && !allErrors.length) {
       allErrors.push({
-        error: `No se encontraron estudiantes capturados en ninguna de las hojas de grado del nivel ${nivel}.`,
+        error: 'El archivo no contiene ningún registro de evaluación válido para procesar.',
         hoja: 'General',
       });
     }
@@ -195,15 +219,7 @@ function extractEscData(sheet: XLSX.WorkSheet, errors: ExcelValidationError[]) {
     });
   }
 
-  if (!nombreEscuela) {
-    errors.push({
-      campo: 'Nombre Escuela',
-      error: 'Ingresa el nombre de la escuela en la hoja ESC.',
-      hoja: 'ESC',
-      columna: 'D',
-      fila: 13,
-    });
-  }
+    // Se omite el error obligatorio para Nombre Escuela ya que se puede recuperar vía CCT (Issue #385)
 
   if (!correo) {
     errors.push({
@@ -258,22 +274,30 @@ function detectLevel(sheetNames: string[], escSheet: XLSX.WorkSheet): string | n
   return null;
 }
 
-function findAllDataSheetNames(sheetNames: string[], nivel: string | null): string[] {
+function findAllDataSheetNames(sheetNames: string[], nivel: string | null, errors: ExcelValidationError[]): string[] {
   const normalizedMap = new Map(sheetNames.map((name) => [name.toUpperCase(), name]));
   const sheets: string[] = [];
 
   if (nivel === 'PREESCOLAR') {
-    const s = normalizedMap.get('TERCERO') || normalizedMap.get('PREESCOLAR');
-    if (s) sheets.push(s);
-  } else if (nivel === 'PRIMARIA') {
-    ['PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO'].forEach((name) => {
+    const required = ['TERCERO'];
+    required.forEach(name => {
       const s = normalizedMap.get(name);
       if (s) sheets.push(s);
+      else errors.push({ error: `Falta la hoja requerida: ${name}`, hoja: 'General' });
+    });
+  } else if (nivel === 'PRIMARIA') {
+    const required = ['PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO'];
+    required.forEach((name) => {
+      const s = normalizedMap.get(name);
+      if (s) sheets.push(s);
+      else errors.push({ error: `Falta la hoja requerida: ${name}`, hoja: 'General' });
     });
   } else if (nivel === 'SECUNDARIA' || nivel === 'TELESECUNDARIA') {
-    ['PRIMERO', 'SEGUNDO', 'TERCERO'].forEach((name) => {
+    const required = ['PRIMERO', 'SEGUNDO', 'TERCERO'];
+    required.forEach((name) => {
       const s = normalizedMap.get(name);
       if (s) sheets.push(s);
+      else errors.push({ error: `Falta la hoja requerida: ${name}`, hoja: 'General' });
     });
   }
   return sheets;
@@ -320,66 +344,121 @@ function extractStudents(
     index++;
     const filaExcel = 10 + index;
 
-    // 1. Extraer y limpiar valoraciones primero
-    const valoraciones = columnas.map((col) => {
+    const allowedCols = ['A', 'B', 'C', 'D', 'E', ...columnas];
+    const erroresFila: ExcelValidationError[] = [];
+
+    // 1. Detección de columnas extra a la derecha (Sanitización #385)
+    const extraCols = Object.keys(row).filter((k) => !allowedCols.includes(k));
+    if (extraCols.length > 0) {
+      erroresFila.push({
+        fila: filaExcel,
+        error: `Se detectaron datos en columnas no autorizadas: ${extraCols.join(', ')}.`,
+        hoja: sheetName,
+      });
+    }
+
+    // 2. Extraer y limpiar valoraciones con validación de sanitización
+    const valoraciones = columnas.map((col, idx) => {
+      const cellAddress = col + filaExcel;
+      const cell = sheet[cellAddress];
+
+      // Detección de errores de Excel (#REF!, ###, etc.)
+      if (cell?.t === 'e') {
+        erroresFila.push({
+          fila: filaExcel,
+          columna: col,
+          campo: `Valoración ${idx + 1}`,
+          error: `La celda contiene un error de Excel (${cell.v}).`,
+          hoja: sheetName,
+        });
+      }
+
+      // Detección de fórmulas y links
+      if (cell?.f) {
+        erroresFila.push({
+          fila: filaExcel,
+          columna: col,
+          campo: `Valoración ${idx + 1}`,
+          error: 'La celda contiene una fórmula. Solo se permiten valores directos.',
+          hoja: sheetName,
+        });
+      }
+      if (cell?.l) {
+        erroresFila.push({
+          fila: filaExcel,
+          columna: col,
+          campo: `Valoración ${idx + 1}`,
+          error: 'La celda contiene un hipervínculo. Por seguridad, no están permitidos.',
+          hoja: sheetName,
+        });
+      }
+
       const val = row[col];
-      // Si el valor es null, undefined o solo espacios, es nulo
       if (val === undefined || val === null || String(val).trim() === '') {
         return null;
       }
       const parsed = Number(val);
+
+      // Detección de puntos decimales
+      if (!Number.isInteger(parsed)) {
+        erroresFila.push({
+          fila: filaExcel,
+          columna: col,
+          campo: `Valoración ${idx + 1}`,
+          error: 'La valoración no debe contener puntos decimales.',
+          hoja: sheetName,
+          valorEncontrado: String(val),
+        });
+      }
+
       return Number.isNaN(parsed) ? null : parsed;
     });
 
-    // 2. Regla de Negocio Issue #384: Si todas las valoraciones son nulas, omitir fila sin importar metadatos
-    if (valoraciones.every((v) => v === null)) {
+    // 3. Regla de Negocio Issue #384: Si todas las valoraciones son nulas y NO hay errores de sanitización, omitir fila
+    if (valoraciones.every((v) => v === null) && erroresFila.length === 0) {
       continue;
     }
 
     const numeroLista = cleanText(row.B);
     const nombre = cleanText(row.C);
-    const sexo = cleanText(row.D).toUpperCase();
-    const grupo = cleanText(row.E).toUpperCase();
 
-    const filaVacia = !numeroLista && !nombre && !sexo && !grupo;
-    if (filaVacia) continue;
-
-    const erroresFila: ExcelValidationError[] = [];
-    if (!numeroLista)
+    // Validación de error de Excel en Nombre o Grupo e Hipervínculos
+    const nameCell = sheet['C' + filaExcel];
+    if (nameCell?.t === 'e' || sheet['E' + filaExcel]?.t === 'e') {
       erroresFila.push({
         fila: filaExcel,
-        columna: 'B',
-        campo: 'Número de Lista',
-        error: 'Falta el número de lista.',
+        error: 'Se detectaron errores de Excel (#REF!, #VALUE!) en las columnas de Nombre o Grupo.',
         hoja: sheetName,
       });
-    else if (Number.isNaN(Number(numeroLista)))
-      erroresFila.push({
-        fila: filaExcel,
-        columna: 'B',
-        campo: 'Número de Lista',
-        error: 'El número de lista debe ser numérico.',
-        hoja: sheetName,
-        valorEncontrado: numeroLista,
-      });
-
-    if (!nombre)
+    }
+    if (nameCell?.l) {
       erroresFila.push({
         fila: filaExcel,
         columna: 'C',
         campo: 'Nombre',
-        error: 'Captura el nombre completo del estudiante.',
+        error: 'El nombre del estudiante contiene un hipervínculo. Por seguridad, no están permitidos.',
         hoja: sheetName,
       });
-    if (!sexo)
+    }
+
+    const sexo = cleanText(row.D).toUpperCase();
+    const grupo = cleanText(row.E).toUpperCase();
+
+    const filaVacia = !numeroLista && !nombre && !sexo && !grupo;
+    if (filaVacia && erroresFila.length === 0) continue;
+
+    // Se omite la validación numérica estricta para el número de lista por flexibilidad (Issue #385)
+
+    if (nombre && !/^[A-ZÑÁÉÍÓÚÜü\s.]+$/i.test(nombre))
       erroresFila.push({
         fila: filaExcel,
-        columna: 'D',
-        campo: 'Sexo',
-        error: 'Indica el sexo (H/M).',
+        columna: 'C',
+        campo: 'Nombre',
+        error: 'El nombre contiene caracteres no permitidos (solo letras, espacios y puntos).',
         hoja: sheetName,
+        valorEncontrado: nombre,
       });
-    else if (!['H', 'M'].includes(sexo))
+    if (sexo && !['H', 'M'].includes(sexo))
       erroresFila.push({
         fila: filaExcel,
         columna: 'D',
@@ -387,6 +466,7 @@ function extractStudents(
         error: 'El sexo debe ser H o M.',
         hoja: sheetName,
         valorEncontrado: sexo,
+        valorEsperado: 'H/M',
       });
 
     if (!grupo)
@@ -397,12 +477,12 @@ function extractStudents(
         error: 'Captura el grupo.',
         hoja: sheetName,
       });
-    else if (!/^[A-Z]$/.test(grupo))
+    else if (!/^[a-zA-Z0-9\s]+$/.test(grupo))
       erroresFila.push({
         fila: filaExcel,
         columna: 'E',
         campo: 'Grupo',
-        error: 'El grupo debe ser una sola letra (A-Z).',
+        error: 'El grupo solo debe contener letras y números. No se permiten comillas ni caracteres especiales.',
         hoja: sheetName,
         valorEncontrado: grupo,
       });
@@ -412,13 +492,16 @@ function extractStudents(
     valoraciones.forEach((valor, idx) => {
       const colName = columnas[idx];
       if (valor === null) {
-        erroresFila.push({
-          fila: filaExcel,
-          columna: colName,
-          campo: `Valoración ${idx + 1}`,
-          error: 'Falta la valoración.',
-          hoja: sheetName,
-        });
+        // Solo reportar falta de valoración si NO es una fila vacía y NO hubo error de sanitización en esa celda
+        if (!erroresFila.some((e) => e.columna === colName)) {
+          erroresFila.push({
+            fila: filaExcel,
+            columna: colName,
+            campo: `Valoración ${idx + 1}`,
+            error: 'Falta la valoración.',
+            hoja: sheetName,
+          });
+        }
         return;
       }
       if (valor < 0 || valor > 3) {
