@@ -275,16 +275,14 @@
 
 
       <ng-container *ngIf="resultado.estado === 'error' && resultado.errores.length">
-        <p class="carga__mensaje carga__mensaje--error">Se encontraron problemas en su archivo:</p>
-        <div class="carga__lista" *ngFor="let grupo of resultado.erroresAgrupados">
-          <strong>{{ grupo.hoja === 'General' ? 'General' : 'Hoja ' + grupo.hoja }}</strong>
-          <div *ngFor="let ubicacion of grupo.ubicaciones">
-            <p class="carga__mensaje carga__mensaje--info">{{ ubicacion.titulo }}</p>
-            <ul>
-              <li *ngFor="let error of ubicacion.items">{{ error }}</li>
-            </ul>
-          </div>
-        </div>
+        <p class="carga__mensaje carga__mensaje--error">Su archivo requiere correcciones técnicas.</p>
+        <p class="carga__resumen">
+          El sistema ha detectado inconsistencias que impiden el envío. Se ha generado automáticamente un
+          <b>Reporte de Validación en PDF</b> con el detalle preciso de las celdas y motivos a corregir.
+        </p>
+        <p class="carga__mensaje carga__mensaje--info">
+          Por favor, consulte el archivo descargado para realizar los ajustes necesarios en su FRV y reintentar la carga.
+        </p>
       </ng-container>
 
       <div class="carga__advertencias" *ngIf="resultado.advertencias.length">
