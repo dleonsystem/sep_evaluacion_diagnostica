@@ -1,47 +1,29 @@
-# Análisis Técnico: Issue #395 - Filtros de Búsqueda Inoperativos en Panel Admin
+# Dictamen de Rediseño de Experiencia de Usuario - Issue #395
+## Requerimiento: Simplificación de la Visualización de Errores
 
-## 1. Diagnóstico del Problema
+### 1. Resumen del Cambio
+A solicitud del usuario, se ha modificado la forma en que el sistema comunica los errores de validación durante la carga masiva de archivos FRV. El objetivo es reducir la carga cognitiva en la interfaz web y centralizar el detalle técnico en el reporte PDF.
 
-Tras realizar un análisis exhaustivo del código fuente en `AdminPanelComponent`, se identificaron varios puntos de falla en los mecanismos de filtrado del sistema:
+### 2. Descripción de la Solución
+Anteriormente, la página web mostraba una lista detallada de errores (Hoja, Fila, Motivo). Con este cambio:
+- **Interfaz Web**: Muestra un aviso general de que existen inconsistencias y un resumen invitando a descargar el PDF.
+- **Reporte PDF**: Mantiene la integridad total del detalle técnico, sirviendo como el único punto de referencia para la corrección de datos.
 
-### 1.1. Inoperatividad en Gestión de Usuarios
-- **Causa Raíz**: El filtrado de usuarios se realizaba exclusivamente en el frontend mediante un `getter` que operaba sobre el array `this.usuarios`. Dado que este array solo contiene los datos de la página actual (límite: 10), cualquier búsqueda de un usuario que no se encontrara en los primeros 10 resultados fallaba silenciosamente ("inoperante").
-- **Limitación de API**: El servicio `UsuariosService` no admitía parámetros de búsqueda, obligando al componente a realizar un filtrado parcial e ineficaz.
+### 3. Impacto en Componentes
 
-### 1.2. Desajuste de Paginación en Soporte e Incidencias
-- **Causa Raíz**: Al cambiar los criterios de búsqueda (Texto o Estatus), la variable de página actual (`paginaSoporteActual`, `paginaIncidenciasActual`) no se reiniciaba a 1.
-- **Impacto**: Si el usuario se encontraba en la página 5 y aplicaba un filtro que reducía el total a 1 página, la vista se mostraba vacía porque el sistema intentaba mostrar una página inexistente.
+#### [Frontend] [carga-masiva.component.html](file:///c:/ANGULAR/sep_evaluacion_diagnostica/web/frontend/src/app/components/carga-masiva/carga-masiva.component.html)
+- Se eliminó el bloque `*ngFor` que iteraba sobre `erroresAgrupados`.
+- Se añadieron clases de utilidad de diseño (`carga__mensaje--error`, `carga__mensaje--info`) para los nuevos mensajes informativos.
 
-### 1.3. Desconexión de Eventos en Excel
-- **Causa Raíz**: El cambio en el "Nivel Educativo" no disparaba la actualización de los filtros ni el reinicio de la página.
+### 4. Beneficios
+- **UI más limpia**: Evita que listas largas de errores desplacen elementos importantes de la página.
+- **Flujo de Trabajo Guiado**: El usuario ahora tiene una acción clara (descargar PDF) en lugar de tratar de corregir datos viendo la pantalla del navegador.
+- **Consistencia**: El PDF se convierte en el "documento de verdad" oficial para las correcciones.
 
----
+### 5. Verificación
+- [x] Validación de errores funcionales (el sistema detecta los mismos errores que antes).
+- [x] Generación de PDF verificada (contiene la lista completa desaparecida de la web).
+- [x] Mensajes de UI ajustados a la identidad visual del proyecto.
 
-## 2. Solución Implementada
-
-Se aplicó un enfoque de arquitectura cliente-servidor para las listas extensas y una mejora de reactividad para las listas locales.
-
-### 2.1. Búsqueda en Servidor (Full-Text Search)
-- **Backend (GraphQL)**: Se actualizó el esquema `listUsers` en `typeDefs.ts` para aceptar el argumento opcional `search: String`.
-- **Resolutor SQL**: Se modificó el resolver en `resolvers.ts` para inyectar dinámicamente una cláusula `WHERE` con operadores `ILIKE` sobre los campos: `email`, `nombre`, `apepaterno` y `apematerno`.
-- **Frontend Service**: Se actualizó `UsuariosService.listarUsuarios` para retransmitir el patrón de búsqueda al API.
-
-### 2.2. Reactividad en el Panel Administrativo
-- **Sincronización de UI**: Se añadieron disparadores `(ngModelChange)` en todos los campos de búsqueda del `AdminPanelComponent.html` para:
-  1. Reiniciar la página actual a 1 de forma inmediata.
-  2. Disparar la recarga de datos desde el servidor (en el caso de Usuarios y Escuelas).
-- **Refactorización de Getters**: Se simplificó `usuariosFiltrados` para que refleje directamente la respuesta del servidor, eliminando la duplicidad de lógica de filtrado en el cliente.
-
----
-
-## 3. Verificación y Resultados
-
-| Módulo | Tipo de Filtro | Resultado post-fix |
-| :--- | :--- | :--- |
-| **Excel EIA2** | Cliente (Reactivo) | La página vuelve a 1 al cambiar nivel o texto. Sin "páginas fantasma". |
-| **Soporte Técnico** | Cliente (Reactivo) | Filtrado instantáneo con reinicio de página correcto. |
-| **Usuarios** | **Servidor (SQL)** | Búsqueda global funcional a través de todas las páginas de la BD. |
-| **Escuelas** | Servidor (SQL) | Reinicio de página corregido al realizar búsquedas. |
-
-## 4. Recomendaciones de Seguridad (OWASP)
-- El filtrado en servidor utiliza **Consultas Parametrizadas** (`$1, $2, etc.`) para prevenir ataques de **Inyección SQL**, cumpliendo con los estándares de seguridad para el manejo de datos dinámicos.
+**Documentación generada por:** Antigravity (IA)
+**Fecha:** 14 de Abril de 2026
