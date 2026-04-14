@@ -501,7 +501,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
   }
 
-  async guardarArchivo(resultado: ResultadoArchivo): Promise<void> {
+  async guardarArchivo(resultado: ResultadoArchivo, evitarReseteo = false): Promise<void> {
     if (this.correoControl.invalid) {
       this.correoControl.markAllAsTouched();
       resultado.errorGuardado = 'Agrega un correo electrónico válido para continuar con la carga.';
@@ -614,11 +614,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
       // Limpiar el correo tras éxito para evitar que el mensaje de "ya tienes credenciales" 
       // confunda al usuario si desea hacer una carga nueva/distinta.
-      if (!this.sesionActiva) {
-        this.correoControl.setValue('');
-        this.correoControl.markAsPristine();
-        this.correoControl.markAsUntouched();
-        this.actualizarEstadoSesion();
+      if (!this.sesionActiva && !evitarReseteo) {
+        this.resetearCampoCorreo();
       }
     } catch (error: any) {
       resultado.estado = 'error';
@@ -766,11 +763,23 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     try {
       for (const resultado of this.resultadosValidosSinGuardar) {
-        await this.guardarArchivo(resultado);
+        await this.guardarArchivo(resultado, true);
+      }
+      
+      // Limpieza única al final del proceso masivo si no hay sesión
+      if (!this.sesionActiva) {
+        this.resetearCampoCorreo();
       }
     } finally {
       this.guardandoTodo = false;
     }
+  }
+
+  private resetearCampoCorreo(): void {
+    this.correoControl.setValue('');
+    this.correoControl.markAsPristine();
+    this.correoControl.markAsUntouched();
+    this.actualizarEstadoSesion();
   }
 
   private async procesarResultado(
