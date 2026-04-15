@@ -476,6 +476,9 @@
       Procesando <strong>{{ archivosProcesadosGuardar }}</strong> de <strong>{{ archivosTotalGuardar }}</strong>
       {{ archivosTotalGuardar === 1 ? 'archivo' : 'archivos' }}
     </p>
+    <p class="carga__overlay-texto" *ngIf="ultimoFolioProcesado">
+       Último folio: <strong>{{ ultimoFolioProcesado }}</strong>
+    </p>
     <p class="carga__overlay-texto">Por favor, no cierre esta pestaña.</p>
   </div>
 </div>
