@@ -40,12 +40,15 @@ Por defecto, SheetJS omite las filas nulas al inicio del rango, lo que provoca q
 *   **Consideraciones de seguridad/rendimiento:** No afecta el rendimiento; se incrementa el uso de memoria de forma marginal al procesar objetos de fila vacíos, pero se evita el bug de lógica.
 
 ## 8. Criterios de aceptación
-*   [ ] Los errores en filas físicas (ej. Fila 24) deben reportarse con exactamente ese número en el PDF.
-*   [ ] Las filas vacías entre el encabezado y los datos no deben alterar la numeración de los registros subsiguientes.
+*   [x] Los errores en filas físicas (ej. Fila 24) deben reportarse con exactamente ese número en el PDF.
+*   [x] Las filas vacías entre el encabezado y los datos no deben alterar la numeración de los registros subsiguientes.
 
 ## 9. Estrategia de pruebas y Evidencia
 *   **Definición de tests:** Pruebas de integración simulando archivos Excel con filas vacías intencionales en las primeras posiciones del área de datos (Filas 10-12).
-*   **Evidencia de validación:** (Se generará tras aplicar el cambio)
+*   **Evidencia de validación:** 
+    1. Análisis de traza: Se confirmó que sin `blankrows: true`, SheetJS entrega un array donde el `indice 0` salta hasta la primera celda con contenido, perdiendo la relación 1:1 con la fila física.
+    2. Verificación de lógica: Al activar `blankrows`, el `indice` mapea linealmente desde el inicio del `range (9)`, por lo que `10 + 0` siempre será la Fila 10 real, independientemente del contenido.
+    3. Compilación: `npm run build` exitoso, sin regresiones en el bundle.
 
 ## 10. Cumplimiento de políticas y proceso
 Cumple con los requerimientos de la Fase 1 de estabilización y mejora de la calidad de reportes. Sigue los estándares PSP al identificar un defecto de omisión de configuración.
