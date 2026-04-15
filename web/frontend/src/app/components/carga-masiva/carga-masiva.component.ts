@@ -73,6 +73,7 @@ interface CredencialesMostradas {
 export class CargaMasivaComponent implements OnInit, OnDestroy {
   readonly extensionesPermitidas = ['.xlsx'];
   readonly pesoMaximoMb = 10;
+  readonly maxArchivosMasiva = 10;
   readonly correoPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   readonly correoControl = new FormControl('', {
@@ -88,6 +89,9 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   credencialesAsociadas = false;
   contrasenaAsociada: string | null = null;
   guardandoTodo = false;
+  archivosTotalGuardar = 0;
+  archivosProcesadosGuardar = 0;
+  ultimoFolioProcesado: string | null = null;
   private historialFallos: Map<string, Map<string, number>> = new Map();
   private contextoFalloActual: { correo: string, idArchivo: string } | null = null;
   readonly umbralFallosTicket = 3;
@@ -187,6 +191,16 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.resultados.length + archivos.length > this.maxArchivosMasiva) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Límite excedido',
+        text: `Solo se permite cargar un máximo de ${this.maxArchivosMasiva} archivos a la vez.`
+      });
+      this.limpiarSeleccion(input);
+      return;
+    }
+
     for (const archivo of archivos) {
       await this.procesarArchivo(archivo);
     }
@@ -242,6 +256,15 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
+      if (this.resultados.length + files.length > this.maxArchivosMasiva) {
+        await Swal.fire({
+          icon: 'warning',
+          title: 'Límite excedido',
+          text: `Solo se permite cargar un máximo de ${this.maxArchivosMasiva} archivos a la vez.`
+        });
+        return;
+      }
+
       for (let i = 0; i < files.length; i++) {
         await this.procesarArchivo(files[i]);
       }
@@ -501,7 +524,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
   }
 
-  async guardarArchivo(resultado: ResultadoArchivo): Promise<void> {
+  async guardarArchivo(resultado: ResultadoArchivo, evitarReseteo = false): Promise<void> {
     if (this.correoControl.invalid) {
       this.correoControl.markAllAsTouched();
       resultado.errorGuardado = 'Agrega un correo electrónico válido para continuar con la carga.';
@@ -597,11 +620,16 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         ? `La información se ha sincronizado. Tu folio de seguimiento es: ${respuestaApi.consecutivo}`
         : 'La información se ha sincronizado correctamente con el servidor.';
 
-      await Swal.fire({
-        icon: 'success',
-        title: 'Archivo cargado',
-        text: textoExito,
-      });
+      if (!evitarReseteo) {
+        await Swal.fire({
+          icon: 'success',
+          title: 'Archivo cargado',
+          text: textoExito,
+        });
+      } else {
+        // En modo masivo, guardamos el folio para el overlay y el resumen final
+        this.ultimoFolioProcesado = respuestaApi.consecutivo || 'Sincronizado';
+      }
 
       if (resultado.escDatos && resultado.resultadoExito && resultado.pdfTipo !== 'exito') {
         await this.generarPdfExito(
@@ -614,11 +642,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
       // Limpiar el correo tras éxito para evitar que el mensaje de "ya tienes credenciales" 
       // confunda al usuario si desea hacer una carga nueva/distinta.
-      if (!this.sesionActiva) {
-        this.correoControl.setValue('');
-        this.correoControl.markAsPristine();
-        this.correoControl.markAsUntouched();
-        this.actualizarEstadoSesion();
+      if (!this.sesionActiva && !evitarReseteo) {
+        this.resetearCampoCorreo();
       }
     } catch (error: any) {
       resultado.estado = 'error';
@@ -635,11 +660,13 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         ? error.message
         : 'No se pudo cargar el archivo al servidor. Inténtalo de nuevo.';
 
-      await Swal.fire({
-        icon: 'error',
-        title: 'Error de carga',
-        text: resultado.errorGuardado,
-      });
+      if (!evitarReseteo) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error de carga',
+          text: resultado.errorGuardado,
+        });
+      }
       this.registrarIntentoFallido(resultado);
     } finally {
       resultado.guardando = false;
@@ -763,14 +790,73 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
 
     this.guardandoTodo = true;
+    this.archivosTotalGuardar = this.resultadosValidosSinGuardar.length;
+    this.archivosProcesadosGuardar = 0;
+    this.ultimoFolioProcesado = null;
 
     try {
+      const resultadosFolios: string[] = [];
+      const errores: string[] = [];
+
       for (const resultado of this.resultadosValidosSinGuardar) {
-        await this.guardarArchivo(resultado);
+        // Incrementamos inmediatamente para que el overlay muestre "1 de 5" en lugar de "0 de 5"
+        this.archivosProcesadosGuardar++;
+        
+        await this.guardarArchivo(resultado, true);
+        
+        if (resultado.estado === 'exito' && resultado.resultadoExito?.consecutivo) {
+          resultadosFolios.push(resultado.resultadoExito.consecutivo);
+        } else if (resultado.estado === 'error') {
+          errores.push(`${resultado.archivo.name}: ${resultado.errorGuardado}`);
+        }
+      }
+
+      // Resumen final para el usuario
+      if (resultadosFolios.length > 0) {
+        const mensajeBase = `Se han sincronizado ${resultadosFolios.length} archivos correctamente.`;
+        const detalleFolios = resultadosFolios.length > 1 
+          ? `\nFolios generados:\n${resultadosFolios.join(', ')}` 
+          : `\nFolio: ${resultadosFolios[0]}`;
+
+        let icon: 'success' | 'warning' = 'success';
+        let extraText = '';
+        
+        if (errores.length > 0) {
+          icon = 'warning';
+          extraText = `\n\nSin embargo, hubo errores en ${errores.length} archivos:\n${errores.join('\n')}`;
+        }
+
+        await Swal.fire({
+          icon,
+          title: 'Proceso masivo completado',
+          text: mensajeBase + detalleFolios + extraText,
+          confirmButtonText: 'Entendido'
+        });
+      } else if (errores.length > 0) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error en la carga masiva',
+          text: `No se pudo cargar ninguno de los archivos.\n\nDetalles:\n${errores.join('\n')}`,
+        });
+      }
+      
+      // Limpieza única al final del proceso masivo si no hay sesión
+      if (!this.sesionActiva) {
+        this.resetearCampoCorreo();
       }
     } finally {
       this.guardandoTodo = false;
+      this.archivosTotalGuardar = 0;
+      this.archivosProcesadosGuardar = 0;
+      this.ultimoFolioProcesado = null;
     }
+  }
+
+  private resetearCampoCorreo(): void {
+    this.correoControl.setValue('');
+    this.correoControl.markAsPristine();
+    this.correoControl.markAsUntouched();
+    this.actualizarEstadoSesion();
   }
 
   private async procesarResultado(
