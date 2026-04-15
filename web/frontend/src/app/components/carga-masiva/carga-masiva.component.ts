@@ -73,6 +73,7 @@ interface CredencialesMostradas {
 export class CargaMasivaComponent implements OnInit, OnDestroy {
   readonly extensionesPermitidas = ['.xlsx'];
   readonly pesoMaximoMb = 10;
+  readonly maxArchivosMasiva = 10;
   readonly correoPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   readonly correoControl = new FormControl('', {
@@ -190,6 +191,16 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.resultados.length + archivos.length > this.maxArchivosMasiva) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Límite excedido',
+        text: `Solo se permite cargar un máximo de ${this.maxArchivosMasiva} archivos a la vez.`
+      });
+      this.limpiarSeleccion(input);
+      return;
+    }
+
     for (const archivo of archivos) {
       await this.procesarArchivo(archivo);
     }
@@ -245,6 +256,15 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
+      if (this.resultados.length + files.length > this.maxArchivosMasiva) {
+        await Swal.fire({
+          icon: 'warning',
+          title: 'Límite excedido',
+          text: `Solo se permite cargar un máximo de ${this.maxArchivosMasiva} archivos a la vez.`
+        });
+        return;
+      }
+
       for (let i = 0; i < files.length; i++) {
         await this.procesarArchivo(files[i]);
       }
