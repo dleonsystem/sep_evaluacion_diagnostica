@@ -42,7 +42,9 @@ Al cargar múltiples archivos (ej. 5) y presionar "CARGAR TODO":
     1. Modificar `guardarArchivo` para aceptar un flag opcional `evitarReseteo: boolean`.
     2. Condicionar la limpieza del correo (`this.correoControl.setValue('')`) a que dicho flag sea falso.
     3. En `guardarTodo`, llamar a `guardarArchivo` enviando `true` en el flag.
-    4. En `guardarTodo`, realizar un único reseteo de correo en el bloque `finally` o tras completar el bucle con éxito total.
+    4. Implementar un overlay visual con spinner y contador de progreso para evitar el bloqueo de la UI por modales de éxito individuales.
+    5. Limitar la carga masiva a un máximo de 10 archivos simultáneos como medida de seguridad contra saturaciones.
+    6. En `guardarTodo`, realizar un único reseteo de correo en el bloque `finally`.
 •	**Archivos a intervenir:** 
     - `web/frontend/src/app/components/carga-masiva/carga-masiva.component.ts`
 •	**Consideraciones de seguridad/rendimiento:** No afecta la seguridad del envío ya que el correo se valida al inicio de `guardarTodo`. Mejora el rendimiento percibido al evitar interrupciones por validación de formulario vaciado.
