@@ -88,6 +88,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   credencialesAsociadas = false;
   contrasenaAsociada: string | null = null;
   guardandoTodo = false;
+  archivosTotalGuardar = 0;
+  archivosProcesadosGuardar = 0;
   private historialFallos: Map<string, Map<string, number>> = new Map();
   private contextoFalloActual: { correo: string, idArchivo: string } | null = null;
   readonly umbralFallosTicket = 3;
@@ -760,10 +762,13 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
 
     this.guardandoTodo = true;
+    this.archivosTotalGuardar = this.resultadosValidosSinGuardar.length;
+    this.archivosProcesadosGuardar = 0;
 
     try {
       for (const resultado of this.resultadosValidosSinGuardar) {
         await this.guardarArchivo(resultado, true);
+        this.archivosProcesadosGuardar++;
       }
       
       // Limpieza única al final del proceso masivo si no hay sesión
@@ -772,6 +777,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       }
     } finally {
       this.guardandoTodo = false;
+      this.archivosTotalGuardar = 0;
+      this.archivosProcesadosGuardar = 0;
     }
   }
 

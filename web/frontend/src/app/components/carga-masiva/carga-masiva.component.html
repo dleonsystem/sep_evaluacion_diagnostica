@@ -466,3 +466,16 @@
     </div>
   </div>
 </div>
+
+<!-- OVERLAY DE CARGA MASIVA -->
+<div class="carga__overlay" *ngIf="guardandoTodo">
+  <div class="carga__overlay-content">
+    <div class="carga__overlay-spinner"></div>
+    <h3 class="carga__overlay-titulo">Subiendo archivos...</h3>
+    <p class="carga__overlay-texto">
+      Procesando <strong>{{ archivosProcesadosGuardar }}</strong> de <strong>{{ archivosTotalGuardar }}</strong>
+      {{ archivosTotalGuardar === 1 ? 'archivo' : 'archivos' }}
+    </p>
+    <p class="carga__overlay-texto">Por favor, no cierre esta pestaña.</p>
+  </div>
+</div>
