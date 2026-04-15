@@ -989,6 +989,7 @@ export class ExcelValidationService {
     const datos = xlsx.utils.sheet_to_json(sheet, {
       range: 9,
       header: 'A',
+      blankrows: true,
       defval: ''
     }) as Array<Record<string, string>>;
 
