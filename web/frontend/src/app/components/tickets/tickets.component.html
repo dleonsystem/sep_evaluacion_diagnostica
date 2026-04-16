@@ -2,13 +2,13 @@
   <!-- USER SUB-NAV MENU -->
   <nav class="shared-subnav">
     <a routerLink="/carga-masiva" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
-      <i class="bi bi-cloud-upload"></i> Carga Masiva
+      <i class="bi bi-cloud-upload"></i> Carga de archivos
     </a>
     <a routerLink="/archivos-evaluacion" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
       <i class="bi bi-folder-check"></i> Cargas realizadas
     </a>
     <a routerLink="/tickets" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
-      <i class="bi bi-life-preserver"></i> Soporte
+      <i class="bi bi-life-preserver"></i>  Mesa de ayuda
     </a>
     <a routerLink="/tickets-historial" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
       <i class="bi bi-card-list"></i> Mis tickets
@@ -20,39 +20,39 @@
 
   <header class="tickets__encabezado">
     <p class="tickets__eyebrow">Mesa de ayuda</p>
-    <h1 class="tickets__titulo">Crear ticket de soporte</h1>
+    <h1 class="tickets__titulo">Generar ticket</h1>
     <p class="tickets__descripcion">
-      Comparte tu problema para que podamos ayudarte a validar y subir tus archivos.
+      Comparta su problema para que podamos ayudarle.
     </p>
+    <!--
     <p class="tickets__sesion" *ngIf="correoActivo">
-      Sesión activa: <strong>{{ correoActivo }}</strong>
+    Sesión activa: <strong>{{ correoActivo }}</strong>
     </p>
+  -->
   </header>
 
   <form class="tickets__formulario" (submit)="enviarTicket($event)">
     <label class="tickets__campo">
       <span>Motivo del ticket</span>
       <select [formControl]="motivoControl">
-        <option value="" disabled>Selecciona una opción</option>
+        <option value="" disabled>Seleccione una opción</option>
         <option *ngFor="let motivo of motivos" [value]="motivo">{{ motivo }}</option>
       </select>
-      <small class="tickets__error" *ngIf="motivoControl.invalid && motivoControl.touched">
-        Selecciona un motivo.
-      </small>
+      
     </label>
 
     <label class="tickets__campo" *ngIf="mostrarMotivoOtro">
       <span>Describe el motivo</span>
-      <input type="text" [formControl]="motivoOtroControl" placeholder="Escribe el motivo específico" maxlength="200" />
+      <input type="text" [formControl]="motivoOtroControl" placeholder="Escriba el motivo específico" maxlength="200" />
       <small class="tickets__error" *ngIf="motivoOtroControl.invalid && motivoOtroControl.touched">
-        Ingresa un motivo válido.
+        Ingrese un motivo válido.
       </small>
     </label>
 
     <label class="tickets__campo">
-      <span>Describe tu problema</span>
+      <span>Describa su problema</span>
       <textarea [formControl]="descripcionControl" rows="6"
-        placeholder="Incluye detalles como fecha, nivel, CCT o mensajes de error." maxlength="1500"></textarea>
+        placeholder="Incluya detalles como fecha, nivel, CCT o mensajes de error." maxlength="1500"></textarea>
       <small class="tickets__error" *ngIf="descripcionControl.invalid && descripcionControl.touched">
         Este campo es obligatorio.
       </small>
@@ -67,7 +67,7 @@
             [disabled]="!puedeAgregarEvidencias" />
         </label>
         <p class="tickets__evidencias-ayuda">
-          Sube archivos uno por uno (PDF, Word o imágenes).
+          Cargue sus archivos uno por uno de tipo <strong>PDF, Word o imágenes.</strong>
         </p>
       </div>
 
@@ -84,48 +84,6 @@
     <button class="tickets__boton" type="submit">Enviar ticket</button>
   </form>
 
-  <section class="tickets__historial" *ngIf="ticketsCreados.length">
-    <h2 class="tickets__historial-titulo">Historial de tickets realizados</h2>
-    <div class="tickets__historial-grid">
-      <div class="tickets__card" *ngFor="let ticket of ticketsCreados">
-        <div class="tickets__card-header">
-          <span class="tickets__card-folio">#{{ ticket.folio }}</span>
-          <div class="tickets__card-badges">
-            <span class="tickets__badge tickets__badge--prioridad" [ngClass]="'tickets__badge--' + ticket.prioridad.toLowerCase()">
-              {{ ticket.prioridad }}
-            </span>
-            <span class="tickets__badge tickets__badge--estatus" [ngClass]="'tickets__badge--' + ticket.estatus">
-              {{ ticket.estatus | uppercase }}
-            </span>
-          </div>
-        </div>
-
-        <div class="tickets__card-body">
-          <h3 class="tickets__card-asunto">{{ ticket.motivo }}</h3>
-          <p class="tickets__card-descripcion">{{ ticket.descripcion }}</p>
-          <p class="tickets__card-fecha">Enviado: {{ ticket.fecha | date:'short' }}</p>
-        </div>
-
-        <div class="tickets__card-evidencias" *ngIf="ticket.evidencias.length">
-          <p class="tickets__card-subtitle">Evidencias adjuntas:</p>
-          <ul>
-            <li *ngFor="let evidencia of ticket.evidencias" (click)="descargarEvidencia(evidencia)" class="tickets__evidencia-link">
-              <i class="bi bi-file-earmark-text"></i> {{ evidencia.nombre }}
-            </li>
-          </ul>
-        </div>
-
-        <div class="tickets__card-respuestas" *ngIf="ticket.respuestas?.length">
-          <div class="tickets__respuesta" *ngFor="let respuesta of ticket.respuestas">
-            <div class="tickets__respuesta-header">
-              <strong>Respuesta de Soporte</strong>
-              <span>{{ respuesta.fecha | date:'short' }}</span>
-            </div>
-            <p class="tickets__respuesta-mensaje">{{ respuesta.mensaje }}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+  
 
 </section>

@@ -1,14 +1,15 @@
 <section class="tickets-historial">
   <!-- USER SUB-NAV MENU -->
+  <br />
   <nav class="shared-subnav">
     <a routerLink="/carga-masiva" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
-      <i class="bi bi-cloud-upload"></i> Carga Masiva
+      <i class="bi bi-cloud-upload"></i> Carga de archivos
     </a>
     <a routerLink="/archivos-evaluacion" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
       <i class="bi bi-folder-check"></i> Cargas realizadas
     </a>
     <a routerLink="/tickets" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
-      <i class="bi bi-life-preserver"></i> Soporte
+      <i class="bi bi-life-preserver"></i> Mesa de ayuda
     </a>
     <a routerLink="/tickets-historial" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
       <i class="bi bi-card-list"></i> Mis tickets
@@ -19,10 +20,10 @@
   </nav>
 
   <header class="tickets-historial__encabezado">
-    <p class="tickets-historial__eyebrow">Soporte</p>
+    <!--<p class="tickets-historial__eyebrow">Soportes</p>-->
     <h1 class="tickets-historial__titulo">Mis tickets</h1>
     <p class="tickets-historial__descripcion">
-      Consulta el estado de los tickets que has enviado y su seguimiento.
+      Consulte el estado de los tickets que ha enviado y su seguimiento.
     </p>
   </header>
 
@@ -48,7 +49,9 @@
             <td data-label="Folio">{{ ticket.folio }}</td>
             <td data-label="Motivo">
               {{ ticket.motivo }}
-              <span *ngIf="ticket.motivoDetalle && ticket.motivoDetalle !== ticket.motivo">({{ ticket.motivoDetalle }})</span>
+              <!--SE DUPLUCA MOTIVO-->
+              <!-- <span *ngIf="ticket.motivoDetalle">({{ ticket.motivoDetalle }})</span>-->
+
             </td>
             <td data-label="Descripción">{{ ticket.descripcion }}</td>
             <td data-label="Respuesta">
@@ -62,10 +65,10 @@
             <td data-label="Evidencias">{{ ticket.evidencias.length }}</td>
             <td data-label="Estatus">
               <button type="button" class="tickets-historial__badge tickets-historial__badge-button"
-                [class.tickets-historial__badge--pendiente]="ticket.estatus === 'pendiente'"
-                [class.tickets-historial__badge--proceso]="ticket.estatus === 'en-proceso'"
-                [class.tickets-historial__badge--respondido]="ticket.estatus === 'respondido'"
-                [routerLink]="['/tickets', ticket.folio]">
+                      [class.tickets-historial__badge--pendiente]="ticket.estatus === 'pendiente'"
+                      [class.tickets-historial__badge--proceso]="ticket.estatus === 'en-proceso'"
+                      [class.tickets-historial__badge--respondido]="ticket.estatus === 'respondido'"
+                      [routerLink]="['/tickets', ticket.folio]">
                 {{ obtenerEtiquetaEstatus(ticket.estatus) }}
               </button>
             </td>

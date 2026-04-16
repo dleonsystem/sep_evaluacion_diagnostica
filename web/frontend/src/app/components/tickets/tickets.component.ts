@@ -34,11 +34,18 @@ interface TicketSoporte {
   templateUrl: './tickets.component.html',
   styleUrl: './tickets.component.scss'
 })
+/* LISTA DE LAS OPCIONES*/
 export class TicketsComponent implements OnInit {
   readonly motivos = [
-    'Tengo problemas para subir mi evaluación',
-    'Necesito apoyo con mis credenciales',
-    'Otra'
+    'Envié un FRV incompleto.',
+    'Mis resultados no aparecen / no he recibido mis resultados.',
+    'Inconsistencias en mis resultados.',
+    'Problemas para interpretar el comparativo.',
+    'No puedo descargar mi reporte de resultados.',
+    'No puedo abrir el archivo de descarga.',
+    'Dudas sobre compatibilidad del sistema.',
+    'Mi formato FRV es incorrecto.',
+    'Otra',
   ];
   readonly maxEvidencias = 10;
   readonly extensionesPermitidas = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
@@ -128,7 +135,7 @@ export class TicketsComponent implements OnInit {
       if (this.mostrarMotivoOtro) {
         this.motivoOtroControl.markAllAsTouched();
       }
-      this.mensajeError = 'Completa los campos obligatorios para enviar el ticket.';
+      this.mensajeError = 'Complete los campos obligatorios para enviar el ticket.';
       return;
     }
 
@@ -159,7 +166,7 @@ export class TicketsComponent implements OnInit {
       // 3. Éxito
       await Swal.fire({
         title: '¡Ticket enviado!',
-        text: `Tu ticket se registró correctamente con el folio: ${ticketResult.numeroTicket}`,
+        text: `Su ticket se registró correctamente con el folio: ${ticketResult.numeroTicket}`,
         icon: 'success',
         confirmButtonText: 'Entendido',
         confirmButtonColor: '#00695c'

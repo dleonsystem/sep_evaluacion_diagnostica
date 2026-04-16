@@ -67,12 +67,12 @@ export class ArchivosEvaluacionComponent implements OnInit {
 
     if (this.registros.length === 0) {
       if (this.cctActivo) {
-        this.mensajeInfo = 'No se han encontrado cargas registradas para tu CCT.';
+        this.mensajeInfo = 'No se han encontrado cargas registradas.';
       } else {
         this.mensajeInfo = 'Inicia sesión para ver tu historial de archivos sincronizados.';
       }
     } else {
-      this.mensajeInfo = 'Se muestran tus cargas sincronizadas con el servidor.';
+      
     }
   }
 

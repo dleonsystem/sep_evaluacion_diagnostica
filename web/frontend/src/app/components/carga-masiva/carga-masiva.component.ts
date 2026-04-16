@@ -574,14 +574,14 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       if (this.correoControl.value) {
         this.authService.confirmarCargaExitosa(this.correoControl.value);
       }
-
+      
       const textoExito = respuestaApi.consecutivo
-        ? `La información se ha sincronizado. Tu folio de seguimiento es: ${respuestaApi.consecutivo}`
+        ? `Podrá consultar sus resultados a partir de la fecha indicada en el PDF `
         : 'La información se ha sincronizado correctamente con el servidor.';
 
       await Swal.fire({
         icon: 'success',
-        title: 'Archivo cargado',
+        title: 'Archivo recibido',
         text: textoExito,
       });
 
@@ -777,9 +777,17 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     const fechaDisponible = this.calcularFechaDisponible();
     resultadoArchivo.estado = 'exito';
+
+
+
+
     resultadoArchivo.mensajeInformativo =
-      'Validación exitosa. Podrás consultar tus resultados a partir del día: ' +
-      fechaDisponible.toLocaleDateString();
+      'Validación exitosa. Podrá consultar sus resultados a partir del día: ' +
+      fechaDisponible.toLocaleDateString('es-MX', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
 
     const credsExistentes = this.authService.obtenerCredenciales();
     const esMismoCorreo = credsExistentes?.correo === this.correoControl.value;
@@ -788,7 +796,13 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       : '';
 
     resultadoArchivo.resultadoExito = {
-      mensaje: `Podrás consultar tus resultados a partir del día: ${fechaDisponible.toLocaleDateString()}`,
+      mensaje: `Podrá consultar sus resultados a partir del día: ${fechaDisponible.toLocaleDateString('es-MX', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      })
+        }`,
+
       fechaDisponible,
       credenciales: {
         usuario: this.correoControl.value,
@@ -888,8 +902,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         await Swal.fire({
           icon: 'info',
           title: 'Usuario registrado',
-          text: res.message || 'USUARIO YA REGISTRADO; INICIE SESIÓN PARA CARGAR ARCHIVOS.',
-          confirmButtonText: 'Ir a login',
+          //text: res.message || 'INICIE SESIÓN PARA CARGAR ARCHIVOS.',
+          confirmButtonText: 'Iniciar sesión',
           allowOutsideClick: false
         });
         void this.router.navigate(['/login'], { queryParams: { correo: email, redirect: '/carga-masiva' } });
@@ -1165,7 +1179,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
   private formatearFechaLarga(fecha: Date): string {
     return new Intl.DateTimeFormat('es-MX', {
-      dateStyle: 'long',
+      dateStyle: 'long', // Esto ya devuelve el mes en letras por defecto
       timeZone: 'America/Mexico_City'
     }).format(fecha);
   }

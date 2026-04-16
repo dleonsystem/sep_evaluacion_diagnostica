@@ -6,6 +6,8 @@
   flex-direction: column;
   gap: 2rem;
   color: #1e293b;
+  /*HACIA ABAJO*/
+  margin-top: 3.5rem;
 }
 
 .tickets__encabezado {
@@ -16,7 +18,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    font-size: 0.75rem;
+    font-size: 3.75rem;
     margin-bottom: 0.5rem;
   }
 
@@ -29,8 +31,8 @@
 
   .tickets__descripcion {
     color: #64748b;
-    font-size: 1.125rem;
-    max-width: 600px;
+    font-size: 2.125rem;
+    max-width: 900px;
   }
 }
 
@@ -70,8 +72,10 @@
     border: 1px solid #cbd5e1;
     border-radius: 12px;
     padding: 0.75rem 1rem;
-    font-size: 1rem;
+     /*TAMAÑO TEXTO MENÚ DESPLEGABLE*/
+    font-size: 2rem;
     transition: border-color 0.2s, box-shadow 0.2s;
+
 
     &:focus {
       outline: none;
@@ -97,13 +101,18 @@
     border: 1px dashed #00695c;
     transition: background 0.2s;
 
-    &:hover { background: #e2e8f0; }
-    input { display: none; }
+    &:hover {
+      background: #e2e8f0;
+    }
+
+    input {
+      display: none;
+    }
   }
 
   &-ayuda {
-    font-size: 0.8125rem;
-    color: #94a3b8;
+    font-size: 1.8125rem;
+    color: BLACK;
     margin: 0;
   }
 }
@@ -115,7 +124,7 @@
   padding: 1rem 2rem;
   border-radius: 12px;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.5rem;
   cursor: pointer;
   align-self: flex-start;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -174,7 +183,7 @@
     padding: 4px 12px;
     border-radius: 8px;
     font-weight: 700;
-    font-size: 0.75rem;
+    font-size: 1.75rem;
   }
 
   &-badges {
@@ -183,22 +192,23 @@
   }
 
   &-asunto {
-    font-size: 1.25rem;
+    font-size: 2.25rem;
     font-weight: 700;
     color: #0f172a;
     margin-bottom: 0.75rem;
   }
 
   &-descripcion {
-    color: #475569;
+    color: #ff0000;
     font-size: 1rem;
     line-height: 1.6;
     margin-bottom: 1.5rem;
     flex-grow: 1;
+    font-weight: 700;
   }
 
   &-fecha {
-    font-size: 0.75rem;
+    font-size: 1.75rem;
     color: #94a3b8;
     margin-top: auto;
   }

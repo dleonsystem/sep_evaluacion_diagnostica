@@ -1,94 +1,92 @@
 <section class="carga">
-  <section class="carga__guia">
+  <section class="carga__guia" *ngIf="!sesionActiva">
     <h2>Procedimiento para cargar los FRV, validar la información y descargar los resultados</h2>
 
     <!-- Cambio de orientación del texto ""grid""-->
     <div class="carga__grids">
-      <div class="carga__card">
-        <h4>Carga de la información</h4>
-        <ul>
+        <div class="carga__card">
+            <h4>Carga de la información</h4>
+            <ul>
 
-          <p>
-            La o el director de la escuela ingresa al sistema <b>SiRVER</b> proporcionando un correo electrónico,
-            posteriormente
-            carga el FRV correspondiente a su CCT-Turno.
-          </p>
-          <!--
-           <p>
-           Durante este proceso, el directivo comparte el FRV con la información de su escuela (CCT-Turno).
-           </p>
-           -->
-          <p>
-            Con esta acción, el formato queda registrado dentro del sistema, asociando el correo electrónico al
-            CCT-Turno especificado en el FRV. Si la o el director
-            carga más de un CCT-Turno, éstos quedan asociados al correo electrónico, a los cuales les podrá dar
-            seguimiento al ingresar al <b>SiRVER</b>.
-          </p>
-        </ul>
-      </div>
-      <div class="carga__card">
-        <h4>Validación de la información</h4>
-        <ul>
-          <p>
-            Una vez cargado el archivo, el <b>SiRVER</b> realiza una revisión técnica basada en catálogos oficiales para
-            asegurar que el llenado cumpla con los criterios y parámetros establecidos en el documento original.
-          </p>
-
-          <p>
-            Al finalizar este proceso, el sistema emitirá un Reporte de Validación en formato PDF según el resultado
-            obtenido:
-
-          </p>
-          <li><b>Validación Exitosa:</b> Si la información es correcta, el PDF contendrá su contraseña para futuros
-            accesos y la fecha programada en la que podrá descargar el diagnóstico final.</li>
-
-          <li>
-            <b>Validación con Errores:</b> En caso de que el sistema detecte datos que requieren corrección, el PDF
-            detallará de manera precisa los hallazgos técnicos o inconsistencias encontradas.
-            Este documento servirá como guía para que realice los ajustes necesarios en su FRV y proceda a una nueva
-            carga.
-          </li>
-
-
-          <!--
-          <p>
-            Si la validación es positiva, el <b>SiRVER</b> emitirá un reporte en formato PDF con su contraseña para futuros accesos y la fecha en la que estarán listos los reportes de resultados detallados.
-            que podrá descargar sus resultados.
-          </p>
-          <p>Si el resultado de la validación es negativo, el sistema emitirá un reporte en formato PDF con las inconsistencias detectadas en la información.</p>
+                <p>
+                    La o el director de la escuela ingresa al sistema <b>SiRVER</b> proporcionando un correo electrónico,
+                    posteriormente carga el FRV correspondiente a su CCT-Turno.
+                </p>
+                <!--
+            <p>
+            Durante este proceso, el directivo comparte el FRV con la información de su escuela (CCT-Turno).
+            </p>
             -->
-        </ul>
-      </div>
-      <div class="carga__card">
-        <h4>Descarga de Resultados</h4>
-        <ul>
-          <p>
-            Una vez que se cumpla la fecha indicada por el <b>SiRVER</b> para la disponibilidad de los resultados,
-            la o el director de la escuela deberá ingresar nuevamente al sistema utilizando su usuario y contraseña.
+                <p>
+                  Con esta acción, el formato queda registrado dentro del sistema, asociando el correo electrónico al CCT-Turno especificado en el FRV. Si la o el director
+                  carga más de un CCT-Turno, éstos quedan asociados al correo electrónico, a los cuales les podrá dar seguimiento al ingresar al <b>SiRVER</b>.
+                </p>
 
-          <p>
-            Dentro de la plataforma, la o el director deberá localizar y seleccionar la opción <b>“Descargar
-              resultados”</b>, mediante la cual podrá acceder al documento
-            generado por el sistema. Al realizar esta acción, el <b>SiRVER</b> permitirá la descarga del archivo
-            correspondiente en formato PDF, el cual contendrá los resultados de su escuela.
+            </ul>
+        </div>
+        
+        <div class="carga__card">
+            <h4>Validación de la información</h4>
+            <ul>
+                <p>
+                    Una vez cargado el archivo, el <b>SiRVER</b> realiza una revisión técnica basada en catálogos oficiales para asegurar que
+                    el llenado cumpla con los criterios e instrucciones del FRV.
+                </p>
 
-          </p>
+                <p>
+                    Al finalizar este proceso, el sistema emitirá un Reporte de Validación en formato PDF según el resultado obtenido:
+
+                </p>
+                <ul class="faq__lista">
+                    <li>
+                        <b>Validación Exitosa:</b> Si la información es correcta, el PDF contendrá su contraseña para futuros accesos y la fecha
+                        programada en la que podrá descargar el diagnóstico final.
+                    </li>
+                    <li>
+                        <b>Validación con Errores:</b> En caso de que el sistema detecte datos que requieren corrección, el PDF detallará de manera precisa los hallazgos técnicos o inconsistencias encontradas.
+                        Este documento servirá como guía para que realice los ajustes necesarios en su FRV y proceda a una nueva carga.
+                    </li>
+                </ul>
+                <!--
+            <p>
+              Si la validación es positiva, el <b>SiRVER</b> emitirá un reporte en formato PDF con la contraseña provisional para futuros accesos y la fecha en
+              que podrá descargar sus resultados.
+            </p>
+            <p>Si el resultado de la validación es negativo, el sistema emitirá un reporte en formato PDF con las inconsistencias detectadas en la información.</p>
+             -->
+            </ul>
+        </div>
+        <div class="carga__card">
+            <h4>Descarga de Resultados</h4>
+            <ul>
+                <p>
+                    Una vez que se cumpla la fecha indicada por el <b>SiRVER</b> para la disponibilidad de los resultados,
+                    la o el director de la escuela deberá ingresar nuevamente al sistema utilizando su usuario y contraseña.
+
+                <p>
+                    Dentro de la plataforma, la o el director deberá localizar y seleccionar la opción <b>
+                        “Cargas realizadas”
+                    </b>, mediante la cual podrá acceder al documento
+                    generado por el sistema. Al realizar esta acción, el <b>SiRVER</b> permitirá la descarga del archivo
+                    correspondiente en formato PDF, el cual contendrá los resultados de su escuela.
+
+                </p>
 
 
-        </ul>
-      </div>
+            </ul>
+        </div>
     </div>
   </section>
   <!-- USER SUB-NAV MENU (Only visible to logged-in Role 4 users) -->
   <nav class="shared-subnav" *ngIf="sesionActiva">
     <a routerLink="/carga-masiva" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
-      <i class="bi bi-cloud-upload"></i> Carga Masiva
+      <i class="bi bi-cloud-upload"></i> Carga de archivos
     </a>
     <a routerLink="/archivos-evaluacion" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
       <i class="bi bi-folder-check"></i> Cargas realizadas
     </a>
     <a routerLink="/tickets" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
-      <i class="bi bi-life-preserver"></i> Soporte
+      <i class="bi bi-life-preserver"></i> Mesa de ayuda
     </a>
     <a routerLink="/tickets-historial" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
       <i class="bi bi-card-list"></i> Mis tickets
@@ -100,7 +98,7 @@
   </nav>
 
   <div class="carga__encabezado">
-    <p class="carga__eyebrow">Módulo de carga de archivos</p>
+    <p class="carga__eyebrow">Carga de archivos</p>
     <h1 class="carga__titulo">Cargue su FRV con la información de su escuela</h1>
     <p class="carga__descripcion" style="display: none;">
       De acuerdo con la especificación del módulo de carga, puede enviar el archivo de evaluación sin autenticación
@@ -151,26 +149,28 @@
       [queryParams]="{ redirect: '/carga-masiva' }">
       Ingresar
     </a>
-    <button *ngIf="sesionActiva" type="button" class="carga__sesion-boton carga__sesion-boton--secundario"
-      (click)="cerrarSesion()">
-      Cerrar sesión
-    </button>
+    
   </div>
 
   <div class="carga__zona" [class.carga__zona--error]="hayErrores">
     <form class="carga__formulario" (submit)="$event.preventDefault()">
       <label class="carga__campo">
-        <span class="carga__campo-label">Ingrese un correo electrónico válido para asociar y dar seguimiento a su
-          registro</span>
+        <span class="carga__campo-label">
+          Ingrese un correo electrónico válido para asociar y dar seguimiento a su
+          registro
+        </span>
         <input type="email" [formControl]="correoControl" placeholder="usuario@dominio.com" required>
         <small class="carga__campo-error" *ngIf="correoControl.invalid && correoControl.touched">
           Ingrese un correo electrónico válido.
         </small>
-        <small class="carga__campo-aviso" *ngIf="credencialesAsociadas">
-          Ya existe una contraseña ligada a este correo. Se reutilizará para sus siguientes cargas y no se generará una
-          nueva
-          clave.
-        </small>
+                <!--
+                <small class="carga__campo-aviso" *ngIf="credencialesAsociadas">
+                Ya existe una contraseña ligada a este correo. Se reutilizará para sus siguientes cargas y no se generará una
+                nueva
+                clave.
+                </small>
+                -->
+
       </label>
     </form>
 
@@ -211,8 +211,8 @@
         <div class="carga__credenciales-icono" aria-hidden="true">🔑</div>
         <div class="carga__credenciales-titulos">
           <p class="carga__credenciales-eyebrow">Datos de acceso</p>
-          <h3>Credenciales para tus cargas</h3>
-          <p class="carga__credenciales-sub">Úsalas para iniciar sesión en futuras cargas con este correo.</p>
+          <h3>Credenciales para sus cargas</h3>
+          <p class="carga__credenciales-sub">Úselas para iniciar sesión en futuras cargas con este correo.</p>
         </div>
         <span class="carga__credenciales-chip" *ngIf="credencialesMostradas.esNueva">Nueva contraseña</span>
       </div>
@@ -239,24 +239,28 @@
           <p class="carga__detalle-etiqueta">Archivo seleccionado</p>
           <h2>{{ resultado.archivo.name }}</h2>
           <p class="carga__detalle-metadata">
-            Peso: {{ resultado.archivo.sizeKb }} KB · Última modificación: {{
-            resultado.archivo.lastModified |
-            date:'short'
-            }}
+            Peso: {{ resultado.archivo.sizeKb }} KB
+
+            <!--· Última modificación: {{
+        resultado.archivo.lastModified |
+        date:'long'
+        }}-->
+
           </p>
+
           <p class="carga__detalle-metadata" *ngIf="resultado.tipoDetectado">
             Archivo detectado: {{ obtenerEtiquetaTipo(resultado.tipoDetectado) }}
           </p>
         </div>
         <div class="carga__detalle-status">
           <span class="carga__estado-indicador"
-            [class.carga__estado-indicador--progreso]="resultado.estado === 'validando'"
-            [class.carga__estado-indicador--error]="resultado.estado === 'error'"
-            [class.carga__estado-indicador--exito]="resultado.estado === 'exito'">
+                [class.carga__estado-indicador--progreso]="resultado.estado === 'validando'"
+                [class.carga__estado-indicador--error]="resultado.estado === 'error'"
+                [class.carga__estado-indicador--exito]="resultado.estado === 'exito'">
             <span *ngIf="resultado.estado !== 'validando' && resultado.estado !== 'guardando'"
-              class="carga__estado-punto" aria-hidden="true"></span>
+                  class="carga__estado-punto" aria-hidden="true"></span>
             <span *ngIf="resultado.estado === 'validando' || resultado.estado === 'guardando'" class="spinner"
-              aria-hidden="true"></span>
+                  aria-hidden="true"></span>
             <span class="carga__estado-texto">
               {{
               resultado.estado === 'validando' ? 'Validando' : resultado.estado === 'guardando' ? 'Subiendo' :
@@ -268,16 +272,16 @@
         </div>
       </header>
       <!--<p class="carga__mensaje"
-         [ngClass]="{ 'carga__mensaje--info': resultado.estado !== 'error', 'carga__mensaje--error': resultado.estado === 'error' }"
-         *ngIf="resultado.mensajeInformativo">
-        {{ resultado.mensajeInformativo }}
-      </p>-->
+     [ngClass]="{ 'carga__mensaje--info': resultado.estado !== 'error', 'carga__mensaje--error': resultado.estado === 'error' }"
+     *ngIf="resultado.mensajeInformativo">
+    {{ resultado.mensajeInformativo }}
+  </p>-->
 
 
       <ng-container *ngIf="resultado.estado === 'error' && resultado.errores.length">
         <p class="carga__mensaje carga__mensaje--error">Se encontraron problemas en su archivo:</p>
         <div class="carga__lista" *ngFor="let grupo of resultado.erroresAgrupados">
-          <strong>{{ grupo.hoja === 'General' ? 'General' : 'Hoja ' + grupo.hoja }}</strong>
+          <!--<strong>{{ grupo.hoja === 'General' ? 'General' : 'Hoja ' + grupo.hoja }}</strong>-->
           <div *ngFor="let ubicacion of grupo.ubicaciones">
             <p class="carga__mensaje carga__mensaje--info">{{ ubicacion.titulo }}</p>
             <ul>
@@ -298,8 +302,9 @@
         <!--<h3>Archivo validado correctamente</h3>-->
 
         <p class="carga__resumen">
-          Se han validado con éxito {{ resultado.resultadoExito.totalAlumnos }} estudiantes en la hoja “TERCERO”, su
-          comprobante de carga ya está disponible en descargas.
+          Se han validado con éxito {{ resultado.resultadoExito.totalAlumnos }} estudiantes en la hoja “TERCERO”,
+          su comprobante de carga ya está disponible en la carpeta Descargas de su PC o en la ubicación que haya
+          seleccionado al descargar archivos de forma segura.
 
         </p>
         <p>{{ resultado.resultadoExito.mensaje }}</p>
@@ -315,21 +320,24 @@
           {{ resultado.errorGuardado }}
         </p>
       </div>
+                  
+                  <div class="carga__acciones">
+                  <button class="carga__boton-primario" *ngIf="!mostrarCargaMasiva"
+                      [class.carga__boton-guardado]="resultado.guardado" (click)="guardarArchivo(resultado)"
+                      [disabled]="resultado.estado !== 'exito' || resultado.guardando || correoControl.invalid || resultado.guardado">
+                  {{
+                  resultado.guardado
+                  ? 'Archivo guardado'
+                  : resultado.guardando
+                  ? 'Guardando…'
+                  : 'Enviar archivo'
+                  }}
+                  </button>
+                  <button class="carga__boton-secundario" (click)="onEliminarResultado(resultado)">Quitar archivo</button>
+                  </div>
 
-      <div class="carga__acciones">
-        <button class="carga__boton-primario" *ngIf="!mostrarCargaMasiva"
-          [class.carga__boton-guardado]="resultado.guardado" (click)="guardarArchivo(resultado)"
-          [disabled]="resultado.estado !== 'exito' || resultado.guardando || correoControl.invalid || resultado.guardado">
-          {{
-          resultado.guardado
-          ? 'Archivo guardado'
-          : resultado.guardando
-          ? 'Guardando…'
-          : 'Enviar Archivo'
-          }}
-        </button>
-        <button class="carga__boton-secundario" (click)="onEliminarResultado(resultado)">Quitar Archivo</button>
-      </div>
+                  
+
 
       <div class="carga__pdf" *ngIf="resultado.pdfTipo">
         <div class="carga__pdf-estado" [ngClass]="{
@@ -343,7 +351,7 @@
           : resultado.pdfEstado === 'descargando'
           ? 'Descargando PDF'
           : resultado.pdfEstado === 'listo'
-          ? 'PDF descargado'
+          ? ''
           : 'No se pudo descargar'
           }}
         </div>
@@ -353,7 +361,7 @@
           Archivo descargado: <strong>{{ resultado.pdfNombre }}</strong>
         </p>
         <button type="button" class="carga__boton-secundario carga__pdf-boton" *ngIf="resultado.pdfEstado === 'error'"
-          (click)="reintentarDescargaPdf(resultado)">
+                (click)="reintentarDescargaPdf(resultado)">
           Reintentar descarga de PDF
         </button>
       </div>
@@ -361,7 +369,7 @@
 
     <div class="carga__acciones carga__acciones--totales" *ngIf="mostrarCargaMasiva">
       <button class="carga__boton-primario" (click)="guardarTodo()" [disabled]="!puedeCargarTodo">
-        {{ guardandoTodo ? 'Guardando…' : 'CARGAR TODO' }}
+        {{ guardandoTodo ? 'Guardando…' : 'Enviar todo' }}
       </button>
     </div>
 
@@ -393,7 +401,7 @@
           <span class="carga__campo-label">Nombre completo</span>
           <input type="text" formControlName="nombreCompleto" placeholder="Ej. Juan Pérez">
           <small class="carga__error-hint"
-            *ngIf="incidenciaForm.get('nombreCompleto')?.touched && incidenciaForm.get('nombreCompleto')?.invalid">
+                 *ngIf="incidenciaForm.get('nombreCompleto')?.touched && incidenciaForm.get('nombreCompleto')?.invalid">
             El nombre es obligatorio.
           </small>
         </div>
@@ -403,7 +411,7 @@
             <span class="carga__campo-label">CCT (10 caracteres)</span>
             <input type="text" formControlName="cct" placeholder="09DPR0001A" maxlength="10">
             <small class="carga__error-hint"
-              *ngIf="incidenciaForm.get('cct')?.touched && incidenciaForm.get('cct')?.invalid">
+                   *ngIf="incidenciaForm.get('cct')?.touched && incidenciaForm.get('cct')?.invalid">
               CCT inválido (10 caracteres).
             </small>
           </div>
@@ -411,7 +419,7 @@
             <span class="carga__campo-label">Correo de contacto</span>
             <input type="email" formControlName="email" placeholder="correo@ejemplo.com">
             <small class="carga__error-hint"
-              *ngIf="incidenciaForm.get('email')?.touched && incidenciaForm.get('email')?.invalid">
+                   *ngIf="incidenciaForm.get('email')?.touched && incidenciaForm.get('email')?.invalid">
               Correo inválido.
             </small>
           </div>
@@ -419,11 +427,14 @@
 
         <div class="carga__campo">
           <span class="carga__campo-label">Descripción del problema</span>
-          <p class="carga__campo-ayuda">Puede agregar más explicaciones o detalles al reporte técnico generado
-            automáticamente.</p>
-          <textarea formControlName="descripcion" rows="5" placeholder="Describa brevemente qué sucede..."></textarea>
+          <p class="carga__campo-ayuda">
+            Puede agregar más explicaciones o detalles al reporte técnico generado
+            automáticamente, adjunte su FRV.
+          </p>
+          <!--formControlName="descripcion" rows="5" placeholder="Describa brevemente qué sucede..."-->
+          <textarea></textarea>
           <small class="carga__error-hint"
-            *ngIf="incidenciaForm.get('descripcion')?.touched && incidenciaForm.get('descripcion')?.invalid">
+                 *ngIf="incidenciaForm.get('descripcion')?.touched && incidenciaForm.get('descripcion')?.invalid">
             Mínimo 5 caracteres.
           </small>
         </div>
@@ -431,8 +442,10 @@
         <!-- SECCIÓN DE EVIDENCIAS -->
         <div class="carga__incidencia-evidencias">
           <span class="carga__campo-label">Archivos de evidencia (Opcional)</span>
-          <p class="carga__campo-ayuda">Capturas de pantalla o documentos que ayuden a entender el error (Máx. 5
-            archivos).</p>
+          <p class="carga__campo-ayuda">
+            Capturas de pantalla o documentos que ayuden a entender el error (Máx. 5
+            archivos).
+          </p>
 
           <div class="carga__evidencias-lista" *ngIf="evidenciasIncidencia.length">
             <div class="carga__evidencia-item" *ngFor="let ev of evidenciasIncidencia; let i = index">
@@ -448,18 +461,19 @@
           <label class="carga__boton-adjuntar" *ngIf="evidenciasIncidencia.length < 5">
             <i class="bi bi-paperclip"></i> Agregar archivo
             <input type="file" (change)="onEvidenciaIncidenciaSeleccionada($event)"
-              [accept]="extensionesEvidencias.join(',')" hidden>
+                   [accept]="extensionesEvidencias.join(',')" hidden>
           </label>
         </div>
+              <!--
+              <div class="carga__modal-footer-info">
 
-        <div class="carga__modal-footer-info">
-          <i class="bi bi-info-circle"></i>
-          <p>
-            Al enviar, se generará un ticket de soporte tipo <strong>"INCIDENCIA_PUBLICA"</strong>.
-            Podrá dar seguimiento a través del correo de dudas: <strong>ejercicios&#64;nube.sep.gob.mx</strong>
-          </p>
-        </div>
-
+              <i class="bi bi-info-circle"></i>
+              <p>
+              Al enviar, se generará un ticket de soporte tipo <strong>"INCIDENCIA_PUBLICA"</strong>.
+              Podrá dar seguimiento a través del correo de dudas: <strong>ejercicios&#64;nube.sep.gob.mx</strong>
+              </p>
+              </div>
+              -->
         <div class="carga__modal-acciones">
           <button type="button" class="carga__boton-secundario" (click)="cerrarModalIncidencia()">Cancelar</button>
           <button type="submit" class="carga__boton-primario">Mandar información</button>
