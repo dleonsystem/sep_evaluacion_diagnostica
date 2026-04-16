@@ -2353,49 +2353,36 @@ t.numero_ticket as "folio",
         }
 
         // Validar que la CCT exista en el catálogo oficial SIGED (tabla escuelas)
-        // RF-13: La carga debe rechazarse si la CCT no es oficial o no coincide con el nivel
+        // US-NUEVA-ESC: Si no existe, permitimos continuar para registro automático si el formato es válido.
         const escrow = await query(
           'SELECT id, id_nivel FROM escuelas WHERE cct = $1 AND id_turno = $2 AND activo = true LIMIT 1',
           [cct, idTurno]
         );
 
-        if (escrow.rows.length === 0) {
-          const errorMsg = `La CCT ${cct} con turno "${excelTurno}" no está registrada en el catálogo oficial SIGED. Por favor, verifique sus datos.`;
-          await auditLog(errorMsg, 'RECHAZADO');
+        const escuelaExistente = escrow.rows.length > 0;
 
-          return {
-            success: false,
-            message: errorMsg,
-            detalles: {
-              errores: [errorMsg],
-              erroresEstructurados: [
-                { campo: 'CCT', error: errorMsg, hoja: 'ESC', fila: 9, columna: 'D' },
-              ],
-            },
-          };
-        }
+        // Validar consistencia de Nivel Educativo solo si la escuela ya existe (RF-13.2)
+        if (escuelaExistente) {
+          const idNivelBd = escrow.rows[0].id_nivel;
+          if (idNivelBd !== idNivelExcel) {
+            const nivelNombreBd =
+              Object.keys(nivelMap).find((key) => nivelMap[key] === idNivelBd) || 'DESCONOCIDO';
+            const errorMsg = `Inconsistencia de Nivel: El archivo es de nivel ${nivelDetectadoExcel}, pero la CCT ${cct} está registrada oficialmente como ${nivelNombreBd}.`;
 
-        // Validar consistencia de Nivel Educativo (RF-13.2)
-        const idNivelBd = escrow.rows[0].id_nivel;
-        if (idNivelBd !== idNivelExcel) {
-          const nivelNombreBd =
-            Object.keys(nivelMap).find((key) => nivelMap[key] === idNivelBd) || 'DESCONOCIDO';
-          const errorMsg = `Inconsistencia de Nivel: El archivo es de nivel ${nivelDetectadoExcel}, pero la CCT ${cct} está registrada oficialmente como ${nivelNombreBd}.`;
+            logger.warn('[CCT Validation] Reingreso rechazado por inconsistencia de nivel', { cct, nivelExcel: nivelDetectadoExcel, nivelBd: nivelNombreBd });
+            await auditLog(errorMsg, 'RECHAZADO');
 
-          logger.warn('[CCT Validation] Reingreso rechazado por inconsistencia de nivel', { cct, nivelExcel: nivelDetectadoExcel, nivelBd: nivelNombreBd });
-          await auditLog(errorMsg, 'RECHAZADO');
-
-          // CRÍTICO: NO INSERTAR NADA EN solicitudes_eia2. Retornar error de inmediato.
-          return {
-            success: false,
-            message: errorMsg,
-            detalles: {
-              errores: [errorMsg],
-              erroresEstructurados: [
-                { campo: 'Nivel', error: errorMsg, hoja: 'ESC', fila: 6, columna: 'C' },
-              ],
-            },
-          };
+            return {
+              success: false,
+              message: errorMsg,
+              detalles: {
+                errores: [errorMsg],
+                erroresEstructurados: [
+                  { campo: 'Nivel', error: errorMsg, hoja: 'ESC', fila: 6, columna: 'C' },
+                ],
+              },
+            };
+          }
         }
 
         // Validación de correo (CU-04v2 / RF-16.2)
@@ -2422,8 +2409,6 @@ t.numero_ticket as "folio",
           // Si el usuario ya está logueado, confiamos en la sesión.
         }
 
-        const escuelaIdFromDb = escrow.rows[0].id;
-
         // RF-16.5: Detección de duplicados basada en CCT + Turno + Usuario (Regla prioritaria)
         // Un usuario sólo puede tener un archivo activo para una escuela y turno específicos.
         const existingReq = await query(
@@ -2438,13 +2423,39 @@ t.numero_ticket as "folio",
             duplicadoDetectado: true,
           };
         }
-        const nivelId = idNivelExcel;
-        let solicitudId: string = '';
-        let consecutivo: any = null;
 
         client = await getClient();
         logger.info('[Progreso Carga] Iniciando transacción...');
         await client.query('BEGIN');
+
+        let escuelaIdReal = escuelaExistente ? escrow.rows[0].id : null;
+
+        // Registro de escuela nueva si no existe
+        if (!escuelaExistente) {
+          logger.info('Registrando nueva escuela detectada en Excel', { cct, nombre: metadata.nombreEscuela });
+          
+          // 1. Determinar Entidad por prefijo CCT (ej: 09 -> CDMX)
+          const entidadRes = await client.query(
+            'SELECT id_entidad FROM cat_entidades_federativas WHERE codigo_sep = $1 OR abreviatura = $1 LIMIT 1',
+            [cct.substring(0, 2)]
+          );
+          const idEntidad = entidadRes.rows.length > 0 ? entidadRes.rows[0].id_entidad : 9; // Fallback a CDMX si no se reconoce
+
+          // 2. Determinar Ciclo Activo
+          const cicloRes = await client.query(
+            'SELECT id_ciclo FROM cat_ciclos_escolares WHERE activo = true LIMIT 1'
+          );
+          const idCiclo = cicloRes.rows.length > 0 ? cicloRes.rows[0].id_ciclo : 2024;
+
+          const newEscuela = await client.query(
+            `INSERT INTO escuelas (cct, nombre, id_turno, id_nivel, id_entidad, id_ciclo, activo, created_at) 
+             VALUES ($1, $2, $3, $4, $5, $6, true, NOW()) RETURNING id`,
+            [cct, metadata.nombreEscuela || 'ESCUELA NUEVA', idTurno, idNivelExcel, idEntidad, idCiclo]
+          );
+          escuelaIdReal = newEscuela.rows[0].id;
+        }
+
+        const escuelaIdFromDb = escuelaIdReal;
 
         let generatedPassword = null;
         let isNewUser = false; // Flag para mailing

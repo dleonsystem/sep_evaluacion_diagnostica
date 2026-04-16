@@ -469,8 +469,8 @@ export class ExcelValidationService {
         }
       }
 
-      // Algoritmo: (Nones * 7) + (Pares * 26)
-      const total = (sumNones * 7) + (sumPares * 26);
+      // Algoritmo oficial: (Posiciones Pares * 7) + (Posiciones Nones * 26)
+      const total = (sumPares * 7) + (sumNones * 26);
       const residuo = total % 27;
 
       const TABLA_2 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0";
@@ -915,10 +915,21 @@ export class ExcelValidationService {
       if (!vFormat.isValid) {
         errores.push(`CCT [${cct}]: ${vFormat.error!}`);
       } else {
-        // Validación de existencia en DB
+        // Validación de existencia en DB (Opcional - Permitir nuevas escuelas si la CCT es válida)
         const existe = await this.verificarCctEnBaseDeDatos(cct);
         if (!existe) {
-          errores.push(`La CCT [${cct}] no está registrada en el catálogo oficial de instituciones. Por favor, solicite el registro de su escuela antes de subir la evaluación.`);
+          // Si no existe, no bloqueamos la carga masiva (Issue #NuevaEscuela)
+          // Solo informamos al usuario que se registrará automáticamente.
+          return {
+            datos: {
+              cct: cct.trim(),
+              turno: turno?.trim() ?? '',
+              nombreEscuela: nombreEscuela?.trim() ?? '',
+              correo: correo?.trim() ?? ''
+            },
+            errores,
+            advertencia: `La CCT [${cct}] no está registrada actualmente. El sistema la dará de alta automáticamente con la información proporcionada en este archivo.`
+          };
         }
       }
     }
