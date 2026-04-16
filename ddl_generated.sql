@@ -804,6 +804,7 @@ CREATE TABLE tickets_soporte (
 	user_fullname  VARCHAR(255),
 	user_cct       VARCHAR(20),
 	user_email     VARCHAR(150),
+	user_turno     VARCHAR(50),
 	created_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );

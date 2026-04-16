@@ -29,6 +29,8 @@ Este documento detalla todas las modificaciones realizadas a la base de datos `E
 | 2026-04-06 | `solicitudes_eia2` | Refuerzo de Trazabilidad | Sincronización del resolver `uploadExcelAssessment` para actualizar metadatos físicos (`hash_archivo`, `archivo_path`, `archivo_size`) durante el reemplazo de solicitudes (Issue #258). |
 | 2026-04-08 | `solicitudes_eia2` | Adición de `id_turno` y Regla de Duplicidad | Se añadió el campo `id_turno` (INTEGER) para permitir la nueva regla: un usuario solo puede tener un registro activo por combinación de CCT y Turno. Se ajustó el resolver para vincular correctamente el `usuario_id` en todos los flujos. |
 | 2026-04-10 | `cat_motivos_ticket`| Creación de catálogo | Implementación de catálogo institucional para estandarizar los motivos de soporte en el frontend y backend. |
+| 2026-04-16 | `tickets_soporte` | Adición de `user_turno` (VARCHAR 50) | Mejora del formulario de incidencia pública para capturar el turno escolar y permitir evidencias tipo Excel (.xlsx) para soporte técnico de carga (#Issue-Fase-1). |
+| 2026-04-16 | `usuarios` | Ajuste en Resolver `createPublicIncident` | Se eliminó el campo `id_turno` de la sentencia de inserción, ya que dicha columna no existe en el esquema físico actual de la tabla `usuarios`. |
 
 ### Notas Adicionales:
 - **Catálogos Duplicados:** Resuelto. Se consolidó el uso de `cat_nivel_educativo` como fuente única de verdad y se eliminó la tabla plural `cat_niveles_educativos` de la base de datos (GAP-DB-2).

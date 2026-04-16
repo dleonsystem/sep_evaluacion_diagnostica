@@ -353,6 +353,7 @@ export const typeDefs = `#graphql
   input CreatePublicIncidentInput {
     nombreCompleto: String!
     cct: String!
+    turno: String!
     email: String!
     descripcion: String!
     evidencias: [TicketEvidenciaInput!]
@@ -748,6 +749,7 @@ export const typeDefs = `#graphql
     correo: String
     nombreCompleto: String
     cct: String
+    turno: String
     fechaCreacion: String!
     fechaActualizacion: String!
   }

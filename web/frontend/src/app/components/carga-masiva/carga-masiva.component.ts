@@ -100,11 +100,12 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
   evidenciasIncidencia: any[] = [];
   readonly maxEvidenciasIncidencia = 5;
-  readonly extensionesEvidencias = ['.pdf', '.jpg', '.jpeg', '.png'];
+  readonly extensionesEvidencias = ['.pdf', '.jpg', '.jpeg', '.png', '.xlsx'];
 
   readonly incidenciaForm = new FormGroup({
     nombreCompleto: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     cct: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(10), Validators.maxLength(10)] }),
+    turno: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
     descripcion: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] })
   });
@@ -501,6 +502,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         input: {
           nombreCompleto: data.nombreCompleto,
           cct: data.cct,
+          turno: data.turno,
           email: data.email,
           descripcion: data.descripcion,
           evidencias: evidenciasBase64
@@ -512,7 +514,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       await Swal.fire({
         icon: 'success',
         title: 'Incidencia reportada',
-        text: 'Se ha mandado correctamente su información capturada. El sistema generará un ticket para darle atención.',
+        text: 'Se ha enviado correctamente su información. Sus credenciales de acceso han sido enviadas a su correo electrónico y se ha generado un ticket para dar seguimiento a su incidencia.',
         confirmButtonColor: '#00695c'
       });
 

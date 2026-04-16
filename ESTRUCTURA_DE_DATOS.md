@@ -1206,6 +1206,7 @@ Tickets de soporte técnico gestionados por operadores SEP.
 | user_fullname | VARCHAR(255) | Nombre completo capturado del usuario reportante |
 | user_cct | VARCHAR(20) | CCT capturado del usuario reportante |
 | user_email | VARCHAR(150) | Email capturado del usuario reportante |
+| user_turno | VARCHAR(50) | Turno capturado del usuario reportante |
 | created_at | TIMESTAMP | Fecha de creación DEFAULT NOW() |
 | updated_at | TIMESTAMP | Fecha de actualización DEFAULT NOW() |
 
