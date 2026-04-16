@@ -398,6 +398,21 @@
 
         <div class="carga__modal-row">
           <div class="carga__campo">
+             <span class="carga__campo-label">Turno</span>
+             <select formControlName="turno">
+               <option value="" disabled selected>Seleccione...</option>
+               <option value="MATUTINO">MATUTINO</option>
+               <option value="VESPERTINO">VESPERTINO</option>
+               <option value="NOCTURNO">NOCTURNO</option>
+               <option value="CONTINUO">CONTINUO</option>
+               <option value="DISCONTINUO">DISCONTINUO</option>
+             </select>
+             <small class="carga__error-hint"
+               *ngIf="incidenciaForm.get('turno')?.touched && incidenciaForm.get('turno')?.invalid">
+               Obligatorio.
+             </small>
+          </div>
+          <div class="carga__campo">
             <span class="carga__campo-label">CCT (10 caracteres)</span>
             <input type="text" formControlName="cct" placeholder="09DPR0001A" maxlength="10">
             <small class="carga__error-hint"
@@ -429,7 +444,7 @@
         <!-- SECCIÓN DE EVIDENCIAS -->
         <div class="carga__incidencia-evidencias">
           <span class="carga__campo-label">Archivos de evidencia (Opcional)</span>
-          <p class="carga__campo-ayuda">Capturas de pantalla o documentos que ayuden a entender el error (Máx. 5
+          <p class="carga__campo-ayuda">Capturas de pantalla, archivos Excel (.xlsx) o documentos que ayuden a entender el error (Máx. 5
             archivos).</p>
 
           <div class="carga__evidencias-lista" *ngIf="evidenciasIncidencia.length">

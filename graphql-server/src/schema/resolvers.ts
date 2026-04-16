@@ -734,6 +734,7 @@ id,
             t.evidencias,
             u.email as "correo",
             u.nombre || ' ' || u.apepaterno as "nombreCompleto",
+            u.id_turno as "turno",
             t.created_at as "fechaCreacion",
             t.updated_at as "fechaActualizacion"
           FROM tickets_soporte t
@@ -782,6 +783,7 @@ id,
             t.user_email as "correo",
             t.user_fullname as "nombreCompleto",
             t.user_cct as "cct",
+            t.user_turno as "turno",
             t.created_at as "fechaCreacion",
             t.updated_at as "fechaActualizacion"
           FROM tickets_soporte t
@@ -999,6 +1001,7 @@ t.numero_ticket as "folio",
             COALESCE(cet.codigo, 'ABIERTO') as estado,
             t.prioridad,
             t.evidencias,
+            t.user_turno as "turno",
             t.created_at as "fechaCreacion",
             t.updated_at as "fechaActualizacion"
            FROM tickets_soporte t
@@ -2209,6 +2212,9 @@ t.numero_ticket as "folio",
       };
 
       try {
+        let client;
+        let solicitudId;
+        let consecutivo;
         logger.info('Iniciando carga masiva con Worker', { nombreArchivo });
 
         const runWorker = () =>
@@ -2577,7 +2583,7 @@ t.numero_ticket as "folio",
             [
               cct,
               nombreArchivo,
-              nivelId,
+              idNivelExcel,
               fileHash,
               userToLink || null,
               credencialId,
@@ -2590,7 +2596,6 @@ t.numero_ticket as "folio",
           consecutivo = solRes.rows[0].consecutivo;
         }
 
-        const escuelaId = escuelaIdFromDb;
 
         // 1. Obtener Periodo Activo
         const periodRes = await client.query(
@@ -2660,7 +2665,7 @@ t.numero_ticket as "folio",
         const materiasCache: Record<string, string> = {};
         const allMaterias = await client.query(
           'SELECT id, codigo FROM materias WHERE nivel_educativo = $1 AND activa = true',
-          [nivelId]
+          [idNivelExcel]
         );
         allMaterias.rows.forEach((m: any) => {
           materiasCache[m.codigo] = m.id;
@@ -2672,13 +2677,13 @@ t.numero_ticket as "folio",
         let alumnosProcesados = 0;
 
         for (const alumno of alumnos) {
-          const idGrado = nivelId * 100 + alumno.grado;
+          const idGrado = idNivelExcel * 100 + alumno.grado;
           const codigosMateriasConfigurados = getMateriasConfiguradas(alumno.grado);
 
           // 4. Asegurar Grupo
           const gRes = await client.query(
             'SELECT id FROM grupos WHERE escuela_id = $1 AND grado_id = $2 AND nombre = $3 LIMIT 1',
-            [escuelaId, idGrado, alumno.grupo]
+            [escuelaIdReal, idGrado, alumno.grupo]
           );
 
           let grupoId;
@@ -2686,8 +2691,8 @@ t.numero_ticket as "folio",
             grupoId = gRes.rows[0].id;
           } else {
             const newG = await client.query(
-              'INSERT INTO grupos (escuela_id, grado_id, nombre, nivel_educativo, grado_numero, turno) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-              [escuelaId, idGrado, alumno.grupo, nivelId, alumno.grado, excelTurno]
+              'INSERT INTO grupos (escuela_id, grado_id, nombre, nivel_educativo, grado_nombre, grado_numero, turno) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+              [escuelaIdReal, idGrado, alumno.grupo, idNivelExcel, alumno.grado_nombre, alumno.grado, excelTurno]
             );
             grupoId = newG.rows[0].id;
           }
@@ -3269,10 +3274,95 @@ t.numero_ticket as "folio",
      * @use-case CU-13: Mesa de ayuda (Público)
      */
     createPublicIncident: async (_: any, { input }: any) => {
-      const { nombreCompleto, cct, email, descripcion, evidencias } = input;
+      const { nombreCompleto, cct, turno, email, descripcion, evidencias } = input;
       const client = await getClient();
+      let generatedPassword: string | null = null;
       try {
         await client.query('BEGIN');
+
+        // 1. Mapeo de Turno e ID
+        const turnoMap: Record<string, number> = {
+          MATUTINO: 1,
+          VESPERTINO: 2,
+          NOCTURNO: 3,
+          DISCONTINUO: 4,
+          CONTINUO: 5,
+          'TIEMPO COMPLETO': 6,
+          'JORNADA AMPLIADA': 7,
+        };
+        const idTurno = turnoMap[turno.toUpperCase()] || 1;
+
+        // 2. Garantizar que la escuela exista (Registro Preventivo)
+        const escrow = await client.query(
+          'SELECT id FROM escuelas WHERE cct = $1 AND id_turno = $2 AND activo = true LIMIT 1',
+          [cct, idTurno]
+        );
+
+        let escuelaIdReal;
+        if (escrow.rows.length > 0) {
+          escuelaIdReal = escrow.rows[0].id;
+        } else {
+          const entidadRes = await client.query(
+            'SELECT id_entidad FROM cat_entidades_federativas WHERE codigo_sep = $1 OR abreviatura = $1 LIMIT 1',
+            [cct.substring(0, 2)]
+          );
+          const idEntidad = entidadRes.rows.length > 0 ? entidadRes.rows[0].id_entidad : 9;
+
+          const newEscuela = await client.query(
+            "INSERT INTO escuelas (cct, nombre, id_nivel, id_turno, id_entidad, id_ciclo, activo, fecha_registro) VALUES ($1, $2, $3, $4, $5, (SELECT id_ciclo FROM cat_ciclos_escolares WHERE activo = true LIMIT 1), true, NOW()) RETURNING id",
+            [cct, 'REGISTRO POR INCIDENCIA', 2, idTurno, idEntidad]
+          );
+          escuelaIdReal = newEscuela.rows[0].id;
+        }
+
+        // 3. Gestión de Usuario y Credenciales
+        const userRes = await client.query('SELECT id, password_hash FROM usuarios WHERE email = $1', [
+          email.trim().toLowerCase(),
+        ]);
+        let userId;
+
+        if (userRes.rows.length > 0) {
+          userId = userRes.rows[0].id;
+          logger.info('[AutoReg] Usuario existente encontrado', { email, userId });
+          if (!userRes.rows[0].password_hash) {
+            const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+            let retVal = '';
+            for (let i = 0; i < 12; ++i) retVal += charset.charAt(Math.floor(Math.random() * charset.length));
+            generatedPassword = retVal;
+
+            const salt = crypto.randomBytes(16).toString('hex');
+            const hash = crypto.scryptSync(generatedPassword, salt, 64).toString('hex');
+            const finalHash = `${salt}:${hash}`;
+            await client.query('UPDATE usuarios SET password_hash = $1 WHERE id = $2', [finalHash, userId]);
+            logger.info('[AutoReg] Password hash generado para usuario existente', { userId });
+          }
+        } else {
+          logger.info('[AutoReg] Iniciando registro de nuevo usuario', { email });
+          const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+          let retVal = '';
+          for (let i = 0; i < 12; ++i) retVal += charset.charAt(Math.floor(Math.random() * charset.length));
+          generatedPassword = retVal;
+
+          const salt = crypto.randomBytes(16).toString('hex');
+          const hash = crypto.scryptSync(generatedPassword, salt, 64).toString('hex');
+          const finalHash = `${salt}:${hash}`;
+
+          const newUser = await client.query(
+            "INSERT INTO usuarios (email, password_hash, rol, nombre, apepaterno, apematerno, escuela_id, activo, fecha_registro, primer_login) VALUES ($1, $2, (SELECT id_rol FROM cat_roles_usuario WHERE codigo = $3), $4, '', '', $5, true, NOW(), true) RETURNING id",
+            [email.trim().toLowerCase(), finalHash, 'RESPONSABLE_CCT', nombreCompleto, escuelaIdReal]
+          );
+          userId = newUser.rows[0].id;
+          logger.info('[AutoReg] Nuevo usuario registrado exitosamente', { email, userId });
+        }
+
+        // 4. Asegurar Credenciales CCT
+        const credCheck = await client.query('SELECT id FROM credenciales_eia2 WHERE cct = $1', [cct]);
+        if (credCheck.rows.length === 0) {
+          await client.query(
+            'INSERT INTO credenciales_eia2 (cct, correo_validado, password_hash) VALUES ($1, $2, (SELECT password_hash FROM usuarios WHERE id = $3))',
+            [cct, email, userId]
+          );
+        }
 
         // 1. Generar número de ticket
         const now = new Date();
@@ -3286,6 +3376,7 @@ t.numero_ticket as "folio",
         if (evidencias && evidencias.length > 0) {
           const remoteDir = '/upload/tickets/public';
           const sftpService = new SftpService();
+          await sftpService.connect();
           await sftpService.ensureDir(remoteDir);
 
           for (const evidencia of evidencias) {
@@ -3308,41 +3399,54 @@ t.numero_ticket as "folio",
         const insertRes = await client.query(
           `INSERT INTO tickets_soporte (
             numero_ticket, asunto, descripcion, estado, prioridad, 
-            user_fullname, user_cct, user_email, evidencias, created_at, updated_at, usuario_id
-          ) VALUES ($1, $2, $3, fn_catalogo_id('cat_estado_ticket', 'ABIERTO'), 'ALTA', $4, $5, $6, $7, NOW(), NOW(), NULL) RETURNING id`,
+            user_fullname, user_cct, user_turno, user_email, evidencias, created_at, updated_at, usuario_id
+          ) VALUES ($1, $2, $3, fn_catalogo_id('cat_estado_ticket', 'ABIERTO'), 'ALTA', $4, $5, $6, $7, $8, NOW(), NOW(), $9) RETURNING id`,
           [
             numeroTicket,
             'Incidencia en Carga Masiva',
             descripcion,
             nombreCompleto,
             cct,
+            turno,
             email,
             JSON.stringify(evidenciasProcesadas),
+            userId,
           ]
         );
         const ticketId = insertRes.rows[0].id;
         await client.query('COMMIT');
+
+        // 8. Enviar correo si se generó contraseña
+        if (generatedPassword) {
+          logger.info('[AutoReg] Disparando envo de credenciales por correo', { email });
+          mailingService.sendCredentials(email, cct, generatedPassword).then(() => {
+            logger.info('[AutoReg] Correo de credenciales enviado exitosamente', { email });
+          }).catch((err) => {
+            logger.error('Error enviando credenciales tras incidencia pǧblica', err);
+          });
+        }
 
         return {
           id: ticketId,
           numeroTicket,
           asunto: 'Incidencia en Carga Masiva',
           descripcion,
-          estado: 'PENDIENTE',
+          estado: 'ABIERTO',
           prioridad: 'ALTA',
           nombreCompleto,
           cct,
+          turno,
           correo: email,
           evidencias: evidenciasProcesadas,
           fechaCreacion: now.toISOString(),
           fechaActualizacion: now.toISOString(),
         };
-      } catch (error) {
-        await client.query('ROLLBACK');
-        logger.error('Error creating public incident DB:', { error });
-        throw new Error(`Error en Base de Datos: ${(error as Error).message}`);
+      } catch (error: any) {
+        if (client) await client.query('ROLLBACK');
+        logger.error('Error creating public incident with auto-reg', error);
+        throw new Error(error.message || 'Error al procesar la incidencia y el registro');
       } finally {
-        client.release();
+        if (client) client.release();
       }
     },
 
