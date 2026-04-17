@@ -33,6 +33,7 @@ interface TicketSoporte {
   templateUrl: './tickets.component.html',
   styleUrl: './tickets.component.scss'
 })
+/* LISTA DE LAS OPCIONES*/
 export class TicketsComponent implements OnInit {
   motivos: MotivoTicket[] = [];
   readonly maxEvidencias = 10;
@@ -159,7 +160,7 @@ export class TicketsComponent implements OnInit {
       // 3. Éxito
       await Swal.fire({
         title: '¡Ticket enviado!',
-        text: `Tu ticket se registró correctamente con el folio: ${ticketResult.numeroTicket}`,
+        text: `Su ticket se registró correctamente con el folio: ${ticketResult.numeroTicket}`,
         icon: 'success',
         confirmButtonText: 'Entendido',
         confirmButtonColor: '#00695c'

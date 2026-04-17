@@ -1,7 +1,9 @@
 <section class="faq">
 
   <div class="faq__encabezado">
-    <p class="faq__eyebrow">Dudas y Consultas</p>
+
+    <!--<p class="faq__eyebrow">Dudas y Consultas</p>-->
+
     <h1 class="faq__titulo">Preguntas Frecuentes</h1>
     <p class="faq__descripcion">
       Encuentra respuestas rápidas a las dudas comunes acerca del módulo de carga y validación.
@@ -21,25 +23,30 @@
     <!-- Pregunta 1 -->
     <div class="faq__item">
       <button class="faq__pregunta" (click)="toggleRespuesta($event)">
-        ¿Por qué el SiRVER me solicita un correo electrónico cuando ingreso?
+        1. ¿Por qué el SiRVER solicita un correo electrónico al ingresar?
       </button>
       <div class="faq__respuesta">
         <p>
-          Cuando ingresa por primera vez al <strong>SiRVER</strong>, le solicita un correo electrónico que será su usuario. para próximos
-          ingresos. La cantraseña la genera el SiRVER una vez que su FRV esté validado.
+          El correo electrónico que proporcione en su primer acceso funcionará como su <strong>usuario</strong> para futuras consultas.
+          La contraseña de acceso será generada automáticamente por el <strong>SiRVER</strong> una vez que su archivo FRV haya sido enviado exitosamente.
+
         </p>
       </div>
     </div>
 
+
     <!-- Pregunta 2 -->
     <div class="faq__item">
       <button class="faq__pregunta" (click)="toggleRespuesta($event)">
-        ¿Por qué se rechaza mi archivo?
+        2. ¿Cómo puedo solicitar el archivo prellenado (FRV) si no lo he recibido?
       </button>
       <div class="faq__respuesta">
         <p>
-          El <strong>SiRVER</strong> valida la información registrada en su FRV, si está incompleta o con errores, el SiRVER
-          emitea un reporte con las inconsistencias encontradas en su información..
+          Primero, verifique la bandeja de entrada y la carpeta de correo no deseado (spam) de las cuentas registradas en la primera aplicación. Si confirma que no lo ha recibido, solicítelo aquí:
+          <br />
+          SOLICITUD DE FORMATO PRELLENADO (FRV)
+          <!--DEBERÁ SER UN LINCK DONDE REGISTRE CCT, TURNO, NOMBRE DE LA ESCUELA Y CORREO. GENERARÁ CREDENCIALES PARA SEGUIMIENTO-->
+
         </p>
       </div>
     </div>
@@ -47,142 +54,286 @@
     <!-- Pregunta 3 -->
     <div class="faq__item">
       <button class="faq__pregunta" (click)="toggleRespuesta($event)">
-        ¿Cómo solicitar el archivo prellenado cuando no se recibe?
+        3. ¿Cómo solicito una aclaración sobre un archivo prellenado (FRV) recibido con datos incorrectos o inconsistencias?
       </button>
-      <div class="faq__respuesta">
-        <p>
-          Tiene que verificar las bandejas de entrada de los correos que proporcionó en el Formato de la primera Aplicación, si no lo ha recibido proceda
-          a solicitar el prellenado proporcionando CCT, turno, entidad federativa y sus datos
-          de contacto a: <a href="mailto:dudas.ejercicios@nube.sep.gob.mx">dudas.ejercicios&#64;nube.sep.gob.mx</a>
-        </p>
-      </div>
-    </div>
 
-    <!-- Pregunta 55 -->
-    <div class="faq__item">
-      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
-       ¿Qué hacer al enviar por error valoraciones de la segunda aplicación en formato de la primera aplicación?
-      </button>
       <div class="faq__respuesta">
         <p>
-          Solicitar el formato correcto a su Área de Evaluación, migrar la información, validar datos y reenviar la
-          versión corregida a:  <a href="mailto:valoraciones.ejercicios@nube.sep.gob.mx">valoraciones.ejercicios&#64;nube.sep.gob.mx</a>
+          En caso de contar con usuario y contraseña, ingrese al apartado de “Mesa de Ayuda” y solicite un ticket.
         </p>
+        <p>
+          Si recibió por correo electrónico su FRV y aún no se encuentra registrado en el sistema SiRVER, genere un ticket de soporte.
+        </p>
+        <p>
+          Aquí.
+        </p>
+        <!--GENERARÁ CREDENCIALES PARA SEGUIMIENTO-->
+        <!--<p>
+      · Desactivar temporalmente el antivirus en caso de contar con uno para intentar nuevamente la descarga.
+      </p>
+
+      <p>
+      · Verificar si se cuenta con un programa de descompresión de archivos; en caso de no tenerlo, instalar alguno de los siguientes:
+      </p>
+
+      <div class="faq__links">
+      <p>
+      <a href="https://www.winzip.com/es/download/winzip/" target="_blank">
+      www.winzip.com
+      </a>
+      </p>
+
+      <p>
+      <a href="https://7-zip.softonic.com/descargar" target="_blank">
+      7-zip.softonic.com
+      </a>
+      </p>
+      </div>-->
+
       </div>
     </div>
 
     <!-- Pregunta 4 -->
     <div class="faq__item">
       <button class="faq__pregunta" (click)="toggleRespuesta($event)">
-        ¿Cómo solicitar aclaración sobre un archivo recibido con datos equivocados, o inconsistencias?
+        4. ¿Cómo lleno el FRV?
       </button>
       <div class="faq__respuesta">
         <p>
-          Enviar una descripción de la duda, incluir evidencia y proporcionar CCT, entidad federativa y turno. Remitir la solicitud al correo indicado.
+          Dentro del formato FRV encontrará una pestaña de <strong>INSTRUCCIONES</strong>, donde se indica paso a paso la forma
+          de llenado del formato <strong>FRV</strong>.
         </p>
+        <!--<ul>
+      <li>
+      <strong>Identificar:</strong> Los aprendizajes, habilidades o áreas en las que el grupo
+      muestra mayores dificultades o menores niveles de desempeño.
+      </li>
+
+      <li>
+      <strong>Ajustar:</strong> La planificación didáctica con base en la información obtenida,
+      priorizando los contenidos, habilidades o procesos que requieren mayor atención.
+      </li>
+      </ul>-->
+
+
       </div>
     </div>
 
     <!-- Pregunta 5 -->
     <div class="faq__item">
       <button class="faq__pregunta" (click)="toggleRespuesta($event)">
-        ¿Cómo proceder cuando no se puede abrir un archivo de resultados?
+        5. ¿Cómo puedo modificar la información del estudiante?
       </button>
-
       <div class="faq__respuesta">
         <p>
-          · Desactivar temporalmente el antivirus en caso de contar con uno para intentar nuevamente la descarga.
+          El Formato para el Registro de Valoraciones prellenado no permite modificar nombres de estudiantes; sólo se puede modificar la información
+          del grupo. Si requiere agregar nuevos registros de estudiantes, puede hacerlo al final de la lista con sus respectivas valoraciones.
         </p>
-
+        <br />
         <p>
-          · Verificar si se cuenta con un programa de descompresión de archivos; en caso de no tenerlo, instalar alguno de los siguientes:
+          Asimismo, si hubiera estudiantes dados de baja, los espacios para el registro de valoraciones se dejarán vacíos, ya que el formato está
+          protegido y no permite realizar modificaciones.
         </p>
 
-        <div class="faq__links">
-          <p>
-            <a href="https://www.winzip.com/es/download/winzip/" target="_blank">
-              www.winzip.com
-            </a>
-          </p>
 
-          <p>
-            <a href="https://7-zip.softonic.com/descargar" target="_blank">
-              7-zip.softonic.com
-            </a>
-          </p>
-        </div>
       </div>
     </div>
 
     <!-- Pregunta 6 -->
     <div class="faq__item">
       <button class="faq__pregunta" (click)="toggleRespuesta($event)">
-        ¿Cómo utilizar los resultados comparativos de ambas aplicaciones?
+        6. ¿Cuáles son los motivos comunes por los que el sistema rechaza mi archivo?
       </button>
       <div class="faq__respuesta">
         <p>
-          Revise los resultados comparativos de ambas aplicaciones para identificar
-          avances, retrocesos o permanencias en los niveles de logro de las y los estudiantes.
+          El <strong>SiRVER</strong> realiza una validación exhaustiva de la información. Si el formato está incompleto, contiene errores de
+          captura o no cumple con los catálogos oficiales, el sistema rechazará la carga y emitirá un <strong>Reporte de Inconsistencias</strong> que detalla
+          los puntos por corregir.
         </p>
 
-        <ul>
-          <li>
-            <strong>Identificar:</strong> Los aprendizajes, habilidades o áreas en las que el grupo
-            muestra mayores dificultades o menores niveles de desempeño.
-          </li>
 
+      </div>
+    </div>
+    <!-- Pregunta 7 -->
+    <div class="faq__item">
+      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
+        7. ¿Dónde puedo consultar mi comprobante de envío de archivo?
+      </button>
+      <div class="faq__respuesta">
+        <p>
+          Dependiendo del navegador, podrá consultarlo en la carpeta de “Descargas” o en la ubicación que haya seleccionado al descargar archivos de forma segura.
+        </p>
+      </div>
+    </div>
+    <!-- Pregunta 8 -->
+    <div class="faq__item">
+      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
+        8. ¿Dónde puedo consultar mi PDF de errores descargado?
+      </button>
+      <div class="faq__respuesta">
+        <p>
+          Dependiendo del navegador, podrá consultarlo en la carpeta de “Descargas” o en la ubicación que haya seleccionado al descargar archivos de forma segura.
+        </p>
+
+      </div>
+    </div>
+    <!-- Pregunta 9 -->
+    <div class="faq__item">
+      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
+        9. ¿Se puede corregir y reenviar el archivo FRV?
+      </button>
+      <div class="faq__respuesta">
+        <p>
+          Sí, el sistema te permite cargar, validar y enviar
+          un nuevo archivo en reemplazo del anterior.
+        </p>
+
+      </div>
+    </div>
+    <!-- Pregunta 10 -->
+    <div class="faq__item">
+      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
+        10. ¿Tengo un tiempo determinado para descargar mis resultados?
+      </button>
+      <div class="faq__respuesta">
+        <p>
+          Puede descargar sus resultados, cuantas veces lo considere necesario, a partir de la fecha que le fue notificada por el SiRVER.
+        </p>
+
+      </div>
+    </div>
+    <!-- Pregunta 11 -->
+    <div class="faq__item">
+      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
+        11. ¿Qué procedimiento debo seguir si no puedo descargar mi archivo de resultados?
+      </button>
+      <div class="faq__respuesta">
+        <p>
+          Esto puede deberse a que su antivirus bloquea la descarga automática del archivo. Se sugiere desactivar temporalmente
+          el antivirus para permitir la descarga, o bien intentar nuevamente desde otra PC.
+        </p>
+
+      </div>
+    </div>
+
+    <!-- Pregunta 12 -->
+    <div class="faq__item">
+      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
+        12.	¿Por qué no puedo abrir mi archivo de resultados?
+      </button>
+      <div class="faq__respuesta">
+        <p>
+          Esto puede suceder porque el archivo requiere ser <strong>descomprimido</strong> previamente o porque
+          el dispositivo no cuenta con un <strong>lector de archivos PDF</strong> instalado. Se recomienda verificar
+          ambas condiciones antes de intentar abrirlo nuevamente.
+        </p>
+        <br />
+        <p>Se recomienda el uso de las siguientes herramientas dando clic en los siguientes enlaces:</p>
+        <br />
+
+        <div class="faq__lista">
+          <ul>
+            <p>
+              <a href="https://get.adobe.com/es/reader/" target="_blank">
+                Lector gratuito de PDF
+              </a>
+
+            </p>
+          </ul>
+          <ul>
+
+            <p>
+              <a href="https://www.winzip.com/es/download/winzip/" target="_blank">
+                Gestor de archivos comprimidos winzip
+              </a>
+            </p>
+          </ul>
+          <ul>
+            <p>
+              <a href="https://7-zip.softonic.com/descargar" target="_blank">
+                Gestor de archivos comprimidos 7-zip
+              </a>
+            </p>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    
+    <!-- Pregunta 13 -->
+    <div class="faq__item">
+      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
+        13.	¿Cómo se deben interpretar y utilizar los resultados comparativos de ambas aplicaciones?
+      </button>
+      <div class="faq__respuesta">
+        <p>
+          Analice los resultados comparativos para identificar avances, retrocesos o permanencias en los niveles de logro de las y los estudiantes.
+        </p>
+        <br />
+        <ul class="faq__lista">
           <li>
-            <strong>Ajustar:</strong> La planificación didáctica con base en la información obtenida,
-            priorizando los contenidos, habilidades o procesos que requieren mayor atención.
+            <strong>Identificar:</strong> Localice los aprendizajes o habilidades donde el grupo muestra mayores dificultades.
+          </li>
+          <li>
+            <strong>Ajustar:</strong>  Utilice esta información para fortalecer su planeación didáctica, priorizando
+            los contenidos que requieren mayor atención pedagógica.
+          </li>
+        </ul>
+
+      </div>
+    </div>
+    <!-- Pregunta 14 -->
+    <div class="faq__item">
+      <button class="faq__pregunta" (click)="toggleRespuesta($event)">
+        14. ¿Por qué algunos estudiantes aparecen con “NP” en la columna de primera aplicación en el Reporte Comparativo de Resultados por Estudiante?
+      </button>
+      <div class="faq__respuesta">
+        <p>
+          La sigla <strong>NP</strong> significa <strong>“No Presentó”</strong>. Esto ocurre principalmente por dos razones:
+        </p>
+        <br />
+        <ul class="faq__lista">
+          <li>
+
+            <strong>Sin antecedente:</strong> el sistema no detectó un resultado previo para ese estudiante en la base de datos de la primera aplicación.
+          </li>
+          <li>
+
+            <strong>Diferencia en el nombre:</strong>  si el nombre del estudiante se escribió de forma distinta en ambas aplicaciones, el sistema
+            no puede vincular los registros.
           </li>
         </ul>
 
       </div>
     </div>
 
-    <!-- Pregunta 7 -->
+    <!-- Pregunta 15 -->
     <div class="faq__item">
       <button class="faq__pregunta" (click)="toggleRespuesta($event)">
-        ¿Por qué algunos alumnos aparecen con NP en archivo de Resultados
-        de la segunda aplicación, si realizaron la primera aplicación y sus resultados fueron enviados previamente?
+        15. ¿Cómo solicito una aclaración sobre un archivo de resultados recibido con datos incorrectos o inconsistencias?
       </button>
       <div class="faq__respuesta">
         <p>
-          Los alumnos que en los resultados comparativos aparecen con <strong>NP</strong>, significa que NO PRESENTÓ la primera
-          aplicación, por lo cual no tiene un resultado antecedente en nuestras bases de datos.
-        </p>
-        <br />
-        <p>
-          Otra razón por la cual aparece <strong>NP</strong>, es debido a que el nombre se escribió diferente en ambas aplicaciones y el Sistema
-          no realizó vínculo entre ambas aplicaciones. Todo lo anterior se corrige al utilizar el formato prellenado.
+          Inicie sesión en el <strong>SiRVER</strong> y en el apartado de <strong>“Mesa de Ayuda”</strong>  genere un ticket. Agregue las evidencias.
         </p>
 
 
       </div>
     </div>
 
-    <!-- Pregunta 8 -->
+    <!-- Pregunta 16 -->
     <div class="faq__item">
       <button class="faq__pregunta" (click)="toggleRespuesta($event)">
-        ¿Cómo solicitar o consultar el FRV correspondiente a la segunda aplicación?
+        16. Después de haber enviado un Ticket, ¿en cuánto tiempo se puede recibir una respuesta?
       </button>
       <div class="faq__respuesta">
         <p>
-          La SEP envió el FRV prellenado por correo electrónico a todas las escuelas
-          que participaron en la primera aplicación. Verifique la
-          <strong>bandeja de entrada</strong> de su correo.
+          El tiempo de respuesta será de 24 a 72 horas, en días hábiles.
         </p>
-        <br />
-        <p>
-          Si no ha recibido el FRV prellenado, proceda a solicitarlo proporcionando
-          <strong>CCT, turno, entidad federativa y datos de contacto</strong> al correo:
-          <a href="mailto:dudas.ejercicios&#64;nube.sep.gob.mx">
-            dudas.ejercicios&#64;nube.sep.gob.mx
-          </a>.
-        </p>
+
+
       </div>
     </div>
-
 
 
 

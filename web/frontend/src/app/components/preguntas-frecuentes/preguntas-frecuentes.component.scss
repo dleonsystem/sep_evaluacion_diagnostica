@@ -24,15 +24,17 @@
 
 .faq__titulo {
     margin: 0;
-    font-size: clamp(2.5rem, 4vw, 3rem);
+    font-size: clamp(3.5rem, 4vw, 3rem);
     color: #111827;
+
 }
 
 .faq__descripcion {
     margin: 0;
-    font-size: 1.35rem;
+    font-size: 2rem;
     color: #4b5563;
     max-width: 60ch;
+    font-weight: 700;
 }
 
 .faq__wrapper {
@@ -52,24 +54,25 @@
 }
 
 .faq__btn-back {
-    background: transparent;
-    color: #9d2449;
-    /* Institutional red */
-    border: 1px solid #9d2449;
-    font-weight: 600;
-    font-size: 1.1rem;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.2s ease;
+  background: #e6e6c8;
+  background: linear-gradient(180deg,rgba(230, 230, 200, 1) 0%, rgba(225, 211, 151, 0.34) 0%, rgba(225, 219, 151, 0.17) 19%, rgba(199, 201, 89, 0.5) 45%, rgba(173, 39, 16, 0.13) 61%);
+  color: #9d2449;
+  /* Institutional red */
+  border: 1px solid #9d2449;
+  font-weight: 600;
+  font-size: 2.1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
 
-    &:hover {
-        background: #9d2449;
-        color: white;
-    }
+  &:hover {
+    background: #9d2449;
+    color: white;
+  }
 }
 
 .faq__buscador {
@@ -131,12 +134,14 @@
     border-radius: 10px;
     overflow: hidden;
     transition: all 0.2s ease;
+    font-size: 2rem;
+    font-weight: 600;
 
-    &--activo {
-        border-color: #bc955c;
-        /* Institutional Gold */
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    }
+  &--activo {
+    border-color: #bc955c;
+    /* Institutional Gold */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
 }
 
 .faq__pregunta {

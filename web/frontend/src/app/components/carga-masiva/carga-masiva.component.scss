@@ -20,6 +20,18 @@
   color: #0f172a;
 }
 
+.faq__lista {
+    padding-left: 80px; /* ESTO es lo que hace la identación */
+    margin-top: 0;
+    list-style-type: disc; /* Asegura que salgan los puntitos */
+}
+
+.faq__lista li {
+    margin-bottom: 8px; /* Espacio entre un punto y otro */
+    line-height: 1.5; /* Para que se lea mejor si el texto es largo */
+    padding-left: 10px;
+}
+
 .carga__campo-label {
   font-size: 1.95rem;
 }
@@ -464,14 +476,18 @@
 
 .carga__estado-indicador--error {
   color: #b91c1c;
+  /* APARIENCIA DE BOTON
   border-color: #fecdd3;
-  background: #fef2f2;
+  background: #f8fafc;
+      */
 }
 
 .carga__estado-indicador--exito {
   color: #047857;
+  /* APARIENCIA DE BOTON
   border-color: #a7f3d0;
-  background: #ecfdf3;
+  background: #740f0f;
+  */
 }
 
 .carga__chip {
@@ -538,6 +554,16 @@
 .carga__exito {
   background: #ecfdf3;
   border: 1px solid #34d399;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.carga__fecha {
+  background: #fffff;
+  border: 1px solid #740f0f;
   border-radius: 12px;
   padding: 1rem;
   display: flex;
@@ -653,6 +679,7 @@
   border: none;
   font-weight: 700;
   cursor: pointer;
+  font-size: 1.3rem
 }
 
 .carga__boton-primario {
@@ -715,8 +742,10 @@
   border-radius: 999px;
   font-weight: 700;
   width: fit-content;
+  /* apariencia de boton
   border: 1px solid #cbd5e1;
   background: #fff;
+      */
 }
 
 .carga__pdf-estado--cargando {
@@ -724,13 +753,13 @@
   border-color: #fbbf24;
   background: #fffbeb;
 }
-
+/*
 .carga__pdf-estado--ok {
   color: #065f46;
   border-color: #34d399;
   background: #ecfdf3;
 }
-
+*/
 .carga__pdf-estado--error {
   color: #b91c1c;
   border-color: #fca5a5;
@@ -804,6 +833,7 @@
   flex-direction: column;
   gap: 0.4rem;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.02);
+  padding-right: 30px;
 }
 
 .carga__card h3 {
@@ -813,7 +843,8 @@
 
 .carga__card ul {
   margin: 0;
-  padding-left: 1.2rem;
+  padding-left: 20px;
+ 
   color: #374151;
   line-height: 1.5;
 }
@@ -937,7 +968,7 @@
 
   h3 {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 2rem;
     font-weight: 800;
     color: #0f172a;
   }
@@ -970,7 +1001,7 @@
 }
 
 .carga__modal-body {
-  padding: 1.5rem 2rem 2rem;
+  padding: .5rem 2rem 2rem;
 }
 
 .carga__modal-aviso {
@@ -979,7 +1010,7 @@
   border: 1px solid #fcd34d;
   padding: 1rem 1.25rem;
   border-radius: 12px;
-  font-size: 0.95rem;
+  font-size: 1.5rem;
   line-height: 1.5;
   margin-bottom: 1.5rem;
 
@@ -996,8 +1027,8 @@
   textarea {
     border: 1px solid #cbd5e1;
     border-radius: 10px;
-    padding: 0.75rem 1rem;
-    font-size: 0.95rem;
+    padding: 0.4rem 1rem;
+    font-size: 1.5rem;
     resize: vertical;
     font-family: inherit;
 
@@ -1015,7 +1046,7 @@
 }
 
 .carga__modal-footer-info {
-  font-size: 0.875rem;
+  font-size: 1.2rem;
   color: #64748b;
   line-height: 1.4;
   display: flex;
@@ -1055,9 +1086,9 @@
 
 .carga__campo-ayuda {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 2rem;
   color: #64748b;
-  font-style: italic;
+  font-variant: small-caps;
 }
 
 .carga__evidencias-lista {
@@ -1117,7 +1148,7 @@
   color: #475569;
   padding: 0.5rem 1rem;
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: 1.5rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;

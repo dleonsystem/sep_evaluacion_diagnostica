@@ -1,14 +1,15 @@
 <section class="archivos">
   <!-- USER SUB-NAV MENU -->
+  <br />
   <nav class="shared-subnav">
     <a routerLink="/carga-masiva" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
-      <i class="bi bi-cloud-upload"></i> Carga Masiva
+      <i class="bi bi-cloud-upload"></i> Cargar archivo
     </a>
     <a routerLink="/archivos-evaluacion" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
       <i class="bi bi-folder-check"></i> Cargas realizadas
     </a>
     <a routerLink="/tickets" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
-      <i class="bi bi-life-preserver"></i> Soporte
+      <i class="bi bi-life-preserver"></i> Mesa de ayuda
     </a>
     <a routerLink="/tickets-historial" routerLinkActive="shared-subnav__link--activo" class="shared-subnav__link">
       <i class="bi bi-card-list"></i> Mis tickets
@@ -20,9 +21,9 @@
 
   <header class="archivos__encabezado">
     <p class="archivos__eyebrow">Cargas realizadas</p>
-    <h1 class="archivos__titulo">Historial de archivos de evaluación</h1>
+    <h1 class="archivos__titulo">Historial de archivos</h1>
     <p class="archivos__descripcion">
-      Consulte el estado de los archivos que ha subido al servidor.
+      Consulte el estado de los archivos que ha enviado al sistema.
     </p>
   </header>
 
@@ -37,7 +38,7 @@
       <input type="search" placeholder="Ej. CCT 09ABC1234 o nombre del archivo" [(ngModel)]="filtroTexto" />
     </label>
     <span class="archivos__contador">
-      {{ registrosFiltrados.length }} de {{ registros.length }} archivos sincronizados
+      {{ registrosFiltrados.length }} de {{ registros.length }} archivo(s)
     </span>
   </div>
 
@@ -106,12 +107,14 @@
                 <p class="archivos__mensaje--info archivos__mensaje-inline">
                   Descarga el comprobante PDF generado por el backend para esta solicitud.
                 </p>
-                <button
-                  (click)="descargarComprobante(registro); $event.stopPropagation()"
-                  class="archivos__btn-descargar archivos__btn-descargar--secundario"
-                >
-                  Descargar comprobante PDF
-                </button>
+                    <!--
+                    <button
+                    (click)="descargarComprobante(registro); $event.stopPropagation()"
+                    class="archivos__btn-descargar archivos__btn-descargar--secundario"
+                    >
+                    Descargar comprobante PDF
+                    </button>-->
+
               </div>
 
               <div class="archivos__seccion" *ngIf="registro.resultados && registro.resultados.length">
