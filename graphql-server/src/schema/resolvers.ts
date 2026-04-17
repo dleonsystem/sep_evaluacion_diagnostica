@@ -2337,9 +2337,11 @@ t.numero_ticket as "folio",
         const nivelDetectadoExcel = nivel.toUpperCase().replace(/ /g, '_');
         const idNivelExcel = nivelMap[nivelDetectadoExcel] || 2;
 
-        // Validar formato de CCT
+        // Validar formato de CCT (Híbrido: Formato + DB + Algoritmo)
         const cctValidation = validateCCT(cct);
-        if (!cctValidation.isValid) {
+        
+        // El formato (Regex) es obligatorio siempre
+        if (!cctValidation.formatValid) {
           const errorMsg = `Formato de CCT inválido en el archivo: ${cctValidation.error}`;
           await auditLog(errorMsg, 'RECHAZADO');
           await query(
@@ -2358,14 +2360,27 @@ t.numero_ticket as "folio",
           return { success: false, message: errorMsg, detalles: { errores: [errorMsg] } };
         }
 
-        // Validar que la CCT exista en el catálogo oficial SIGED (tabla escuelas)
-        // US-NUEVA-ESC: Si no existe, permitimos continuar para registro automático si el formato es válido.
+        // Consultar existencia en base de datos para decidir rigor del dígito verificador
         const escrow = await query(
           'SELECT id, id_nivel FROM escuelas WHERE cct = $1 AND id_turno = $2 AND activo = true LIMIT 1',
           [cct, idTurno]
         );
-
         const escuelaExistente = escrow.rows.length > 0;
+
+        // Si el algoritmo falla pero la escuela existe o es nueva (permitimos registro de nuevas)
+        if (!cctValidation.isValid) {
+          if (escuelaExistente) {
+            logger.info('[CCT Validation] Dígito verificador discrepante pero CCT existe en catálogo oficial, se permite.', { cct, esperado: cctValidation.expectedVerifier });
+          } else {
+            // RF-NUEVA-ESC: Permitimos registro de escuelas nuevas incluso con discrepancia en el algoritmo
+            // debido a variaciones en la implementación oficial de la SEP para ciertos estados.
+            logger.warn('[CCT Validation] CCT Nueva con dígito verificador discrepante, permitiendo carga por flexibilidad.', { 
+                cct, 
+                esperado: cctValidation.expectedVerifier,
+                recibido: cct[cct.length - 1] 
+            });
+          }
+        }
 
         // Validar consistencia de Nivel Educativo solo si la escuela ya existe (RF-13.2)
         if (escuelaExistente) {
@@ -2464,7 +2479,6 @@ t.numero_ticket as "folio",
         const escuelaIdFromDb = escuelaIdReal;
 
         let generatedPassword = null;
-        let isNewUser = false; // Flag para mailing
 
         // RF-16.x: Asegurar que el usuario esté vinculado/creado (fuera del bloque if !credencialId)
         if (!userToLink && inputEmail) {
@@ -2479,7 +2493,6 @@ t.numero_ticket as "folio",
             );
             logger.info('Usuario vinculado en transacción', { email: inputEmail, userId: userToLink, hasPass: userHasPassword });
           } else {
-            isNewUser = true;
             // BUG FIX #GhostPassword: No generar si ya sabemos que el usuario existe y tiene pass
             if (!userHasPassword) {
               const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
@@ -2734,8 +2747,8 @@ t.numero_ticket as "folio",
         await client.query('COMMIT');
         logger.info('[Progreso Carga] Transacción completada con éxito');
 
-        // RF-16.7: Notificar credenciales por correo SOLO si el usuario es nuevo y se generó pass
-        if (generatedPassword && inputEmail && isNewUser) {
+        // RF-16.7: Notificar credenciales por correo SOLO si se generó pass
+        if (generatedPassword && inputEmail) {
           mailingService.sendCredentials(inputEmail, cct, generatedPassword).catch((err) => {
             logger.error('Error enviando correo de credenciales en carga masiva', {
               email: inputEmail,
@@ -2795,7 +2808,7 @@ t.numero_ticket as "folio",
 
         let successMessage = `Tu archivo ha sido validado correctamente. Podrás consultar tus resultados a partir del día: ${fechaFutura}.`;
         if (generatedPassword) {
-          successMessage = `Tu archivo ha sido validado correctamente. Generamos una contraseña aleatoria y podrás consultar tus resultados a partir del día: ${fechaFutura}.`;
+          successMessage = `Tu archivo ha sido validado correctamente. Se ha enviado un correo electrónico con tus credenciales de acceso. Podrás consultar tus resultados a partir del día: ${fechaFutura}.`;
         }
 
         await auditLog('Carga exitosa', 'SUCCESS', { alumnos: alumnosProcesados });
@@ -3468,10 +3481,13 @@ t.numero_ticket as "folio",
         cp,
       } = input;
 
-      // 1. Validar CCT formato y dígito verificador
+      // 1. Validar CCT formato básico (Flexibilidad en dígito verificador para evitar bloqueos)
       const cctValidation = validateCCT(cct);
-      if (!cctValidation.isValid) {
+      if (!cctValidation.formatValid) {
         throw new Error(cctValidation.error || 'CCT con formato inválido');
+      }
+      if (!cctValidation.isValid) {
+        logger.warn('[Catalogos] Creando CCT con dígito verificador discrepante por flexibilidad', { cct });
       }
 
       // 2. Validar Unicidad (CCT + Turno)
@@ -3571,8 +3587,11 @@ t.numero_ticket as "folio",
       if (entries.length === 0) throw new Error('No hay campos para actualizar');
 
       if (input.cct) {
-        const cctValid = validateCCT(input.cct);
-        if (!cctValid.isValid) throw new Error(cctValid.error);
+        const cctValidation = validateCCT(input.cct);
+        if (!cctValidation.formatValid) throw new Error(cctValidation.error);
+        if (!cctValidation.isValid) {
+           logger.warn('[Catalogos] Actualizando CCT con dígito verificador discrepante', { cct: input.cct });
+        }
       }
 
       const client = await getClient();

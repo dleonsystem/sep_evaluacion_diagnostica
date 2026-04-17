@@ -428,7 +428,9 @@ process.on('unhandledRejection', (reason, promise) => {
 
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception:', error);
-  process.exit(1);
+  // No salimos del proceso para evitar que caídas de servicios secundarios (como IMAP)
+  // tiren todo el servidor GraphQL. 
+  // process.exit(1); 
 });
 
 // Iniciar servidor

@@ -847,7 +847,7 @@
   inset: 0;
   background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(4px);
-  z-index: 2000;
+  z-index: 1050; // Debajo de SweetAlert2 (~1060) para no bloquear diálogos interactivos
   display: flex;
   align-items: center;
   justify-content: center;
@@ -907,7 +907,7 @@
   inset: 0;
   background: rgba(15, 23, 42, 0.4);
   backdrop-filter: blur(8px);
-  z-index: 1000;
+  z-index: 1040; // Menor que el overlay de carga masiva
   display: flex;
   align-items: center;
   justify-content: center;

@@ -352,6 +352,7 @@
                 <th scope="col">Folio</th>
                 <th scope="col">Nombre Usuario</th>
                 <th scope="col">CCT</th>
+                <th scope="col">Turno</th>
                 <th scope="col">Correo</th>
                 <th scope="col">Estatus</th>
                 <th scope="col">Fecha</th>
@@ -365,6 +366,7 @@
                   <td><strong>{{ incidencia.folio }}</strong></td>
                   <td>{{ incidencia.nombreCompleto }}</td>
                   <td>{{ incidencia.cct }}</td>
+                  <td>{{ incidencia.turno }}</td>
                   <td>{{ incidencia.correo }}</td>
                   <td>
                     <span class="admin-panel__badge" [class.admin-panel__badge--pending]="incidencia.estatus === 'pendiente'"
@@ -382,7 +384,7 @@
                   </td>
                 </tr>
                 <tr *ngIf="incidencia.id === incidenciaSeleccionadaId" class="admin-panel__table-expanded-row">
-                  <td colspan="7">
+                  <td colspan="8">
                     <div class="admin-panel__expanded-content">
                       <div class="admin-panel__detail-grid">
                         <div class="admin-panel__detail-info">

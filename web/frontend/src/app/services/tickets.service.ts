@@ -12,6 +12,8 @@ export interface Ticket {
   prioridad: string;
   correo?: string;
   nombreCompleto?: string;
+  cct?: string;
+  turno?: string;
   fechaCreacion: string;
   fechaActualizacion: string;
   evidencias?: Array<{ nombre: string; url: string; size?: number }>;
@@ -41,6 +43,8 @@ export class TicketsService {
           prioridad
           correo
           nombreCompleto
+          cct
+          turno
           fechaCreacion
           fechaActualizacion
           evidencias {
@@ -199,6 +203,7 @@ export class TicketsService {
           correo
           nombreCompleto
           cct
+          turno
           fechaCreacion
           fechaActualizacion
           respuestas {
