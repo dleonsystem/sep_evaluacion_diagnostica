@@ -68,7 +68,10 @@
             <td data-label="Tamaño">{{ formatearTamano(registro.archivoSize) }}</td>
             <td data-label="Fecha">{{ formatearFecha(registro.fechaCarga) }}</td>
             <td data-label="Estado">
-              <span class="archivos__badge" [attr.data-estado]="registro.estadoValidacion">
+              <span *ngIf="obtenerEstadoDescripcion(registro.estadoValidacion) === 'PENDIENTE'" class="archivos__texto-estado">
+                PENDIENTE
+              </span>
+              <span *ngIf="obtenerEstadoDescripcion(registro.estadoValidacion) !== 'PENDIENTE'" class="archivos__badge" [attr.data-estado]="registro.estadoValidacion">
                 {{ obtenerEstadoDescripcion(registro.estadoValidacion) }}
               </span>
             </td>

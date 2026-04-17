@@ -64,13 +64,12 @@
             <td data-label="Fecha">{{ formatearFecha(ticket.fecha) }}</td>
             <td data-label="Evidencias">{{ ticket.evidencias.length }}</td>
             <td data-label="Estatus">
-              <button type="button" class="tickets-historial__badge tickets-historial__badge-button"
-                      [class.tickets-historial__badge--pendiente]="ticket.estatus === 'pendiente'"
-                      [class.tickets-historial__badge--proceso]="ticket.estatus === 'en-proceso'"
-                      [class.tickets-historial__badge--respondido]="ticket.estatus === 'respondido'"
-                      [routerLink]="['/tickets', ticket.folio]">
+              <span class="tickets-historial__texto-estatus"
+                      [class.tickets-historial__texto-estatus--pendiente]="ticket.estatus === 'pendiente'"
+                      [class.tickets-historial__texto-estatus--proceso]="ticket.estatus === 'en-proceso'"
+                      [class.tickets-historial__texto-estatus--respondido]="ticket.estatus === 'respondido'">
                 {{ obtenerEtiquetaEstatus(ticket.estatus) }}
-              </button>
+              </span>
             </td>
             <td data-label="Acciones">
               <a [routerLink]="['/tickets', ticket.folio]" class="tickets-historial__ver-btn">

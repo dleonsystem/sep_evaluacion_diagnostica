@@ -406,6 +406,14 @@
     }
   }
 
+  .archivos__texto-estado {
+    color: #888;
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    display: inline-block;
+  }
+
   @media (max-width: 720px) {
     .archivos__tabla {
       box-shadow: none;

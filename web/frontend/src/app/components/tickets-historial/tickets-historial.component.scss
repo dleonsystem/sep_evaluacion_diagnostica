@@ -112,6 +112,23 @@
   color: #ffffff;
 }
 
+.tickets-historial__texto-estatus {
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  display: inline-block;
+
+  &--pendiente {
+    color: #611232;
+  }
+  &--proceso {
+    color: #bc955c;
+  }
+  &--respondido {
+    color: #13322e;
+  }
+}
+
 .tickets-historial__detalle td {
   padding: 0;
   border-bottom: none;
