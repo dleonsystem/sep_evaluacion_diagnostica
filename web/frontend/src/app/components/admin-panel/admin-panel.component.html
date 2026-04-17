@@ -238,7 +238,10 @@
                   (click)="seleccionarTicket(ticket)" style="cursor: pointer;">
                   <td><strong>{{ ticket.folio }}</strong></td>
                   <td>
-                    <span class="admin-panel__badge" [class.admin-panel__badge--pending]="ticket.estatus === 'pendiente'"
+                    <span *ngIf="ticket.estatus === 'pendiente'" class="admin-panel__status-text admin-panel__status-text--pending">
+                      {{ ticket.estatus | titlecase }}
+                    </span>
+                    <span *ngIf="ticket.estatus !== 'pendiente'" class="admin-panel__badge"
                       [class.admin-panel__badge--processing]="ticket.estatus === 'en-proceso'"
                       [class.admin-panel__badge--resolved]="ticket.estatus === 'respondido'">
                       {{ ticket.estatus | titlecase }}
@@ -369,7 +372,10 @@
                   <td>{{ incidencia.turno }}</td>
                   <td>{{ incidencia.correo }}</td>
                   <td>
-                    <span class="admin-panel__badge" [class.admin-panel__badge--pending]="incidencia.estatus === 'pendiente'"
+                    <span *ngIf="incidencia.estatus === 'pendiente'" class="admin-panel__status-text admin-panel__status-text--pending">
+                      {{ incidencia.estatus | titlecase }}
+                    </span>
+                    <span *ngIf="incidencia.estatus !== 'pendiente'" class="admin-panel__badge"
                       [class.admin-panel__badge--processing]="incidencia.estatus === 'en-proceso'"
                       [class.admin-panel__badge--resolved]="incidencia.estatus === 'respondido'">
                       {{ incidencia.estatus | titlecase }}

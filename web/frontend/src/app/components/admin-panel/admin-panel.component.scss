@@ -569,6 +569,18 @@
   color: #166534 !important;
 }
 
+/* Status as text (not button-like) */
+.admin-panel__status-text {
+  font-weight: 500;
+  font-size: 1.05rem;
+  padding: 0.4rem 0;
+  display: inline-block;
+}
+
+.admin-panel__status-text--pending {
+  color: #991b1b;
+}
+
 /* Expanded Row Details */
 .admin-panel__expanded-content {
   background: #f8fafc;

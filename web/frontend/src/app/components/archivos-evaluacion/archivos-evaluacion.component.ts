@@ -91,6 +91,14 @@ export class ArchivosEvaluacionComponent implements OnInit {
   }
 
   alternarDetalle(id: string): void {
+    const registro = this.registros.find(r => r.id === id);
+    if (!registro) return;
+
+    // Si el estado es PENDIENTE (o default que mapee a PENDIENTE), no hacemos nada
+    if (this.obtenerEstadoDescripcion(registro.estadoValidacion) === 'PENDIENTE') {
+      return;
+    }
+
     this.idRegistroExpandido = this.idRegistroExpandido === id ? null : id;
   }
 

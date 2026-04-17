@@ -444,8 +444,7 @@
             Puede agregar más explicaciones o detalles al reporte técnico generado
             automáticamente, adjunte su FRV.
           </p>
-          <!--formControlName="descripcion" rows="5" placeholder="Describa brevemente qué sucede..."-->
-          <textarea></textarea>
+          <textarea formControlName="descripcion" rows="5" placeholder="Describa brevemente qué sucede..."></textarea>
           <small class="carga__error-hint"
                  *ngIf="incidenciaForm.get('descripcion')?.touched && incidenciaForm.get('descripcion')?.invalid">
             Mínimo 5 caracteres.

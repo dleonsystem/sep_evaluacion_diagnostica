@@ -25,6 +25,7 @@ interface ResultadoExito {
   credenciales: { usuario: string; contrasena: string; esNueva: boolean };
   totalAlumnos: number;
   consecutivo: string; // Trazabilidad
+  hashArchivo?: string;
 }
 
 interface ResultadoArchivo {
@@ -415,7 +416,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     this.incidenciaForm.patchValue({
       email: this.correoControl.value,
-      descripcion: preDescripcion
+      descripcion: ''
     });
     this.mostrarModalIncidencia = true;
   }
@@ -601,6 +602,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
       if (resultado.resultadoExito && respuestaApi.consecutivo) {
         resultado.resultadoExito.consecutivo = respuestaApi.consecutivo;
+        resultado.resultadoExito.hashArchivo = respuestaApi.hashArchivo;
       }
 
       resultado.mensajeInformativo = `El archivo se recibió correctamente. Folio de seguimiento: ${respuestaApi.consecutivo || 'Pendiente'}`;
@@ -1082,7 +1084,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         alumnosValidados: totalAlumnos,
         cct: esc.cct,
         fechaValidacion: this.formatearFechaLarga(new Date()),
-        consecutivo: resultadoArchivo.resultadoExito?.consecutivo ?? 'N/D'
+        consecutivo: resultadoArchivo.resultadoExito?.consecutivo ?? 'N/D',
+        hashArchivo: resultadoArchivo.resultadoExito?.hashArchivo
       });
       resultadoArchivo.pdfEstado = 'descargando';
       this.mockPdfService.descargarPdf(blob, resultadoArchivo.pdfNombre);

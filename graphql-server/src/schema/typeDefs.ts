@@ -687,6 +687,7 @@ export const typeDefs = `#graphql
     generatedPassword: String
     detalles: ExcelUploadResult
     duplicadoDetectado: Boolean
+    hashArchivo: String
   }
 
   """

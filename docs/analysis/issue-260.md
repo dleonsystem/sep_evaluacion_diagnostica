@@ -18,6 +18,8 @@ La necesidad de proporcionar al usuario un histórico (versiones) de sus resulta
 - **Persistencia Múltiple (DB)**: En el archivo `ddl_generated.sql` se verifica que el esquema de la tabla `solicitudes_eia2` cuenta con la columna `resultados JSONB DEFAULT '[]'::JSONB`. Esta columna funciona como el catálogo/historial de versiones para albergar diferentes archivos y entregables procesados vinculados a la misma evaluación.
 - **Backend Resolvers**: `getSolicitudes` extrae el arreglo `resultados`. A su vez, `downloadAssessmentResult` está implementado y cruza el arreglo `resultados` por `fileName`, descargando el binario desde SFTP (o volumen local dependiente) y retornándolo al Front en `Base64`. Incluye verificación `isAdmin` para prevenir inyección insegura de ID. (Control OWASP A01).
 - **Frontend Interfaz**: `ArchivosEvaluacionComponent` itera estructuralmente (`*ngFor="let res of registro.resultados"`) y expone los botones de descarga invocando `(click)="descargarArchivo(registro.id, res.nombre)"`.
+- **Restricción de Interacción**: Se ha implementado una restricción en la interfaz para que las filas con estado "PENDIENTE" no sean clicables ni expandibles, evitando la descarga redundante del acuse de recibo que el usuario ya obtuvo al cargar el archivo.
+- **Sello Digital (SHA256)**: Se integró el Hash SHA256 del archivo cargado como un "Sello Digital de Recepción" dentro del comprobante PDF generado, asegurando la integridad y trazabilidad legal de la carga desde el primer momento.
 
 ## 5. Comparación issue vs implementación
 * **Coincidencias**: La funcionalidad completa del catálogo y descarga solicitadas en en CU-09v2 se encuentra cubierta; el código reestructura visual y lógicamente varias versiones a la vez porque la DB fue normalizada desde antes hacia el motor de persistencia JSONB.
@@ -39,6 +41,8 @@ La necesidad de proporcionar al usuario un histórico (versiones) de sus resulta
 * [x] Interfaz permite visualizar N versiones de resultados (vía `*ngFor` iterator sobre arreglo `resultados`).
 * [x] Botones de acceso a la descarga invocan el backend GraphQL/Rest pasando credencial de portador.
 * [x] Control de roles prohíbe que escuelas distintas descarguen resultados ajenos (Mitigación IDOR).
+* [x] Las cargas pendientes bloquean la expansión de fila para evitar ruido visual y descargas innecesarias.
+* [x] El comprobante de carga (PDF) incluye el Hash del archivo como sello digital de trazabilidad.
 
 ## 9. Estrategia de pruebas y Evidencia
 * **Validación de mitigación (IDOR)**: Se evaluó estáticamente que el query de permisos de archivo (`downloadAssessmentResult`) utiliza contexto transaccional GraphQL `context.user` protegiendo contra secuestro de IDs.

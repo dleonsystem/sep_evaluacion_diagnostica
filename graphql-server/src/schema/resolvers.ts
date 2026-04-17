@@ -729,19 +729,21 @@ id,
             t.numero_ticket as "numeroTicket",
             t.asunto,
             t.descripcion,
-            (SELECT codigo FROM cat_estado_ticket WHERE id = t.estado) as estado,
+            COALESCE((SELECT codigo FROM cat_estado_ticket WHERE id = t.estado), 'ABIERTO') as estado,
             t.prioridad,
             t.evidencias,
-            u.email as "correo",
-            u.nombre || ' ' || u.apepaterno as "nombreCompleto",
-            u.id_turno as "turno",
+            COALESCE(u.email, t.user_email) as "correo",
+            COALESCE(u.nombre, t.user_fullname) as "nombreCompleto",
+            t.user_cct as "cct",
+            t.user_turno as "turno",
             t.created_at as "fechaCreacion",
             t.updated_at as "fechaActualizacion"
           FROM tickets_soporte t
           LEFT JOIN usuarios u ON t.usuario_id = u.id
-          WHERE t.deleted_at IS NULL AND t.usuario_id IS NOT NULL
+          WHERE t.deleted_at IS NULL 
           ORDER BY t.created_at DESC
         `);
+
         return result.rows.map((row) => ({
           ...row,
           fechaCreacion:
@@ -751,9 +753,9 @@ id,
               ? row.fechaActualizacion.toISOString()
               : row.fechaActualizacion,
         }));
-      } catch (error) {
-        logger.error('Error fetching all tickets', { error });
-        throw new Error('Error al obtener los tickets');
+      } catch (error: any) {
+        logger.error('Error fetching all tickets:', error);
+        throw new Error(`Error al obtener los tickets: ${error.message}`);
       }
     },
 
@@ -777,19 +779,22 @@ id,
             t.numero_ticket as "numeroTicket", 
             t.asunto, 
             t.descripcion, 
-            (SELECT codigo FROM cat_estado_ticket WHERE id = t.estado) as estado,
+            COALESCE((SELECT codigo FROM cat_estado_ticket WHERE id = t.estado), 'ABIERTO') as estado,
             t.prioridad,
             t.evidencias,
-            t.user_email as "correo",
-            t.user_fullname as "nombreCompleto",
+            COALESCE(u.email, t.user_email, 'Anónimo') as "correo",
+            COALESCE(u.nombre, t.user_fullname, 'Usuario Externo') as "nombreCompleto",
             t.user_cct as "cct",
             t.user_turno as "turno",
             t.created_at as "fechaCreacion",
             t.updated_at as "fechaActualizacion"
           FROM tickets_soporte t
-          WHERE t.deleted_at IS NULL AND t.usuario_id IS NULL
+          LEFT JOIN usuarios u ON t.usuario_id = u.id
+          WHERE t.deleted_at IS NULL 
+          AND (t.usuario_id IS NULL OR t.numero_ticket LIKE 'PUB-%')
           ORDER BY t.created_at DESC
         `);
+
         return result.rows.map((row) => ({
           ...row,
           fechaCreacion:
@@ -799,9 +804,9 @@ id,
               ? row.fechaActualizacion.toISOString()
               : row.fechaActualizacion,
         }));
-      } catch (error) {
-        logger.error('Error fetching public incidents', { error });
-        throw new Error('Error al obtener las incidencias públicas');
+      } catch (error: any) {
+        logger.error('Error fetching public incidents:', error);
+        throw new Error(`Error al obtener incidencias públicas: ${error.message}`);
       }
     },
 
@@ -2819,6 +2824,7 @@ t.numero_ticket as "folio",
           solicitudId,
           consecutivo: consecutivo?.toString(),
           generatedPassword,
+          hashArchivo: fileHash,
           detalles: {
             cct,
             nivel: metadata.nivelDetectado,
@@ -3151,8 +3157,10 @@ t.numero_ticket as "folio",
             (SELECT codigo FROM cat_estado_ticket WHERE id = t.estado) as estado,
             t.prioridad,
             t.evidencias,
-            u.email as "correo",
-            u.nombre || ' ' || u.apepaterno as "nombreCompleto",
+            COALESCE(u.email, t.user_email) as "correo",
+            COALESCE(u.nombre, t.user_fullname) as "nombreCompleto",
+            t.user_cct as "cct",
+            t.user_turno as "turno",
             t.created_at as "fechaCreacion",
             t.updated_at as "fechaActualizacion"
           FROM tickets_soporte t
@@ -3693,8 +3701,6 @@ t.numero_ticket as "folio",
             u.id,
             u.email,
             u.nombre,
-            u.apepaterno,
-            u.apematerno,
             r.codigo as "rol",
             u.activo
           FROM usuarios u

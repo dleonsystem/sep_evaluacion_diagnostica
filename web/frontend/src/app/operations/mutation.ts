@@ -42,6 +42,7 @@ export const UPLOAD_EXCEL_MUTATION = `
       consecutivo
       generatedPassword
       duplicadoDetectado
+      hashArchivo
       detalles {
         cct
         nivel

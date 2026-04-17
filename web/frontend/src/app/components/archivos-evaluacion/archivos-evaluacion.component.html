@@ -59,7 +59,11 @@
       </thead>
       <tbody>
         <ng-container *ngFor="let registro of registrosFiltrados">
-          <tr (click)="alternarDetalle(registro.id)" style="cursor: pointer;" [class.archivos__row--expandida]="idRegistroExpandido === registro.id">
+          <tr 
+            (click)="obtenerEstadoDescripcion(registro.estadoValidacion) !== 'PENDIENTE' && alternarDetalle(registro.id)" 
+            [style.cursor]="obtenerEstadoDescripcion(registro.estadoValidacion) === 'PENDIENTE' ? 'default' : 'pointer'" 
+            [class.archivos__row--expandida]="idRegistroExpandido === registro.id"
+          >
             <td data-label="Folio"><strong>#{{ registro.consecutivo || '?' }}</strong></td>
             <td data-label="Archivo">{{ registro.archivoOriginal }}</td>
             <td data-label="Nivel">{{ obtenerEtiquetaNivel(registro.nivelEducativo) }}</td>

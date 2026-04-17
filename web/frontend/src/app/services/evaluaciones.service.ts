@@ -40,6 +40,7 @@ export interface UploadExcelResponse {
         generatedPassword?: string;
         detalles?: ExcelUploadResult;
         duplicadoDetectado?: boolean;
+        hashArchivo?: string;
     };
 }
 

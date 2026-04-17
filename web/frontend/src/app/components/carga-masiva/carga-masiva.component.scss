@@ -21,15 +21,19 @@
 }
 
 .faq__lista {
-    padding-left: 80px; /* ESTO es lo que hace la identación */
-    margin-top: 0;
-    list-style-type: disc; /* Asegura que salgan los puntitos */
+  padding-left: 80px;
+  /* ESTO es lo que hace la identación */
+  margin-top: 0;
+  list-style-type: disc;
+  /* Asegura que salgan los puntitos */
 }
 
 .faq__lista li {
-    margin-bottom: 8px; /* Espacio entre un punto y otro */
-    line-height: 1.5; /* Para que se lea mejor si el texto es largo */
-    padding-left: 10px;
+  margin-bottom: 8px;
+  /* Espacio entre un punto y otro */
+  line-height: 1.5;
+  /* Para que se lea mejor si el texto es largo */
+  padding-left: 10px;
 }
 
 .carga__campo-label {
@@ -562,7 +566,7 @@
 }
 
 .carga__fecha {
-  background: #fffff;
+  background: #ffffff;
   border: 1px solid #740f0f;
   border-radius: 12px;
   padding: 1rem;
@@ -753,6 +757,7 @@
   border-color: #fbbf24;
   background: #fffbeb;
 }
+
 /*
 .carga__pdf-estado--ok {
   color: #065f46;
@@ -844,7 +849,7 @@
 .carga__card ul {
   margin: 0;
   padding-left: 20px;
- 
+
   color: #374151;
   line-height: 1.5;
 }

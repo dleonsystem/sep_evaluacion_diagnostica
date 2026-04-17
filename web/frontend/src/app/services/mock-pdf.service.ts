@@ -9,6 +9,7 @@ interface PdfExitoPayload {
   cct: string;
   fechaValidacion: string;
   consecutivo: string; // Trazabilidad CU-04v2
+  hashArchivo?: string; // Sello Digital (Issue #260)
 }
 
 export interface GrupoErrores {
@@ -91,10 +92,19 @@ export class MockPdfService {
         currentPage.drawText(p.fechaValidacion || '', { x: xValue, y: yPos, ...configVal });
 
         yPos -= 20;
-        currentPage.drawText('Estudiantes validados:', { x: xLabel, y: yPos, ...configLabel });
-        currentPage.drawText((p.alumnosValidados || 0).toString(), { x: xValue, y: yPos, ...configVal });
+        currentPage.drawText('Estudiantes validados:', { x: 170, y: yPos, size: 11, font: fontBold });
+        currentPage.drawText(`${p.alumnosValidados}`, { x: 370, y: yPos, size: 11, font: fontRegular });
 
-        // --- BLOQUE DE CONTRASEÑA ---
+        // --- SELLO DIGITAL (HASH) ---
+        if (p.hashArchivo) {
+          yPos -= 30;
+          currentPage.drawText('Sello Digital (SHA256):', { x: 170, y: yPos, size: 11, font: fontBold });
+          currentPage.drawText(p.hashArchivo.substring(0, 32), { x: 370, y: yPos, size: 8, font: fontRegular });
+          yPos -= 12;
+          currentPage.drawText(p.hashArchivo.substring(32), { x: 370, y: yPos, size: 8, font: fontRegular });
+        }
+
+        // --- CONTRASEÑA ---
         if (p.contrasena && p.contrasena !== '********') {
           yPos = height - 350;
           currentPage.drawText('CONTRASEÑA DE ACCESO:', {
@@ -119,7 +129,6 @@ export class MockPdfService {
         currentPage.drawText(`Sus resultados estarán disponibles el: ${p.fechaDisponible}`, {
           x: 130, y: yPos, size: 11, font: fontBold
         });
-
       } else {
         // --- CASO DE ERRORES/INCONSISTENCIAS ---
         const p = payload as PdfErroresPayload;
