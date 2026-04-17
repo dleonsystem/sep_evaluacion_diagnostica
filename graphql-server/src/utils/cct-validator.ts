@@ -144,18 +144,29 @@ export function calculateCCTVerifier(cct9: string): string {
   return TABLA_2[residuo] || '';
 }
 
-export function validateCCT(cct: string): { isValid: boolean; error?: string } {
-  if (!cct) return { isValid: false, error: 'La CCT es requerida' };
+export interface CCTValidationResult {
+  isValid: boolean;
+  formatValid: boolean;
+  verifierMatch: boolean;
+  error?: string;
+  expectedVerifier?: string;
+}
+
+export function validateCCT(cct: string): CCTValidationResult {
+  if (!cct) return { isValid: false, formatValid: false, verifierMatch: false, error: 'La CCT es requerida' };
 
   const cleanedCCT = cct.trim().toUpperCase();
 
   // Basic format check: 10 characters
-  // Regex: 2 digits, 1 letter, 2 letters, 4 digits, 1 letter/digit
-  // Actually, the example shows 01DPR0001D.
-  // DDL said: ^[0-9]{2}[A-Z]{1}[A-Z0-9]{7}$
-  if (!/^[0-9]{2}[A-Z]{3}[0-9]{4}[A-Z0-9]$/.test(cleanedCCT)) {
+  // Regex: 2 digits, 3 letters, 4 digits, 1 letter/digit
+  const formatRegex = /^[0-9]{2}[A-Z]{3}[0-9]{4}[A-Z0-9]$/;
+  const formatValid = formatRegex.test(cleanedCCT);
+
+  if (!formatValid) {
     return {
       isValid: false,
+      formatValid: false,
+      verifierMatch: false,
       error: 'Formato de CCT inválido. Debe ser de 10 caracteres (ej: 01DPR0001D)',
     };
   }
@@ -163,13 +174,13 @@ export function validateCCT(cct: string): { isValid: boolean; error?: string } {
   const base = cleanedCCT.substring(0, 9);
   const verifierExpected = cleanedCCT[9];
   const verifierCalculated = calculateCCTVerifier(base);
+  const verifierMatch = verifierCalculated === verifierExpected;
 
-  if (verifierCalculated !== verifierExpected) {
-    return {
-      isValid: false,
-      error: `CCT inválida. El dígito verificador no coincide (esperado: ${verifierCalculated})`,
-    };
-  }
-
-  return { isValid: true };
+  return {
+    isValid: verifierMatch, // Default to strict validation, but caller can override
+    formatValid,
+    verifierMatch,
+    error: verifierMatch ? undefined : `El dígito verificador no coincide (esperado: ${verifierCalculated})`,
+    expectedVerifier: verifierCalculated
+  };
 }

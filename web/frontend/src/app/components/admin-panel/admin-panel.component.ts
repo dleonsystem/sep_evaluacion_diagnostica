@@ -704,6 +704,8 @@ export class AdminPanelComponent implements OnInit {
       nombreCompleto: t.nombreCompleto || 'Usuario del Sistema',
       motivo: t.asunto,
       motivoDetalle: t.asunto,
+      cct: t.cct,
+      turno: t.turno,
       descripcion: t.descripcion,
       fecha: t.fechaCreacion,
       estatus: this.mapEstatusDBToUI(t.estado),
@@ -1185,6 +1187,7 @@ interface TicketSoporte {
   correo: string;
   nombreCompleto?: string;
   cct?: string;
+  turno?: string;
   motivo: string;
   motivoDetalle: string;
   descripcion: string;

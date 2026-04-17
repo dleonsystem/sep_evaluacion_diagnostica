@@ -327,7 +327,7 @@ function extractStudents(
   grado: number,
   errors: ExcelValidationError[]
 ): ParsedStudent[] {
-  const data = XLSX.utils.sheet_to_json(sheet, { range: 9, header: 'A', blankrows: true });
+  const data = XLSX.utils.sheet_to_json(sheet, { range: 9, header: 'A', blankrows: true, raw: false });
   const columnas = resolveEvaluationColumns(nivel, sheetName.toUpperCase());
   if (!columnas.length) {
     errors.push({
@@ -477,7 +477,16 @@ function extractStudents(
         error: 'Captura el grupo.',
         hoja: sheetName,
       });
-    else if (!/^[a-zA-Z0-9\s]+$/.test(grupo))
+    else if (String(row.E).includes('.')) {
+      erroresFila.push({
+        fila: filaExcel,
+        columna: 'E',
+        campo: 'Grupo',
+        error: 'El grupo no debe contener puntos decimales (ej. solo "1" o "A", no "1.00").',
+        hoja: sheetName,
+        valorEncontrado: String(row.E),
+      });
+    } else if (!/^[a-zA-Z0-9\s]+$/.test(grupo))
       erroresFila.push({
         fila: filaExcel,
         columna: 'E',

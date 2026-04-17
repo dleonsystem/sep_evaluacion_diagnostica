@@ -812,7 +812,9 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
           errores.push(`${resultado.archivo.name}: ${resultado.errorGuardado}`);
         }
       }
-
+ 
+      this.guardandoTodo = false;
+ 
       // Resumen final para el usuario
       if (resultadosFolios.length > 0) {
         const mensajeBase = `Se han sincronizado ${resultadosFolios.length} archivos correctamente.`;
@@ -1000,6 +1002,11 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         });
         void this.router.navigate(['/login'], { queryParams: { correo: email, redirect: '/carga-masiva' } });
         return true;
+      } else {
+        // Si el servidor confirma que no existe, limpiamos el rastro local
+        this.estadoCredencialesService.limpiar();
+        this.credencialesAsociadas = false;
+        this.contrasenaAsociada = null;
       }
       return false;
     } catch (error) {

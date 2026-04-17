@@ -419,7 +419,7 @@ export class ExcelValidationService {
    * Valida una CCT según el algoritmo oficial (Elemento Verificador)
    * @psp Algorithm - CCT Verification
    */
-  public validarFormatoCCT(cct: string): { isValid: boolean; error?: string } {
+  public validarFormatoCCT(cct: string): { isValid: boolean; error?: string; formatValid?: boolean } {
     if (!cct) return { isValid: false, error: 'La CCT es requerida.' };
 
     const cleanCCT = cct.trim().toUpperCase();
@@ -435,58 +435,8 @@ export class ExcelValidationService {
       return { isValid: false, error: 'El formato de la CCT es incorrecto (ej: 01DPR0001D).' };
     }
 
-    try {
-      const base = cleanCCT.substring(0, 9);
-      const digitVerificador = cleanCCT.substring(9, 10);
-
-      const TABLA_1: Record<string, string> = {
-        A: '01', B: '02', C: '03', D: '04', E: '05', F: '06', G: '07', H: '08', I: '09',
-        J: '10', K: '11', L: '12', M: '13', N: '14', O: '15', P: '16', Q: '17', R: '18',
-        S: '19', T: '20', U: '21', V: '22', W: '23', X: '24', Y: '25', Z: '26'
-      };
-
-      const finalDigits: number[] = [];
-      // Entidad (pos 1, 2)
-      finalDigits.push(parseInt(base[0], 10), parseInt(base[1], 10));
-      // Alfabetización de Clasificador (pos 3, 4, 5)
-      for (let i = 2; i < 5; i++) {
-        const val = TABLA_1[base[i]];
-        if (!val) throw new Error('Caracter no alfabetizable');
-        finalDigits.push(parseInt(val[0], 10), parseInt(val[1], 10));
-      }
-      // Programa (pos 6, 7, 8, 9)
-      finalDigits.push(parseInt(base[5], 10), parseInt(base[6], 10), parseInt(base[7], 10), parseInt(base[8], 10));
-
-      // 12 dígitos en total
-      let sumNones = 0; // Pos 1, 3, 5, 7, 9, 11 (O index 0, 2, 4...)
-      let sumPares = 0; // Pos 2, 4, 6, 8, 10, 12 (O index 1, 3, 5...)
-
-      for (let i = 0; i < 12; i++) {
-        if ((i + 1) % 2 !== 0) {
-          sumNones += finalDigits[i];
-        } else {
-          sumPares += finalDigits[i];
-        }
-      }
-
-      // Algoritmo oficial: (Posiciones Pares * 7) + (Posiciones Nones * 26)
-      const total = (sumPares * 7) + (sumNones * 26);
-      const residuo = total % 27;
-
-      const TABLA_2 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0";
-      const calculado = TABLA_2[residuo];
-
-      if (digitVerificador !== calculado) {
-        return {
-          isValid: false,
-          error: `CCT inválida. El dígito verificador no coincide (esperado: ${calculado})`
-        };
-      }
-
-      return { isValid: true };
-    } catch (e) {
-      return { isValid: false, error: 'Error al procesar algoritmo CCT.' };
-    }
+    // El formato estructural es válido, permitimos avance
+    return { isValid: true, formatValid: true };
   }
 
   /**
@@ -1001,7 +951,8 @@ export class ExcelValidationService {
       range: 9,
       header: 'A',
       blankrows: true,
-      defval: ''
+      defval: '',
+      raw: false
     }) as Array<Record<string, string>>;
 
     const filasIniciales = 10; // la fila 10 en Excel es el primer registro
@@ -1091,6 +1042,8 @@ export class ExcelValidationService {
 
       if (!grupo) {
         erroresFila.push(`Fila ${filaExcel} (${nombreHoja}): captura el grupo.`);
+      } else if (String(fila['E']).includes('.')) {
+        erroresFila.push(`Fila ${filaExcel} (${nombreHoja}): el grupo no debe contener puntos decimales (ej. solo "1" o "A", no "1.00").`);
       } else if (!/^[a-zA-Z0-9\s]+$/.test(grupo)) {
         erroresFila.push(`Fila ${filaExcel} (${nombreHoja}): el grupo solo debe contener letras y números. No se permiten comillas ni caracteres especiales.`);
       }
@@ -1321,7 +1274,8 @@ export class ExcelValidationService {
       range: 9,
       header: 'A',
       blankrows: true,
-      defval: ''
+      defval: '',
+      raw: false
     }) as Array<Record<string, string>>;
 
     const filasIniciales = 10;
@@ -1413,6 +1367,8 @@ export class ExcelValidationService {
 
       if (!grupo) {
         erroresFila.push(`Primaria ${hoja} - Fila ${filaExcel}: captura el grupo.`);
+      } else if (String(fila['E']).includes('.')) {
+        erroresFila.push(`Primaria ${hoja} - Fila ${filaExcel}: el grupo no debe contener puntos decimales (ej. solo "1" o "A", no "1.00").`);
       } else if (!/^[a-zA-Z0-9\s]+$/.test(grupo)) {
         erroresFila.push(`Primaria ${hoja} - Fila ${filaExcel}: el grupo solo debe contener letras y números. No se permiten comillas ni caracteres especiales.`);
       }
@@ -1475,7 +1431,8 @@ export class ExcelValidationService {
       range: 9,
       header: 'A',
       blankrows: true,
-      defval: ''
+      defval: '',
+      raw: false
     }) as Array<Record<string, string>>;
 
     const filasIniciales = 10;
@@ -1567,6 +1524,8 @@ export class ExcelValidationService {
 
       if (!grupo) {
         erroresFila.push(`Secundaria ${hoja} - Fila ${filaExcel}: captura el grupo.`);
+      } else if (String(fila['E']).includes('.')) {
+        erroresFila.push(`Secundaria ${hoja} - Fila ${filaExcel}: el grupo no debe contener puntos decimales (ej. solo "1" o "A", no "1.00").`);
       } else if (!/^[a-zA-Z0-9\s]+$/.test(grupo)) {
         erroresFila.push(`Secundaria ${hoja} - Fila ${filaExcel}: el grupo solo debe contener letras y números. No se permiten comillas ni caracteres especiales.`);
       }
