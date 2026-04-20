@@ -210,44 +210,72 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     input.value = '';
   }
 
-  onDragOver(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    if (this.correoControl.valid) {
+  private dragCounter = 0;
+
+  @HostListener('window:dragenter', ['$event'])
+  onWindowDragEnter(event: DragEvent): void {
+    if (this.isOverDropZone(event)) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.dragCounter++;
       this.isDragging = true;
     }
   }
 
-  onDragLeave(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragging = false;
-  }
-
-  // Issue #373: Evitar que el navegador abra el archivo si se suelta fuera del área de drop
   @HostListener('window:dragover', ['$event'])
   onWindowDragOver(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
+    if (this.isOverDropZone(event)) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.isDragging = true;
+    }
+  }
+
+  @HostListener('window:dragleave', ['$event'])
+  onWindowDragLeave(event: DragEvent): void {
+    if (this.isOverDropZone(event)) {
+      this.dragCounter--;
+      if (this.dragCounter <= 0) {
+        this.isDragging = false;
+        this.dragCounter = 0;
+      }
+    }
   }
 
   @HostListener('window:drop', ['$event'])
-  onWindowDrop(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
+  async onWindowDrop(event: DragEvent): Promise<void> {
+    if (this.isOverDropZone(event)) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.isDragging = false;
+      this.dragCounter = 0;
+
+      const files = event.dataTransfer?.files;
+      if (files && files.length > 0) {
+        await this.handleFiles(files);
+      }
+    }
   }
 
-  async onDrop(event: DragEvent): Promise<void> {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragging = false;
+  private isOverDropZone(event: DragEvent): boolean {
+    const zone = document.querySelector('.carga__zona');
+    if (!zone) return false;
+    const rect = zone.getBoundingClientRect();
+    return (
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom
+    );
+  }
 
+  private async handleFiles(files: FileList): Promise<void> {
     if (this.correoControl.invalid) {
       this.correoControl.markAllAsTouched();
       await Swal.fire({
         icon: 'warning',
         title: 'Correo requerido',
-        text: 'Ingresa un correo electrónico válido antes de arrastrar tu archivo.'
+        text: 'Ingresa un correo electrónico válido antes de procesar tus archivos.'
       });
       return;
     }
@@ -256,21 +284,30 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const files = event.dataTransfer?.files;
-    if (files && files.length > 0) {
-      if (this.resultados.length + files.length > this.maxArchivosMasiva) {
-        await Swal.fire({
-          icon: 'warning',
-          title: 'Límite excedido',
-          text: `Solo se permite cargar un máximo de ${this.maxArchivosMasiva} archivos a la vez.`
-        });
-        return;
-      }
-
-      for (let i = 0; i < files.length; i++) {
-        await this.procesarArchivo(files[i]);
-      }
+    if (this.resultados.length + files.length > this.maxArchivosMasiva) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Límite excedido',
+        text: `Solo se permite cargar un máximo de ${this.maxArchivosMasiva} archivos a la vez.`
+      });
+      return;
     }
+
+    for (let i = 0; i < files.length; i++) {
+        await this.procesarArchivo(files[i]);
+    }
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+  }
+
+  onDragLeave(event: DragEvent): void {
+    // Redundante con el HostListener
+  }
+
+  async onDrop(event: DragEvent): Promise<void> {
+    // Redundante con el HostListener
   }
 
   private async mostrarAvisoLogin(): Promise<void> {
