@@ -755,9 +755,14 @@ export class ExcelValidationService {
       });
 
     if (!resultado.errores.length) {
-      resultado.ok = true;
-      resultado.esc = esc.datos!;
-      resultado.alumnos = alumnos;
+      if (alumnos.length === 0) {
+        resultado.ok = false;
+        resultado.errores.push('El archivo no contiene ningún estudiante capturado en las hojas de grado de Primaria.');
+      } else {
+        resultado.ok = true;
+        resultado.esc = esc.datos!;
+        resultado.alumnos = alumnos;
+      }
     }
 
     return resultado;
@@ -1017,10 +1022,6 @@ export class ExcelValidationService {
         return;
       }
 
-      const filaVacia = !numeroLista && !nombre && !sexo && !grupo;
-      if (filaVacia && erroresFila.length === 0) {
-        return;
-      }
 
       // Se omite la validación numérica estricta para el número de lista por flexibilidad (Issue #385)
 
@@ -1342,10 +1343,6 @@ export class ExcelValidationService {
         return;
       }
 
-      const filaVacia = !numeroLista && !nombre && !sexo && !grupo;
-      if (filaVacia && erroresFila.length === 0) {
-        return;
-      }
 
       // Se omite la validación numérica estricta para el número de lista por flexibilidad (Issue #385)
 
@@ -1499,10 +1496,6 @@ export class ExcelValidationService {
         return;
       }
 
-      const filaVacia = !numeroLista && !nombre && !sexo && !grupo;
-      if (filaVacia && erroresFila.length === 0) {
-        return;
-      }
 
       // Se omite la validación numérica estricta para el número de lista por flexibilidad (Issue #385)
 

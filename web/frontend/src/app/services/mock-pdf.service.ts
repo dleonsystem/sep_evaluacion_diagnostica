@@ -63,12 +63,16 @@ export class MockPdfService {
       const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-      const pages = pdfDoc.getPages();
-      let currentPage = pages[0];
-      const { width, height } = currentPage.getSize();
+      const pagesList = pdfDoc.getPages();
+      const firstPageTemplate = pagesList[0];
+      const { width, height } = firstPageTemplate.getSize();
 
-      // Embeber la primera página para usarla como fondo en páginas nuevas si hay desbordamiento
-      const [backgroundPage] = await pdfDoc.embedPages([pages[0]]);
+      // Embeber la primera página (limpia) para usarla como fondo en todas las páginas del reporte
+      const [backgroundPage] = await pdfDoc.embedPages([firstPageTemplate]);
+
+      // Crear la primera página real del reporte que usaremos para dibujar
+      let currentPage = pdfDoc.addPage([width, height]);
+      currentPage.drawPage(backgroundPage, { x: 0, y: 0, width, height });
 
       if (esExito) {
         const p = payload as PdfExitoPayload;
@@ -130,35 +134,32 @@ export class MockPdfService {
           x: 130, y: yPos, size: 11, font: fontBold
         });
       } else {
-        // --- CASO DE ERRORES/INCONSISTENCIAS ---
         const p = payload as PdfErroresPayload;
-
-        currentPage.drawText('REPORTE DE INCONSISTENCIAS DETECTADAS', {
-          x: 120, y: height - 120, size: 14, font: fontBold, color: rgb(0.41, 0.11, 0.2)
-        });
-
-        currentPage.drawText(`Archivo: ${p.archivo}`, { x: 120, y: height - 150, size: 10, font: fontBold });
-
-        let yPos = height - 180;
-        const marginX = 80;
         const lineSpacing = 12;
+
+        const dibujarCabecera = () => {
+          currentPage.drawText('REPORTE DE INCONSISTENCIAS DETECTADAS', {
+            x: 120, y: height - 120, size: 14, font: fontBold, color: rgb(0.41, 0.11, 0.2)
+          });
+          currentPage.drawText(`Archivo: ${p.archivo}`, { x: 120, y: height - 150, size: 10, font: fontBold });
+        };
 
         // Función auxiliar para manejar el salto de página con fondo institucional
         const manejarSaltoPagina = async () => {
-          if (yPos < 60) {
+          if (yPos < 70) {
             currentPage = pdfDoc.addPage([width, height]);
-            // Dibujar el fondo institucional (el diseño de la plantilla)
-            currentPage.drawPage(backgroundPage, {
-              x: 0,
-              y: 0,
-              width: width,
-              height: height,
-            });
-            yPos = height - 120; // Empezar un poco más abajo para no chocar con el encabezado
+            currentPage.drawPage(backgroundPage, { x: 0, y: 0, width, height });
+            dibujarCabecera();
+            yPos = height - 180;
             return true;
           }
           return false;
         };
+
+        // Dibujar cabecera en la primera página
+        dibujarCabecera();
+        let yPos = height - 180;
+        const marginX = 80;
 
         for (const grupo of p.erroresAgrupados) {
           await manejarSaltoPagina();
@@ -195,6 +196,7 @@ export class MockPdfService {
       }
 
 
+      pdfDoc.removePage(0); // Eliminar la hoja original de la plantilla para que no aparezca al inicio
       const pdfBytes = await pdfDoc.save();
       return new Blob([pdfBytes], { type: 'application/pdf' });
 
