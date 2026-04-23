@@ -184,7 +184,19 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.authService.requiereLoginParaNuevaCarga(this.correoControl.value) || await this.verificarExistenciaUsuario(this.correoControl.value)) {
+    // 1. Validar si hay una sesión activa que no coincide con el correo ingresado
+    if (this.sesionActiva && this.authService.requiereLoginParaNuevaCarga(this.correoControl.value)) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Correo no coincide',
+        text: 'Estás autenticado con una cuenta diferente. Por favor, usa el correo de tu sesión o cierra sesión para usar uno nuevo.'
+      });
+      this.limpiarSeleccion(input);
+      return;
+    }
+
+    // 2. Validar si el usuario existe en el servidor (esto muestra la alerta de "Iniciar sesión")
+    if (await this.verificarExistenciaUsuario(this.correoControl.value)) {
       this.limpiarSeleccion(input);
       return;
     }
@@ -280,7 +292,18 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.authService.requiereLoginParaNuevaCarga(this.correoControl.value) || await this.verificarExistenciaUsuario(this.correoControl.value)) {
+    // 1. Validar si hay una sesión activa que no coincide con el correo ingresado
+    if (this.sesionActiva && this.authService.requiereLoginParaNuevaCarga(this.correoControl.value)) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Correo no coincide',
+        text: 'Estás autenticado con una cuenta diferente. Por favor, usa el correo de tu sesión o cierra sesión para usar uno nuevo.'
+      });
+      return;
+    }
+
+    // 2. Validar si el usuario existe en el servidor (esto muestra la alerta de "Iniciar sesión")
+    if (await this.verificarExistenciaUsuario(this.correoControl.value)) {
       return;
     }
 
@@ -403,15 +426,21 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
   }
 
-  private generarIdArchivo(file: File): string {
-    return `${file.name}-${file.size}-${file.lastModified}`;
+  private generarIdArchivo(resultado: ResultadoArchivo): string {
+    // Intentar agrupar primariamente por CCT y Turno
+    if (resultado.escDatos?.cct && resultado.escDatos?.turno) {
+      return `${resultado.escDatos.cct}-${resultado.escDatos.turno}`;
+    }
+    
+    // Si no se pudo parsear el CCT/Turno por un error estructural, hacemos fallback al nombre del archivo
+    return resultado.archivoOriginal?.name || 'archivo-desconocido';
   }
 
   private registrarIntentoFallido(resultadoArchivo: ResultadoArchivo): void {
     const correo = this.authService.normalizarCorreo(this.correoControl.value || this.correoSesion || '');
     if (!correo || !resultadoArchivo.archivoOriginal) return;
 
-    const idArchivo = this.generarIdArchivo(resultadoArchivo.archivoOriginal);
+    const idArchivo = this.generarIdArchivo(resultadoArchivo);
     
     if (!this.historialFallos.has(correo)) {
       this.historialFallos.set(correo, new Map<string, number>());

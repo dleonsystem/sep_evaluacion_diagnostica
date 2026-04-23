@@ -2581,7 +2581,7 @@ t.numero_ticket as "folio",
           solicitudId = existingReq.rows[0].id;
           await client.query('DELETE FROM evaluaciones WHERE solicitud_id = $1', [solicitudId]);
           const upRes = await client.query(
-            'UPDATE solicitudes_eia2 SET updated_at = NOW(), credencial_id = $2, archivo_path = $3, archivo_size = $4, hash_archivo = $5, archivo_original = $6, estado_validacion = $7, usuario_id = $8, id_turno = $9 WHERE id = $1 RETURNING consecutivo',
+            'UPDATE solicitudes_eia2 SET updated_at = NOW(), fecha_carga = NOW(), credencial_id = $2, archivo_path = $3, archivo_size = $4, hash_archivo = $5, archivo_original = $6, estado_validacion = $7, usuario_id = $8, id_turno = $9 WHERE id = $1 RETURNING consecutivo',
             [
               solicitudId,
               credencialId,

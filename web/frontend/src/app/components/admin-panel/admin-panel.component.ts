@@ -303,6 +303,11 @@ export class AdminPanelComponent implements OnInit {
     const texto = this.filtroTicketTexto.trim().toLowerCase();
     const estatus = this.filtroTicketEstatus;
     return this.ticketsSoporte.filter((ticket) => {
+      // Excluir incidencias públicas de la sección de tickets de usuario para evitar duplicidad
+      if (ticket.folio.startsWith('PUB-')) {
+        return false;
+      }
+
       const coincideTexto =
         !texto ||
         ticket.folio.toLowerCase().includes(texto) ||

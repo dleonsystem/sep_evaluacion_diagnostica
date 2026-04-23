@@ -106,7 +106,7 @@ export class MailingService {
     `;
     const html = this.wrapInTemplate(
       'Recuperación de Contraseña',
-      'Sistema de Evaluación Diagnóstica SiRVER',
+      'Sistema de Recepción del Formato de Valoraciones y Emisión de Resultados',
       content
     );
     return this.sendEmail(email, 'Tu Nueva Contraseña de Acceso - SiRVER', html);
@@ -126,7 +126,7 @@ export class MailingService {
     `;
     const html = this.wrapInTemplate(
       'Bienvenido al Sistema SiRVER',
-      'Evaluación Diagnóstica SiRVER',
+      'Sistema de Recepción del Formato de Valoraciones y Emisión de Resultados',
       content
     );
     return this.sendEmail(email, 'Tus Credenciales de Acceso - SiRVER', html);
@@ -147,7 +147,7 @@ export class MailingService {
     `;
     const html = this.wrapInTemplate(
       'Actualización de Seguridad',
-      'Sistema de Evaluación Diagnóstica SiRVER',
+      'Sistema de Recepción del Formato de Valoraciones y Emisión de Resultados',
       content
     );
     return this.sendEmail(email, 'Actualización de Contraseña por Administrador - SiRVER', html);

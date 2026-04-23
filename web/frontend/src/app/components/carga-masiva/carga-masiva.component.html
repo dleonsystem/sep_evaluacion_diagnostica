@@ -206,7 +206,7 @@
       </button>
     </div>
 
-    <section class="carga__credenciales" *ngIf="credencialesMostradas">
+    <section class="carga__credenciales" *ngIf="credencialesMostradas && !sesionActiva">
       <div class="carga__credenciales-header">
         <div class="carga__credenciales-icono" aria-hidden="true">🔑</div>
         <div class="carga__credenciales-titulos">
