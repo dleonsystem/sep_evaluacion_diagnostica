@@ -121,11 +121,11 @@ export class MailingService {
         <p style="margin: 8px 0;"><strong>Usuario/Email:</strong> ${email}</p>
         <p style="margin: 8px 0;"><strong>Contraseña inicial:</strong> <span style="font-family: monospace; color: #0f172a; font-weight: bold; font-size: 1.1em;">${passwordNew}</span></p>
       </div>
-      <p>Esta contraseña es definitiva y no expira. Por seguridad, no la compartas con nadie.</p>
+      <p>Esta contraseña es definitiva y no expira. Por seguridad, no la comparta con nadie.</p>
       <p>Puede acceder al sistema en la siguiente dirección: <a href="${process.env.APP_URL || 'http://localhost:4200'}" style="color: #9d2449; text-decoration: underline; font-weight: 600;">Ir al Sistema SiRVER</a></p>
     `;
     const html = this.wrapInTemplate(
-      'Bienvenido al Sistema SiRVER',
+      'Bienvenido al SiRVER',
       'Sistema de Recepción del Formato de Valoraciones y Emisión de Resultados',
       content
     );

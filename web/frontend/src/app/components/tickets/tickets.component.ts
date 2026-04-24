@@ -134,7 +134,7 @@ export class TicketsComponent implements OnInit {
     if (!this.motivoControl.valid || !this.descripcionControl.valid) {
       this.motivoControl.markAllAsTouched();
       this.descripcionControl.markAllAsTouched();
-      this.mensajeError = 'Completa los campos obligatorios para enviar el ticket.';
+      this.mensajeError = 'Complete los campos obligatorios para enviar el ticket.';
       return;
     }
 

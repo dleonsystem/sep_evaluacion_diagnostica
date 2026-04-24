@@ -783,7 +783,7 @@ export class AdminPanelComponent implements OnInit {
         const key = registro.id;
         const nivel = this.obtenerEtiquetaNivel(registro.nivelEducativo);
         const fecha = registro.fechaCarga;
-        const estatus = registro.estadoValidacion === 2 ? 'asignado' : 'pendiente';
+        const estatus = (registro.resultados && registro.resultados.length > 0) ? 'asignado' : 'pendiente';
 
         return {
           key,

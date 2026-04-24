@@ -381,28 +381,34 @@
     color: #666;
 
 
-    &[data-estado="0"] {
+    &[data-estado="LOCAL"] {
       background: #fff3e0;
       color: #ef6c00;
       border: 1px solid #ffe0b2;
     }
 
-    &[data-estado="1"] {
+    &[data-estado="RECIBIDO"] {
       background: #e1f5fe;
       color: #0288d1;
       border: 1px solid #b3e5fc;
     }
 
-    &[data-estado="2"] {
+    &[data-estado="VALIDADO"] {
       background: #e8f5e9;
       color: #2e7d32;
       border: 1px solid #c8e6c9;
     }
 
-    &[data-estado="3"] {
+    &[data-estado="PROCESADO"] {
       background: #f3e5f5;
       color: #7b1fa2;
       border: 1px solid #e1bee7;
+    }
+    
+    &[data-estado="ASIGNADO"] {
+      background: #e0f7fa;
+      color: #00838f;
+      border: 1px solid #b2ebf2;
     }
   }
 

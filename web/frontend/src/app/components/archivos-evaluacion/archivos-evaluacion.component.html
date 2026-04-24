@@ -60,8 +60,8 @@
       <tbody>
         <ng-container *ngFor="let registro of registrosFiltrados">
           <tr 
-            (click)="obtenerEstadoDescripcion(registro.estadoValidacion) !== 'PENDIENTE' && alternarDetalle(registro.id)" 
-            [style.cursor]="obtenerEstadoDescripcion(registro.estadoValidacion) === 'PENDIENTE' ? 'default' : 'pointer'" 
+            (click)="obtenerEstadoDescripcion(registro) !== 'PENDIENTE' && alternarDetalle(registro.id)" 
+            [style.cursor]="obtenerEstadoDescripcion(registro) === 'PENDIENTE' ? 'default' : 'pointer'" 
             [class.archivos__row--expandida]="idRegistroExpandido === registro.id"
           >
             <td data-label="Folio"><strong>#{{ registro.consecutivo || '?' }}</strong></td>
@@ -72,11 +72,11 @@
             <td data-label="Tamaño">{{ formatearTamano(registro.archivoSize) }}</td>
             <td data-label="Fecha">{{ formatearFecha(registro.fechaCarga) }}</td>
             <td data-label="Estado">
-              <span *ngIf="obtenerEstadoDescripcion(registro.estadoValidacion) === 'PENDIENTE'" class="archivos__texto-estado">
+              <span *ngIf="obtenerEstadoDescripcion(registro) === 'PENDIENTE'" class="archivos__texto-estado">
                 PENDIENTE
               </span>
-              <span *ngIf="obtenerEstadoDescripcion(registro.estadoValidacion) !== 'PENDIENTE'" class="archivos__badge" [attr.data-estado]="registro.estadoValidacion">
-                {{ obtenerEstadoDescripcion(registro.estadoValidacion) }}
+              <span *ngIf="obtenerEstadoDescripcion(registro) !== 'PENDIENTE'" class="archivos__badge" [attr.data-estado]="obtenerEstadoDescripcion(registro)">
+                {{ obtenerEstadoDescripcion(registro) }}
               </span>
             </td>
             <td data-label="Acciones" style="text-align: center;">
@@ -95,10 +95,10 @@
                 <button 
                   *ngIf="registro.resultados && registro.resultados.length > 0"
                   (click)="descargarArchivo(registro.id, registro.resultados[0].nombre); $event.stopPropagation()" 
-                  class="archivos__icon-btn archivos__icon-btn--exito" 
+                  class="archivos__btn-descargar" 
                   title="Descargar Resultados Procesados"
                 >
-                  <i class="bi bi-file-earmark-arrow-down"></i>
+                  Descargar resultados
                 </button>
                 
                 <span *ngIf="registro.estadoValidacion < 2" class="archivos__texto-espera">

@@ -300,12 +300,9 @@
         <!--<h3>Archivo validado correctamente</h3>-->
 
         <p class="carga__resumen">
-          Se han validado con éxito <b>{{ resultado.resultadoExito.totalAlumnos }}</b> estudiantes en el archivo,
-          su comprobante de carga ya está disponible en la carpeta Descargas de su PC o en la ubicación que haya
-          seleccionado al descargar archivos de forma segura.
-
+          Se ha validado con éxito <b>{{ resultado.resultadoExito.totalAlumnos }}</b> estudiantes en el archivo. Una vez enviado su archivo, el comprobante de carga estará disponible en la carpeta Descargas de su PC o en la ubicación que haya seleccionado para descargar archivos de forma segura.
         </p>
-        <p>{{ resultado.resultadoExito.mensaje }}</p>
+        <p>Nota: Su usuario y contraseña le será enviado al correo que ha registrado.</p>
         <p class="carga__mensaje carga__mensaje--info" *ngIf="resultado.rutaGuardado">
           Archivo conservado en el almacenamiento local del navegador.
           <br>

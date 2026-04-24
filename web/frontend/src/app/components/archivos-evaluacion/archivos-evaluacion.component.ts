@@ -95,7 +95,7 @@ export class ArchivosEvaluacionComponent implements OnInit {
     if (!registro) return;
 
     // Si el estado es PENDIENTE (o default que mapee a PENDIENTE), no hacemos nada
-    if (this.obtenerEstadoDescripcion(registro.estadoValidacion) === 'PENDIENTE') {
+    if (this.obtenerEstadoDescripcion(registro) === 'PENDIENTE') {
       return;
     }
 
@@ -147,7 +147,16 @@ export class ArchivosEvaluacionComponent implements OnInit {
     return `${valor.toFixed(valor >= 10 ? 1 : 2)} ${unidades[indice]}`;
   }
 
-  obtenerEstadoDescripcion(estado: number): string {
+  obtenerEstadoDescripcion(registro: SolicitudEia2): string {
+    if (registro.resultados && registro.resultados.length > 0) {
+      return 'ASIGNADO';
+    }
+    
+    const estado = registro.estadoValidacion as any;
+    if (typeof estado === 'string') {
+      return estado;
+    }
+
     switch (estado) {
       case 1: return 'RECIBIDO';
       case 2: return 'VALIDADO';
