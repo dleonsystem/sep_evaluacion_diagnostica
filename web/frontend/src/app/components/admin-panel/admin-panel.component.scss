@@ -37,7 +37,7 @@
   margin-bottom: 1rem;
   border: 2px solid #cbd5e1;
   border-radius: 8px;
-  font-size: 1.15rem;
+  font-size: 2.15rem;
   /* Aumentado */
   outline: none;
   transition: border-color 0.2s;
@@ -52,13 +52,13 @@
   font-weight: 700;
   margin-bottom: 0.5rem;
   color: var(--color-secondary-verde);
-  font-size: 1.25rem;
+  font-size: 2.25rem;
   /* Aumentado */
 }
 
 .admin-panel__helper {
   color: var(--color-text-muted);
-  font-size: 1.1rem;
+  font-size: 2.1rem;
   /* Aumentado */
   margin-bottom: 1.5rem;
 }
@@ -163,7 +163,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 2.5rem;
   flex-shrink: 0;
 }
 
@@ -175,7 +175,7 @@
 
 .admin-panel__status-label {
   font-weight: 800;
-  font-size: 0.85rem;
+  font-size: 1.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   opacity: 0.8;
@@ -183,7 +183,7 @@
 
 .admin-panel__status-message {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 2.5rem;
   font-weight: 600;
 }
 
@@ -195,7 +195,7 @@
 }
 
 .admin-panel__history-title {
-  font-size: 1.25rem;
+  font-size: 2.25rem;
   color: #1e293b;
   margin-bottom: 1.5rem;
   display: flex;
@@ -239,7 +239,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: 2.4rem;
   flex-shrink: 0;
 
   &.icon-pdf {
@@ -277,13 +277,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 1.05rem;
+  font-size: 2rem;
 }
 
 .admin-panel__history-meta {
   display: flex;
   gap: 1rem;
-  font-size: 0.85rem;
+  font-size: 1.5rem;
   color: #64748b;
   font-weight: 500;
 
@@ -333,7 +333,7 @@
 }
 
 .admin-panel__filters-label {
-  font-size: 0.95rem !important;
+  font-size: 1.95rem !important;
   /* Aumentado */
   font-weight: 800 !important;
   color: #64748b !important;
@@ -349,7 +349,7 @@
   border: 2px solid #cbd5e1 !important;
   border-radius: 8px !important;
   padding: 0 1rem !important;
-  font-size: 1.1rem !important;
+  font-size: 2.1rem !important;
   /* Aumentado */
   width: 100% !important;
   color: #1e293b !important;
@@ -375,7 +375,7 @@
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 1.1rem;
+  font-size: 1.5rem;
   /* Aumentado */
 }
 
@@ -384,7 +384,7 @@
   color: #475569;
   font-weight: 800;
   /* Reafirmado */
-  font-size: 1.15rem;
+  font-size: 2rem;
   /* Agregado */
   padding: 1.25rem 1rem;
   border-bottom: 2px solid #e2e8f0;
@@ -547,7 +547,7 @@
   justify-content: center !important;
   padding: 0.4rem 1rem !important;
   border-radius: 50px !important;
-  font-size: 0.95rem !important;
+  font-size: 1.5rem !important;
   /* Aumentado */
   font-weight: 800 !important;
   white-space: nowrap !important;
@@ -572,7 +572,7 @@
 /* Status as text (not button-like) */
 .admin-panel__status-text {
   font-weight: 500;
-  font-size: 1.05rem;
+  font-size: 2.05rem;
   padding: 0.4rem 0;
   display: inline-block;
 }
@@ -588,7 +588,7 @@
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   margin: 0.5rem 0;
-  font-size: 1.1rem;
+  font-size: 2rem;
   /* Aumentado */
 }
 

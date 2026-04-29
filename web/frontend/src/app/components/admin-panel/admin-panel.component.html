@@ -13,8 +13,8 @@
         <option value="secundaria">Educación Secundaria</option>
       </select>
       <p class="admin-panel__helper">
-        El listado de Excels depende del nivel seleccionado. Primero selecciona
-        un registro y luego sube los archivos correspondientes.
+        El listado de los archivos en Excel depende del nivel seleccionado. Primero seleccione
+        un registro y luego suba los archivos correspondientes.
       </p>
       <p class="admin-panel__helper" *ngIf="!excelDisponibles.length">
         Aún no hay Excels disponibles para asociar. Valida un archivo desde el
@@ -23,9 +23,7 @@
 
       <div class="admin-panel__excel-list" *ngIf="excelDisponibles.length">
         <h3>Archivos cargados en Base de Datos</h3>
-        <p class="admin-panel__helper">
-          Lista sincronizada de archivos Excel procesados por el sistema (EIA2).
-        </p>
+        
         <div class="admin-panel__filters">
           <label class="admin-panel__filters-field">
             <span class="admin-panel__filters-label">Buscar</span>
@@ -106,9 +104,9 @@
         </div>
       </div>
 
-      <label class="admin-panel__upload-label" for="pdf-upload">Selecciona archivos de resultados</label>
+      <label class="admin-panel__upload-label" for="pdf-upload">Seleccione archivos de resultados</label>
       <p class="admin-panel__helper" *ngIf="!excelSeleccionado">
-        Selecciona un registro de Excel para habilitar la carga de archivos.
+        Seleccione un registro de Excel para habilitar la carga de archivos.
       </p>
       <input id="pdf-upload" class="admin-panel__upload-input" type="file"
         accept=".pdf,.xlsx,.jpg,.jpeg,.doc,.docx,.zip" multiple (change)="seleccionarArchivo($event)" />
@@ -177,13 +175,24 @@
       <h3>Soporte Técnico</h3>
 
       <!-- TABS PARA DIFERENCIAR TICKETS -->
-      <div class="admin-panel__tabs">
-        <button type="button" class="admin-panel__tab-btn" [class.admin-panel__tab-btn--active]="tabSoporteActiva === 'usuarios'" (click)="tabSoporteActiva = 'usuarios'">
+      <div class="admin-panel__tabs" style="display: flex; gap: 10px;">
+
+        <button type="button" class="admin-panel__tab-btn"
+                (click)="tabSoporteActiva = 'usuarios'"
+                [style.backgroundColor]="tabSoporteActiva === 'usuarios' ? '#691c32' : '#e0e0e0'"
+                [style.color]="tabSoporteActiva === 'usuarios' ? 'white' : 'black'"
+                style="padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
           <i class="bi bi-people-fill"></i> Tickets de Usuarios
         </button>
-        <button type="button" class="admin-panel__tab-btn" [class.admin-panel__tab-btn--active]="tabSoporteActiva === 'publico'" (click)="tabSoporteActiva = 'publico'">
+
+        <button type="button" class="admin-panel__tab-btn"
+                (click)="tabSoporteActiva = 'publico'"
+                [style.backgroundColor]="tabSoporteActiva === 'publico' ? '#691c32' : '#e0e0e0'"
+                [style.color]="tabSoporteActiva === 'publico' ? 'white' : 'black'"
+                style="padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
           <i class="bi bi-globe"></i> Incidencias de Carga (Públicas)
         </button>
+
       </div>
 
       <!-- VISTA TICKETS USUARIOS -->
@@ -200,7 +209,7 @@
               <option value="todos">Todos</option>
               <option value="pendiente">Pendiente</option>
               <option value="en-proceso">En proceso</option>
-              <option value="respondido">Respondido</option>
+              <option value="resuelto">Resuelto</option>
             </select>
           </label>
           <label class="admin-panel__filters-field">
@@ -484,7 +493,7 @@
         </label>
         <div class="admin-panel__users-actions" *ngIf="esCoordinadorFederal">
           <button class="admin-panel__upload-button" (click)="abrirModalEscuela()">
-            <i class="bi bi-plus-circle-fill"></i> Nueva Escuela
+            <i class="bi bi-plus-circle-fill" ></i> Nueva Escuela
           </button>
         </div>
       </div>
@@ -511,11 +520,11 @@
               <td>
                 <div class="admin-panel__actions-cell">
                   <button class="admin-panel__action-btn" (click)="abrirModalEscuela(esc)" title="Editar">
-                    <i class="bi bi-pencil-fill"></i>
+                    <i class="bi bi-pencil-fill" style="font-size: 2.8rem;"></i>
                   </button>
                   <button class="admin-panel__action-btn primary-guinda" (click)="eliminarEscuela(esc)"
                     title="Eliminar">
-                    <i class="bi bi-trash-fill"></i>
+                    <i class="bi bi-trash-fill" style="font-size: 2.8rem;"></i>
                   </button>
                 </div>
               </td>
