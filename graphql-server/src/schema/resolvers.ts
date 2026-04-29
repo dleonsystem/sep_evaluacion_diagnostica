@@ -199,7 +199,7 @@ const BASE_ESCUELA_FIELDS = `
   e.updated_at
 `;
 
-const SOLICITUD_ESTADO_PENDIENTE_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'PENDIENTE')";
+
 const SOLICITUD_ESTADO_VALIDO_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'VALIDO')";
 const SOLICITUD_ESTADO_RECHAZADO_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'RECHAZADO')";
 
@@ -685,13 +685,15 @@ id,
 
         const result = await query(sql, params);
 
-        // Mapeo manual de estados ID -> Enum String para GQL
-        const statusMap: Record<number, string> = {
-          1: 'PENDIENTE',
-          2: 'VALIDADO',
-          3: 'RECHAZADO',
-          4: 'EN_PROCESO',
-        };
+        // Mapeo dinámico de estados ID -> Enum String para GQL
+        const catRes = await query('SELECT id, codigo FROM cat_estado_validacion_eia2');
+        const statusMap: Record<number, string> = {};
+        catRes.rows.forEach((row: any) => {
+            if (row.codigo === 'VALIDO') statusMap[row.id] = 'VALIDADO';
+            else if (row.codigo === 'INVALIDO') statusMap[row.id] = 'RECHAZADO';
+            else if (row.codigo === 'RECHAZADO') statusMap[row.id] = 'RECHAZADO';
+            else statusMap[row.id] = row.codigo;
+        });
 
         return result.rows.map((row: any) => ({
           ...row,
@@ -2581,7 +2583,7 @@ t.numero_ticket as "folio",
           solicitudId = existingReq.rows[0].id;
           await client.query('DELETE FROM evaluaciones WHERE solicitud_id = $1', [solicitudId]);
           const upRes = await client.query(
-            'UPDATE solicitudes_eia2 SET updated_at = NOW(), fecha_carga = NOW(), credencial_id = $2, archivo_path = $3, archivo_size = $4, hash_archivo = $5, archivo_original = $6, estado_validacion = $7, usuario_id = $8, id_turno = $9 WHERE id = $1 RETURNING consecutivo',
+            `UPDATE solicitudes_eia2 SET updated_at = NOW(), fecha_carga = NOW(), credencial_id = $2, archivo_path = $3, archivo_size = $4, hash_archivo = $5, archivo_original = $6, estado_validacion = ${SOLICITUD_ESTADO_VALIDO_SQL}, usuario_id = $7, id_turno = $8 WHERE id = $1 RETURNING consecutivo`,
             [
               solicitudId,
               credencialId,
@@ -2589,7 +2591,6 @@ t.numero_ticket as "folio",
               archivoSize,
               fileHash,
               nombreArchivo,
-              2, // VALIDADO (id 2 en catálogo)
               userToLink || null,
               idTurno,
             ]
@@ -2597,7 +2598,7 @@ t.numero_ticket as "folio",
           consecutivo = upRes.rows[0].consecutivo;
         } else {
           const solRes = await client.query(
-            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, hash_archivo, usuario_id, credencial_id, archivo_path, archivo_size, id_turno, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_PENDIENTE_SQL}, $3, $4, $5, $6, $7, $8, $9, false) RETURNING id, consecutivo`,
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, hash_archivo, usuario_id, credencial_id, archivo_path, archivo_size, id_turno, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_VALIDO_SQL}, $3, $4, $5, $6, $7, $8, $9, false) RETURNING id, consecutivo`,
             [
               cct,
               nombreArchivo,
