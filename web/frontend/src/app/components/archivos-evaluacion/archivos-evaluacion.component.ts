@@ -22,7 +22,6 @@ export class ArchivosEvaluacionComponent implements OnInit {
   cctActivo: string | null = null;
   filtroTexto = '';
   cargando = false;
-  idRegistroExpandido: string | null = null;
 
   constructor(
     private readonly authService: AuthService,
@@ -90,17 +89,6 @@ export class ArchivosEvaluacionComponent implements OnInit {
     });
   }
 
-  alternarDetalle(id: string): void {
-    const registro = this.registros.find(r => r.id === id);
-    if (!registro) return;
-
-    // Si el estado es PENDIENTE (o default que mapee a PENDIENTE), no hacemos nada
-    if (this.obtenerEstadoDescripcion(registro) === 'PENDIENTE') {
-      return;
-    }
-
-    this.idRegistroExpandido = this.idRegistroExpandido === id ? null : id;
-  }
 
   obtenerEtiquetaNivel(id?: number): string {
     switch (id) {
@@ -154,16 +142,22 @@ export class ArchivosEvaluacionComponent implements OnInit {
     
     const estado = registro.estadoValidacion as any;
     if (typeof estado === 'string') {
+      if (estado === 'RECHAZADO') return 'ERROR DE VALIDACIÓN';
       return estado;
     }
 
     switch (estado) {
       case 1: return 'RECIBIDO';
       case 2: return 'VALIDADO';
-      case 3: return 'PROCESADO';
+      case 3: return 'ERROR DE VALIDACIÓN';
       case 0: return 'LOCAL';
       default: return 'PENDIENTE';
     }
+  }
+
+  esValidoOAsignado(registro: SolicitudEia2): boolean {
+    const estado = this.obtenerEstadoDescripcion(registro);
+    return estado === 'VALIDADO' || estado === 'ASIGNADO';
   }
 
   async descargarArchivo(solicitudId: string, nombre: string): Promise<void> {

@@ -51,7 +51,7 @@ export interface SolicitudEia2 {
     turno?: string;
     archivoOriginal: string;
     fechaCarga: string;
-    estadoValidacion: number;
+    estadoValidacion: string;
     nivelEducativo?: number;
     archivoPath?: string;
     archivoSize?: number;
