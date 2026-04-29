@@ -52,9 +52,9 @@
           <th>CCT</th>
           <th>Turno</th>
           <th>Tamaño</th>
-          <th>Fecha de carga</th>
+          <th style="text-align: center;">Fecha de carga</th>
           <th>Estado</th>
-          <th style="text-align: center;">Acciones</th>
+          <th style="text-align: center;">Descargar Archivos</th>
         </tr>
       </thead>
       <tbody>
@@ -98,7 +98,7 @@
                   class="archivos__btn-descargar" 
                   title="Descargar Resultados Procesados"
                 >
-                  Descargar resultados
+                  Resultados
                 </button>
                 
                 <span *ngIf="registro.estadoValidacion < 2" class="archivos__texto-espera">

@@ -885,7 +885,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
  
       // Resumen final para el usuario
       if (resultadosFolios.length > 0) {
-        const mensajeBase = `Se han sincronizado ${resultadosFolios.length} archivos correctamente.`;
+        const mensajeBase = `Se han guardado ${resultadosFolios.length} archivos correctamente.`;
         const detalleFolios = resultadosFolios.length > 1 
           ? `\nFolios generados:\n${resultadosFolios.join(', ')}` 
           : `\nFolio: ${resultadosFolios[0]}`;
