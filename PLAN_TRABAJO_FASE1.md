@@ -629,3 +629,46 @@ Antes del tag `v1.0.0-fase1` (Día 20), crear los siguientes issues en GitHub pa
 629: 
 630: *Documento actualizado el 8 de abril de 2026.*
 631: *Responsable de actualización: Lead Developer (Antigravity)*
+
+---
+
+## 2. Ruta Crítica de Pase a Producción y Cierre de Proyecto
+
+Esta sección documenta la ruta crítica y el plan de actividades para la liberación en QA y Producción en el data center institucional (TRIARA/Telmex), alineado a procesos SEP/DGTIC y mejores prácticas DevOps.
+
+### 2.1 Fases y Actividades Clave
+### 2.1 Fases y Actividades Clave
+
+| Fase | Actividad | Dependencias | Responsable | Fecha Inicio | Fecha Fin | Criterio de Éxito | Estado |
+|---|---|---|---|---|---|---|---|
+| 1. Infraestructura y Configuración Inicial | Aprovisionamiento de servidor interno | Aprobación de recursos | Equipo de Desarrollo | 29/04/2026 | 30/04/2026 | Servidor disponible y accesible | ⏳ |
+| 1. Infraestructura y Configuración Inicial | Gestión de DNS y Certificado SSL | Servidor montado | Equipo NUEMS | 01/05/2026 | 03/05/2026 | DNS y certificado emitidos | ⏳ |
+| 1. Infraestructura y Configuración Inicial | Configuración de dominio y seguridad | DNS y SSL emitidos | Equipo de Desarrollo | 04/05/2026 | 05/05/2026 | Acceso seguro por dominio institucional | ⏳ |
+| 2. Dictamen de Seguridad (DGTIC) | Solicitud de análisis de vulnerabilidad | Dominio y SSL activos | Equipo NUEMS | 06/05/2026 | 06/05/2026 | Solicitud enviada a DGTIC | ⏳ |
+| 2. Dictamen de Seguridad (DGTIC) | Respuesta de DGTIC | Solicitud enviada | Equipo DGTIC | 07/05/2026 | 10/05/2026 | Informe de vulnerabilidad recibido | ⏳ |
+| 2. Dictamen de Seguridad (DGTIC) | Atención de observaciones | Informe recibido | Equipo de Desarrollo | 11/05/2026 | 13/05/2026 | Observaciones solventadas | ⏳ |
+| 2. Dictamen de Seguridad (DGTIC) | Visto bueno de seguridad | Observaciones solventadas | Equipo DGTIC | 14/05/2026 | 15/05/2026 | Visto bueno formal | ⏳ |
+| 3. Validación de Diseño y Comunicación | Solicitud de publicación inicial | Visto bueno de seguridad | Equipo NUEMS | 16/05/2026 | 16/05/2026 | Solicitud enviada | ⏳ |
+| 3. Validación de Diseño y Comunicación | Revisión de diseño institucional | Solicitud enviada | Comunicación Social | 17/05/2026 | 19/05/2026 | Observaciones recibidas | ⏳ |
+| 3. Validación de Diseño y Comunicación | Atención de observaciones de diseño | Observaciones recibidas | Equipo de Desarrollo y NUEMS | 20/05/2026 | 22/05/2026 | Cambios aplicados y validados | ⏳ |
+| 3. Validación de Diseño y Comunicación | Visto bueno de diseño | Cambios aplicados | Comunicación Social | 23/05/2026 | 24/05/2026 | Visto bueno formal | ⏳ |
+| 4. Publicación Final a Producción | Solicitud de publicación definitiva | Vistos buenos de seguridad y diseño | Equipo NUEMS | 25/05/2026 | 25/05/2026 | Solicitud enviada a DGTIC/Infraestructura | ⏳ |
+| 4. Publicación Final a Producción | Despliegue productivo y validación | Solicitud aceptada | Equipo de Desarrollo y DGTIC | 26/05/2026 | 27/05/2026 | Sistema operativo en producción, validado | ⏳ |
+
+### 2.2 Seguimiento y Control
+
+- **Herramienta de seguimiento:** Esta tabla debe actualizarse en cada comité de avance y reflejarse en el tablero Kanban y bitácora de cambios.
+- **Criterios de éxito:** Cada actividad debe contar con evidencia documental (captura, correo, ticket, acta) y validación cruzada por el responsable institucional.
+- **Riesgos críticos:**
+  - Retrasos en emisión de DNS/SSL institucional.
+  - Observaciones de seguridad no solventadas en tiempo.
+  - Cambios de diseño institucional de último minuto.
+  - Falta de evidencia documental para auditoría.
+
+### 2.3 Notas y Recomendaciones
+
+- El plan está alineado a los lineamientos MAAGTICSI, ATDT, LGPDP y procesos DGTIC/SEP.
+- Se recomienda mantener comunicación continua con NUEMS y DGTIC para evitar cuellos de botella.
+- Todo cambio relevante debe reflejarse en la bitácora y checklist de cierre.
+
+---
