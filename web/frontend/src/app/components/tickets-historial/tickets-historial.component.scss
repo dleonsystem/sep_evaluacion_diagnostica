@@ -24,7 +24,8 @@
 
 .tickets-historial__titulo {
   margin: 0;
-  font-size: clamp(1.8rem, 2vw, 2.2rem);
+  font-size: clamp(1.8rem, 2vw, 3.2rem);
+  color: #0f766e;
 }
 
 .tickets-historial__descripcion {
@@ -55,14 +56,14 @@
   padding: 0.85rem 1rem;
   border-bottom: 1px solid #e5e7eb;
   text-align: left;
-  font-size: 1.05rem;
+  font-size: 1.5rem;
   /* Letra más pequeña y limpia */
 }
 
 .tickets-historial th {
   background: #f6eddc;
   color: #13322e;
-  font-size: 0.9rem;
+  font-size: 1.3rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 700;
@@ -86,9 +87,9 @@
   display: inline-flex;
   align-items: center;
   padding: 0.3rem 0.6rem;
-  border-radius: 999px;
+  border-radius: 10px;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 1rem;
 }
 
 .tickets-historial__badge-button {
@@ -110,6 +111,23 @@
 .tickets-historial__badge--respondido {
   background: #13322e;
   color: #ffffff;
+}
+
+.tickets-historial__texto-estatus {
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  display: inline-block;
+
+  &--pendiente {
+    color: #611232;
+  }
+  &--proceso {
+    color: #bc955c;
+  }
+  &--respondido {
+    color: #13322e;
+  }
 }
 
 .tickets-historial__detalle td {

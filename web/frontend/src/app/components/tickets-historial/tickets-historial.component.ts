@@ -133,13 +133,6 @@ export class TicketsHistorialComponent implements OnInit {
     return { mensaje: respuesta.mensaje, fecha: respuesta.fecha };
   }
 
-  toggleDetalleRespuesta(ticketId: string): void {
-    this.ticketExpandidoId = this.ticketExpandidoId === ticketId ? null : ticketId;
-  }
-
-  esTicketExpandido(ticketId: string): boolean {
-    return this.ticketExpandidoId === ticketId;
-  }
 
   private normalizarCorreo(correo: string | null): string | null {
     if (!correo) {

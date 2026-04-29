@@ -1,13 +1,32 @@
 version: '3.8'
 
 services:
+  # Base de datos desactivada para usar siempre la IP externa 168.255.101.99
+  # evitamos que Docker genere una base de datos local que cause confusión.
+  # db:
+  #   image: postgres:16-alpine
+  #   container_name: sicrer-db
+  #   environment:
+  #     POSTGRES_USER: ${DB_USER:-postgres}
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+  #     POSTGRES_DB: ${DB_NAME:-eia_db}
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - sicrer-db-data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+
+  # SFTP activo para subida de archivos institucional
   sftp:
     image: atmoz/sftp
     container_name: eia_sftp
     volumes:
-      - ./sftp-data:/home/eia_user/upload
+      - ./sftp-data:/home/${SFTP_USER:-eia_user}/upload
     ports:
       - "2222:22"
     environment:
-      SFTP_USERS: "eia_user:eia_password:1001"
+      SFTP_USERS: "${SFTP_USER:-eia_user}:${SFTP_PASSWORD:-eia_password}:1001"
     restart: unless-stopped
+
+volumes:
+  sicrer-db-data:

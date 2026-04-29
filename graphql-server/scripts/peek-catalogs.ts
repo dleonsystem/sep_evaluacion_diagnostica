@@ -7,8 +7,8 @@ async function peek() {
         const turnos = await query('SELECT * FROM cat_turnos LIMIT 5');
         console.table(turnos.rows);
 
-        console.log('--- CAT_NIVELES_EDUCATIVOS ---');
-        const niveles = await query('SELECT * FROM cat_niveles_educativos LIMIT 5');
+        console.log('--- CAT_NIVEL_EDUCATIVO ---');
+        const niveles = await query('SELECT * FROM cat_nivel_educativo LIMIT 5');
         console.table(niveles.rows);
 
         console.log('--- CAT_ENTIDADES_FEDERATIVAS ---');

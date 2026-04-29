@@ -23,6 +23,8 @@ export const AUTHENTICATE_USER_MUTATION = `
         id
         email
         rol
+        primerLogin
+        passwordDebeCambiar
         centrosTrabajo {
           claveCCT
         }
@@ -37,7 +39,10 @@ export const UPLOAD_EXCEL_MUTATION = `
       success
       message
       solicitudId
+      consecutivo
+      generatedPassword
       duplicadoDetectado
+      hashArchivo
       detalles {
         cct
         nivel
@@ -67,6 +72,15 @@ export const UPLOAD_RESULTS_MUTATION = `
         url
         size
       }
+    }
+  }
+`;
+
+export const CHANGE_PASSWORD_MUTATION = `
+  mutation ChangePassword($input: ChangePasswordInput!) {
+    changePassword(input: $input) {
+      ok
+      message
     }
   }
 `;

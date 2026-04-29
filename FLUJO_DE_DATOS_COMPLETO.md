@@ -98,15 +98,15 @@ sequenceDiagram
     DBA->>DDL: Ejecutar script de creación
     DDL->>PG: CREATE EXTENSION IF NOT EXISTS "uuid-ossp"
     DDL->>PG: CREATE EXTENSION IF NOT EXISTS "pg_crypto"
-    DDL->>PG: CREATE TYPES (ENUMs)
-    DDL->>PG: CREATE TABLES (46 tablas)
-    DDL->>PG: CREATE INDEXES (66+ índices)
+    DDL->>PG: CREATE TABLE cat_* de catálogos
+    DDL->>PG: CREATE TABLES (60 tablas)
+    DDL->>PG: CREATE INDEXES
     DDL->>PG: CREATE TRIGGERS (27+ triggers)
     DDL->>PG: CREATE VIEWS (24+ vistas)
     DDL->>PG: CREATE FUNCTIONS/PROCEDURES
     DBA->>VER: Ejecutar script de verificación
     VER->>PG: SELECT COUNT(*) FROM information_schema.tables
-    VER-->>DBA: ✓ 46 tablas creadas
+    VER-->>DBA: ✓ 60 tablas creadas
     VER->>PG: SELECT COUNT(*) FROM pg_constraint
     VER-->>DBA: ✓ Constraints OK
 ```
@@ -130,20 +130,35 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- 3. Schema de auditoría
 CREATE SCHEMA IF NOT EXISTS auditoria;
 
--- 4. ENUMs (13 tipos)
-CREATE TYPE tipo_evaluacion AS ENUM ('DIAGNOSTICA', 'FORMATIVA', 'SUMATIVA');
-CREATE TYPE nivel_desempeno AS ENUM ('I', 'II', 'III', 'IV');
-CREATE TYPE tipo_campo AS ENUM ('LECTURA', 'FORMACION_CIVICA_ETICA', 'MATEMATICAS');
-CREATE TYPE estado_solicitud AS ENUM ('PENDIENTE', 'EN_PROCESO', 'VALIDADO', 'RECHAZADO', 'DESCARGADO');
-CREATE TYPE estado_ticket AS ENUM ('ABIERTO', 'EN_PROCESO', 'RESUELTO', 'CERRADO', 'ESCALADO');
-CREATE TYPE prioridad_ticket AS ENUM ('BAJA', 'MEDIA', 'ALTA', 'URGENTE');
-CREATE TYPE tipo_usuario_ticket AS ENUM ('SOLICITANTE', 'SOPORTE');
-CREATE TYPE tipo_archivo AS ENUM ('VALORACION', 'REPORTE_PDF', 'DBF', 'OTRO');
-CREATE TYPE resultado_validacion AS ENUM ('EXITOSO', 'ADVERTENCIAS', 'ERRORES_CRITICOS');
-CREATE TYPE turno_escolar AS ENUM ('MATUTINO', 'VESPERTINO', 'NOCTURNO', 'JORNADA_AMPLIADA', 'TIEMPO_COMPLETO');
-CREATE TYPE tipo_reporte AS ENUM ('INDIVIDUAL', 'GRUPAL', 'ESCUELA', 'ZONA');
-CREATE TYPE tipo_notificacion AS ENUM ('SOLICITUD_RECIBIDA', 'VALIDACION_COMPLETA', 'REPORTE_LISTO', 'ERROR_VALIDACION', 'TICKET_ACTUALIZADO');
-CREATE TYPE formato_descarga AS ENUM ('PDF', 'DBF', 'XLSX', 'ZIP');
+-- 4. Catálogos de dominio (reemplazan ENUMs)
+CREATE TABLE cat_nivel_educativo (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_nivel_educativo (codigo, descripcion, orden)
+SELECT val,
+       INITCAP(REPLACE(LOWER(val), '_', ' ')),
+       ord
+FROM unnest(ARRAY['PREESCOLAR', 'PRIMARIA', 'SECUNDARIA', 'TELESECUNDARIA']) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+CREATE TABLE cat_estado_validacion_eia2 (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_estado_validacion_eia2 (codigo, descripcion, orden)
+VALUES
+    ('INVALIDO', 'Archivo recibido con errores o pendiente de corrección', 1),
+    ('VALIDO', 'Archivo validado y procesable', 2)
+ON CONFLICT (codigo) DO NOTHING;
 
 -- 5. Crear tablas en orden de dependencias
 -- (Ver ESTRUCTURA_DE_DATOS.md para scripts completos)
@@ -211,7 +226,7 @@ graph LR
     A[Inicio] --> B{Fuente de<br/>Datos SEP}
     B --> C[CAT_CICLOS_ESCOLARES]
     B --> D[CAT_ENTIDADES_FEDERATIVAS]
-    B --> E[CAT_NIVELES_EDUCATIVOS]
+    B --> E[cat_nivel_educativo]
     B --> F[CAT_GRADOS]
     B --> G[CAT_TURNOS]
     B --> H[CAT_ROLES_USUARIO]
@@ -300,46 +315,47 @@ ON CONFLICT (id) DO NOTHING;
 SELECT COUNT(*) as total_estados FROM CAT_ENTIDADES_FEDERATIVAS;
 ```
 
-#### 3.2.3 CAT_NIVELES_EDUCATIVOS
+#### 3.2.3 cat_nivel_educativo
 
 ```sql
-INSERT INTO CAT_NIVELES_EDUCATIVOS (id, clave, nombre, descripcion, orden, activo)
+INSERT INTO cat_nivel_educativo (codigo, descripcion, orden)
 VALUES
-    (1, 'PREESC', 'Preescolar', 'Educación Preescolar (3-5 años)', 1, TRUE),
-    (2, 'PRIM', 'Primaria', 'Educación Primaria (6-11 años)', 2, TRUE),
-    (3, 'SEC', 'Secundaria', 'Educación Secundaria (12-14 años)', 3, TRUE)
-ON CONFLICT (id) DO NOTHING;
+    ('PREESCOLAR', 'Preescolar', 1),
+    ('PRIMARIA', 'Primaria', 2),
+    ('SECUNDARIA', 'Secundaria', 3),
+    ('TELESECUNDARIA', 'Telesecundaria', 4)
+ON CONFLICT (codigo) DO NOTHING;
 
-SELECT * FROM CAT_NIVELES_EDUCATIVOS ORDER BY orden;
+SELECT * FROM cat_nivel_educativo ORDER BY orden;
 ```
 
 #### 3.2.4 CAT_GRADOS
 
 ```sql
--- Grados de Preescolar
-INSERT INTO CAT_GRADOS (id, nivel_educativo, grado, nombre_completo, orden, activo)
+-- Grados vinculados por FK a cat_nivel_educativo
+INSERT INTO cat_grados (id_grado, nivel_educativo, grado_numero, grado_nombre, orden)
 VALUES
-    (1, 'PREESC', 1, '1° de Preescolar', 1, TRUE),
-    (2, 'PREESC', 2, '2° de Preescolar', 2, TRUE),
-    (3, 'PREESC', 3, '3° de Preescolar', 3, TRUE),
+    (1, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PREESCOLAR'), 1, '1°', 1),
+    (2, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PREESCOLAR'), 2, '2°', 2),
+    (3, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PREESCOLAR'), 3, '3°', 3),
     
     -- Grados de Primaria
-    (4, 'PRIM', 1, '1° de Primaria', 4, TRUE),
-    (5, 'PRIM', 2, '2° de Primaria', 5, TRUE),
-    (6, 'PRIM', 3, '3° de Primaria', 6, TRUE),
-    (7, 'PRIM', 4, '4° de Primaria', 7, TRUE),
-    (8, 'PRIM', 5, '5° de Primaria', 8, TRUE),
-    (9, 'PRIM', 6, '6° de Primaria', 9, TRUE),
+    (4, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PRIMARIA'), 1, '1°', 4),
+    (5, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PRIMARIA'), 2, '2°', 5),
+    (6, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PRIMARIA'), 3, '3°', 6),
+    (7, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PRIMARIA'), 4, '4°', 7),
+    (8, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PRIMARIA'), 5, '5°', 8),
+    (9, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PRIMARIA'), 6, '6°', 9),
     
     -- Grados de Secundaria
-    (10, 'SEC', 1, '1° de Secundaria', 10, TRUE),
-    (11, 'SEC', 2, '2° de Secundaria', 11, TRUE),
-    (12, 'SEC', 3, '3° de Secundaria', 12, TRUE)
-ON CONFLICT (id) DO NOTHING;
+    (10, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'SECUNDARIA'), 1, '1°', 10),
+    (11, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'SECUNDARIA'), 2, '2°', 11),
+    (12, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'SECUNDARIA'), 3, '3°', 12)
+ON CONFLICT (id_grado) DO NOTHING;
 
 -- Verificación: Debe retornar 12 registros
 SELECT nivel_educativo, COUNT(*) as total_grados
-FROM CAT_GRADOS
+FROM cat_grados
 GROUP BY nivel_educativo
 ORDER BY nivel_educativo;
 ```
@@ -402,30 +418,31 @@ SELECT * FROM (VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- 3. Niveles Educativos
-INSERT INTO CAT_NIVELES_EDUCATIVOS (id, clave, nombre, descripcion, orden, activo)
+INSERT INTO cat_nivel_educativo (codigo, descripcion, orden)
 VALUES
-    (1, 'PREESC', 'Preescolar', 'Educación Preescolar', 1, TRUE),
-    (2, 'PRIM', 'Primaria', 'Educación Primaria', 2, TRUE),
-    (3, 'SEC', 'Secundaria', 'Educación Secundaria', 3, TRUE)
-ON CONFLICT (id) DO NOTHING;
+    ('PREESCOLAR', 'Preescolar', 1),
+    ('PRIMARIA', 'Primaria', 2),
+    ('SECUNDARIA', 'Secundaria', 3),
+    ('TELESECUNDARIA', 'Telesecundaria', 4)
+ON CONFLICT (codigo) DO NOTHING;
 
 -- 4. Grados (12 grados: 3 preescolar + 6 primaria + 3 secundaria)
-INSERT INTO CAT_GRADOS (id, nivel_educativo, grado, nombre_completo, orden, activo)
+INSERT INTO cat_grados (id_grado, nivel_educativo, grado_numero, grado_nombre, orden)
 SELECT * FROM (VALUES
-    (1, 'PREESC', 1, '1° de Preescolar', 1, TRUE),
-    (2, 'PREESC', 2, '2° de Preescolar', 2, TRUE),
-    (3, 'PREESC', 3, '3° de Preescolar', 3, TRUE),
-    (4, 'PRIM', 1, '1° de Primaria', 4, TRUE),
-    (5, 'PRIM', 2, '2° de Primaria', 5, TRUE),
-    (6, 'PRIM', 3, '3° de Primaria', 6, TRUE),
-    (7, 'PRIM', 4, '4° de Primaria', 7, TRUE),
-    (8, 'PRIM', 5, '5° de Primaria', 8, TRUE),
-    (9, 'PRIM', 6, '6° de Primaria', 9, TRUE),
-    (10, 'SEC', 1, '1° de Secundaria', 10, TRUE),
-    (11, 'SEC', 2, '2° de Secundaria', 11, TRUE),
-    (12, 'SEC', 3, '3° de Secundaria', 12, TRUE)
-) AS v(id, nivel_educativo, grado, nombre_completo, orden, activo)
-ON CONFLICT (id) DO NOTHING;
+    (1, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PREESCOLAR'), 1, '1°', 1),
+    (2, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PREESCOLAR'), 2, '2°', 2),
+    (3, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PREESCOLAR'), 3, '3°', 3),
+    (4, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PRIMARIA'), 1, '1°', 4),
+    (5, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PRIMARIA'), 2, '2°', 5),
+    (6, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PRIMARIA'), 3, '3°', 6),
+    (7, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PRIMARIA'), 4, '4°', 7),
+    (8, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PRIMARIA'), 5, '5°', 8),
+    (9, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'PRIMARIA'), 6, '6°', 9),
+    (10, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'SECUNDARIA'), 1, '1°', 10),
+    (11, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'SECUNDARIA'), 2, '2°', 11),
+    (12, (SELECT id FROM cat_nivel_educativo WHERE codigo = 'SECUNDARIA'), 3, '3°', 12)
+) AS v(id_grado, nivel_educativo, grado_numero, grado_nombre, orden)
+ON CONFLICT (id_grado) DO NOTHING;
 
 -- 5. Turnos Escolares
 INSERT INTO CAT_TURNOS (id, clave, nombre, descripcion, horario_inicio, horario_fin, activo)
@@ -454,7 +471,7 @@ SELECT 'CAT_CICLOS_ESCOLARES' as tabla, COUNT(*) as registros FROM CAT_CICLOS_ES
 UNION ALL
 SELECT 'CAT_ENTIDADES_FEDERATIVAS', COUNT(*) FROM CAT_ENTIDADES_FEDERATIVAS
 UNION ALL
-SELECT 'CAT_NIVELES_EDUCATIVOS', COUNT(*) FROM CAT_NIVELES_EDUCATIVOS
+SELECT 'cat_nivel_educativo', COUNT(*) FROM cat_nivel_educativo
 UNION ALL
 SELECT 'CAT_GRADOS', COUNT(*) FROM CAT_GRADOS
 UNION ALL
@@ -1207,15 +1224,16 @@ async def upload_valoracion(
         os.remove(temp_path)
         raise HTTPException(400, f"Error al leer archivo: {str(e)}")
     
-    # 9. Crear SOLICITUD
+    # 9. Crear registro en solicitudes_eia2
     solicitud_id = uuid4()
-    solicitud = SOLICITUDES(
+    solicitud = SOLICITUDES_EIA2(
         id=solicitud_id,
-        usuario_id=current_user.id,
-        escuela_id=current_user.escuela_id,
-        periodo_id=periodo.id,
-        estado='PENDIENTE',
-        created_at=datetime.now()
+        cct=current_user.escuela.cct,
+        archivo_original=archivo.filename,
+        fecha_carga=datetime.now(),
+        estado_validacion=get_catalogo_id(db, 'cat_estado_validacion_eia2', 'INVALIDO'),
+        hash_archivo=file_hash,
+        usuario_id=current_user.id
     )
     db.add(solicitud)
     
@@ -1274,7 +1292,7 @@ sequenceDiagram
     API->>API: Validar estructura Excel (hojas)
     
     API->>DB: BEGIN TRANSACTION
-    API->>DB: INSERT INTO SOLICITUDES (estado='PENDIENTE')
+    API->>DB: INSERT INTO solicitudes_eia2 (estado_validacion=fn_catalogo_id('cat_estado_validacion_eia2','INVALIDO'))
     DB-->>API: solicitud_id
     
     API->>DB: INSERT INTO ARCHIVOS_CARGADOS
@@ -1297,9 +1315,9 @@ sequenceDiagram
     Q->>W: Despachar tarea
     W->>FS: Leer archivo
     W->>W: Validar contenido
-    W->>DB: UPDATE SOLICITUDES SET estado='VALIDADO'
+    W->>DB: UPDATE solicitudes_eia2 SET estado_validacion=fn_catalogo_id('cat_estado_validacion_eia2','VALIDO')
     
-    API-->>FE: {estado: 'VALIDADO'}
+    API-->>FE: {estadoValidacion: 'VALIDO'}
     FE-->>D: Redirigir a resultados
 ```
 
@@ -1336,13 +1354,13 @@ graph TB
     Q -->|No| R[Generar advertencias]
     R --> S{¿Críticas?}
     S -->|Sí| F
-    S -->|No| T[estado='VALIDADO', resultado='ADVERTENCIAS']
+    S -->|No| T[estado_validacion='VALIDO', resultado='ADVERTENCIAS']
     
     Q -->|Sí| U[Insertar datos en BD]
     U --> V[INSERT INTO VALORACIONES]
     V --> W[Calcular niveles de desempeño]
     W --> X[INSERT INTO EVALUACIONES]
-    X --> Y[UPDATE SOLICITUDES estado='VALIDADO']
+    X --> Y[UPDATE solicitudes_eia2 estado_validacion='VALIDO']
     Y --> AA[Encolar generación de reportes]
     AA --> AB[Enviar email: Validación exitosa]
     AB --> Z
@@ -1422,8 +1440,8 @@ def validar_archivo_task(self, solicitud_id: str, archivo_id: str):
             raise ValidationError("CCT no coincide")
         
         # Validar nivel educativo
-        nivel_valido = db.query(CAT_NIVELES_EDUCATIVOS).filter(
-            CAT_NIVELES_EDUCATIVOS.nombre.ilike(f"%{datos_generales['Nivel']}%")
+        nivel_valido = db.query(CAT_NIVEL_EDUCATIVO).filter(
+            CAT_NIVEL_EDUCATIVO.descripcion.ilike(f"%{datos_generales['Nivel']}%")
         ).first()
         
         if not nivel_valido:
@@ -1436,8 +1454,8 @@ def validar_archivo_task(self, solicitud_id: str, archivo_id: str):
         
         # Validar grado
         grado = db.query(CAT_GRADOS).filter(
-            CAT_GRADOS.nivel_educativo == nivel_valido.clave,
-            CAT_GRADOS.grado == int(datos_generales['Grado'])
+            CAT_GRADOS.nivel_educativo == nivel_valido.id,
+            CAT_GRADOS.grado_numero == int(datos_generales['Grado'])
         ).first()
         
         if not grado:
@@ -1895,11 +1913,11 @@ def enviar_email_validacion_fallida(solicitud, errores):
         destinatario=solicitud.usuario.email,
         asunto="Error en validación de archivo",
         cuerpo=render_template('email_error.html', errores=errores),
-        tipo='EVALUACION_VALIDADA',
-        estado='PENDIENTE',
-        prioridad='ALTA',
+        tipo=get_catalogo_id(db, 'cat_tipo_notificacion', 'EVALUACION_VALIDADA'),
+        estado=get_catalogo_id(db, 'cat_estado_notificacion', 'PENDIENTE'),
+        prioridad=get_catalogo_id(db, 'cat_prioridad_notificacion', 'ALTA'),
         referencia_id=solicitud.id,
-        referencia_tipo='SOLICITUD',
+        referencia_tipo=get_catalogo_id(db, 'cat_referencia_tipo_notificacion', 'SOLICITUD'),
         created_at=datetime.now()
     )
     db.add(email)
@@ -2693,7 +2711,7 @@ async def solicitar_eia2(
         solicitud_original_id=solicitud_id,
         usuario_id=current_user.id,
         escuela_id=current_user.escuela_id,
-        estado='PENDIENTE',
+        estado_validacion=get_catalogo_id(db, 'cat_estado_validacion_eia2', 'INVALIDO'),
         fecha_solicitud=datetime.now()
     )
     db.add(solicitud_eia2)

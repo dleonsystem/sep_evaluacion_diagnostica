@@ -49,6 +49,11 @@ export class AdminPanelComponent implements OnInit {
   filtroTicketTexto = '';
   filtroTicketEstatus: 'todos' | TicketSoporte['estatus'] = 'todos';
   
+  // Paginación Soporte
+  paginaSoporteActual = 1;
+  paginaIncidenciasActual = 1;
+  tamanioPaginaSoporte = 10;
+  
   // Incidencias Públicas
   incidenciasPublicas: TicketSoporte[] = [];
   incidenciaSeleccionadaId: string | null = null;
@@ -85,6 +90,8 @@ export class AdminPanelComponent implements OnInit {
     rol: 'CONSULTA' as any,
     claveCCT: ''
   };
+  editandoUsuario = false;
+  usuarioSeleccionadoId: string | null = null;
 
   // Catálogo de Escuelas (CU-14)
   escuelas: Escuela[] = [];
@@ -296,6 +303,11 @@ export class AdminPanelComponent implements OnInit {
     const texto = this.filtroTicketTexto.trim().toLowerCase();
     const estatus = this.filtroTicketEstatus;
     return this.ticketsSoporte.filter((ticket) => {
+      // Excluir incidencias públicas de la sección de tickets de usuario para evitar duplicidad
+      if (ticket.folio.startsWith('PUB-')) {
+        return false;
+      }
+
       const coincideTexto =
         !texto ||
         ticket.folio.toLowerCase().includes(texto) ||
@@ -304,6 +316,20 @@ export class AdminPanelComponent implements OnInit {
       const coincideEstatus = estatus === 'todos' || ticket.estatus === estatus;
       return coincideTexto && coincideEstatus;
     });
+  }
+
+  get ticketsSoportePaginados(): TicketSoporte[] {
+    const inicio = (this.paginaSoporteActual - 1) * this.tamanioPaginaSoporte;
+    return this.ticketsSoporteFiltrados.slice(inicio, inicio + this.tamanioPaginaSoporte);
+  }
+
+  get totalPaginasSoporte(): number {
+    return Math.ceil(this.ticketsSoporteFiltrados.length / this.tamanioPaginaSoporte);
+  }
+
+  irAPaginaSoporte(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginasSoporte) return;
+    this.paginaSoporteActual = pagina;
   }
 
   seleccionarTicket(ticket: TicketSoporte): void {
@@ -318,7 +344,12 @@ export class AdminPanelComponent implements OnInit {
   abrirModalRespuesta(ticket: TicketSoporte, event: Event): void {
     event.stopPropagation();
     this.ticketParaResponder = ticket;
-    this.ticketSeleccionadoId = ticket.id; // Expand the row too
+    if (this.tabSoporteActiva === 'publico') {
+      this.incidenciaSeleccionadaId = ticket.id;
+      this.ticketSeleccionadoId = ticket.id; // Also set this for `guardarRespuesta` logic
+    } else {
+      this.ticketSeleccionadoId = ticket.id;
+    }
     this.estatusTicketSeleccionado = ticket.estatus;
     this.respuestaAdmin = '';
     this.mostrarModalRespuesta = true;
@@ -347,7 +378,7 @@ export class AdminPanelComponent implements OnInit {
         this.ticketsService.respondToTicket(
           this.ticketSeleccionadoId,
           mensaje,
-          cerrar,
+          cerrar
         ),
       );
 
@@ -361,7 +392,11 @@ export class AdminPanelComponent implements OnInit {
 
       this.respuestaAdmin = '';
       this.cerrarModalRespuesta();
-      await this.cargarTicketsSoporte();
+      if (this.tabSoporteActiva === 'publico') {
+        await this.cargarIncidenciasPublicas();
+      } else {
+        await this.cargarTicketsSoporte();
+      }
     } catch (error) {
       console.error('Error enviando respuesta:', error);
       await Swal.fire('Error', 'No se pudo enviar la respuesta', 'error');
@@ -486,7 +521,7 @@ export class AdminPanelComponent implements OnInit {
     try {
       const offset = (this.paginaUsuariosActual - 1) * this.tamanioPagina;
       const resultado = await firstValueFrom(
-        this.usuariosService.listarUsuarios(this.tamanioPagina, offset),
+        this.usuariosService.listarUsuarios(this.tamanioPagina, offset, this.filtroUsuarioTexto),
       );
       this.usuarios = resultado.nodes;
       this.totalUsuarios = resultado.totalCount;
@@ -546,56 +581,114 @@ export class AdminPanelComponent implements OnInit {
   }
 
   cerrarModalUsuario(): void {
+    this.editandoUsuario = false;
+    this.usuarioSeleccionadoId = null;
     this.mostrarModalUsuario = false;
   }
 
-  async crearUsuario(): Promise<void> {
+  async guardarUsuario(): Promise<void> {
     if (!this.nuevoUsuario.email || !this.nuevoUsuario.nombre || !this.nuevoUsuario.rol) {
       return;
     }
 
     this.cargandoUsuarios = true;
     try {
-      // Generar contraseña aleatoria temporal
-      const password = Math.random().toString(36).slice(-10) + '!A1';
-
-      await firstValueFrom(
-        this.usuariosService.crearUsuario({
-          email: this.nuevoUsuario.email,
+      if (this.editandoUsuario && this.usuarioSeleccionadoId) {
+        // Modo Edición
+        const input = {
           nombre: this.nuevoUsuario.nombre,
           apepaterno: this.nuevoUsuario.apepaterno,
           apematerno: this.nuevoUsuario.apematerno,
           rol: this.nuevoUsuario.rol,
-          clavesCCT: this.nuevoUsuario.claveCCT ? [this.nuevoUsuario.claveCCT] : [],
-          password: password
-        })
-      );
+        };
 
-      await Swal.fire({
-        icon: 'success',
-        title: 'Usuario Creado',
-        text: `El usuario ${this.nuevoUsuario.email} ha sido creado. Se le han enviado sus credenciales por correo electrónico.`,
-      });
+        await firstValueFrom(
+          this.usuariosService.actualizarUsuario(this.usuarioSeleccionadoId, input)
+        );
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Usuario Actualizado',
+          text: `El usuario ${this.nuevoUsuario.email} ha sido actualizado correctamente.`,
+        });
+      } else {
+        // Modo Creación
+        const password = Math.random().toString(36).slice(-10) + '!A1';
+
+        await firstValueFrom(
+          this.usuariosService.crearUsuario({
+            email: this.nuevoUsuario.email,
+            nombre: this.nuevoUsuario.nombre,
+            apepaterno: this.nuevoUsuario.apepaterno,
+            apematerno: this.nuevoUsuario.apematerno,
+            rol: this.nuevoUsuario.rol,
+            clavesCCT: this.nuevoUsuario.claveCCT ? [this.nuevoUsuario.claveCCT] : [],
+            password: password
+          })
+        );
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Usuario Creado',
+          text: `El usuario ${this.nuevoUsuario.email} ha sido creado. Se le han enviado sus credenciales por correo electrónico.`,
+        });
+      }
 
       this.cerrarModalUsuario();
       await this.cargarUsuarios();
     } catch (error: any) {
-      console.error('Error creando usuario:', error);
-      await Swal.fire('Error', error.message || 'No se pudo crear el usuario', 'error');
+      console.error('Error al guardar usuario:', error);
+      await Swal.fire('Error', error.message || 'No se pudo procesar la solicitud', 'error');
     } finally {
       this.cargandoUsuarios = false;
     }
   }
 
+  abrirModalEdicion(usuario: UsuarioCreado): void {
+    this.editandoUsuario = true;
+    this.usuarioSeleccionadoId = usuario.id;
+    this.nuevoUsuario = {
+      email: usuario.email,
+      nombre: usuario.nombre,
+      apepaterno: usuario.apepaterno,
+      apematerno: usuario.apematerno || '',
+      rol: usuario.rol as any,
+      claveCCT: '' // En este sistema la CCT es parte de una tabla intermedia o escuela_id
+    };
+    this.mostrarModalUsuario = true;
+  }
+
+  async cambiarEstadoUsuario(usuario: UsuarioCreado): Promise<void> {
+    const accion = usuario.activo ? 'desactivar' : 'activar';
+    const confirmacion = await Swal.fire({
+      title: `¿${accion.charAt(0).toUpperCase() + accion.slice(1)} usuario?`,
+      text: `¿Estás seguro de que deseas ${accion} al usuario ${usuario.email}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: `Sí, ${accion}`,
+      cancelButtonText: 'Cancelar',
+    });
+
+    if (!confirmacion.isConfirmed) return;
+
+    try {
+      if (usuario.activo) {
+        // Soft delete
+        await firstValueFrom(this.usuariosService.eliminarUsuario(usuario.id));
+      } else {
+        // Reactivación via update
+        await firstValueFrom(this.usuariosService.actualizarUsuario(usuario.id, { activo: true }));
+      }
+
+      await Swal.fire('Éxito', `Usuario ${accion}do correctamente.`, 'success');
+      await this.cargarUsuarios();
+    } catch (error: any) {
+      await Swal.fire('Error', error.message || `No se pudo ${accion} al usuario.`, 'error');
+    }
+  }
+
   get usuariosFiltrados(): UsuarioCreado[] {
-    if (!this.filtroUsuarioTexto) return this.usuarios;
-    const texto = this.filtroUsuarioTexto.toLowerCase();
-    return this.usuarios.filter(
-      (u) =>
-        u.email.toLowerCase().includes(texto) ||
-        u.nombre.toLowerCase().includes(texto) ||
-        (u.apepaterno && u.apepaterno.toLowerCase().includes(texto)),
-    );
+    return this.usuarios;
   }
 
   get totalPaginasUsuarios(): number {
@@ -612,18 +705,19 @@ export class AdminPanelComponent implements OnInit {
     return {
       id: t.id,
       folio: t.numeroTicket,
-      correo: t.correo || dbCasteada.user_email || 'Sin correo',
-      nombreCompleto: dbCasteada.nombreCompleto || 'Usuario Registrado',
-      cct: dbCasteada.cct || 'N/D',
+      correo: t.correo || 'Sin correo',
+      nombreCompleto: t.nombreCompleto || 'Usuario del Sistema',
       motivo: t.asunto,
       motivoDetalle: t.asunto,
+      cct: t.cct,
+      turno: t.turno,
       descripcion: t.descripcion,
       fecha: t.fechaCreacion,
       estatus: this.mapEstatusDBToUI(t.estado),
       respuestas: (t.respuestas || []).map(r => ({
         mensaje: r.mensaje,
         fecha: r.fecha,
-        autor: 'admin' 
+        autor: r.autor || 'admin' 
       })),
       evidencias: (t.evidencias || []).map((e) => ({
         nombre: e.nombre,
@@ -634,25 +728,7 @@ export class AdminPanelComponent implements OnInit {
     };
   }
 
-  async cargarIncidenciasPublicas(): Promise<void> {
-    try {
-      const tickets = await firstValueFrom(this.ticketsService.getPublicIncidents());
-      this.incidenciasPublicas = tickets.map(t => this.mapTicketDBToUI(t));
-    } catch (error) {
-      console.error('Error al cargar incidencias públicas', error);
-    }
-  }
 
-  get incidenciasPublicasFiltradas(): TicketSoporte[] {
-    return this.incidenciasPublicas.filter(t => {
-      const cumpleTexto = !this.filtroIncidenciaTexto ||
-        t.folio.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()) ||
-        t.correo.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()) ||
-        (t.nombreCompleto && t.nombreCompleto.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()));
-      const cumpleEstatus = this.filtroIncidenciaEstatus === 'todos' || t.estatus === this.filtroIncidenciaEstatus;
-      return cumpleTexto && cumpleEstatus;
-    });
-  }
 
   seleccionarIncidencia(incidencia: TicketSoporte): void {
     this.incidenciaSeleccionadaId = (this.incidenciaSeleccionadaId === incidencia.id) ? null : incidencia.id;
@@ -707,7 +783,7 @@ export class AdminPanelComponent implements OnInit {
         const key = registro.id;
         const nivel = this.obtenerEtiquetaNivel(registro.nivelEducativo);
         const fecha = registro.fechaCarga;
-        const estatus = registro.estadoValidacion === 2 ? 'asignado' : 'pendiente';
+        const estatus = (registro.resultados && registro.resultados.length > 0) ? 'asignado' : 'pendiente';
 
         return {
           key,
@@ -1062,6 +1138,39 @@ export class AdminPanelComponent implements OnInit {
     this.paginaEscuelasActual = pagina;
     this.cargarEscuelas();
   }
+  async cargarIncidenciasPublicas(): Promise<void> {
+    try {
+      const tickets = await firstValueFrom(this.ticketsService.getPublicIncidents());
+      this.incidenciasPublicas = tickets.map(t => this.mapTicketDBToUI(t));
+    } catch (error) {
+      console.error('Error al cargar incidencias públicas', error);
+    }
+  }
+
+  get incidenciasPublicasFiltradas(): TicketSoporte[] {
+    return this.incidenciasPublicas.filter(t => {
+      const cumpleTexto = !this.filtroIncidenciaTexto ||
+        t.folio.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()) ||
+        t.correo.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()) ||
+        (t.nombreCompleto && t.nombreCompleto.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()));
+      const cumpleEstatus = this.filtroIncidenciaEstatus === 'todos' || t.estatus === this.filtroIncidenciaEstatus;
+      return cumpleTexto && cumpleEstatus;
+    });
+  }
+
+  get incidenciasPublicasPaginadas(): TicketSoporte[] {
+    const inicio = (this.paginaIncidenciasActual - 1) * this.tamanioPaginaSoporte;
+    return this.incidenciasPublicasFiltradas.slice(inicio, inicio + this.tamanioPaginaSoporte);
+  }
+
+  get totalPaginasIncidencias(): number {
+    return Math.ceil(this.incidenciasPublicasFiltradas.length / this.tamanioPaginaSoporte);
+  }
+
+  irAPaginaIncidencias(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginasIncidencias) return;
+    this.paginaIncidenciasActual = pagina;
+  }
 }
 
 interface ExcelDisponible {
@@ -1083,12 +1192,12 @@ interface TicketSoporte {
   correo: string;
   nombreCompleto?: string;
   cct?: string;
+  turno?: string;
   motivo: string;
   motivoDetalle: string;
   descripcion: string;
   fecha: string;
-  prioridad?: string;
   estatus: 'pendiente' | 'en-proceso' | 'respondido';
-  respuestas: Array<{ mensaje: string; fecha: string; autor: 'admin' }>;
+  respuestas: Array<{ mensaje: string; fecha: string; autor: string }>;
   evidencias: Array<{ nombre: string; tamano: number; tipo: string; url: string }>;
 }

@@ -10,11 +10,14 @@ import { TicketsHistorialComponent } from './components/tickets-historial/ticket
 import { AuthGuard } from './guards/auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 import { LoginGuard } from './guards/login.guard';
+import { TicketDetalleComponent } from './components/ticket-detalle/ticket-detalle.component';
 import { RecuperarPasswordComponent } from './components/recuperar-password/recuperar-password.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { PreguntasFrecuentesComponent } from './components/preguntas-frecuentes/preguntas-frecuentes.component';
 import { MaterialesAdminComponent } from './components/admin-panel/materiales/materiales.component';
 import { MaterialesPublicosComponent } from './components/materiales-publicos/materiales-publicos.component';
+import { CambioPasswordComponent } from './components/cambio-password/cambio-password.component';
+import { PasswordChangeGuard } from './guards/password-change.guard';
 
 export const routes: Routes = [
   {
@@ -59,6 +62,12 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'cambiar-password',
+    component: CambioPasswordComponent,
+    canActivate: [AuthGuard],
+    pathMatch: 'full',
+  },
+  {
     path: 'login',
     component: LoginComponent,
     canActivate: [LoginGuard],
@@ -91,7 +100,7 @@ export const routes: Routes = [
   {
     path: 'descargas',
     component: DescargasComponent,
-    canActivate: [AuthGuard],
+    canActivate: [AdminGuard],
     pathMatch: 'full',
   },
   {
@@ -105,6 +114,11 @@ export const routes: Routes = [
     component: TicketsHistorialComponent,
     canActivate: [AuthGuard],
     pathMatch: 'full',
+  },
+  {
+    path: 'tickets/:folio',
+    component: TicketDetalleComponent,
+    canActivate: [AuthGuard],
   },
   /* {
     path: 'carga-masiva/detalle',

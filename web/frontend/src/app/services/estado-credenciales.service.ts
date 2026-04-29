@@ -22,9 +22,9 @@ export class EstadoCredencialesService {
     if (credenciales) {
       const estadoDesdeAuth = {
         correo: credenciales.correo,
-        contrasena: credenciales.contrasena
+        contrasena: '' // Seguridad: No recuperar contraseña de persistencia
       };
-      this.persistir(estadoDesdeAuth);
+      // No persistimos automáticamente si falta la contraseña
       return estadoDesdeAuth;
     }
 
@@ -32,7 +32,11 @@ export class EstadoCredencialesService {
   }
 
   actualizar(correo: string, contrasena: string): void {
-    this.persistir({ correo: this.normalizarCorreo(correo), contrasena });
+    // Seguridad: Persistimos el correo pero NUNCA la contraseña
+    localStorage.setItem(this.storageKey, JSON.stringify({ 
+      correo: this.normalizarCorreo(correo), 
+      contrasena: '' 
+    }));
   }
 
   limpiar(): void {
@@ -45,7 +49,9 @@ export class EstadoCredencialesService {
   }
 
   private persistir(estado: EstadoCredenciales): void {
-    localStorage.setItem(this.storageKey, JSON.stringify(estado));
+    // Seguridad: Limpiamos la contraseña antes de guardar
+    const { contrasena: _, ...persistible } = estado;
+    localStorage.setItem(this.storageKey, JSON.stringify({ ...persistible, contrasena: '' }));
   }
 
   private cargarPersistido(): EstadoCredenciales | null {

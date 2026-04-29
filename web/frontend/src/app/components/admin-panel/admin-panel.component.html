@@ -6,15 +6,15 @@
       <label class="admin-panel__upload-label" for="nivel-select">
         <i class="bi bi-layers-fill"></i> Selecciona el nivel educativo
       </label>
-      <select id="nivel-select" class="admin-panel__upload-input" [(ngModel)]="selectedNivel">
+      <select id="nivel-select" class="admin-panel__upload-input" [(ngModel)]="selectedNivel" (ngModelChange)="onFiltrosActualizados()">
         <option value="" disabled>Selecciona un nivel</option>
         <option value="preescolar">Educación Preescolar</option>
         <option value="primaria">Educación Primaria</option>
         <option value="secundaria">Educación Secundaria</option>
       </select>
       <p class="admin-panel__helper">
-        El listado de Excels depende del nivel seleccionado. Primero selecciona
-        un registro y luego sube los archivos correspondientes.
+        El listado de los archivos en Excel depende del nivel seleccionado. Primero seleccione
+        un registro y luego suba los archivos correspondientes.
       </p>
       <p class="admin-panel__helper" *ngIf="!excelDisponibles.length">
         Aún no hay Excels disponibles para asociar. Valida un archivo desde el
@@ -23,9 +23,7 @@
 
       <div class="admin-panel__excel-list" *ngIf="excelDisponibles.length">
         <h3>Archivos cargados en Base de Datos</h3>
-        <p class="admin-panel__helper">
-          Lista sincronizada de archivos Excel procesados por el sistema (EIA2).
-        </p>
+        
         <div class="admin-panel__filters">
           <label class="admin-panel__filters-field">
             <span class="admin-panel__filters-label">Buscar</span>
@@ -106,9 +104,9 @@
         </div>
       </div>
 
-      <label class="admin-panel__upload-label" for="pdf-upload">Selecciona archivos de resultados</label>
+      <label class="admin-panel__upload-label" for="pdf-upload">Seleccione archivos de resultados</label>
       <p class="admin-panel__helper" *ngIf="!excelSeleccionado">
-        Selecciona un registro de Excel para habilitar la carga de archivos.
+        Seleccione un registro de Excel para habilitar la carga de archivos.
       </p>
       <input id="pdf-upload" class="admin-panel__upload-input" type="file"
         accept=".pdf,.xlsx,.jpg,.jpeg,.doc,.docx,.zip" multiple (change)="seleccionarArchivo($event)" />
@@ -177,13 +175,24 @@
       <h3>Soporte Técnico</h3>
 
       <!-- TABS PARA DIFERENCIAR TICKETS -->
-      <div class="admin-panel__tabs">
-        <button type="button" class="admin-panel__tab-btn" [class.admin-panel__tab-btn--active]="tabSoporteActiva === 'usuarios'" (click)="tabSoporteActiva = 'usuarios'">
+      <div class="admin-panel__tabs" style="display: flex; gap: 10px;">
+
+        <button type="button" class="admin-panel__tab-btn"
+                (click)="tabSoporteActiva = 'usuarios'"
+                [style.backgroundColor]="tabSoporteActiva === 'usuarios' ? '#691c32' : '#e0e0e0'"
+                [style.color]="tabSoporteActiva === 'usuarios' ? 'white' : 'black'"
+                style="padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
           <i class="bi bi-people-fill"></i> Tickets de Usuarios
         </button>
-        <button type="button" class="admin-panel__tab-btn" [class.admin-panel__tab-btn--active]="tabSoporteActiva === 'publico'" (click)="tabSoporteActiva = 'publico'">
+
+        <button type="button" class="admin-panel__tab-btn"
+                (click)="tabSoporteActiva = 'publico'"
+                [style.backgroundColor]="tabSoporteActiva === 'publico' ? '#691c32' : '#e0e0e0'"
+                [style.color]="tabSoporteActiva === 'publico' ? 'white' : 'black'"
+                style="padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
           <i class="bi bi-globe"></i> Incidencias de Carga (Públicas)
         </button>
+
       </div>
 
       <!-- VISTA TICKETS USUARIOS -->
@@ -192,15 +201,21 @@
           <label class="admin-panel__filters-field">
             <span class="admin-panel__filters-label">Buscar</span>
             <input class="admin-panel__filters-input" type="text" [(ngModel)]="filtroTicketTexto"
-              placeholder="Folio, correo o motivo" />
+              (ngModelChange)="paginaSoporteActual = 1" placeholder="Folio, correo o motivo" />
           </label>
           <label class="admin-panel__filters-field">
             <span class="admin-panel__filters-label">Estatus</span>
-            <select class="admin-panel__filters-input" [(ngModel)]="filtroTicketEstatus">
+            <select class="admin-panel__filters-input" [(ngModel)]="filtroTicketEstatus" (ngModelChange)="paginaSoporteActual = 1">
               <option value="todos">Todos</option>
               <option value="pendiente">Pendiente</option>
               <option value="en-proceso">En proceso</option>
-              <option value="respondido">Respondido</option>
+              <option value="resuelto">Resuelto</option>
+            </select>
+          </label>
+          <label class="admin-panel__filters-field">
+            <span class="admin-panel__filters-label">Mostrar</span>
+            <select class="admin-panel__filters-input" [(ngModel)]="tamanioPaginaSoporte" (ngModelChange)="paginaSoporteActual = 1">
+              <option *ngFor="let opt of opcionesTamanioPagina" [ngValue]="opt">{{ opt }} registros</option>
             </select>
           </label>
           <div class="admin-panel__tickets-actions">
@@ -227,12 +242,15 @@
               </tr>
             </thead>
             <tbody>
-              <ng-container *ngFor="let ticket of ticketsSoporteFiltrados">
+              <ng-container *ngFor="let ticket of ticketsSoportePaginados">
                 <tr [class.admin-panel__table-row--selected]="ticket.id === ticketSeleccionadoId"
                   (click)="seleccionarTicket(ticket)" style="cursor: pointer;">
                   <td><strong>{{ ticket.folio }}</strong></td>
                   <td>
-                    <span class="admin-panel__badge" [class.admin-panel__badge--pending]="ticket.estatus === 'pendiente'"
+                    <span *ngIf="ticket.estatus === 'pendiente'" class="admin-panel__status-text admin-panel__status-text--pending">
+                      {{ ticket.estatus | titlecase }}
+                    </span>
+                    <span *ngIf="ticket.estatus !== 'pendiente'" class="admin-panel__badge"
                       [class.admin-panel__badge--processing]="ticket.estatus === 'en-proceso'"
                       [class.admin-panel__badge--resolved]="ticket.estatus === 'respondido'">
                       {{ ticket.estatus | titlecase }}
@@ -256,12 +274,12 @@
                   </td>
                 </tr>
                 <tr *ngIf="ticket.id === ticketSeleccionadoId" class="admin-panel__table-expanded-row">
-                  <td colspan="6">
+                  <td colspan="5">
                     <div class="admin-panel__expanded-content">
                       <div class="admin-panel__detail-grid">
                         <div class="admin-panel__detail-info">
                           <p><strong>Descripción:</strong> {{ ticket.descripcion }}</p>
-                          <p *ngIf="ticket.motivoDetalle"><strong>Detalle del motivo:</strong> {{ ticket.motivoDetalle }}
+                          <p *ngIf="ticket.motivoDetalle && ticket.motivoDetalle !== ticket.motivo"><strong>Detalle del motivo:</strong> {{ ticket.motivoDetalle }}
                           </p>
                           <div class="admin-panel__ticket-evidencias" *ngIf="ticket.evidencias.length">
                             <strong>Evidencias:</strong>
@@ -276,6 +294,9 @@
                           <div class="admin-panel__ticket-respuestas" *ngIf="ticket.respuestas?.length">
                             <strong>Historial de respuestas:</strong>
                             <div class="admin-panel__ticket-respuesta" *ngFor="let respuesta of ticket.respuestas">
+                              <span class="admin-panel__respuesta-autor" [ngClass]="{'admin': respuesta?.autor === 'admin', 'user': respuesta?.autor !== 'admin'}">
+                                {{ respuesta?.autor === 'admin' ? 'Tú (Soporte)' : 'Directivo' }}
+                              </span>
                               <p>{{ respuesta.mensaje }}</p>
                               <small>{{ formatearFecha(respuesta.fecha) }}</small>
                             </div>
@@ -292,6 +313,19 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Paginación Tickets Usuarios -->
+        <div class="admin-panel__pagination" *ngIf="totalPaginasSoporte > 1" style="margin-top: 1rem;">
+          <button class="admin-panel__pagination-button" type="button" [disabled]="paginaSoporteActual === 1"
+            (click)="irAPaginaSoporte(paginaSoporteActual - 1)">
+            Anterior
+          </button>
+          <span class="admin-panel__pagination-text" style="margin: 0 1rem; color: #666;">Página {{ paginaSoporteActual }} de {{ totalPaginasSoporte }}</span>
+          <button class="admin-panel__pagination-button" type="button"
+            [disabled]="paginaSoporteActual === totalPaginasSoporte" (click)="irAPaginaSoporte(paginaSoporteActual + 1)">
+            Siguiente
+          </button>
+        </div>
       </div>
 
       <!-- VISTA INCIDENCIAS PÚBLICAS -->
@@ -300,15 +334,21 @@
           <label class="admin-panel__filters-field">
             <span class="admin-panel__filters-label">Buscar</span>
             <input class="admin-panel__filters-input" type="text" [(ngModel)]="filtroIncidenciaTexto"
-              placeholder="Folio, nombre o CCT" />
+              (ngModelChange)="paginaIncidenciasActual = 1" placeholder="Folio, correo o nombre" />
           </label>
           <label class="admin-panel__filters-field">
             <span class="admin-panel__filters-label">Estatus</span>
-            <select class="admin-panel__filters-input" [(ngModel)]="filtroIncidenciaEstatus">
+            <select class="admin-panel__filters-input" [(ngModel)]="filtroIncidenciaEstatus" (ngModelChange)="paginaIncidenciasActual = 1">
               <option value="todos">Todos</option>
               <option value="pendiente">Pendiente</option>
               <option value="en-proceso">En proceso</option>
               <option value="respondido">Respondido</option>
+            </select>
+          </label>
+          <label class="admin-panel__filters-field">
+            <span class="admin-panel__filters-label">Mostrar</span>
+            <select class="admin-panel__filters-input" [(ngModel)]="tamanioPaginaSoporte" (ngModelChange)="paginaIncidenciasActual = 1">
+              <option *ngFor="let opt of opcionesTamanioPagina" [ngValue]="opt">{{ opt }} registros</option>
             </select>
           </label>
         </div>
@@ -324,24 +364,30 @@
                 <th scope="col">Folio</th>
                 <th scope="col">Nombre Usuario</th>
                 <th scope="col">CCT</th>
+                <th scope="col">Turno</th>
                 <th scope="col">Correo</th>
-                <th scope="col">Prioridad</th>
+                <th scope="col">Estatus</th>
                 <th scope="col">Fecha</th>
                 <th scope="col">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              <ng-container *ngFor="let incidencia of incidenciasPublicasFiltradas">
+              <ng-container *ngFor="let incidencia of incidenciasPublicasPaginadas">
                 <tr [class.admin-panel__table-row--selected]="incidencia.id === incidenciaSeleccionadaId"
                   (click)="seleccionarIncidencia(incidencia)" style="cursor: pointer;">
                   <td><strong>{{ incidencia.folio }}</strong></td>
                   <td>{{ incidencia.nombreCompleto }}</td>
                   <td>{{ incidencia.cct }}</td>
+                  <td>{{ incidencia.turno }}</td>
                   <td>{{ incidencia.correo }}</td>
                   <td>
-                    <span class="admin-panel__badge" 
-                      [class.admin-panel__badge--pending]="incidencia.prioridad === 'ALTA' || incidencia.prioridad === 'CRITICA'">
-                      {{ incidencia.prioridad || 'NORMAL' }}
+                    <span *ngIf="incidencia.estatus === 'pendiente'" class="admin-panel__status-text admin-panel__status-text--pending">
+                      {{ incidencia.estatus | titlecase }}
+                    </span>
+                    <span *ngIf="incidencia.estatus !== 'pendiente'" class="admin-panel__badge"
+                      [class.admin-panel__badge--processing]="incidencia.estatus === 'en-proceso'"
+                      [class.admin-panel__badge--resolved]="incidencia.estatus === 'respondido'">
+                      {{ incidencia.estatus | titlecase }}
                     </span>
                   </td>
                   <td>{{ formatearFecha(incidencia.fecha) }}</td>
@@ -353,16 +399,53 @@
                   </td>
                 </tr>
                 <tr *ngIf="incidencia.id === incidenciaSeleccionadaId" class="admin-panel__table-expanded-row">
-                  <td colspan="7">
+                  <td colspan="8">
                     <div class="admin-panel__expanded-content">
-                      <p><strong>Descripción de la situación:</strong></p>
-                      <p>{{ incidencia.descripcion }}</p>
+                      <div class="admin-panel__detail-grid">
+                        <div class="admin-panel__detail-info">
+                          <p><strong>Descripción de la situación:</strong></p>
+                          <p>{{ incidencia.descripcion }}</p>
+                          <div class="admin-panel__ticket-evidencias" *ngIf="incidencia.evidencias && incidencia.evidencias.length">
+                            <strong>Archivos adjuntos (Evidencias):</strong>
+                            <ul class="admin-panel__evidencia-list">
+                              <li *ngFor="let evidencia of incidencia.evidencias" (click)="descargarEvidencia(evidencia)" style="cursor: pointer; text-decoration: underline; color: #00695c;">
+                                <i class="bi bi-file-earmark-arrow-down"></i> {{ evidencia.nombre }}
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                        <div class="admin-panel__detail-chat">
+                          <div class="admin-panel__ticket-respuestas" *ngIf="incidencia.respuestas?.length">
+                            <strong>Historial de respuestas:</strong>
+                            <div class="admin-panel__ticket-respuesta" *ngFor="let respuesta of incidencia.respuestas">
+                              <p>{{ respuesta.mensaje }}</p>
+                              <small>{{ formatearFecha(respuesta.fecha) }}</small>
+                            </div>
+                          </div>
+                          <div *ngIf="!incidencia.respuestas?.length" class="admin-panel__helper">
+                            No hay respuestas previas a esta incidencia.
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </td>
                 </tr>
               </ng-container>
             </tbody>
           </table>
+        </div>
+
+        <!-- Paginación Incidencias Públicas -->
+        <div class="admin-panel__pagination" *ngIf="totalPaginasIncidencias > 1" style="margin-top: 1rem;">
+          <button class="admin-panel__pagination-button" type="button" [disabled]="paginaIncidenciasActual === 1"
+            (click)="irAPaginaIncidencias(paginaIncidenciasActual - 1)">
+            Anterior
+          </button>
+          <span class="admin-panel__pagination-text" style="margin: 0 1rem; color: #666;">Página {{ paginaIncidenciasActual }} de {{ totalPaginasIncidencias }}</span>
+          <button class="admin-panel__pagination-button" type="button"
+            [disabled]="paginaIncidenciasActual === totalPaginasIncidencias" (click)="irAPaginaIncidencias(paginaIncidenciasActual + 1)">
+            Siguiente
+          </button>
         </div>
       </div>
 
@@ -406,11 +489,11 @@
         <label class="admin-panel__filters-field">
           <span class="admin-panel__filters-label">Buscar escuela</span>
           <input class="admin-panel__filters-input" type="text" [(ngModel)]="filtroEscuelaTexto"
-            (ngModelChange)="cargarEscuelas()" placeholder="CCT o Nombre" />
+            (ngModelChange)="paginaEscuelasActual = 1; cargarEscuelas()" placeholder="CCT o Nombre" />
         </label>
         <div class="admin-panel__users-actions" *ngIf="esCoordinadorFederal">
           <button class="admin-panel__upload-button" (click)="abrirModalEscuela()">
-            <i class="bi bi-plus-circle-fill"></i> Nueva Escuela
+            <i class="bi bi-plus-circle-fill" ></i> Nueva Escuela
           </button>
         </div>
       </div>
@@ -437,11 +520,11 @@
               <td>
                 <div class="admin-panel__actions-cell">
                   <button class="admin-panel__action-btn" (click)="abrirModalEscuela(esc)" title="Editar">
-                    <i class="bi bi-pencil-fill"></i>
+                    <i class="bi bi-pencil-fill" style="font-size: 2.8rem;"></i>
                   </button>
                   <button class="admin-panel__action-btn primary-guinda" (click)="eliminarEscuela(esc)"
                     title="Eliminar">
-                    <i class="bi bi-trash-fill"></i>
+                    <i class="bi bi-trash-fill" style="font-size: 2.8rem;"></i>
                   </button>
                 </div>
               </td>
@@ -474,7 +557,7 @@
         <label class="admin-panel__filters-field">
           <span class="admin-panel__filters-label">Buscar usuario</span>
           <input class="admin-panel__filters-input" type="text" [(ngModel)]="filtroUsuarioTexto"
-            placeholder="Nombre o correo" />
+            (ngModelChange)="paginaUsuariosActual = 1; cargarUsuarios()" placeholder="Nombre o correo" />
         </label>
         <div class="admin-panel__users-actions" *ngIf="esCoordinadorFederal">
           <button class="admin-panel__upload-button" (click)="abrirModalUsuario()">
@@ -490,26 +573,42 @@
               <th>Correo</th>
               <th>Nombre Completo</th>
               <th>Rol</th>
-              <th class="text-center">Enviar contraseña</th>
+              <th class="text-center">Estado</th>
+              <th class="text-center">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let usuario of usuariosFiltrados">
+            <tr *ngFor="let usuario of usuariosFiltrados" [class.admin-panel__table-row--inactive]="!usuario.activo">
               <td>{{ usuario.email }}</td>
               <td>
                 {{ usuario.nombre }} {{ usuario.apepaterno }}
                 {{ usuario.apematerno }}
               </td>
-              <td>{{ usuario.rol }}</td>
+              <td>
+                <span class="admin-panel__role-badge">{{ usuario.rol }}</span>
+              </td>
               <td class="text-center">
-                <button class="admin-panel__action-btn" type="button" (click)="enviarPassword(usuario)"
-                  title="Enviar contraseña por correo">
-                  <i class="bi bi-envelope-at-fill" style="font-size: 1.5rem;"></i>
-                </button>
+                <span class="admin-panel__status-badge" [class.active]="usuario.activo" [class.inactive]="!usuario.activo">
+                  {{ usuario.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="text-center">
+                <div class="admin-panel__actions-cell">
+                  <button class="admin-panel__action-btn" type="button" (click)="abrirModalEdicion(usuario)" title="Editar usuario">
+                    <i class="bi bi-pencil-square"></i>
+                  </button>
+                  <button class="admin-panel__action-btn" type="button" (click)="enviarPassword(usuario)" title="Reenviar accesos">
+                    <i class="bi bi-envelope-at"></i>
+                  </button>
+                  <button class="admin-panel__action-btn" type="button" (click)="cambiarEstadoUsuario(usuario)" 
+                    [title]="usuario.activo ? 'Desactivar usuario' : 'Activar usuario'">
+                    <i class="bi" [class.bi-person-x-fill]="usuario.activo" [class.bi-person-check-fill]="!usuario.activo"></i>
+                  </button>
+                </div>
               </td>
             </tr>
             <tr *ngIf="!usuariosFiltrados.length">
-              <td colspan="4" class="text-center">
+              <td colspan="6" class="text-center">
                 No se encontraron usuarios.
               </td>
             </tr>
@@ -548,7 +647,7 @@
   <div class="admin-panel__modal-overlay" *ngIf="mostrarModalUsuario" (click)="cerrarModalUsuario()">
     <div class="admin-panel__modal" (click)="$event.stopPropagation()">
       <div class="admin-panel__modal-header">
-        <h3>Crear Nuevo Usuario</h3>
+        <h3>{{ editandoUsuario ? 'Editar Usuario' : 'Crear Nuevo Usuario' }}</h3>
         <button class="admin-panel__close-btn" (click)="cerrarModalUsuario()">&times;</button>
       </div>
       <div class="admin-panel__modal-body">
@@ -556,7 +655,7 @@
           <div class="admin-panel__action-group" style="grid-column: span 2;">
             <label for="user-email">Correo Electrónico *</label>
             <input id="user-email" type="email" class="admin-panel__filters-input" [(ngModel)]="nuevoUsuario.email"
-              placeholder="ejemplo@sep.gob.mx">
+              placeholder="ejemplo@sep.gob.mx" [disabled]="editandoUsuario">
           </div>
           <div class="admin-panel__action-group">
             <label for="user-nombre">Nombre(s) *</label>
@@ -581,7 +680,7 @@
               <option value="RESPONSABLE_CCT">Responsable CCT</option>
             </select>
           </div>
-          <div class="admin-panel__action-group" style="grid-column: span 2;">
+          <div class="admin-panel__action-group" style="grid-column: span 2;" *ngIf="!editandoUsuario">
             <label for="user-cct">Clave CCT (Opcional)</label>
             <input id="user-cct" type="text" class="admin-panel__filters-input" [(ngModel)]="nuevoUsuario.claveCCT"
               placeholder="CC12345678">
@@ -593,9 +692,10 @@
         <button class="admin-panel__upload-button gray" type="button" (click)="cerrarModalUsuario()">
           Cancelar
         </button>
-        <button class="admin-panel__upload-button" type="button" (click)="crearUsuario()"
+        <button class="admin-panel__upload-button" type="button" (click)="guardarUsuario()"
           [disabled]="!nuevoUsuario.email || !nuevoUsuario.nombre || !nuevoUsuario.rol">
-          <i class="bi bi-person-check-fill"></i> Crear y enviar accesos
+          <i class="bi" [class.bi-person-check-fill]="!editandoUsuario" [class.bi-save-fill]="editandoUsuario"></i>
+          {{ editandoUsuario ? 'Guardar Cambios' : 'Crear y enviar accesos' }}
         </button>
       </div>
     </div>

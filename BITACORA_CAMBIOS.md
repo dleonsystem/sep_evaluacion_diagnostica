@@ -2,6 +2,12 @@
 
 Este documento se actualiza con cada modificación relevante al proyecto para entregar el informe mensual solicitado.
 
+## 2026-04-05
+
+- **Consolidación del Backlog Funcional (Issue #255)**: Auditoría completa de los 16 casos de uso base y sincronización con el `PLAN_TRABAJO_FASE1.md`.
+- **Sincronización de Stack Técnico**: Corrección masiva en `REQUERIMIENTOS_Y_CASOS_DE_USO.md` (v2.1) para reflejar el stack real: **Node.js 20 + Apollo Server (GraphQL) + Angular 17**, eliminando referencias obsoletas a Python/FastAPI.
+- **Documentación de Análisis**: Creación de `docs/analysis/issue-255.md` con el diagnóstico de brechas y validación de trazabilidad de los 16 CUs oficiales.
+
 ## 2026-03-24
 
 - Se analizó e implementó la corrección del issue `#294` sobre `generateComprobante`, sustituyendo columnas inexistentes por `consecutivo`, `archivo_original` y `hash_archivo` en el resolver GraphQL.
@@ -10,6 +16,24 @@ Este documento se actualiza con cada modificación relevante al proyecto para en
 - Se agregaron pruebas específicas para el resolver `generateComprobante` y para el servicio de PDF; ambas pasan en validación local.
 - Se emitió dictamen técnico del issue con resultado `Cumple parcialmente` por brechas remanentes: manejo de solicitudes con `usuario_id` nulo, falta de smoke test navegador versionado, suite global de Jest en rojo y ausencia de job de tests en CI.
 - Se documentó la trazabilidad técnica en `docs/issues/issue-294-analisis-tecnico.md` y `docs/issues/issue-294-dictamen-tecnico.md`.
+
+## 2026-03-25
+
+- **Implementación del Modelo NIA (GAP-DB-3)**: Se materializó el esquema normalizado con las tablas `CAT_NIVELES_INTEGRACION`, `CAT_CAMPOS_FORMATIVOS` y `NIVELES_INTEGRACION_ESTUDIANTE`.
+- **Automatización de Cálculos**: Se implementó el trigger `trg_calcular_nia_auto` para persistir automáticamente el NIA tras la validación de evaluaciones, eliminando campos redundantes en la tabla `EVALUACIONES`.
+- **Catálogos Oficiales EIA 2025 / SIGED (GAP-CAT)**: 
+  - Se creó el script `seed-catalogs-eia2025.sql` con la base oficial de CCTs, entidades, niveles y turnos.
+  - Se refactorizó `init-db.sql` para unificarlo con el DDL maestro, asegurando entornos reproducibles y limpios.
+- **Validación Robusta de Cargas**: Se actualizó el resolver `uploadExcelAssessment` para cruzar la CCT y el Nivel Educativo contra los catálogos oficiales, rechazando archivos inconsistentes (RF-13).
+- **Cierre de Issue #297**: Se eliminaron los ENUMs hardcodeados en los resolvers de GraphQL, delegando la lógica a las tablas de catálogo de la base de datos.
+- **Containerización Completa (Issue #301)**: Implementación de Dockerfiles multi-stage para Backend y Frontend. Orquestación mediante Docker Compose con Postgres 16, Healthchecks y despliegue reproducible.
+- **Persistencia Robusta CU-16 (Issue #254)**: Refactorización del resolver `uploadExcelAssessment` para insertar estudiantes, grupos y evaluaciones de forma granular, asegurando la activación de cálculos automáticos de NIA en la base de datos.
+- **Evolución de Historial y Descargas (Issue #271)**: 
+  *   Rediseño de la tabla de "Cargas realizadas" con columna de **Acciones directas** para descarga de Comprobantes PDF y Resultados.
+  *   Eliminación de dependencia de scripts externos (`gobmx.js`) mediante implementación de expansión de filas **nativa de Angular**.
+  *   Corrección de Error 404 en CDNs de jQuery/gobmx reemplazándolos por fuentes estables de **cdnjs**.
+- **Estabilización de Entorno**: Configuración de arranque manual persistente para GraphQL (puerto 4000) y Angular (puerto 4200) tras detectar conflictos de caché en Docker.
+- **Actualización Documental**: Sincronización de `ddl_generated.sql`, `ESTRUCTURA_DE_DATOS.md`, `PLAN_TRABAJO_FASE1.md` y bitácoras.
 
 ## 2025-11-25
 

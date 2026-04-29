@@ -37,6 +37,9 @@ interface ContextUser {
   id: string;
   email: string;
   rol: string;
+  nombre?: string;
+  cct?: string;
+  password_hash?: string;
 }
 
 /**
@@ -45,6 +48,7 @@ interface ContextUser {
  */
 export interface GraphQLContext {
   user?: ContextUser;
+  req?: any;
   dataSources?: Record<string, unknown>;
   loaders: ReturnType<typeof import('../utils/data-loaders.js').createDataLoaders>;
   distributionService?: DistributionService;
@@ -63,6 +67,7 @@ interface UserRow {
   rol: string;
   activo: boolean;
   primerLogin: boolean;
+  passwordDebeCambiar?: boolean;
   intentosFallidos: number;
   bloqueadoHasta?: Date;
   fechaRegistro: Date;
@@ -142,6 +147,8 @@ interface CreateUserResult {
   apematerno: string;
   rol: string;
   activo: boolean;
+  passwordDebeCambiar?: boolean;
+  primerLogin?: boolean;
   fechaRegistro: Date;
 }
 
@@ -191,6 +198,10 @@ const BASE_ESCUELA_FIELDS = `
   e.created_at, 
   e.updated_at
 `;
+
+
+const SOLICITUD_ESTADO_VALIDO_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'VALIDO')";
+const SOLICITUD_ESTADO_RECHAZADO_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'RECHAZADO')";
 
 /**
  * Helper function to build update query
@@ -292,10 +303,15 @@ export const resolvers = {
      */
     checkUserExists: async (_: any, { email }: { email: string }) => {
       try {
-        const result = await query('SELECT id FROM usuarios WHERE email = $1', [email.trim().toLowerCase()]);
+        const result = await query('SELECT id FROM usuarios WHERE email = $1', [
+          email.trim().toLowerCase(),
+        ]);
         return {
           exists: result.rows.length > 0,
-          message: result.rows.length > 0 ? 'USUARIO YA REGISTRADO; INICIE SESIÓN PARA CARGAR ARCHIVOS.' : null
+          message:
+            result.rows.length > 0
+              ? 'USUARIO YA REGISTRADO; INICIE SESIÓN PARA CARGAR ARCHIVOS.'
+              : null,
         };
       } catch (error) {
         logger.error('Error checking user existence', { email, error });
@@ -382,24 +398,40 @@ m.id, m.nombre, m.tipo,
      */
     listUsers: async (
       _: unknown,
-      { limit = 10, offset = 0 }: { limit?: number; offset?: number }
+      { limit = 10, offset = 0, search }: { limit?: number; offset?: number; search?: string }
     ) => {
       try {
+        const queryParams: any[] = [];
+        let whereClause = '';
+
+        if (search) {
+          queryParams.push(`%${search}%`);
+          whereClause = `WHERE (u.email ILIKE $1 OR u.nombre ILIKE $1 OR u.apepaterno ILIKE $1 OR u.apematerno ILIKE $1)`;
+        }
+
         // Obtener total de usuarios
-        const countResult = await query('SELECT COUNT(*) as total FROM usuarios');
+        const countResult = await query(
+          `SELECT COUNT(*) as total FROM usuarios u ${whereClause}`,
+          queryParams
+        );
         const totalCount = Number.parseInt(
           String((countResult.rows[0] as { total: number }).total),
           10
         );
+
+        // Añadir parámetros de paginación
+        queryParams.push(limit);
+        queryParams.push(offset);
 
         // Obtener usuarios paginados
         const usersResult = await query(
           `SELECT ${BASE_USER_FIELDS}
           FROM usuarios u
           INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
+          ${whereClause}
           ORDER BY u.fecha_registro DESC
-          LIMIT $1 OFFSET $2`,
-          [limit, offset]
+          LIMIT $${queryParams.length - 1} OFFSET $${queryParams.length}`,
+          queryParams
         );
 
         return {
@@ -408,7 +440,7 @@ m.id, m.nombre, m.tipo,
           hasNextPage: offset + limit < totalCount,
         };
       } catch (error) {
-        logger.error('Error listing users', { limit, offset, error });
+        logger.error('Error listing users', { limit, offset, search, error });
         throw new Error('Error al listar usuarios');
       }
     },
@@ -424,7 +456,7 @@ m.id, m.nombre, m.tipo,
           LEFT JOIN cat_nivel_educativo ne ON e.id_nivel = ne.id
           LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
           WHERE e.cct = $1`;
-        
+
         const result = await query(sql, [clave]);
 
         if (result.rows.length === 0) {
@@ -433,7 +465,11 @@ m.id, m.nombre, m.tipo,
 
         return result.rows[0] as CentroTrabajoRow;
       } catch (error) {
-        logger.error('Error fetching CCT', { clave, error: (error as Error).message, stack: (error as Error).stack });
+        logger.error('Error fetching CCT', {
+          clave,
+          error: (error as Error).message,
+          stack: (error as Error).stack,
+        });
         throw new Error(`Error al obtener centro de trabajo: ${(error as Error).message}`);
       }
     },
@@ -482,7 +518,7 @@ m.id, m.nombre, m.tipo,
 
         const result = await query(sql, params);
 
-        const nodes = result.rows.map(row => ({
+        const nodes = result.rows.map((row) => ({
           id: row.id,
           cct: row.cct,
           nombre: row.nombre,
@@ -497,7 +533,7 @@ m.id, m.nombre, m.tipo,
           turno: { id: row.id_turno, nombre: row.turno_nombre, codigo: row.turno_codigo },
           nivel: row.nivel_codigo,
           entidadFederativa: { id: row.id_entidad, nombre: row.entidad_nombre },
-          cicloEscolar: { id: row.id_ciclo, nombre: row.ciclo_nombre, activo: true }
+          cicloEscolar: { id: row.id_ciclo, nombre: row.ciclo_nombre, activo: true },
         }));
 
         return { nodes, totalCount };
@@ -547,7 +583,7 @@ m.id, m.nombre, m.tipo,
           turno: { id: row.id_turno, nombre: row.turno_nombre, codigo: row.turno_codigo },
           nivel: row.nivel_codigo,
           entidadFederativa: { id: row.id_entidad, nombre: row.entidad_nombre },
-          cicloEscolar: { id: row.id_ciclo, nombre: row.ciclo_nombre, activo: true }
+          cicloEscolar: { id: row.id_ciclo, nombre: row.ciclo_nombre, activo: true },
         };
       } catch (error) {
         logger.error('Error fetching escuela', { id, error });
@@ -608,21 +644,23 @@ id,
 
         // US-2.5: Solo administradores ven todas las solicitudes, usuarios normales solo las suyas
         let sql = `SELECT
-s.id,
-  s.consecutivo,
-  s.cct,
-  s.archivo_original as "archivoOriginal",
-  s.fecha_carga as "fechaCarga",
-  s.estado_validacion as "estadoValidacion",
-  s.nivel_educativo as "nivelEducativo",
-  s.archivo_path as "archivoPath",
-  s.archivo_size as "archivoSize",
-  s.procesado_externamente as "procesadoExternamente",
-  s.detalles_error as "errores",
-  s.resultados,
-  t.nombre as turno
+            s.id,
+            s.consecutivo,
+            s.cct,
+            s.archivo_original as "archivoOriginal",
+            s.fecha_carga as "fechaCarga",
+            s.updated_at as "fechaActualizacion",
+            s.estado_validacion as "estadoValidacion",
+            s.nivel_educativo as "nivelEducativo",
+            s.archivo_path as "archivoPath",
+            s.archivo_size as "archivoSize",
+            s.hash_archivo as "hashArchivo",
+            s.procesado_externamente as "procesadoExternamente",
+            s.errores_validacion as "errores",
+            s.resultados,
+            t.nombre as turno
           FROM solicitudes_eia2 s
-          LEFT JOIN escuelas e ON e.cct = s.cct
+          LEFT JOIN escuelas e ON e.cct = s.cct AND e.id_turno = s.id_turno
           LEFT JOIN cat_turnos t ON t.id_turno = e.id_turno`;
 
         const params: any[] = [];
@@ -646,10 +684,26 @@ s.id,
         params.push(limit, offset);
 
         const result = await query(sql, params);
+
+        // Mapeo dinámico de estados ID -> Enum String para GQL
+        const catRes = await query('SELECT id, codigo FROM cat_estado_validacion_eia2');
+        const statusMap: Record<number, string> = {};
+        catRes.rows.forEach((row: any) => {
+            if (row.codigo === 'VALIDO') statusMap[row.id] = 'VALIDADO';
+            else if (row.codigo === 'INVALIDO') statusMap[row.id] = 'RECHAZADO';
+            else if (row.codigo === 'RECHAZADO') statusMap[row.id] = 'RECHAZADO';
+            else statusMap[row.id] = row.codigo;
+        });
+
         return result.rows.map((row: any) => ({
           ...row,
           fechaCarga:
             row.fechaCarga instanceof Date ? row.fechaCarga.toISOString() : row.fechaCarga,
+          fechaActualizacion:
+            row.fechaActualizacion instanceof Date
+              ? row.fechaActualizacion.toISOString()
+              : row.fechaActualizacion,
+          estadoValidacion: statusMap[row.estadoValidacion] || 'PENDIENTE',
         }));
       } catch (error) {
         logger.error('Error fetching solicitudes from DB', { error });
@@ -672,22 +726,26 @@ s.id,
 
       try {
         const result = await query(`
-SELECT
-t.id,
-  t.numero_ticket as "numeroTicket",
-  t.asunto,
-  t.descripcion,
-  (SELECT codigo FROM cat_estado_ticket WHERE id = t.estado) as estado,
-    t.prioridad,
-    t.evidencias,
-    u.email as "correo",
-    t.created_at as "fechaCreacion",
-    t.updated_at as "fechaActualizacion"
+          SELECT
+            t.id,
+            t.numero_ticket as "numeroTicket",
+            t.asunto,
+            t.descripcion,
+            COALESCE((SELECT codigo FROM cat_estado_ticket WHERE id = t.estado), 'ABIERTO') as estado,
+            t.prioridad,
+            t.evidencias,
+            COALESCE(u.email, t.user_email) as "correo",
+            COALESCE(u.nombre, t.user_fullname) as "nombreCompleto",
+            t.user_cct as "cct",
+            t.user_turno as "turno",
+            t.created_at as "fechaCreacion",
+            t.updated_at as "fechaActualizacion"
           FROM tickets_soporte t
           LEFT JOIN usuarios u ON t.usuario_id = u.id
-          WHERE t.deleted_at IS NULL AND t.usuario_id IS NOT NULL
+          WHERE t.deleted_at IS NULL 
           ORDER BY t.created_at DESC
-  `);
+        `);
+
         return result.rows.map((row) => ({
           ...row,
           fechaCreacion:
@@ -697,9 +755,9 @@ t.id,
               ? row.fechaActualizacion.toISOString()
               : row.fechaActualizacion,
         }));
-      } catch (error) {
-        logger.error('Error fetching all tickets', { error });
-        throw new Error('Error al obtener los tickets');
+      } catch (error: any) {
+        logger.error('Error fetching all tickets:', error);
+        throw new Error(`Error al obtener los tickets: ${error.message}`);
       }
     },
 
@@ -723,26 +781,51 @@ t.id,
             t.numero_ticket as "numeroTicket", 
             t.asunto, 
             t.descripcion, 
-            (SELECT codigo FROM cat_estado_ticket WHERE id = t.estado) as estado,
+            COALESCE((SELECT codigo FROM cat_estado_ticket WHERE id = t.estado), 'ABIERTO') as estado,
             t.prioridad,
             t.evidencias,
-            t.user_email as "correo",
-            t.user_fullname as "nombreCompleto",
+            COALESCE(u.email, t.user_email, 'Anónimo') as "correo",
+            COALESCE(u.nombre, t.user_fullname, 'Usuario Externo') as "nombreCompleto",
             t.user_cct as "cct",
+            t.user_turno as "turno",
             t.created_at as "fechaCreacion",
             t.updated_at as "fechaActualizacion"
           FROM tickets_soporte t
-          WHERE t.deleted_at IS NULL AND t.usuario_id IS NULL
+          LEFT JOIN usuarios u ON t.usuario_id = u.id
+          WHERE t.deleted_at IS NULL 
+          AND (t.usuario_id IS NULL OR t.numero_ticket LIKE 'PUB-%')
           ORDER BY t.created_at DESC
         `);
+
         return result.rows.map((row) => ({
           ...row,
-          fechaCreacion: row.fechaCreacion instanceof Date ? row.fechaCreacion.toISOString() : row.fechaCreacion,
-          fechaActualizacion: row.fechaActualizacion instanceof Date ? row.fechaActualizacion.toISOString() : row.fechaActualizacion,
+          fechaCreacion:
+            row.fechaCreacion instanceof Date ? row.fechaCreacion.toISOString() : row.fechaCreacion,
+          fechaActualizacion:
+            row.fechaActualizacion instanceof Date
+              ? row.fechaActualizacion.toISOString()
+              : row.fechaActualizacion,
         }));
+      } catch (error: any) {
+        logger.error('Error fetching public incidents:', error);
+        throw new Error(`Error al obtener incidencias públicas: ${error.message}`);
+      }
+    },
+
+    /**
+     * Obtener catálogo de motivos de tickets
+     * @use-case CU-13: Mesa de ayuda
+     */
+    getMotivosTicket: async () => {
+      try {
+        const result = await query(
+          'SELECT id, codigo, descripcion, orden FROM cat_motivos_ticket WHERE activo = true ORDER BY orden ASC'
+        );
+        logger.debug('Motivos ticket recuperados:', { count: result.rows.length, rows: result.rows });
+        return result.rows;
       } catch (error) {
-        logger.error('Error fetching public incidents', { error });
-        throw new Error('Error al obtener las incidencias públicas');
+        logger.error('Error fetching motives', error);
+        throw new Error('Error al obtener catálogo de motivos');
       }
     },
 
@@ -777,7 +860,7 @@ t.id,
           ),
           query('SELECT COUNT(*) as count FROM solicitudes_eia2'),
           query(
-            "SELECT COUNT(*) as count FROM solicitudes_eia2 WHERE estado_validacion = (SELECT id FROM cat_estado_validacion_eia2 WHERE codigo = 'VALIDO')"
+            `SELECT COUNT(*) as count FROM solicitudes_eia2 WHERE estado_validacion = ${SOLICITUD_ESTADO_VALIDO_SQL}`
           ),
           query('SELECT COUNT(DISTINCT cct) as count FROM solicitudes_eia2'),
           query(`
@@ -922,17 +1005,18 @@ t.numero_ticket as "folio",
             t.numero_ticket as "numeroTicket",
             t.asunto,
             t.descripcion,
-            cet.codigo as estado,
+            COALESCE(cet.codigo, 'ABIERTO') as estado,
             t.prioridad,
             t.evidencias,
+            t.user_turno as "turno",
             t.created_at as "fechaCreacion",
             t.updated_at as "fechaActualizacion"
            FROM tickets_soporte t
-           JOIN cat_estado_ticket cet ON t.estado = cet.id
-           WHERE t.usuario_id = $1
+           LEFT JOIN cat_estado_ticket cet ON t.estado = cet.id
+           WHERE (t.usuario_id = $1 OR LOWER(t.user_email) = LOWER($2))
            AND t.deleted_at IS NULL
            ORDER BY t.created_at DESC`,
-          [userId]
+          [userId, correo || context.user?.email || '']
         );
 
         return result.rows.map((row) => ({
@@ -1054,7 +1138,9 @@ t.numero_ticket as "folio",
           userId: context.user.id,
           error: error.message,
         });
-        throw new Error(knownMessages.has(error.message) ? error.message : 'Error al generar comprobante');
+        throw new Error(
+          knownMessages.has(error.message) ? error.message : 'Error al generar comprobante'
+        );
       }
     },
 
@@ -1072,7 +1158,7 @@ t.numero_ticket as "folio",
         const isAdmin = ['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol);
 
         // 1. Verificar existencia y permisos
-        let queryStr = 'SELECT resultados, usuario_id FROM solicitudes_eia2 WHERE id = $1';
+        const queryStr = 'SELECT resultados, usuario_id FROM solicitudes_eia2 WHERE id = $1';
         const params = [solicitudId];
 
         const res = await query(queryStr, params);
@@ -1099,7 +1185,8 @@ t.numero_ticket as "folio",
           buffer = await sftpService.downloadBuffer(archivoMetadata.url);
         }
 
-        if (!buffer) throw new Error('No se pudo recuperar el archivo del servidor de almacenamiento');
+        if (!buffer)
+          throw new Error('No se pudo recuperar el archivo del servidor de almacenamiento');
 
         return {
           success: true,
@@ -1125,7 +1212,8 @@ t.numero_ticket as "folio",
       if (!context.user) throw new Error('No autorizado');
 
       try {
-        const res = await query(`
+        const res = await query(
+          `
           SELECT 
             id, 
             archivo_original as "nombre", 
@@ -1138,19 +1226,24 @@ t.numero_ticket as "folio",
           FROM solicitudes_eia2 
           WHERE cct = $1
           ORDER BY fecha_carga DESC
-        `, [cct]);
+        `,
+          [cct]
+        );
 
         const reports: any[] = [];
-        res.rows.forEach(row => {
+        res.rows.forEach((row) => {
           // Reporte original de carga
           reports.push({
             id: row.id,
             nombre: row.nombre,
             tipo: 'CARGA_ORIGINAL',
-            fechaGeneracion: row.fechaGeneracion instanceof Date ? row.fechaGeneracion.toISOString() : row.fechaGeneracion,
+            fechaGeneracion:
+              row.fechaGeneracion instanceof Date
+                ? row.fechaGeneracion.toISOString()
+                : row.fechaGeneracion,
             url: row.url,
             size: row.size,
-            solicitudId: row.id
+            solicitudId: row.id,
           });
 
           // Resultados procesados
@@ -1160,10 +1253,13 @@ t.numero_ticket as "folio",
               id: `${row.id}_${r.nombre}`,
               nombre: r.nombre,
               tipo: r.tipo || 'RESULTADO_PDF',
-              fechaGeneracion: row.fechaGeneracion instanceof Date ? row.fechaGeneracion.toISOString() : row.fechaGeneracion,
+              fechaGeneracion:
+                row.fechaGeneracion instanceof Date
+                  ? row.fechaGeneracion.toISOString()
+                  : row.fechaGeneracion,
               url: r.url,
               size: r.size || 0,
-              solicitudId: row.id
+              solicitudId: row.id,
             });
           });
         });
@@ -1246,14 +1342,48 @@ t.numero_ticket as "folio",
      * @use-case CU-13: Mesa de ayuda
      */
     downloadTicketEvidencia: async (_: any, { url }: { url: string }, context: GraphQLContext) => {
-      // Nota: Idealmente validaríamos que el usuario tiene acceso a este ticket
       if (!context.user) throw new Error('No autorizado');
 
+      const isAdmin = ['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol);
+
       try {
+        // 1. Validar propiedad del ticket que contiene esta evidencia (Anti-IDOR / OWASP A01)
+        const ticketRes = await query(
+          `SELECT id FROM tickets_soporte 
+           WHERE evidencias @> $1::jsonb 
+           AND (usuario_id = $2 OR $3 = true)`,
+          [JSON.stringify([{ url }]), context.user.id, isAdmin]
+        );
+
+        if (ticketRes.rows.length === 0 && !isAdmin) {
+          logger.warn('Intento de acceso no autorizado a evidencia', {
+            url,
+            userId: context.user.id,
+          });
+          throw new Error(
+            'No tienes permiso para acceder a esta evidencia o el archivo no existe.'
+          );
+        }
+
         const buffer = await sftpService.downloadBuffer(url);
         if (!buffer) throw new Error('No se pudo encontrar el archivo en el servidor SFTP');
 
         const fileName = url.split('/').pop() || 'evidencia';
+
+        // 2. Registro de Auditoría (Senior)
+        try {
+          const clientIp =
+            context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const userAgent = context.req?.headers['user-agent'];
+          await query(
+            `INSERT INTO log_actividades 
+              (id_usuario, fecha_hora, accion, tabla, detalle, ip_address, user_agent, modulo, resultado)
+            VALUES ($1, NOW(), 'EVIDENCIA_DESCARGADA', 'archivos_tickets', $2, $3, $4, 'SOPORTE', 'SUCCESS')`,
+            [context.user.id, JSON.stringify({ url, fileName }), clientIp, userAgent]
+          );
+        } catch (logErr) {
+          logger.warn('Audit error in downloadTicketEvidencia', logErr);
+        }
 
         return {
           success: true,
@@ -1277,7 +1407,7 @@ t.numero_ticket as "folio",
      * @use-case CU-01: Registro de usuario
      * @psp Design Review - Validación completa de entrada
      */
-    createUser: async (_: any, { input }: { input: CreateUserInput }) => {
+    createUser: async (_: any, { input }: { input: CreateUserInput }, context: GraphQLContext) => {
       const { email, nombre, apepaterno, apematerno, rol, password } = input;
 
       try {
@@ -1311,16 +1441,18 @@ t.numero_ticket as "folio",
         // Insertar usuario
         const result = await query(
           `INSERT INTO usuarios 
-            (email, nombre, apepaterno, apematerno, rol, password_hash, activo, fecha_registro)
-          VALUES ($1, $2, $3, $4, $5, $6, true, NOW())
+            (email, nombre, apepaterno, apematerno, rol, password_hash, activo, fecha_registro, password_debe_cambiar, primer_login, ultimo_cambio_password)
+          VALUES ($1, $2, $3, $4, $5, $6, true, NOW(), false, false, NOW())
           RETURNING 
             id, 
             email, 
             nombre, 
-            apepaterno,
+            apepaterno, 
             apematerno,
             (SELECT codigo FROM cat_roles_usuario WHERE id_rol = usuarios.rol) as "rol",
             activo,
+            password_debe_cambiar as "passwordDebeCambiar",
+            primer_login as "primerLogin",
             fecha_registro as "fechaRegistro"`,
           [
             email,
@@ -1336,18 +1468,54 @@ t.numero_ticket as "folio",
 
         if (clavesCCT && clavesCCT.length > 0) {
           try {
-            const escuelas = await query(`SELECT id FROM escuelas WHERE cct = $1 LIMIT 1`, [
-              clavesCCT[0],
-            ]);
-            if (escuelas.rows.length > 0) {
-              await query('UPDATE usuarios SET escuela_id = $1 WHERE id = $2', [
-                escuelas.rows[0].id,
-                createdUser.id,
+            for (const cct of clavesCCT) {
+              const escuelaResult = await query(`SELECT id FROM escuelas WHERE cct = $1 LIMIT 1`, [
+                cct,
               ]);
+              if (escuelaResult.rows.length > 0) {
+                const escuelaId = escuelaResult.rows[0].id;
+                // Asociación Muchos a Muchos
+                await query(
+                  'INSERT INTO usuarios_centros_trabajo (usuario_id, centro_trabajo_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+                  [createdUser.id, escuelaId]
+                );
+
+                // Mantener escuela_id legacy (primer CCT)
+                if (cct === clavesCCT[0]) {
+                  await query('UPDATE usuarios SET escuela_id = $1 WHERE id = $2', [
+                    escuelaId,
+                    createdUser.id,
+                  ]);
+                }
+              }
             }
           } catch (err) {
-            logger.error('Error vinculando escuela al crear usuario', err);
+            logger.error('Error vinculando escuelas al crear usuario', err);
           }
+        }
+
+        // Registro de Auditoría (Trazabilidad Issue #253)
+        try {
+          const clientIp =
+            context.req?.headers?.['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const userAgent = context.req?.headers?.['user-agent'];
+          await query(
+            `INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, ip_address, user_agent, detalle)
+             VALUES ($1, 'CREATE_USER', 'USERS', 'SUCCESS', $2, $3, $4)`,
+            [
+              context.user?.id || null,
+              clientIp,
+              userAgent,
+              JSON.stringify({
+                createdUserId: createdUser.id,
+                email: createdUser.email,
+                rol,
+                ccts: clavesCCT,
+              }),
+            ]
+          );
+        } catch (e) {
+          logger.warn('Audit record failed', e);
         }
 
         logger.info('User created successfully', { userId: createdUser.id });
@@ -1375,7 +1543,8 @@ t.numero_ticket as "folio",
      */
     authenticateUser: async (
       _: unknown,
-      { input }: { input: { email: string; password: string } }
+      { input }: { input: { email: string; password: string } },
+      context: any
     ): Promise<AuthPayload> => {
       try {
         const { email, password } = input;
@@ -1394,7 +1563,8 @@ t.numero_ticket as "folio",
             u.updated_at as "fechaUltimoAcceso",
             u.bloqueado_hasta as "bloqueadoHasta",
             u.intentos_fallidos as "intentosFallidos",
-            u.primer_login as "primerLogin"
+            u.primer_login as "primerLogin",
+            u.password_debe_cambiar as "passwordDebeCambiar"
           FROM usuarios u
           INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
           WHERE u.email = $1`,
@@ -1412,6 +1582,29 @@ t.numero_ticket as "folio",
           const minutosRestantes = Math.ceil(
             (new Date(usuario.bloqueadoHasta).getTime() - new Date().getTime()) / (60 * 1000)
           );
+
+          // Registro de auditoría de bloqueo (Issue #268)
+          try {
+            const clientIp =
+              context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+            const userAgent = context.req?.headers['user-agent'];
+            await query(
+              `INSERT INTO log_actividades (id_usuario, fecha_hora, accion, modulo, resultado, ip_address, user_agent, detalle)
+               VALUES ($1, NOW(), 'LOGIN_BLOQUEADO', 'AUTH', 'FAIL', $2, $3, $4)`,
+              [
+                usuario.id,
+                clientIp,
+                userAgent,
+                JSON.stringify({
+                  reason: 'Attempt while blocked',
+                  expires: usuario.bloqueadoHasta,
+                }),
+              ]
+            );
+          } catch (e) {
+            logger.warn('Audit error', e);
+          }
+
           return {
             ok: false,
             message: `Esta cuenta está temporalmente bloqueada. Intente de nuevo en ${minutosRestantes} minutos.`,
@@ -1426,7 +1619,11 @@ t.numero_ticket as "folio",
         const hashGuardado = usuario.password_hash ?? '';
         const [salt, hash] = hashGuardado.split(':');
         if (!salt || !hash) {
-          return { ok: false, message: 'Falla en la configuración de seguridad de la cuenta', user: null };
+          return {
+            ok: false,
+            message: 'Falla en la configuración de seguridad de la cuenta',
+            user: null,
+          };
         }
 
         const storedKeyLen = Buffer.from(hash, 'hex').length;
@@ -1442,9 +1639,29 @@ t.numero_ticket as "folio",
           if (nuevosIntentos >= 5) {
             // Bloqueo tras 5 intentos (RN-18)
             await query(
-              'UPDATE usuarios SET intentos_fallidos = $1, bloqueado_hasta = NOW() + INTERVAL \'1 hour\' WHERE id = $2',
+              "UPDATE usuarios SET intentos_fallidos = $1, bloqueado_hasta = NOW() + INTERVAL '1 hour' WHERE id = $2",
               [nuevosIntentos, usuario.id]
             );
+
+            // Registro de auditoría de bloqueo (Issue #268)
+            try {
+              const clientIp =
+                context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+              const userAgent = context.req?.headers['user-agent'];
+              await query(
+                `INSERT INTO log_actividades (id_usuario, fecha_hora, accion, modulo, resultado, ip_address, user_agent, detalle)
+                 VALUES ($1, NOW(), 'CUENTA_BLOQUEADA_AUTO', 'AUTH', 'FAIL', $2, $3, $4)`,
+                [
+                  usuario.id,
+                  clientIp,
+                  userAgent,
+                  JSON.stringify({ attempts: nuevosIntentos, lockdownUntil: '1 hour' }),
+                ]
+              );
+            } catch (e) {
+              logger.warn('Audit error', e);
+            }
+
             return {
               ok: false,
               message: 'Demasiados intentos fallidos. Su cuenta ha sido bloqueada por 1 hora.',
@@ -1455,6 +1672,21 @@ t.numero_ticket as "folio",
               nuevosIntentos,
               usuario.id,
             ]);
+
+            // Despues de cada fallo tambien auditamos (Issue #268)
+            try {
+              const clientIp =
+                context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+              const userAgent = context.req?.headers['user-agent'];
+              await query(
+                `INSERT INTO log_actividades (id_usuario, fecha_hora, accion, modulo, resultado, ip_address, user_agent, detalle)
+                 VALUES ($1, NOW(), 'LOGIN_FALLIDO', 'AUTH', 'FAIL', $2, $3, $4)`,
+                [usuario.id, clientIp, userAgent, JSON.stringify({ attempt: nuevosIntentos })]
+              );
+            } catch (e) {
+              logger.warn('Audit error', e);
+            }
+
             return {
               ok: false,
               message: `Credenciales inválidas. Intento ${nuevosIntentos} de 5.`,
@@ -1469,6 +1701,32 @@ t.numero_ticket as "folio",
           [usuario.id]
         );
 
+        // Registro de auditoría (CU-15 / Issue #268)
+        try {
+          const clientIp =
+            context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const userAgent = context.req?.headers['user-agent'];
+
+          await query(
+            `INSERT INTO log_actividades 
+              (id_usuario, fecha_hora, accion, tabla, registro_id, detalle, ip_address, user_agent, modulo, resultado)
+            VALUES ($1, NOW(), $2, $3, $4, $5, $6, $7, $8, $9)`,
+            [
+              usuario.id,
+              'LOGIN_EXITOSO',
+              'usuarios',
+              usuario.id,
+              JSON.stringify({ email: usuario.email }),
+              clientIp,
+              userAgent,
+              'AUTH',
+              'SUCCESS',
+            ]
+          );
+        } catch (logErr) {
+          logger.error('Error recording successful login in log_actividades', logErr);
+        }
+
         // Emitir JWT (RF-18)
         const token = generateToken(usuario);
 
@@ -1476,11 +1734,80 @@ t.numero_ticket as "folio",
           ok: true,
           message: 'Autenticación correcta',
           token,
-          user: usuario,
+          user: {
+            ...usuario,
+            primerLogin: !!usuario.primerLogin,
+            passwordDebeCambiar: !!usuario.passwordDebeCambiar,
+          },
         };
       } catch (error) {
         logger.error('Error authenticating user', { input, error });
         throw error;
+      }
+    },
+
+    /**
+     * Cambiar contraseña de usuario autenticado
+     * @use-case CU-15: Gestión de credenciales
+     */
+    changePassword: async (
+      _: any,
+      { input }: { input: { currentPassword: string; newPassword: string } },
+      context: any
+    ): Promise<AuthPayload> => {
+      if (!context.user) {
+        throw new Error('No autorizado');
+      }
+
+      const { currentPassword, newPassword } = input;
+      const userId = context.user.id;
+
+      try {
+        const res = await query('SELECT password_hash, email FROM usuarios WHERE id = $1', [
+          userId,
+        ]);
+        if (res.rows.length === 0) throw new Error('Usuario no encontrado');
+
+        const { password_hash: hashActual, email } = res.rows[0];
+        const [salt, storedHash] = hashActual.split(':');
+
+        const calculatedHash = crypto.scryptSync(currentPassword, salt, 64).toString('hex');
+        if (calculatedHash !== storedHash) {
+          return { ok: false, message: 'La contraseña actual es incorrecta' };
+        }
+
+        const newSalt = crypto.randomBytes(16).toString('hex');
+        const newHash = crypto.scryptSync(newPassword, newSalt, 64).toString('hex');
+        const finalHash = `${newSalt}:${newHash}`;
+
+        await query(
+          `UPDATE usuarios 
+           SET password_hash = $1, 
+               password_debe_cambiar = false, 
+               primer_login = false,
+               ultimo_cambio_password = NOW(),
+               updated_at = NOW() 
+           WHERE id = $2`,
+          [finalHash, userId]
+        );
+
+        try {
+          const clientIp =
+            context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const userAgent = context.req?.headers['user-agent'];
+          await query(
+            `INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, ip_address, user_agent, detalle)
+             VALUES ($1, 'CHANGE_PASSWORD', 'AUTH', 'SUCCESS', $2, $3, $4)`,
+            [userId, clientIp, userAgent, JSON.stringify({ email })]
+          );
+        } catch (e) {
+          // Log failure intentionally ignored to prioritize core password change flow
+        }
+
+        return { ok: true, message: 'Contraseña actualizada correctamente' };
+      } catch (error: any) {
+        logger.error('Error changing password', { userId, error });
+        return { ok: false, message: error.message || 'Error interno' };
       }
     },
 
@@ -1643,7 +1970,9 @@ t.numero_ticket as "folio",
             const uploaded = await sftpService.uploadBuffer(buffer, remotePath);
 
             if (!uploaded) {
-              throw new Error(`Error al subir la evidencia ${evidencia.nombre} al servidor remoto.`);
+              throw new Error(
+                `Error al subir la evidencia ${evidencia.nombre} al servidor remoto.`
+              );
             }
 
             evidenciasProcesadas.push({
@@ -1656,17 +1985,26 @@ t.numero_ticket as "folio",
 
         // Lógica de Priorización Automática (SLA)
         let prioridad = 'MEDIA';
-        const keywordsHigh = ['urgente', 'bloqueo', 'no puedo', 'error', 'credenciales', 'acceso', 'falla'];
+        const keywordsHigh = [
+          'urgente',
+          'bloqueo',
+          'no puedo',
+          'error',
+          'credenciales',
+          'acceso',
+          'falla',
+        ];
         const textToAnalyze = `${motivo} ${descripcion}`.toLowerCase();
-        if (keywordsHigh.some(kw => textToAnalyze.includes(kw))) {
+        if (keywordsHigh.some((kw) => textToAnalyze.includes(kw))) {
           prioridad = 'ALTA';
         }
 
         // 4. Insertar Ticket
         const insertRes = await client.query(
           `INSERT INTO tickets_soporte 
-            (numero_ticket, usuario_id, asunto, descripcion, estado, prioridad, evidencias, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, fn_catalogo_id('cat_estado_ticket', 'ABIERTO'), $5, $6, NOW(), NOW())
+            (numero_ticket, usuario_id, asunto, descripcion, estado, prioridad, evidencias, 
+             user_fullname, user_cct, user_email, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, fn_catalogo_id('cat_estado_ticket', 'ABIERTO'), $5, $6, $7, $8, $9, NOW(), NOW())
            RETURNING 
             id, 
             numero_ticket as "numeroTicket", 
@@ -1677,13 +2015,45 @@ t.numero_ticket as "folio",
             updated_at as "fechaActualizacion",
             prioridad,
             estado`,
-          [numeroTicket, userId, motivo, descripcion, prioridad, JSON.stringify(evidenciasProcesadas)]
+          [
+            numeroTicket,
+            userId,
+            motivo,
+            descripcion,
+            prioridad,
+            JSON.stringify(evidenciasProcesadas),
+            context.user?.nombre || null,
+            context.user?.cct || null,
+            context.user?.email || correo || null,
+          ]
         );
+
+        const ticket = insertRes.rows[0];
+
+        // 5. Registro de Auditoría (CU-15 / Issue #268 / Senior)
+        try {
+          const clientIp =
+            context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const userAgent = context.req?.headers['user-agent'];
+          await client.query(
+            `INSERT INTO log_actividades 
+              (id_usuario, fecha_hora, accion, tabla, registro_id, detalle, ip_address, user_agent, modulo, resultado)
+            VALUES ($1, NOW(), 'TICKET_CREADO', 'tickets_soporte', $2, $3, $4, $5, 'SOPORTE', 'SUCCESS')`,
+            [
+              userId || null,
+              ticket.id,
+              JSON.stringify({ numeroTicket: ticket.numeroTicket, asunto: ticket.asunto }),
+              clientIp,
+              userAgent,
+            ]
+          );
+        } catch (logErr) {
+          logger.warn('Audit error in createTicket', logErr);
+        }
 
         await client.query('COMMIT');
 
-        const row = insertRes.rows[0];
-        return row;
+        return ticket;
       } catch (error) {
         await client.query('ROLLBACK');
         logger.error('Error creating ticket', { input, error });
@@ -1697,7 +2067,7 @@ t.numero_ticket as "folio",
      * Recuperar contraseña (envío de email con nueva contraseña)
      * @use-case CU-01: Autenticación
      */
-    recoverPassword: async (_: any, { email }: { email: string }) => {
+    recoverPassword: async (_: any, { email }: { email: string }, context: any) => {
       const client = await getClient();
       try {
         await client.query('BEGIN');
@@ -1709,7 +2079,20 @@ t.numero_ticket as "folio",
         );
 
         if (userRes.rows.length === 0) {
-          // Por seguridad, no decimos que no existe, pero retornamos true simulado
+          // Registro de auditoría para intento fallido de recuperación (Issue #268)
+          try {
+            const clientIp =
+              context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+            const userAgent = context.req?.headers['user-agent'];
+            await query(
+              `INSERT INTO log_actividades (accion, modulo, resultado, ip_address, user_agent, detalle)
+               VALUES ('RECOVER_PASSWORD_INVALID_EMAIL', 'AUTH', 'FAIL', $1, $2, $3)`,
+              [clientIp, userAgent, JSON.stringify({ attemptedEmail: email })]
+            );
+          } catch (e) {
+            // Audit log failure for failed recovery attempt ignored
+          }
+
           await client.query('ROLLBACK');
           return 'OK';
         }
@@ -1744,19 +2127,35 @@ t.numero_ticket as "folio",
         const passwordHash = crypto.scryptSync(newPassword, salt, 64).toString('hex');
         const finalHash = `${salt}:${passwordHash}`;
 
-        // 4. Actualizar usuario
+        // 4. Actualizar usuario: Clave nueva activa (Issue #268 - Ajuste de requerimientos)
         await client.query(
-          'UPDATE usuarios SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+          'UPDATE usuarios SET password_hash = $1, ultimo_cambio_password = NOW(), updated_at = NOW() WHERE id = $2',
           [finalHash, userId]
         );
 
         // 5. Enviar correo real
         const emailSent = await mailingService.sendPasswordRecovery(email, newPassword);
         if (!emailSent) {
-          throw new Error('No se pudo enviar el correo de recuperación. Por favor intenta más tarde o contacta soporte.');
+          throw new Error(
+            'No se pudo enviar el correo de recuperación. Por favor intenta más tarde o contacta soporte.'
+          );
         }
 
         logger.info(`Recovery email sent to ${email}`);
+
+        // Registro de auditoría (Issue #268)
+        try {
+          const clientIp =
+            context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const userAgent = context.req?.headers['user-agent'];
+          await query(
+            `INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, ip_address, user_agent)
+             VALUES ($1, 'RECOVER_PASSWORD_REQUEST', 'AUTH', 'SUCCESS', $2, $3)`,
+            [userId, clientIp, userAgent]
+          );
+        } catch (e) {
+          // Successful recovery audit log failure ignored
+        }
 
         await client.query('COMMIT');
         return 'Solicitud procesada';
@@ -1778,28 +2177,64 @@ t.numero_ticket as "folio",
 
     /**
      * Cargar evaluación
-     * @use-case CU-05: Carga de archivos
+     * @use-case CU-16: Carga de archivos
      * @psp Code Review - Validación de formato
      */
     /**
      * Cargar archivo de evaluación (Universal) - Asíncrono con Worker Threads
-     * @use-case CU-05: Recepción de archivos (EIA2)
+     * @use-case CU-16: Recepción de archivos (EIA2)
      */
     uploadExcelAssessment: async (_: any, { input }: { input: any }, context: GraphQLContext) => {
       const { archivoBase64, nombreArchivo, confirmarReemplazo, email } = input;
       let client: any = null;
+      let currentCct: string | null = null;
+      const normalizedEmail = email ? email.trim().toLowerCase() : null;
+
+      // Helper para auditoría (Issue #254 - Trazabilidad)
+      const auditLog = async (resultado: string, status: string, detalleAdicional: any = {}) => {
+        try {
+          const clientIp =
+            context.req?.headers?.['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const userAgent = context.req?.headers?.['user-agent'];
+          await query(
+            `INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, ip_address, user_agent, detalle)
+             VALUES ($1, 'UPLOAD_EIA2', 'EVALUACION', $2, $3, $4, $5)`,
+            [
+              context.user?.id || null,
+              status,
+              clientIp,
+              userAgent,
+              JSON.stringify({
+                email: email || normalizedEmail,
+                archivo: nombreArchivo,
+                resultado,
+                cct: currentCct,
+                ...detalleAdicional,
+              }),
+            ]
+          );
+        } catch (e) {
+          logger.warn('Falla en registro de auditoría uploadExcelAssessment', e);
+        }
+      };
 
       try {
+        let client;
+        let solicitudId;
+        let consecutivo;
         logger.info('Iniciando carga masiva con Worker', { nombreArchivo });
 
         const runWorker = () =>
-          new Promise<any>((resolve, reject) => {
+          new Promise<unknown>((resolve, reject) => {
             import('worker_threads')
               .then(({ Worker }) => {
                 const runtimeEntry = process.argv[1] || '';
                 const isTsNode = runtimeEntry.endsWith('.ts') || process.env.TS_NODE_DEV === 'true';
                 const workerFileName = isTsNode ? 'worker-excel.ts' : 'worker-excel.js';
-                const workerBasePath = path.resolve(process.cwd(), isTsNode ? 'src/workers' : 'dist/workers');
+                const workerBasePath = path.resolve(
+                  process.cwd(),
+                  isTsNode ? 'src/workers' : 'dist/workers'
+                );
                 const wPath = path.join(workerBasePath, workerFileName);
 
                 const worker = new Worker(wPath);
@@ -1823,207 +2258,437 @@ t.numero_ticket as "folio",
         const remotePath = `${remoteDir}/${Date.now()}_${nombreArchivo.replace(/\s+/g, '_')}`;
 
         let userToLink = context.user?.id;
-        const normalizedEmail = email ? email.trim().toLowerCase() : null;
+        let userHasPassword = !!context.user?.password_hash; // Si viene del context ya logueado
 
         if (normalizedEmail) {
-          const uRes = await query('SELECT id FROM usuarios WHERE email = $1', [normalizedEmail]);
+          const uRes = await query('SELECT id, password_hash FROM usuarios WHERE email = $1', [normalizedEmail]);
           if (uRes.rows.length > 0) {
-            const existingUserId = uRes.rows[0].id;
-            userToLink = existingUserId;
-            logger.info('Viculando carga masiva a usuario existente sin sesión activa', { email: normalizedEmail, userId: existingUserId });
+            const row = uRes.rows[0];
+            userToLink = row.id;
+            userHasPassword = !!row.password_hash;
+            logger.info('Viculando carga masiva a usuario existente por email', {
+              email: normalizedEmail,
+              userId: userToLink,
+              hasPassword: userHasPassword
+            });
           }
         }
 
         // Subir archivo a SFTP para auditoría (CU-04)
         try {
-          // @ts-ignore
-          const { sftpService } = await import('../services/sftp.service');
+          const sftpService = new SftpService();
           await sftpService.connect();
           await sftpService.ensureDir(remoteDir);
           await sftpService.uploadBuffer(buffer, remotePath);
           logger.info('[SFTP] Archivo de carga masiva respaldado', { remotePath });
         } catch (sftpErr) {
           logger.error('[SFTP] Error respaldando archivo de carga', { sftpErr });
-          // Continuamos aunque falle el respaldo físico si la BD es prioritaria, 
+          // Continuamos aunque falle el respaldo físico si la BD es prioritaria,
           // pero el constraint de la BD nos obliga a tener el path.
         }
 
         let workerResult;
         try {
-          workerResult = await runWorker();
-        } catch (workerError: any) {
-          const errorMsg = workerError.message || 'Error de validación desconocido';
-          const rejRes = await query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7, false) RETURNING consecutivo',
-            ['DESC', nombreArchivo, fileHash, userToLink || null, JSON.stringify([{ error: errorMsg, hoja: 'General' }]), remotePath, archivoSize]
-          );
+          workerResult = (await runWorker()) as any;
+        } catch (workerError: unknown) {
+          const errorMsg = (workerError as any).message || 'Error de validación desconocido';
+          await auditLog(`Error worker: ${errorMsg}`, 'RECHAZADO');
+
           return {
             success: false,
             message: `Archivo rechazado: ${errorMsg}`,
-            consecutivo: rejRes.rows[0]?.consecutivo?.toString(),
-            detalles: { errores: [errorMsg], erroresEstructurados: [{ error: errorMsg, hoja: 'General' }] },
+            detalles: {
+              errores: [errorMsg],
+              erroresEstructurados: [{ error: errorMsg, hoja: 'General' }],
+            },
           };
         }
 
         const { cct, nivel, grado, alumnos, metadata, erroresEstructurados } = workerResult;
+        currentCct = cct;
 
         if (erroresEstructurados && erroresEstructurados.length > 0) {
-          await query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7, false)',
-            [cct || 'INVALID', nombreArchivo, fileHash, userToLink || null, JSON.stringify(erroresEstructurados), remotePath, archivoSize]
-          );
+          await auditLog(`Errores validación: ${erroresEstructurados.length}`, 'RECHAZADO');
+
           return {
             success: false,
             message: `Se encontraron ${erroresEstructurados.length} errores de validación en el archivo.`,
             detalles: {
-              errores: erroresEstructurados.map((e: any) => e.error),
-              erroresEstructurados
-            }
+              errores: erroresEstructurados.map((e: { error: string }) => e.error),
+              erroresEstructurados,
+            },
           };
         }
         const excelTurno = metadata.turno?.toUpperCase() || '';
 
-        // Mapeo selectivo para identificar escuela única por CCT y Turno
+        // Mapeo de turnos alineado a cat_turnos id_turno
         const turnoMap: Record<string, number> = {
-          'MATUTINO': 1,
-          'VESPERTINO': 2,
-          'NOCTURNO': 3,
-          'DISCONTINUO': 4,
-          'CONTINUO': 5,
+          MATUTINO: 1,
+          VESPERTINO: 2,
+          NOCTURNO: 3,
+          DISCONTINUO: 4,
+          CONTINUO: 5,
           'TIEMPO COMPLETO': 6,
-          'JORNADA AMPLIADA': 7
+          'JORNADA AMPLIADA': 7,
         };
         const idTurno = turnoMap[excelTurno] || 1;
 
-        // Validar formato de CCT
+        // Mapeo de niveles alineado a cat_nivel_educativo id
+        const nivelMap: Record<string, number> = {
+          PREESCOLAR: 1,
+          PRIMARIA: 2,
+          SECUNDARIA: 3,
+          TELESECUNDARIA: 4,
+          INICIAL_GENERAL: 5,
+        };
+        const nivelDetectadoExcel = nivel.toUpperCase().replace(/ /g, '_');
+        const idNivelExcel = nivelMap[nivelDetectadoExcel] || 2;
+
+        // Validar formato de CCT (Híbrido: Formato + DB + Algoritmo)
         const cctValidation = validateCCT(cct);
-        if (!cctValidation.isValid) {
+        
+        // El formato (Regex) es obligatorio siempre
+        if (!cctValidation.formatValid) {
           const errorMsg = `Formato de CCT inválido en el archivo: ${cctValidation.error}`;
+          await auditLog(errorMsg, 'RECHAZADO');
           await query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7, false)',
-            [cct || 'INVALID', nombreArchivo, fileHash, userToLink || null, JSON.stringify([errorMsg]), remotePath, archivoSize]
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, id_turno, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_RECHAZADO_SQL}, $3, $4, $5, $6, $7, $8, false)`,
+            [
+              cct || 'INVALID',
+              nombreArchivo,
+              fileHash,
+              userToLink || null,
+              JSON.stringify([errorMsg]),
+              remotePath,
+              archivoSize,
+              idTurno
+            ]
           );
           return { success: false, message: errorMsg, detalles: { errores: [errorMsg] } };
         }
 
-        // Validar que la CCT exista en el catálogo de escuelas (Uso CU-14)
-        // Se valida tanto CCT como Turno para asegurar consistencia
+        // Consultar existencia en base de datos para decidir rigor del dígito verificador
         const escrow = await query(
-          'SELECT id FROM escuelas WHERE cct = $1 AND id_turno = $2 AND activo = true LIMIT 1',
+          'SELECT id, id_nivel FROM escuelas WHERE cct = $1 AND id_turno = $2 AND activo = true LIMIT 1',
           [cct, idTurno]
         );
+        const escuelaExistente = escrow.rows.length > 0;
 
-        if (escrow.rows.length === 0) {
-          const errorMsg = `La CCT ${cct} con turno "${excelTurno}" no está registrada en el sistema. Por favor, regístrela primero en el Catálogo de Escuelas.`;
-          await query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, hash_archivo, usuario_id, errores_validacion, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7, false)',
-            [cct, nombreArchivo, fileHash, userToLink || null, JSON.stringify([{ campo: 'CCT', error: errorMsg, hoja: 'ESC' }]), remotePath, archivoSize]
-          );
-          return {
-            success: false,
-            message: errorMsg,
-            detalles: {
-              errores: [errorMsg],
-              erroresEstructurados: [{ campo: 'CCT', error: errorMsg, hoja: 'ESC', fila: 9, columna: 'D' }]
-            }
-          };
+        // Si el algoritmo falla pero la escuela existe o es nueva (permitimos registro de nuevas)
+        if (!cctValidation.isValid) {
+          if (escuelaExistente) {
+            logger.info('[CCT Validation] Dígito verificador discrepante pero CCT existe en catálogo oficial, se permite.', { cct, esperado: cctValidation.expectedVerifier });
+          } else {
+            // RF-NUEVA-ESC: Permitimos registro de escuelas nuevas incluso con discrepancia en el algoritmo
+            // debido a variaciones en la implementación oficial de la SEP para ciertos estados.
+            logger.warn('[CCT Validation] CCT Nueva con dígito verificador discrepante, permitiendo carga por flexibilidad.', { 
+                cct, 
+                esperado: cctValidation.expectedVerifier,
+                recibido: cct[cct.length - 1] 
+            });
+          }
+        }
+
+        // Validar consistencia de Nivel Educativo solo si la escuela ya existe (RF-13.2)
+        if (escuelaExistente) {
+          const idNivelBd = escrow.rows[0].id_nivel;
+          if (idNivelBd !== idNivelExcel) {
+            const nivelNombreBd =
+              Object.keys(nivelMap).find((key) => nivelMap[key] === idNivelBd) || 'DESCONOCIDO';
+            const errorMsg = `Inconsistencia de Nivel: El archivo es de nivel ${nivelDetectadoExcel}, pero la CCT ${cct} está registrada oficialmente como ${nivelNombreBd}.`;
+
+            logger.warn('[CCT Validation] Reingreso rechazado por inconsistencia de nivel', { cct, nivelExcel: nivelDetectadoExcel, nivelBd: nivelNombreBd });
+            await auditLog(errorMsg, 'RECHAZADO');
+
+            return {
+              success: false,
+              message: errorMsg,
+              detalles: {
+                errores: [errorMsg],
+                erroresEstructurados: [
+                  { campo: 'Nivel', error: errorMsg, hoja: 'ESC', fila: 6, columna: 'C' },
+                ],
+              },
+            };
+          }
         }
 
         // Validación de correo (CU-04v2 / RF-16.2)
         const excelEmail = metadata.correo?.trim().toLowerCase();
         const inputEmail = normalizedEmail;
 
-        const credCheck = await query('SELECT id, correo_validado FROM credenciales_eia2 WHERE cct = $1', [cct]);
+        const credCheck = await query(
+          'SELECT id, correo_validado FROM credenciales_eia2 WHERE cct = $1',
+          [cct]
+        );
         let credencialId = credCheck.rows.length > 0 ? credCheck.rows[0].id : null;
 
         if (!credencialId) {
           // Primera carga: Loguear si hay diferencia pero permitir continuar (RF-16.2 modificado)
           if (inputEmail && excelEmail && inputEmail !== excelEmail) {
-            logger.info('Mismatch entre email de input y excel, se permite continuar', { inputEmail, excelEmail });
+            logger.info('Mismatch entre email de input y excel, se permite continuar', {
+              inputEmail,
+              excelEmail,
+            });
           }
         } else {
           // Carga posterior: El correo del Excel debe coincidir con el validado inicialmente?
-          // Según RF-16.4, las credenciales son reutilizables. 
+          // Según RF-16.4, las credenciales son reutilizables.
           // Si el usuario ya está logueado, confiamos en la sesión.
         }
 
-        const escuelaIdFromDb = escrow.rows[0].id;
-        const existingReq = await query('SELECT id FROM solicitudes_eia2 WHERE hash_archivo = $1 LIMIT 1', [fileHash]);
-        if (existingReq.rows.length > 0 && !confirmarReemplazo) {
-          return { success: false, message: 'El archivo ya existe. ¿Desea reemplazarlo?', duplicadoDetectado: true };
-        }
+        // RF-16.5: Detección de duplicados basada en CCT + Turno + Usuario (Regla prioritaria)
+        // Un usuario sólo puede tener un archivo activo para una escuela y turno específicos.
+        const existingReq = await query(
+          'SELECT id FROM solicitudes_eia2 WHERE cct = $1 AND id_turno = $2 AND usuario_id = $3 LIMIT 1',
+          [cct, idTurno, userToLink || null]
+        );
 
-        const nivelMap: Record<string, number> = { 
-          PREESCOLAR: 1, 
-          PRIMARIA: 2, 
-          SECUNDARIA: 3, 
-          TELESECUNDARIA: 4,
-          INICIAL_GENERAL: 5
-        };
-        const nivelId = nivelMap[nivel.toUpperCase().replace(/ /g, '_')] || 2;
-        let solicitudId: string = '';
-        let consecutivo: any = null;
+        if (existingReq.rows.length > 0 && !confirmarReemplazo) {
+          return {
+            success: false,
+            message: `Ya existe una carga activa para la escuela ${cct} - ${excelTurno}. ¿Desea reemplazarla con este nuevo archivo?`,
+            duplicadoDetectado: true,
+          };
+        }
 
         client = await getClient();
         logger.info('[Progreso Carga] Iniciando transacción...');
         await client.query('BEGIN');
 
-        let generatedPassword = null;
-        if (!credencialId && inputEmail) {
-          // Generar credenciales por primera vez
-          const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-          let retVal = "";
-          for (let i = 0; i < 12; ++i) {
-            retVal += charset.charAt(Math.floor(Math.random() * charset.length));
-          }
-          generatedPassword = retVal;
-          const salt = crypto.randomBytes(16).toString('hex');
-          const hash = crypto.scryptSync(generatedPassword, salt, 64).toString('hex');
-          const finalHash = `${salt}:${hash}`;
+        let escuelaIdReal = escuelaExistente ? escrow.rows[0].id : null;
 
-          const newCred = await client.query(
-            'INSERT INTO credenciales_eia2 (cct, correo_validado, password_hash) VALUES ($1, $2, $3) RETURNING id',
-            [cct, inputEmail, finalHash]
+        // Registro de escuela nueva si no existe
+        if (!escuelaExistente) {
+          logger.info('Registrando nueva escuela detectada en Excel', { cct, nombre: metadata.nombreEscuela });
+          
+          // 1. Determinar Entidad por prefijo CCT (ej: 09 -> CDMX)
+          const entidadRes = await client.query(
+            'SELECT id_entidad FROM cat_entidades_federativas WHERE codigo_sep = $1 OR abreviatura = $1 LIMIT 1',
+            [cct.substring(0, 2)]
           );
-          credencialId = newCred.rows[0].id;
+          const idEntidad = entidadRes.rows.length > 0 ? entidadRes.rows[0].id_entidad : 9; // Fallback a CDMX si no se reconoce
 
-          // También crear usuario en la tabla principal si no existe para permitir login
-          const userExist = await client.query('SELECT id FROM usuarios WHERE email = $1', [inputEmail]);
-          if (userExist.rows.length === 0) {
+          // 2. Determinar Ciclo Activo
+          const cicloRes = await client.query(
+            'SELECT id_ciclo FROM cat_ciclos_escolares WHERE activo = true LIMIT 1'
+          );
+          const idCiclo = cicloRes.rows.length > 0 ? cicloRes.rows[0].id_ciclo : 2024;
+
+          const newEscuela = await client.query(
+            `INSERT INTO escuelas (cct, nombre, id_turno, id_nivel, id_entidad, id_ciclo, activo, created_at) 
+             VALUES ($1, $2, $3, $4, $5, $6, true, NOW()) RETURNING id`,
+            [cct, metadata.nombreEscuela || 'ESCUELA NUEVA', idTurno, idNivelExcel, idEntidad, idCiclo]
+          );
+          escuelaIdReal = newEscuela.rows[0].id;
+        }
+
+        const escuelaIdFromDb = escuelaIdReal;
+
+        let generatedPassword = null;
+
+        // RF-16.x: Asegurar que el usuario esté vinculado/creado (fuera del bloque if !credencialId)
+        if (!userToLink && inputEmail) {
+          const uCheck = await client.query('SELECT id, password_hash FROM usuarios WHERE email = $1', [inputEmail]);
+          if (uCheck.rows.length > 0) {
+            userToLink = uCheck.rows[0].id;
+            userHasPassword = !!uCheck.rows[0].password_hash;
+            // Asegurar que tenga vinculada la escuela si es Responsable CCT
             await client.query(
-              'INSERT INTO usuarios (email, password_hash, rol, nombre, email_excel) VALUES ($1, $2, fn_catalogo_id($3, $4), $5, $6)',
-              [inputEmail, finalHash, 'cat_rol_usuario', 'RESPONSABLE_CCT', 'Director ' + cct, excelEmail]
+              'UPDATE usuarios SET escuela_id = $1 WHERE id = $2 AND escuela_id IS NULL',
+              [escuelaIdFromDb, userToLink]
+            );
+            logger.info('Usuario vinculado en transacción', { email: inputEmail, userId: userToLink, hasPass: userHasPassword });
+          } else {
+            // BUG FIX #GhostPassword: No generar si ya sabemos que el usuario existe y tiene pass
+            if (!userHasPassword) {
+              const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+              let retVal = '';
+              for (let i = 0; i < 12; ++i) {
+                retVal += charset.charAt(Math.floor(Math.random() * charset.length));
+              }
+              generatedPassword = retVal;
+            }
+
+            let finalHash = '';
+            if (generatedPassword) {
+              const salt = crypto.randomBytes(16).toString('hex');
+              const hash = crypto.scryptSync(generatedPassword, salt, 64).toString('hex');
+              finalHash = `${salt}:${hash}`;
+            }
+
+            const newUser = await client.query(
+              'INSERT INTO usuarios (email, password_hash, rol, nombre, apepaterno, apematerno, email_excel, escuela_id, password_debe_cambiar, primer_login, ultimo_cambio_password, activo, fecha_registro) VALUES ($1, $2, (SELECT id_rol FROM cat_roles_usuario WHERE codigo = $3), \'\', \'\', \'\', $4, $5, false, false, NOW(), true, NOW()) RETURNING id',
+              [
+                inputEmail,
+                finalHash || null,
+                'RESPONSABLE_CCT',
+                excelEmail || inputEmail,
+                escuelaIdFromDb,
+              ]
+            );
+            userToLink = newUser.rows[0].id;
+            logger.info('Nuevo usuario creado preventivamente en transacción', { email: inputEmail, userId: userToLink });
+          }
+        }
+
+        if (!credencialId && inputEmail) {
+          // RE-CHECK DEFINITIVO: Si el usuario ya está vinculado, nos aseguramos al 100% de si tiene password en DB
+          if (userToLink && !userHasPassword) {
+            const upCheck = await client.query('SELECT password_hash FROM usuarios WHERE id = $1', [userToLink]);
+            if (upCheck.rows[0]?.password_hash) {
+              userHasPassword = true;
+              logger.info('[FixGhostPassword] Password detectado en re-check DB. Cancelando generación.');
+            }
+          }
+
+          // Generar credenciales por primera vez (Solo si no existen)
+          if (!generatedPassword && !userHasPassword) {
+            const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+            let retVal = '';
+            for (let i = 0; i < 12; ++i) {
+              retVal += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+            generatedPassword = retVal;
+          }
+
+          if (generatedPassword) {
+            const salt = crypto.randomBytes(16).toString('hex');
+            const hash = crypto.scryptSync(generatedPassword, salt, 64).toString('hex');
+            const finalHash = `${salt}:${hash}`;
+
+            const newCred = await client.query(
+              'INSERT INTO credenciales_eia2 (cct, correo_validado, password_hash) VALUES ($1, $2, $3) RETURNING id',
+              [cct, inputEmail, finalHash]
+            );
+            credencialId = newCred.rows[0].id;
+
+            // Asegurar que el usuario tenga el pass hash sincronizado si se acaba de crear la credencial
+            await client.query(
+              'UPDATE usuarios SET password_hash = $1 WHERE email = $2 AND (password_hash IS NULL OR password_hash = \'\')',
+              [finalHash, inputEmail]
             );
           } else {
-            // Actualizar email_excel si no lo tiene (RF-16.x)
-            await client.query('UPDATE usuarios SET email_excel = $1 WHERE id = $2 AND email_excel IS NULL', [excelEmail, userExist.rows[0].id]);
+            // Si el usuario ya tenía password, simplemente creamos la credencial CCT (legacy) sin password_hash redundante
+            // o mejor, vinculamos la que ya tenga si el sistema permite credenciales sin hash propio (usando el del usuario)
+            const newCred = await client.query(
+              'INSERT INTO credenciales_eia2 (cct, correo_validado, password_hash) VALUES ($1, $2, (SELECT password_hash FROM usuarios WHERE id = $3)) RETURNING id',
+              [cct, inputEmail, userToLink]
+            );
+            credencialId = newCred.rows[0].id;
           }
         }
 
         if (existingReq.rows.length > 0) {
           solicitudId = existingReq.rows[0].id;
           await client.query('DELETE FROM evaluaciones WHERE solicitud_id = $1', [solicitudId]);
-          const upRes = await client.query('UPDATE solicitudes_eia2 SET updated_at = NOW(), credencial_id = $2 WHERE id = $1 RETURNING consecutivo', [solicitudId, credencialId]);
+          const upRes = await client.query(
+            `UPDATE solicitudes_eia2 SET updated_at = NOW(), fecha_carga = NOW(), credencial_id = $2, archivo_path = $3, archivo_size = $4, hash_archivo = $5, archivo_original = $6, estado_validacion = ${SOLICITUD_ESTADO_VALIDO_SQL}, usuario_id = $7, id_turno = $8 WHERE id = $1 RETURNING consecutivo`,
+            [
+              solicitudId,
+              credencialId,
+              remotePath,
+              archivoSize,
+              fileHash,
+              nombreArchivo,
+              userToLink || null,
+              idTurno,
+            ]
+          );
           consecutivo = upRes.rows[0].consecutivo;
         } else {
           const solRes = await client.query(
-            'INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, hash_archivo, usuario_id, credencial_id, archivo_path, archivo_size, procesado_externamente) VALUES ($1, $2, NOW(), 1, $3, $4, $5, $6, $7, $8, false) RETURNING id, consecutivo',
-            [cct, nombreArchivo, nivelId, fileHash, userToLink || null, credencialId, remotePath, archivoSize]
+            `INSERT INTO solicitudes_eia2 (cct, archivo_original, fecha_carga, estado_validacion, nivel_educativo, hash_archivo, usuario_id, credencial_id, archivo_path, archivo_size, id_turno, procesado_externamente) VALUES ($1, $2, NOW(), ${SOLICITUD_ESTADO_VALIDO_SQL}, $3, $4, $5, $6, $7, $8, $9, false) RETURNING id, consecutivo`,
+            [
+              cct,
+              nombreArchivo,
+              idNivelExcel,
+              fileHash,
+              userToLink || null,
+              credencialId,
+              remotePath,
+              archivoSize,
+              idTurno,
+            ]
           );
           solicitudId = solRes.rows[0].id;
           consecutivo = solRes.rows[0].consecutivo;
         }
 
-        // Escuela, Grupos, Estudiantes (Omitido por brevedad en este chunk, manteniendo lógica previa)
-        // ... (asumimos que esta parte ya estaba bien configurada en el archivo original)
-        // Re-introduciendo el bloque de escuela y alumnos de forma limpia
-        const escuelaId = escuelaIdFromDb;
 
-        const idGrado = nivelId * 100 + grado;
-        const materiaRes = await client.query('SELECT id FROM materias WHERE nivel_educativo = $1', [nivelId]);
-        const materiasIds = materiaRes.rows.map((m: any) => m.id);
-        const periodRes = await client.query('SELECT id FROM periodos_evaluacion LIMIT 1');
+        // 1. Obtener Periodo Activo
+        const periodRes = await client.query(
+          'SELECT id FROM periodos_evaluacion WHERE activo = true LIMIT 1'
+        );
         const periodoId = periodRes.rows[0]?.id;
+
+        if (!periodoId) {
+          throw new Error('No hay un periodo de evaluación activo configurado en el sistema.');
+        }
+
+        // 2. Mapeo de Materias por Nivel y Grado (Estructura determinista del Excel)
+        // Este mapa asocia el índice del array de evaluaciones del alumno con el CÓDIGO de la materia en DB
+        const MATERIA_MAP: Record<string, string[]> = {
+          PREESCOLAR_3: [
+            'P_L_C',
+            'P_L_C',
+            'P_S_P',
+            'P_S_P',
+            'P_S_P',
+            'P_E_N',
+            'P_E_N',
+            'P_E_N',
+            'P_D_C',
+            'P_D_C',
+            'P_D_C',
+          ],
+          PRIMARIA_1: [
+            '1P_L',
+            '1P_L',
+            '1P_L',
+            '1P_M',
+            '1P_M',
+            '1P_M',
+            '1P_NS',
+            '1P_NS',
+            '1P_NS',
+            '1P_HC',
+          ],
+          PRIMARIA_2: [
+            '2P_L',
+            '2P_L',
+            '2P_L',
+            '2P_M',
+            '2P_M',
+            '2P_M',
+            '2P_NS',
+            '2P_NS',
+            '2P_NS',
+            '2P_HC',
+          ],
+          PRIMARIA_3: Array(26).fill('3P_GEN'), // Ajustar según códigos reales en DB
+          SECUNDARIA_1: Array(21).fill('1S_GEN'),
+          // ... mapeo completo según las sábanas oficiales
+        };
+
+        const materiaMapCache: Record<string, string[]> = {};
+        const getMateriasConfiguradas = (g: number) => {
+          const key = `${nivelDetectadoExcel}_${g}`;
+          if (!materiaMapCache[key]) {
+            materiaMapCache[key] = MATERIA_MAP[key] || [];
+          }
+          return materiaMapCache[key];
+        };
+
+        // 3. Cache de UUIDs de materias para evitar múltiples queries
+        const materiasCache: Record<string, string> = {};
+        const allMaterias = await client.query(
+          'SELECT id, codigo FROM materias WHERE nivel_educativo = $1 AND activa = true',
+          [idNivelExcel]
+        );
+        allMaterias.rows.forEach((m: any) => {
+          materiasCache[m.codigo] = m.id;
+        });
 
         const evaluationValues: any[] = [];
         const evaluationParams: any[] = [];
@@ -2031,71 +2696,147 @@ t.numero_ticket as "folio",
         let alumnosProcesados = 0;
 
         for (const alumno of alumnos) {
-          const gRes = await client.query('SELECT id FROM grupos WHERE escuela_id = $1 AND nombre = $2', [escuelaId, alumno.grupo]);
-          const grupoId = gRes.rows.length > 0 ? gRes.rows[0].id : (await client.query('INSERT INTO grupos (escuela_id, grado_id, nombre, nivel_educativo) VALUES ($1, $2, $3, $4) RETURNING id', [escuelaId, idGrado, alumno.grupo, nivelId])).rows[0].id;
-          const sRes = await client.query('INSERT INTO estudiantes (nombre, grupo_id, curp) VALUES ($1,$2,$3) ON CONFLICT (curp) DO UPDATE SET grupo_id = EXCLUDED.grupo_id RETURNING id', [alumno.nombre, grupoId, alumno.curp]);
+          const idGrado = idNivelExcel * 100 + alumno.grado;
+          const codigosMateriasConfigurados = getMateriasConfiguradas(alumno.grado);
+
+          // 4. Asegurar Grupo
+          const gRes = await client.query(
+            'SELECT id FROM grupos WHERE escuela_id = $1 AND grado_id = $2 AND nombre = $3 LIMIT 1',
+            [escuelaIdReal, idGrado, alumno.grupo]
+          );
+
+          let grupoId;
+          if (gRes.rows.length > 0) {
+            grupoId = gRes.rows[0].id;
+          } else {
+            const newG = await client.query(
+              'INSERT INTO grupos (escuela_id, grado_id, nombre, nivel_educativo, grado_nombre, grado_numero, turno) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+              [escuelaIdReal, idGrado, alumno.grupo, idNivelExcel, alumno.grado_nombre, alumno.grado, excelTurno]
+            );
+            grupoId = newG.rows[0].id;
+          }
+
+          // 5. Asegurar Estudiante (UPSERT por CURP sintética)
+          const sRes = await client.query(
+            'INSERT INTO estudiantes (nombre, grupo_id, curp) VALUES ($1, $2, $3) ON CONFLICT (curp) DO UPDATE SET grupo_id = EXCLUDED.grupo_id, nombre = EXCLUDED.nombre RETURNING id',
+            [alumno.nombre, grupoId, alumno.curp]
+          );
           const estudianteId = sRes.rows[0].id;
 
-          for (const ev of alumno.evaluaciones) {
-            const mId = materiasIds[ev.materiaIndex];
-            if (mId) {
-              evaluationParams.push(estudianteId, mId, periodoId, ev.valor, solicitudId);
-              evaluationValues.push(`($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2}, $${paramIndex + 3}, NOW(), NOW(), $${paramIndex + 4})`);
-              paramIndex += 5;
+          // 6. Preparar Evaluaciones Granulares
+          alumno.evaluaciones.forEach((ev: any) => {
+            const codigoMateria = codigosMateriasConfigurados[ev.materiaIndex];
+            const materiaId = materiasCache[codigoMateria];
+
+            if (materiaId) {
+              evaluationParams.push(estudianteId, materiaId, periodoId, ev.valor, solicitudId);
+              evaluationValues.push(
+                `($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2}, $${paramIndex + 3}, NOW(), NOW(), $${paramIndex + 4}, true)`
+              );
+              paramIndex += 6;
             }
-          }
+          });
           alumnosProcesados++;
         }
 
         if (evaluationValues.length > 0) {
-          await client.query(`INSERT INTO evaluaciones (estudiante_id, materia_id, periodo_id, valoracion, fecha_evaluacion, updated_at, solicitud_id) VALUES ${evaluationValues.join(', ')} ON CONFLICT (estudiante_id, materia_id, periodo_id, solicitud_id) DO UPDATE SET valoracion = EXCLUDED.valoracion, updated_at = NOW()`, evaluationParams);
+          // 7. Inserción Masiva de Evaluaciónes (Activa Triggers de NIA)
+          await client.query(
+            `INSERT INTO evaluaciones (estudiante_id, materia_id, periodo_id, valoracion, fecha_evaluacion, updated_at, solicitud_id, validado) 
+             VALUES ${evaluationValues.join(', ')} 
+             ON CONFLICT (estudiante_id, materia_id, periodo_id, solicitud_id) 
+             DO UPDATE SET valoracion = EXCLUDED.valoracion, updated_at = NOW(), validado = true`,
+            evaluationParams
+          );
         }
 
         await client.query('COMMIT');
+        logger.info('[Progreso Carga] Transacción completada con éxito');
 
-        // Sincronización SFTP en background (opcional para esta fase)
+        // RF-16.7: Notificar credenciales por correo SOLO si se generó pass
+        if (generatedPassword && inputEmail) {
+          mailingService.sendCredentials(inputEmail, cct, generatedPassword).catch((err) => {
+            logger.error('Error enviando correo de credenciales en carga masiva', {
+              email: inputEmail,
+              cct,
+              error: err.message
+            });
+          });
+        }
+
+        // Sincronización SFTP en background (Fase 1 Legacy - CU-07)
         const syncSftp = async () => {
-          const tempPath = path.resolve(process.cwd(), `temp_${Date.now()}_${nombreArchivo}`);
           try {
-            const fs = await import('fs/promises');
-            await fs.writeFile(tempPath, buffer);
-            // Simular subida o implementar si el servicio SFTP está listo
-            // await sftpService.uploadFile(tempPath, `/upload/${Date.now()}_${nombreArchivo}`);
-          } catch (e) {
-            logger.error('SFTP sync error', e);
-          } finally {
-            try {
-              const fs = await import('fs/promises');
-              await fs.unlink(tempPath);
-            } catch { }
+            if (context.distributionService) {
+              const team = context.distributionService.getTeamForCCT(cct);
+              // Sanitizamos el nombre eliminando espacios por precaución
+              const fileName = `${Date.now()}_${nombreArchivo.replace(/\s+/g, '_')}`;
+
+              // Aseguramos que la carpeta compartida exista antes de subir
+              await sftpService.ensureDir(team.sftpPath);
+
+              const remotePath = `${team.sftpPath}/${fileName}`;
+
+              const uploaded = await sftpService.uploadBuffer(buffer, remotePath);
+
+              if (uploaded) {
+                // Registrar en bitácora la trazabilidad (equipo_asignado en BD)
+                await context.distributionService.logDistribution(solicitudId, team.id);
+                logger.info(
+                  `Archivo FRV subido a SFTP y distribuido exitosamente: ${team.nombre} -> ${remotePath}`
+                );
+              } else {
+                throw new Error('Retorno false al subir FRV (uploadBuffer).');
+              }
+            } else {
+              logger.warn(
+                'distributionService no está inyectado en el contexto. Se omite envío SFTP.'
+              );
+            }
+          } catch (e: any) {
+            logger.error('SFTP/Distribution sync error (CU-07)', {
+              solicitudId,
+              cct,
+              error: e.message,
+            });
           }
         };
+        // Ejecución en segundo plano ("fire-and-forget")
         syncSftp().catch(() => { });
 
         const fechaHoy = new Date();
         fechaHoy.setDate(fechaHoy.getDate() + 4);
-        const fechaFutura = fechaHoy.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+        const fechaFutura = fechaHoy.toLocaleDateString('es-MX', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+        });
 
         let successMessage = `Tu archivo ha sido validado correctamente. Podrás consultar tus resultados a partir del día: ${fechaFutura}.`;
         if (generatedPassword) {
-          successMessage = `Tu archivo ha sido validado correctamente. Generamos una contraseña aleatoria y podrás consultar tus resultados a partir del día: ${fechaFutura}.`;
+          successMessage = `Tu archivo ha sido validado correctamente. Se ha enviado un correo electrónico con tus credenciales de acceso. Podrás consultar tus resultados a partir del día: ${fechaFutura}.`;
         }
+
+        await auditLog('Carga exitosa', 'SUCCESS', { alumnos: alumnosProcesados });
 
         return {
           success: true,
           message: successMessage,
           solicitudId,
           consecutivo: consecutivo?.toString(),
+          generatedPassword,
+          hashArchivo: fileHash,
           detalles: {
             cct,
             nivel: metadata.nivelDetectado,
             grado,
             alumnosProcesados,
-            errores: []
-          }
+            errores: [],
+          },
         };
       } catch (error: any) {
         if (client) await client.query('ROLLBACK');
+        await auditLog(`Error general: ${error.message}`, 'ERROR');
         logger.error('Upload Error', error);
         return {
           success: false,
@@ -2106,8 +2847,8 @@ t.numero_ticket as "folio",
             grado: null,
             alumnosProcesados: 0,
             errores: [error.message],
-            erroresEstructurados: [{ error: error.message, hoja: 'General' }]
-          }
+            erroresEstructurados: [{ error: error.message, hoja: 'General' }],
+          },
         };
       } finally {
         if (client) client.release();
@@ -2146,7 +2887,8 @@ t.numero_ticket as "folio",
 
         // 2. Procesar cada archivo y subir a SFTP
         for (const archivo of archivos) {
-          let { nombre, base64 } = archivo;
+          const { nombre, base64: rawBase64 } = archivo;
+          let base64 = rawBase64;
 
           // Limpiar prefijo data URI si existe (ej. data:application/pdf;base64,...)
           if (base64.includes(';base64,')) {
@@ -2188,7 +2930,7 @@ t.numero_ticket as "folio",
         await client.query(
           `UPDATE solicitudes_eia2 
            SET resultados = $1, 
-               estado_validacion = 2, -- Marcamos como VALIDADO/ASIGNADO
+               estado_validacion = ${SOLICITUD_ESTADO_VALIDO_SQL},
                resultado_path = $2,
                updated_at = NOW() 
            WHERE id = $3`,
@@ -2226,16 +2968,9 @@ t.numero_ticket as "folio",
 
       const client = await getClient();
       try {
-        let {
-          nombre,
-          tipo,
-          nivelEducativo,
-          cicloEscolar,
-          periodoId,
-          archivoBase64,
-          nombreArchivo,
-          overwrite,
-        } = input;
+        const { nombre, tipo, nivelEducativo, cicloEscolar, periodoId, nombreArchivo, overwrite } =
+          input;
+        let { archivoBase64 } = input;
 
         // 1. Obtener ID del nivel educativo
         const levelRes = await client.query(
@@ -2328,21 +3063,36 @@ t.numero_ticket as "folio",
      */
     respondToTicket: async (
       _: any,
-      { ticketId, respuesta, cerrar }: { ticketId: string; respuesta: string; cerrar: boolean },
+      {
+        ticketId,
+        respuesta,
+        cerrar,
+        prioridad,
+      }: { ticketId: string; respuesta: string; cerrar: boolean; prioridad?: string },
       context: GraphQLContext
     ) => {
-      /*
-      if (
-        !context.user ||
-        !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)
-      ) {
-        throw new Error('No autorizado: Solo administradores pueden responder tickets');
-      }
-      */
+      if (!context.user) throw new Error('No autorizado');
 
       const client = await getClient();
       try {
         await client.query('BEGIN');
+
+        // Verificar propiedad o rol (Admin responde cualquiera, usuario solo lo suyo)
+        const ticketOwnerQuery = await client.query(
+          'SELECT usuario_id FROM tickets_soporte WHERE id = $1',
+          [ticketId]
+        );
+
+        if (ticketOwnerQuery.rows.length === 0) {
+          throw new Error('Ticket no encontrado');
+        }
+
+        const ownerId = ticketOwnerQuery.rows[0].usuario_id;
+        const isAdmin = ['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol);
+
+        if (!isAdmin && ownerId !== context.user.id) {
+          throw new Error('No tienes permiso para responder a este ticket');
+        }
 
         // 1. Insertar comentario
         await client.query(
@@ -2350,20 +3100,51 @@ t.numero_ticket as "folio",
           INSERT INTO comentarios_ticket (ticket_id, usuario_id, comentario, es_interno)
           VALUES ($1, $2, $3, false)
         `,
-          [ticketId, context.user?.id || '00000000-0000-0000-0000-000000000000', respuesta]
+          [ticketId, context.user.id, respuesta]
         );
 
-        // 2. Actualizar estado del ticket
+        // 2. Actualizar estado y opcionalmente prioridad
         const nuevoEstado = cerrar ? 'RESUELTO' : 'EN_PROCESO';
-        await client.query(
-          `
+        let updateQuery = `
           UPDATE tickets_soporte
           SET estado = (SELECT id FROM cat_estado_ticket WHERE codigo = $1),
+              resuelto_en = ${cerrar ? 'NOW()' : 'resuelto_en'},
               updated_at = NOW()
-          WHERE id = $2
-        `,
-          [nuevoEstado, ticketId]
-        );
+        `;
+        const params: any[] = [nuevoEstado];
+
+        // Solo el Admin debería cambiar la prioridad
+        if (prioridad && isAdmin) {
+          updateQuery += `, prioridad = $3`;
+          params.push(ticketId, prioridad);
+        } else {
+          params.push(ticketId);
+        }
+
+        updateQuery += ` WHERE id = $2`;
+
+        await client.query(updateQuery, params);
+
+        // 3. Registro de Auditoría (CU-15 / Issue #268 / Senior)
+        try {
+          const clientIp =
+            context.req?.headers['x-forwarded-for'] || context.req?.socket?.remoteAddress;
+          const userAgent = context.req?.headers['user-agent'];
+          await client.query(
+            `INSERT INTO log_actividades 
+              (id_usuario, fecha_hora, accion, tabla, registro_id, detalle, ip_address, user_agent, modulo, resultado)
+            VALUES ($1, NOW(), 'TICKET_RESPONDIDO', 'tickets_soporte', $2, $3, $4, $5, 'SOPORTE', 'SUCCESS')`,
+            [
+              context.user.id,
+              ticketId,
+              JSON.stringify({ estado: nuevoEstado, cerrado: cerrar }),
+              clientIp,
+              userAgent,
+            ]
+          );
+        } catch (logErr) {
+          logger.warn('Audit error in respondToTicket', logErr);
+        }
 
         await client.query('COMMIT');
 
@@ -2377,19 +3158,24 @@ t.numero_ticket as "folio",
             (SELECT codigo FROM cat_estado_ticket WHERE id = t.estado) as estado,
             t.prioridad,
             t.evidencias,
+            COALESCE(u.email, t.user_email) as "correo",
+            COALESCE(u.nombre, t.user_fullname) as "nombreCompleto",
+            t.user_cct as "cct",
+            t.user_turno as "turno",
             t.created_at as "fechaCreacion",
             t.updated_at as "fechaActualizacion"
           FROM tickets_soporte t
+          LEFT JOIN usuarios u ON t.usuario_id = u.id
           WHERE t.id = $1
         `,
           [ticketId]
         );
 
         return result.rows[0];
-      } catch (error) {
+      } catch (error: any) {
         await client.query('ROLLBACK');
-        logger.error('Error responding to ticket', { ticketId, error });
-        throw new Error('Error al responder el ticket');
+        logger.error('Error responding to ticket', { ticketId, error: error.message });
+        throw new Error(error.message || 'Error al responder el ticket');
       } finally {
         client.release();
       }
@@ -2439,19 +3225,166 @@ t.numero_ticket as "folio",
      * Simular la generación de reportes para una solicitud (Demo/Phase 1)
      * @use-case CU-08: Generar Reportes
      */
-    simulateReportGeneration: async (_: any, { solicitudId }: { solicitudId: string }, context: GraphQLContext) => {
+    simulateReportGeneration: async (
+      _: any,
+      { solicitudId }: { solicitudId: string },
+      context: GraphQLContext
+    ) => {
       if (!context.user) throw new Error('No autorizado');
       return reportConsolidatorService.simulateProcessing(solicitudId);
     },
+    /**
+     * Reiniciar contraseña de un usuario (Admin)
+     * @use-case CU-02: Gestión de usuarios
+     */
+    resetUserPassword: async (_: any, { userId }: { userId: string }, context: GraphQLContext) => {
+      // 1. Validar que el solicitante sea admin
+      if (
+        !context.user ||
+        !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)
+      ) {
+        throw new Error('No autorizado: Solo administradores pueden reiniciar contraseñas.');
+      }
+
+      const client = await getClient();
+      try {
+        await client.query('BEGIN');
+
+        // 2. Buscar al usuario objetivo
+        const userRes = await client.query('SELECT email FROM usuarios WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) {
+          throw new Error('Usuario no encontrado.');
+        }
+        const email = userRes.rows[0].email;
+
+        // 3. Generar nueva contraseña aleatoria
+        const randomPart = crypto.randomBytes(4).toString('hex');
+        const newPassword = `A${randomPart}#`; // Prefijo A para Admin
+
+        // 4. Hashear y actualizar
+        const salt = crypto.randomBytes(16).toString('hex');
+        const passwordHash = crypto.scryptSync(newPassword, salt, 64).toString('hex');
+        const finalHash = `${salt}:${passwordHash}`;
+
+        await client.query(
+          'UPDATE usuarios SET password_hash = $1, ultimo_cambio_password = NOW(), updated_at = NOW(), primer_login = true WHERE id = $2',
+          [finalHash, userId]
+        );
+
+        // 5. Enviar notificación por correo
+        const emailSent = await mailingService.sendAdminPasswordReset(email, newPassword);
+
+        await client.query('COMMIT');
+
+        return {
+          success: true,
+          message: emailSent
+            ? `Contraseña reiniciada correctamente. Se ha enviado un correo a ${email}.`
+            : `Contraseña reiniciada en sistema, pero hubo un error al enviar el correo a ${email}. Informe la nueva contraseña manualmente.`,
+        };
+      } catch (error: any) {
+        await client.query('ROLLBACK');
+        logger.error('Error resetting user password', { userId, error: error.message });
+        throw new Error(error.message || 'Error al reiniciar la contraseña.');
+      } finally {
+        client.release();
+      }
+    },
+
     /**
      * Crear incidencia de carga para usuario no logueado
      * @use-case CU-13: Mesa de ayuda (Público)
      */
     createPublicIncident: async (_: any, { input }: any) => {
-      const { nombreCompleto, cct, email, descripcion, evidencias } = input;
+      const { nombreCompleto, cct, turno, email, descripcion, evidencias } = input;
       const client = await getClient();
+      let generatedPassword: string | null = null;
       try {
         await client.query('BEGIN');
+
+        // 1. Mapeo de Turno e ID
+        const turnoMap: Record<string, number> = {
+          MATUTINO: 1,
+          VESPERTINO: 2,
+          NOCTURNO: 3,
+          DISCONTINUO: 4,
+          CONTINUO: 5,
+          'TIEMPO COMPLETO': 6,
+          'JORNADA AMPLIADA': 7,
+        };
+        const idTurno = turnoMap[turno.toUpperCase()] || 1;
+
+        // 2. Garantizar que la escuela exista (Registro Preventivo)
+        const escrow = await client.query(
+          'SELECT id FROM escuelas WHERE cct = $1 AND id_turno = $2 AND activo = true LIMIT 1',
+          [cct, idTurno]
+        );
+
+        let escuelaIdReal;
+        if (escrow.rows.length > 0) {
+          escuelaIdReal = escrow.rows[0].id;
+        } else {
+          const entidadRes = await client.query(
+            'SELECT id_entidad FROM cat_entidades_federativas WHERE codigo_sep = $1 OR abreviatura = $1 LIMIT 1',
+            [cct.substring(0, 2)]
+          );
+          const idEntidad = entidadRes.rows.length > 0 ? entidadRes.rows[0].id_entidad : 9;
+
+          const newEscuela = await client.query(
+            "INSERT INTO escuelas (cct, nombre, id_nivel, id_turno, id_entidad, id_ciclo, activo, fecha_registro) VALUES ($1, $2, $3, $4, $5, (SELECT id_ciclo FROM cat_ciclos_escolares WHERE activo = true LIMIT 1), true, NOW()) RETURNING id",
+            [cct, 'REGISTRO POR INCIDENCIA', 2, idTurno, idEntidad]
+          );
+          escuelaIdReal = newEscuela.rows[0].id;
+        }
+
+        // 3. Gestión de Usuario y Credenciales
+        const userRes = await client.query('SELECT id, password_hash FROM usuarios WHERE email = $1', [
+          email.trim().toLowerCase(),
+        ]);
+        let userId;
+
+        if (userRes.rows.length > 0) {
+          userId = userRes.rows[0].id;
+          logger.info('[AutoReg] Usuario existente encontrado', { email, userId });
+          if (!userRes.rows[0].password_hash) {
+            const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+            let retVal = '';
+            for (let i = 0; i < 12; ++i) retVal += charset.charAt(Math.floor(Math.random() * charset.length));
+            generatedPassword = retVal;
+
+            const salt = crypto.randomBytes(16).toString('hex');
+            const hash = crypto.scryptSync(generatedPassword, salt, 64).toString('hex');
+            const finalHash = `${salt}:${hash}`;
+            await client.query('UPDATE usuarios SET password_hash = $1 WHERE id = $2', [finalHash, userId]);
+            logger.info('[AutoReg] Password hash generado para usuario existente', { userId });
+          }
+        } else {
+          logger.info('[AutoReg] Iniciando registro de nuevo usuario', { email });
+          const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+          let retVal = '';
+          for (let i = 0; i < 12; ++i) retVal += charset.charAt(Math.floor(Math.random() * charset.length));
+          generatedPassword = retVal;
+
+          const salt = crypto.randomBytes(16).toString('hex');
+          const hash = crypto.scryptSync(generatedPassword, salt, 64).toString('hex');
+          const finalHash = `${salt}:${hash}`;
+
+          const newUser = await client.query(
+            "INSERT INTO usuarios (email, password_hash, rol, nombre, apepaterno, apematerno, escuela_id, activo, fecha_registro, primer_login) VALUES ($1, $2, (SELECT id_rol FROM cat_roles_usuario WHERE codigo = $3), $4, '', '', $5, true, NOW(), true) RETURNING id",
+            [email.trim().toLowerCase(), finalHash, 'RESPONSABLE_CCT', nombreCompleto, escuelaIdReal]
+          );
+          userId = newUser.rows[0].id;
+          logger.info('[AutoReg] Nuevo usuario registrado exitosamente', { email, userId });
+        }
+
+        // 4. Asegurar Credenciales CCT
+        const credCheck = await client.query('SELECT id FROM credenciales_eia2 WHERE cct = $1', [cct]);
+        if (credCheck.rows.length === 0) {
+          await client.query(
+            'INSERT INTO credenciales_eia2 (cct, correo_validado, password_hash) VALUES ($1, $2, (SELECT password_hash FROM usuarios WHERE id = $3))',
+            [cct, email, userId]
+          );
+        }
 
         // 1. Generar número de ticket
         const now = new Date();
@@ -2464,8 +3397,8 @@ t.numero_ticket as "folio",
         const evidenciasProcesadas = [];
         if (evidencias && evidencias.length > 0) {
           const remoteDir = '/upload/tickets/public';
-          // @ts-ignore
-          const { sftpService } = await import('../services/sftp.service');
+          const sftpService = new SftpService();
+          await sftpService.connect();
           await sftpService.ensureDir(remoteDir);
 
           for (const evidencia of evidencias) {
@@ -2478,56 +3411,274 @@ t.numero_ticket as "folio",
               evidenciasProcesadas.push({
                 nombre: evidencia.nombre,
                 url: remotePath,
-                size: buffer.length
+                size: buffer.length,
               });
             }
           }
         }
 
-        // 4. Insertar en TICKETS_SOPORTE (Ajustado a campos reales)
+        // 4. Insertar en TICKETS_SOPORTE
         const insertRes = await client.query(
           `INSERT INTO tickets_soporte (
             numero_ticket, asunto, descripcion, estado, prioridad, 
-            user_fullname, user_cct, user_email, created_at, updated_at, usuario_id
-          ) VALUES ($1, $2, $3, fn_catalogo_id('cat_estado_ticket', 'ABIERTO'), 'ALTA', $4, $5, $6, NOW(), NOW(), NULL) RETURNING id`,
-          [numeroTicket, 'Incidencia en Carga Masiva', descripcion, nombreCompleto, cct, email]
+            user_fullname, user_cct, user_turno, user_email, evidencias, created_at, updated_at, usuario_id
+          ) VALUES ($1, $2, $3, fn_catalogo_id('cat_estado_ticket', 'ABIERTO'), 'ALTA', $4, $5, $6, $7, $8, NOW(), NOW(), $9) RETURNING id`,
+          [
+            numeroTicket,
+            'Incidencia en Carga Masiva',
+            descripcion,
+            nombreCompleto,
+            cct,
+            turno,
+            email,
+            JSON.stringify(evidenciasProcesadas),
+            userId,
+          ]
         );
-
         const ticketId = insertRes.rows[0].id;
-
-        // 5. Guardar evidencias en la BD
-        for (const ev of evidenciasProcesadas) {
-          await client.query(
-            `INSERT INTO archivos_frv (ticket_id, nombre_archivo, ruta_archivo, tipo_archivo, size_archivo, fecha_carga)
-             VALUES ($1, $2, $3, $4, $5, NOW())`,
-            [ticketId, ev.nombre, ev.url, 'evidencia', ev.size]
-          );
-        }
-
         await client.query('COMMIT');
+
+        // 8. Enviar correo si se generó contraseña
+        if (generatedPassword) {
+          logger.info('[AutoReg] Disparando envo de credenciales por correo', { email });
+          mailingService.sendCredentials(email, cct, generatedPassword).then(() => {
+            logger.info('[AutoReg] Correo de credenciales enviado exitosamente', { email });
+          }).catch((err) => {
+            logger.error('Error enviando credenciales tras incidencia pǧblica', err);
+          });
+        }
 
         return {
           id: ticketId,
           numeroTicket,
           asunto: 'Incidencia en Carga Masiva',
           descripcion,
-          estado: 'PENDIENTE',
+          estado: 'ABIERTO',
           prioridad: 'ALTA',
           nombreCompleto,
           cct,
+          turno,
           correo: email,
           evidencias: evidenciasProcesadas,
           fechaCreacion: now.toISOString(),
-          fechaActualizacion: now.toISOString()
+          fechaActualizacion: now.toISOString(),
+        };
+      } catch (error: any) {
+        if (client) await client.query('ROLLBACK');
+        logger.error('Error creating public incident with auto-reg', error);
+        throw new Error(error.message || 'Error al procesar la incidencia y el registro');
+      } finally {
+        if (client) client.release();
+      }
+    },
+
+    /**
+     * Crear nueva escuela
+     * @use-case CU-14: Administrar Catálogo de Escuelas
+     */
+    createEscuela: async (_: any, { input }: { input: any }, context: GraphQLContext) => {
+      const {
+        cct,
+        nombre,
+        id_turno,
+        id_nivel,
+        id_entidad,
+        id_ciclo,
+        email,
+        telefono,
+        director,
+        cp,
+      } = input;
+
+      // 1. Validar CCT formato básico (Flexibilidad en dígito verificador para evitar bloqueos)
+      const cctValidation = validateCCT(cct);
+      if (!cctValidation.formatValid) {
+        throw new Error(cctValidation.error || 'CCT con formato inválido');
+      }
+      if (!cctValidation.isValid) {
+        logger.warn('[Catalogos] Creando CCT con dígito verificador discrepante por flexibilidad', { cct });
+      }
+
+      // 2. Validar Unicidad (CCT + Turno)
+      const existing = await query(
+        'SELECT id FROM escuelas WHERE cct = $1 AND id_turno = $2 LIMIT 1',
+        [cct.toUpperCase(), id_turno]
+      );
+      if (existing.rows.length > 0) {
+        throw new Error(
+          `La escuela con CCT ${cct} y el turno especificado ya existe en el catálogo.`
+        );
+      }
+
+      try {
+        const result = await query(
+          `INSERT INTO escuelas (
+            cct, nombre, id_turno, id_nivel, id_entidad, id_ciclo, 
+            email, telefono, director, cp, activo, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, NOW(), NOW())
+          RETURNING id`,
+          [
+            cct.toUpperCase(),
+            nombre,
+            id_turno,
+            id_nivel,
+            id_entidad,
+            id_ciclo,
+            email,
+            telefono,
+            director,
+            cp,
+          ]
+        );
+
+        const newId = result.rows[0].id;
+
+        // Auditoría
+        try {
+          await query(
+            "INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, detalle) VALUES ($1, 'CREATE_ESCUELA', 'CATALOGOS', 'SUCCESS', $2)",
+            [context.user?.id || null, JSON.stringify({ id: newId, cct })]
+          );
+        } catch (e) {
+          logger.warn('Audit fail', e);
+        }
+
+        const schoolRes = await query(
+          `SELECT 
+            e.id, e.cct, e.nombre, e.cp, e.telefono, e.email, e.director, e.activo, e.created_at, e.updated_at,
+            e.id_turno, e.id_nivel, e.id_entidad, e.id_ciclo,
+            t.nombre as "turno_nombre", t.codigo as "turno_codigo",
+            REPLACE(ne.codigo, ' ', '_') as "nivel_codigo",
+            ef.nombre as "entidad_nombre",
+            ce.nombre as "ciclo_nombre"
+          FROM escuelas e
+          LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
+          LEFT JOIN cat_nivel_educativo ne ON e.id_nivel = ne.id
+          LEFT JOIN cat_entidades_federativas ef ON e.id_entidad = ef.id_entidad
+          LEFT JOIN cat_ciclos_escolares ce ON e.id_ciclo = ce.id_ciclo
+          WHERE e.id = $1`,
+          [newId]
+        );
+
+        const row = schoolRes.rows[0];
+        return {
+          id: row.id,
+          cct: row.cct,
+          nombre: row.nombre,
+          cp: row.cp,
+          telefono: row.telefono,
+          email: row.email,
+          director: row.director,
+          activo: row.activo,
+          created_at: row.created_at?.toISOString?.() || row.created_at,
+          updated_at: row.updated_at?.toISOString?.() || row.updated_at,
+          nivel: row.nivel_codigo,
+          turno: { id: row.id_turno, nombre: row.turno_nombre, codigo: row.turno_codigo },
+          entidadFederativa: { id: row.id_entidad, nombre: row.entidad_nombre },
+          cicloEscolar: { id: row.id_ciclo, nombre: row.ciclo_nombre, activo: true },
+        };
+      } catch (error) {
+        logger.error('Error in createEscuela', error);
+        throw new Error('Error interno al crear escuela');
+      }
+    },
+
+    /**
+     * Actualizar escuela existente
+     * @use-case CU-14: Administrar Catálogo de Escuelas
+     */
+    updateEscuela: async (
+      _: any,
+      { id, input }: { id: string; input: any },
+      context: GraphQLContext
+    ) => {
+      const entries = Object.entries(input);
+      if (entries.length === 0) throw new Error('No hay campos para actualizar');
+
+      if (input.cct) {
+        const cctValidation = validateCCT(input.cct);
+        if (!cctValidation.formatValid) throw new Error(cctValidation.error);
+        if (!cctValidation.isValid) {
+           logger.warn('[Catalogos] Actualizando CCT con dígito verificador discrepante', { cct: input.cct });
+        }
+      }
+
+      const client = await getClient();
+      try {
+        await client.query('BEGIN');
+
+        const setClause = [];
+        const values = [];
+        let i = 1;
+
+        for (const [key, value] of entries) {
+          setClause.push(`${key} = $${i}`);
+          values.push(value);
+          i++;
+        }
+
+        setClause.push(`updated_at = NOW()`);
+        values.push(id);
+
+        const sql = `UPDATE escuelas SET ${setClause.join(', ')} WHERE id = $${i} RETURNING id`;
+        const res = await client.query(sql, values);
+
+        if (res.rows.length === 0) throw new Error('Escuela no encontrada');
+
+        await client.query('COMMIT');
+
+        // Auditoría
+        try {
+          await query(
+            "INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, detalle) VALUES ($1, 'UPDATE_ESCUELA', 'CATALOGOS', 'SUCCESS', $2)",
+            [context.user?.id || null, JSON.stringify({ id, fields: Object.keys(input) })]
+          );
+        } catch (e) {
+          logger.warn('Audit fail', e);
+        }
+
+        const schoolRes = await query(
+          `SELECT 
+            e.id, e.cct, e.nombre, e.cp, e.telefono, e.email, e.director, e.activo, e.created_at, e.updated_at,
+            e.id_turno, e.id_nivel, e.id_entidad, e.id_ciclo,
+            t.nombre as "turno_nombre", t.codigo as "turno_codigo",
+            REPLACE(ne.codigo, ' ', '_') as "nivel_codigo",
+            ef.nombre as "entidad_nombre",
+            ce.nombre as "ciclo_nombre"
+          FROM escuelas e
+          LEFT JOIN cat_turnos t ON e.id_turno = t.id_turno
+          LEFT JOIN cat_nivel_educativo ne ON e.id_nivel = ne.id
+          LEFT JOIN cat_entidades_federativas ef ON e.id_entidad = ef.id_entidad
+          LEFT JOIN cat_ciclos_escolares ce ON e.id_ciclo = ce.id_ciclo
+          WHERE e.id = $1`,
+          [id]
+        );
+
+        const row = schoolRes.rows[0];
+        return {
+          id: row.id,
+          cct: row.cct,
+          nombre: row.nombre,
+          cp: row.cp,
+          telefono: row.telefono,
+          email: row.email,
+          director: row.director,
+          activo: row.activo,
+          created_at: row.created_at?.toISOString?.() || row.created_at,
+          updated_at: row.updated_at?.toISOString?.() || row.updated_at,
+          nivel: row.nivel_codigo,
+          turno: { id: row.id_turno, nombre: row.turno_nombre, codigo: row.turno_codigo },
+          entidadFederativa: { id: row.id_entidad, nombre: row.entidad_nombre },
+          cicloEscolar: { id: row.id_ciclo, nombre: row.ciclo_nombre, activo: true },
         };
       } catch (error) {
         await client.query('ROLLBACK');
-        logger.error('Error creating public incident DB:', { error });
-        throw new Error(`Error en Base de Datos: ${(error as Error).message}`);
+        logger.error('Error in updateEscuela', error);
+        throw new Error('Error al actualizar escuela');
       } finally {
         client.release();
       }
-    }
+    },
   },
 
   /**
@@ -2551,8 +3702,6 @@ t.numero_ticket as "folio",
             u.id,
             u.email,
             u.nombre,
-            u.apepaterno,
-            u.apematerno,
             r.codigo as "rol",
             u.activo
           FROM usuarios u

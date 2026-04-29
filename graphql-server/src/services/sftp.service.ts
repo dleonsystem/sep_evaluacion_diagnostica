@@ -29,8 +29,8 @@ export class SftpService {
     return {
       host: process.env.SFTP_HOST || 'localhost',
       port: parseInt(process.env.SFTP_PORT || '2222'),
-      username: process.env.SFTP_USER || 'user',
-      password: process.env.SFTP_PASSWORD || 'pass',
+      username: process.env.SFTP_USER,
+      password: process.env.SFTP_PASSWORD,
     };
   }
 
@@ -45,11 +45,23 @@ export class SftpService {
     }
     try {
       // Re-instanciar el cliente si hay problemas de estado
-      try { await this.client.end(); } catch (e) {}
+      try {
+        await this.client.end();
+      } catch (e) {
+        // Ignored: failure to end an already disconnected or unstable client is expected
+      }
+      const config = this.getConfig();
+      if (!config.username || !config.password) {
+        logger.error(
+          'SFTP Connection Blocked: Missing SFTP_USER or SFTP_PASSWORD environment variables.'
+        );
+        return false;
+      }
+
       this.client = new Client();
       this.setupListeners();
-      
-      await this.client.connect(this.getConfig());
+
+      await this.client.connect(config);
       this.isConnected = true;
       const cwd = await this.client.realPath('.');
       logger.info(`SFTP Connected. CWD: ${cwd}`);
@@ -90,7 +102,11 @@ export class SftpService {
       logger.info(`Buffer uploaded to SFTP: ${cleanPath}`);
       return true;
     } catch (err: any) {
-      logger.error('SFTP Buffer Upload Failed', { remotePath, error: err.message, stack: err.stack });
+      logger.error('SFTP Buffer Upload Failed', {
+        remotePath,
+        error: err.message,
+        stack: err.stack,
+      });
       this.isConnected = false;
       return false;
     }
@@ -102,10 +118,10 @@ export class SftpService {
         const connected = await this.connect();
         if (!connected) return false;
       }
-      
+
       // Limpiamos la ruta inicial para evitar problemas con la raíz restringida
       const cleanDir = remoteDir.startsWith('/') ? remoteDir.substring(1) : remoteDir;
-      
+
       logger.info(`Ensuring SFTP directory: ${cleanDir}`);
       await this.client.mkdir(cleanDir, true);
       logger.info(`SFTP directory ensured: ${cleanDir}`);
@@ -143,7 +159,7 @@ export class SftpService {
         if (!connected) return null;
       }
       const cleanPath = remotePath.startsWith('/') ? remotePath.substring(1) : remotePath;
-      const buffer = await this.client.get(cleanPath) as Buffer;
+      const buffer = (await this.client.get(cleanPath)) as Buffer;
       return buffer;
     } catch (err: any) {
       logger.error('SFTP Buffer Download Failed', { remotePath, error: err.message });

@@ -9,8 +9,11 @@
 }
 
 .admin-panel__card {
-  background: white;
+  background: #e6e6c8;
+  background: linear-gradient(180deg,rgba(230, 230, 200, 1) 0%, rgba(225, 211, 151, 0.34) 0%, rgba(225, 219, 250, 0.17) 39%, rgba(199, 201, 89, 0.5) 67%, rgba(173, 39, 16, 0.13) 100%);
   border: 1px solid #e2e8f0;
+  -webkit-box-shadow: 5px 5px 15px 5px #000000;
+  box-shadow: 5px 5px 15px 5px #000000;
   border-radius: 16px;
   padding: 3rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
@@ -34,7 +37,7 @@
   margin-bottom: 1rem;
   border: 2px solid #cbd5e1;
   border-radius: 8px;
-  font-size: 1.15rem;
+  font-size: 2.15rem;
   /* Aumentado */
   outline: none;
   transition: border-color 0.2s;
@@ -49,13 +52,13 @@
   font-weight: 700;
   margin-bottom: 0.5rem;
   color: var(--color-secondary-verde);
-  font-size: 1.25rem;
+  font-size: 2.25rem;
   /* Aumentado */
 }
 
 .admin-panel__helper {
   color: var(--color-text-muted);
-  font-size: 1.1rem;
+  font-size: 2.1rem;
   /* Aumentado */
   margin-bottom: 1.5rem;
 }
@@ -160,7 +163,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 2.5rem;
   flex-shrink: 0;
 }
 
@@ -172,7 +175,7 @@
 
 .admin-panel__status-label {
   font-weight: 800;
-  font-size: 0.85rem;
+  font-size: 1.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   opacity: 0.8;
@@ -180,7 +183,7 @@
 
 .admin-panel__status-message {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 2.5rem;
   font-weight: 600;
 }
 
@@ -192,7 +195,7 @@
 }
 
 .admin-panel__history-title {
-  font-size: 1.25rem;
+  font-size: 2.25rem;
   color: #1e293b;
   margin-bottom: 1.5rem;
   display: flex;
@@ -236,7 +239,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: 2.4rem;
   flex-shrink: 0;
 
   &.icon-pdf {
@@ -274,13 +277,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 1.05rem;
+  font-size: 2rem;
 }
 
 .admin-panel__history-meta {
   display: flex;
   gap: 1rem;
-  font-size: 0.85rem;
+  font-size: 1.5rem;
   color: #64748b;
   font-weight: 500;
 
@@ -330,7 +333,7 @@
 }
 
 .admin-panel__filters-label {
-  font-size: 0.95rem !important;
+  font-size: 1.95rem !important;
   /* Aumentado */
   font-weight: 800 !important;
   color: #64748b !important;
@@ -346,7 +349,7 @@
   border: 2px solid #cbd5e1 !important;
   border-radius: 8px !important;
   padding: 0 1rem !important;
-  font-size: 1.1rem !important;
+  font-size: 2.1rem !important;
   /* Aumentado */
   width: 100% !important;
   color: #1e293b !important;
@@ -372,7 +375,7 @@
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 1.1rem;
+  font-size: 1.5rem;
   /* Aumentado */
 }
 
@@ -381,7 +384,7 @@
   color: #475569;
   font-weight: 800;
   /* Reafirmado */
-  font-size: 1.15rem;
+  font-size: 2rem;
   /* Agregado */
   padding: 1.25rem 1rem;
   border-bottom: 2px solid #e2e8f0;
@@ -544,7 +547,7 @@
   justify-content: center !important;
   padding: 0.4rem 1rem !important;
   border-radius: 50px !important;
-  font-size: 0.95rem !important;
+  font-size: 1.5rem !important;
   /* Aumentado */
   font-weight: 800 !important;
   white-space: nowrap !important;
@@ -566,6 +569,18 @@
   color: #166534 !important;
 }
 
+/* Status as text (not button-like) */
+.admin-panel__status-text {
+  font-weight: 500;
+  font-size: 2.05rem;
+  padding: 0.4rem 0;
+  display: inline-block;
+}
+
+.admin-panel__status-text--pending {
+  color: #991b1b;
+}
+
 /* Expanded Row Details */
 .admin-panel__expanded-content {
   background: #f8fafc;
@@ -573,7 +588,7 @@
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   margin: 0.5rem 0;
-  font-size: 1.1rem;
+  font-size: 2rem;
   /* Aumentado */
 }
 
@@ -666,51 +681,9 @@
   border-top: 2px solid #f1f5f9;
 }
 
-/* --- Soporte Tabs --- */
-.admin-panel__tabs {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  border-bottom: 2px solid #e2e8f0;
-  padding-bottom: 0.5rem;
-}
 
-.admin-panel__tab-btn {
-  background: none;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #64748b;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
-  border-radius: 8px 8px 0 0;
-  position: relative;
-
-  &:hover {
-    color: var(--color-primary-guinda);
-    background: rgba(157, 36, 73, 0.05);
-  }
-
-  &--active {
-    color: var(--color-primary-guinda);
-    
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: -0.6rem;
-      left: 0;
-      width: 100%;
-      height: 4px;
-      background: var(--color-primary-guinda);
-      border-radius: 2px;
-    }
-  }
-
-  i {
-    font-size: 1.2rem;
-  }
-}
+/* Estilos para globo de chat en el admin panel */
+.admin-panel__ticket-respuesta { padding: 12px; margin-bottom: 12px; border-radius: 8px; border: 1px solid #e0e0e0; background: #fafafa; }
+.admin-panel__respuesta-autor { font-weight: bold; display: block; margin-bottom: 6px; }
+.admin-panel__respuesta-autor.admin { color: #d32f2f; }
+.admin-panel__respuesta-autor.user { color: #1976d2; }

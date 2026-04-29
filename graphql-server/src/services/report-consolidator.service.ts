@@ -1,6 +1,6 @@
 /**
  * Report Consolidator Service
- * 
+ *
  * @module services/report-consolidator
  * @description Servicio para detectar y consolidar los reportes generados de una escuela.
  * @version 1.0.0
@@ -16,13 +16,12 @@ import path from 'path';
 import fs from 'fs/promises';
 import { existsSync } from 'fs';
 import { exec } from 'child_process';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const baseDir = process.cwd();
+const SOLICITUD_ESTADO_VALIDO_SQL = "fn_catalogo_id('cat_estado_validacion_eia2', 'VALIDO')";
 
 export class ReportConsolidatorService {
-  private baseStoragePath = path.resolve(__dirname, '../../storage/results');
+  private baseStoragePath = path.resolve(baseDir, 'storage/results');
   private rawPath = path.join(this.baseStoragePath, 'raw');
   private packagesPath = path.join(this.baseStoragePath, 'packages');
   private zipBinary = 'C:\\Program Files\\7-Zip\\7z.exe';
@@ -30,7 +29,7 @@ export class ReportConsolidatorService {
   private mailingService: MailingService;
 
   constructor() {
-    this.ensureDirectories();
+    void this.ensureDirectories();
     this.mailingService = new MailingService();
   }
 
@@ -57,7 +56,7 @@ export class ReportConsolidatorService {
         `res_esc_hyc_${cct}.pdf`,
         `res_esc_len_${cct}.pdf`,
         `res_esc_spc_${cct}.pdf`,
-        `res_est_f5_${cct}.pdf`
+        `res_est_f5_${cct}.pdf`,
       ];
 
       const foundFiles = [];
@@ -80,13 +79,16 @@ export class ReportConsolidatorService {
       const packagePath = path.join(this.packagesPath, packageName);
 
       // Comando: 7z a [package] [files...]
-      const filesArgs = foundFiles.map(f => `"${path.join(this.rawPath, f)}"`).join(' ');
+      const filesArgs = foundFiles.map((f) => `"${path.join(this.rawPath, f)}"`).join(' ');
       const command = `"${this.zipBinary}" a "${packagePath}" ${filesArgs}`;
 
       await new Promise((resolve) => {
         exec(command, (error, stdout) => {
           if (error) {
-            logger.warn('7-Zip failed or not found, falling back to basic metadata registry', error);
+            logger.warn(
+              '7-Zip failed or not found, falling back to basic metadata registry',
+              error
+            );
             // In a real environment without 7z we'd use a Node library here.
             // For now, let's treat the existence of files as enough for Phase 1 simulation.
             resolve(false);
@@ -98,10 +100,10 @@ export class ReportConsolidatorService {
       });
 
       // 3. Registrar resultados en la base de datos
-      const resultsMetadata = foundFiles.map(f => ({
+      const resultsMetadata = foundFiles.map((f) => ({
         nombre: f,
         url: `storage/results/raw/${f}`,
-        tipo: 'RESULT_PDF'
+        tipo: 'RESULT_PDF',
       }));
 
       // Si se creó el paquete 7z, lo agregamos
@@ -109,12 +111,12 @@ export class ReportConsolidatorService {
         resultsMetadata.push({
           nombre: packageName,
           url: `storage/results/packages/${packageName}`,
-          tipo: 'PACKAGE_7Z'
+          tipo: 'PACKAGE_7Z',
         });
       }
 
       await query(
-        'UPDATE solicitudes_eia2 SET resultados = $1, estado_validacion = 2, updated_at = NOW() WHERE id = $2',
+        `UPDATE solicitudes_eia2 SET resultados = $1, estado_validacion = ${SOLICITUD_ESTADO_VALIDO_SQL}, updated_at = NOW() WHERE id = $2`,
         [JSON.stringify(resultsMetadata), solicitudId]
       );
 
@@ -130,10 +132,9 @@ export class ReportConsolidatorService {
       }
 
       // 5. Notificar al usuario (RF-12.1)
-      const userRes = await query(
-        'SELECT email FROM solicitudes_eia2 WHERE id = $1',
-        [solicitudId]
-      );
+      const userRes = await query('SELECT email FROM solicitudes_eia2 WHERE id = $1', [
+        solicitudId,
+      ]);
       if (userRes.rows.length > 0) {
         const email = userRes.rows[0].email;
         await this.mailingService.sendResultsNotification(email, cct, solicitudId);
@@ -141,7 +142,6 @@ export class ReportConsolidatorService {
 
       logger.info(`Consolidation and notification complete for CCT: ${cct}`);
       return true;
-
     } catch (err) {
       logger.error('Error during report consolidation', err);
       return false;
@@ -163,7 +163,7 @@ export class ReportConsolidatorService {
         `res_esc_hyc_${cct}.pdf`,
         `res_esc_len_${cct}.pdf`,
         `res_esc_spc_${cct}.pdf`,
-        `res_est_f5_${cct}.pdf`
+        `res_est_f5_${cct}.pdf`,
       ];
 
       for (const f of dummyFiles) {

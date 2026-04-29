@@ -30,7 +30,8 @@ function ensurePdfFonts(): void {
       bolditalics: path.join(fontsBasePath, 'Roboto-MediumItalic.ttf'),
     },
   });
-  pdfmakeInstance.setUrlAccessPolicy(() => false);
+  // El método setUrlAccessPolicy no está disponible en la versión de Node de pdfmake ^0.3.x
+  // pdfmakeInstance.setUrlAccessPolicy(() => false);
 
   fontsConfigured = true;
 }
@@ -66,9 +67,7 @@ export class ComprobantePdfService {
       },
       content: [
         {
-          canvas: [
-            { type: 'rect', x: 0, y: 0, w: 515, h: 42, color: '#611232' },
-          ],
+          canvas: [{ type: 'rect', x: 0, y: 0, w: 515, h: 42, color: '#611232' }],
           margin: [0, 0, 0, 14],
         },
         {
@@ -85,7 +84,7 @@ export class ComprobantePdfService {
           absolutePosition: { x: 48, y: 68 },
         },
         {
-          text: 'Este documento certifica la recepcion del archivo en la plataforma SiCRER.',
+          text: 'Este documento certifica la recepcion del archivo en la plataforma SiRVER.',
           margin: [0, 26, 0, 18],
           lineHeight: 1.3,
         },
@@ -103,7 +102,11 @@ export class ComprobantePdfService {
             ],
           },
           layout: {
-            fillColor: (rowIndex: number, _node: { table: { body: unknown[][] } }, columnIndex: number) => {
+            fillColor: (
+              rowIndex: number,
+              _node: { table: { body: unknown[][] } },
+              columnIndex: number
+            ) => {
               if (columnIndex === 0) {
                 return '#f6eddc';
               }
@@ -163,7 +166,7 @@ export class ComprobantePdfService {
     }
 
     return new Intl.DateTimeFormat('es-MX', {
-      dateStyle: 'medium',
+      dateStyle: 'long',
       timeStyle: 'short',
       timeZone: 'America/Mexico_City',
     }).format(fecha);

@@ -10,6 +10,12 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 SET search_path TO public;
 
+-- =====================================================================
+-- SEQUENCES
+-- =====================================================================
+
+CREATE SEQUENCE IF NOT EXISTS seq_numero_ticket START WITH 1000;
+
 
 -- =====================================================================
 -- ENUM CATALOG MIRRORS (ENUM types replaced by catalog FKs)
@@ -150,6 +156,48 @@ SELECT val,
 FROM unnest(ARRAY['ENS','HYC','LEN','SPC','F5']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
+CREATE TABLE cat_niveles_integracion (
+    id_nia              SERIAL PRIMARY KEY,
+    clave               VARCHAR(2) NOT NULL UNIQUE,     -- ED, EP, ES, SO
+    nombre              VARCHAR(50) NOT NULL,
+    descripcion         TEXT NOT NULL,
+    rango_min           INT NOT NULL CHECK (rango_min >= 0 AND rango_min <= 3),
+    rango_max           INT NOT NULL CHECK (rango_max >= 0 AND rango_max <= 3),
+    color_hex           VARCHAR(7),
+    orden_visual        INT NOT NULL,
+    vigente             BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ck_rango_valido CHECK (rango_min <= rango_max)
+);
+
+INSERT INTO cat_niveles_integracion (clave, nombre, descripcion, rango_min, rango_max, color_hex, orden_visual) 
+VALUES
+    ('ED', 'En Desarrollo', 'Requiere apoyo adicional significativo', 0, 0, '#DC3545', 1),
+    ('EP', 'En Proceso', 'Muestra avances, requiere refuerzo', 1, 1, '#FFC107', 2),
+    ('ES', 'Esperado', 'Cumple con los aprendizajes esperados', 2, 2, '#28A745', 3),
+    ('SO', 'Sobresaliente', 'Supera los aprendizajes esperados', 3, 3, '#007BFF', 4)
+ON CONFLICT (clave) DO NOTHING;
+
+CREATE TABLE cat_campos_formativos (
+    id              SERIAL PRIMARY KEY,
+    clave           VARCHAR(10) NOT NULL UNIQUE,     -- ENS, HYC, LEN, SPC, F5
+    nombre          VARCHAR(100) NOT NULL,
+    descripcion     TEXT,
+    orden_visual    INT NOT NULL,
+    vigente         BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO cat_campos_formativos (clave, nombre, descripcion, orden_visual) 
+VALUES
+    ('ENS', 'Enseñanza', 'Español y Matemáticas', 1),
+    ('HYC', 'Historia y Civismo', 'Ética, Naturaleza y Sociedades', 2),
+    ('LEN', 'Lenguaje y Comunicación', 'Lenguajes', 3),
+    ('SPC', 'Saberes y Pensamiento Científico', 'Saberes y Pensamiento Científico', 4),
+    ('F5', 'Formato 5', 'Reporte individual consolidado', 5)
+ON CONFLICT (clave) DO NOTHING;
+
 CREATE TABLE cat_tipo_notificacion (
 	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	codigo VARCHAR(50) NOT NULL UNIQUE,
@@ -240,6 +288,55 @@ SELECT val,
 FROM unnest(ARRAY['ABIERTO','EN_PROCESO','RESUELTO','CERRADO']::TEXT[]) WITH ORDINALITY AS t(val, ord)
 ON CONFLICT (codigo) DO NOTHING;
 
+CREATE TABLE cat_estado_archivo_ticket (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_estado_archivo_ticket (codigo, descripcion, orden)
+SELECT val,
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
+	   ord
+FROM unnest(ARRAY['ACTIVO','ELIMINADO','CORRUPTO','EN_CUARENTENA']::TEXT[]) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+CREATE TABLE cat_prioridad_ticket (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_prioridad_ticket (codigo, descripcion, orden)
+SELECT val,
+	INITCAP(REPLACE(LOWER(val::TEXT), '_', ' ')),
+	   ord
+FROM unnest(ARRAY['BAJA','MEDIA','ALTA','CRITICA']::TEXT[]) WITH ORDINALITY AS t(val, ord)
+ON CONFLICT (codigo) DO NOTHING;
+
+CREATE TABLE cat_motivos_ticket (
+	id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	codigo VARCHAR(50) NOT NULL UNIQUE,
+	descripcion VARCHAR(200),
+	orden SMALLINT NOT NULL,
+	activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_motivos_ticket (codigo, descripcion, orden) VALUES
+('ENV_RFV_INCOMPLETO', 'Envié un RFV incompleto', 1),
+('RES_NO_APARECEN', 'Mis resultados no aparecen / no he recibido mis resultados', 2),
+('INCONS_RESULTADOS', 'Inconsistencias en mis resultados', 3),
+('PROB_INTERPR_COMP', 'Problemas para interpretar el comparativo', 4),
+('NO_DESC_REPORTE', 'No puedo descargar mi reporte de resultados', 5),
+('NO_ABRIR_ARCHIVO', 'No puedo abrir el archivo de descarga', 6),
+('DUDA_COMPATIBILIDAD', 'Dudas sobre compatibilidad del sistema', 7),
+('FRV_INCORRECTO', 'Mi formato FRV es incorrecto', 8)
+ON CONFLICT (codigo) DO NOTHING;
+
 -- Helper para obtener IDs de catálogos por código canónico
 CREATE OR REPLACE FUNCTION fn_catalogo_id(p_catalogo TEXT, p_codigo TEXT)
 RETURNS SMALLINT
@@ -287,13 +384,7 @@ CREATE TABLE cat_entidades_federativas (
 	region       VARCHAR(50)
 );
 
-CREATE TABLE cat_niveles_educativos (
-	id_nivel    INT PRIMARY KEY,
-	nombre      VARCHAR(50) NOT NULL,
-	codigo      VARCHAR(10) NOT NULL UNIQUE,
-	descripcion VARCHAR(200),
-	orden       INT
-);
+-- cat_niveles_educativos eliminado: consolidado en cat_nivel_educativo
 
 CREATE TABLE cat_turnos (
 	id_turno    INT PRIMARY KEY,
@@ -325,6 +416,7 @@ CREATE TABLE materias (
 	codigo            VARCHAR(10) NOT NULL UNIQUE,
 	nombre            VARCHAR(100) NOT NULL,
 	nivel_educativo   SMALLINT NOT NULL REFERENCES cat_nivel_educativo(id),
+	id_campo_formativo INT REFERENCES cat_campos_formativos(id),
 	orden             INT,
 	activa            BOOLEAN NOT NULL DEFAULT TRUE
 );
@@ -349,12 +441,20 @@ CREATE TABLE escuelas (
 	estado         VARCHAR(50),
 	cp             VARCHAR(10),
 	telefono       VARCHAR(15),
-	email          VARCHAR(100),
+	email          VARCHAR(255),
 	director       VARCHAR(150),
+	municipio      VARCHAR(100),
+	localidad      VARCHAR(100),
+	calle          VARCHAR(300),
+	num_exterior   VARCHAR(20),
+	entre_la_calle VARCHAR(300),
+	y_la_calle     VARCHAR(300),
+	calle_posterior VARCHAR(300),
+	colonia        VARCHAR(100),
 	fecha_registro TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
 	activo         BOOLEAN NOT NULL DEFAULT TRUE,
 	id_turno       INT NOT NULL REFERENCES cat_turnos(id_turno),
-	id_nivel       INT NOT NULL REFERENCES cat_niveles_educativos(id_nivel),
+	id_nivel       SMALLINT NOT NULL REFERENCES cat_nivel_educativo(id),
 	id_entidad     INT NOT NULL REFERENCES cat_entidades_federativas(id_entidad),
 	id_ciclo       INT NOT NULL REFERENCES cat_ciclos_escolares(id_ciclo),
 	created_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
@@ -390,12 +490,36 @@ CREATE TABLE estudiantes (
 	created_at       TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE niveles_integracion_estudiante (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_estudiante       UUID NOT NULL REFERENCES estudiantes(id) ON DELETE CASCADE,
+    id_campo_formativo  INT NOT NULL REFERENCES cat_campos_formativos(id),
+    id_periodo          UUID NOT NULL REFERENCES periodos_evaluacion(id),
+    id_nia              INT NOT NULL REFERENCES cat_niveles_integracion(id_nia),
+    valoracion_promedio NUMERIC(4,2) NOT NULL CHECK (valoracion_promedio >= 0 AND valoracion_promedio <= 3),
+    total_materias      INT NOT NULL CHECK (total_materias > 0),
+    materias_evaluadas  INT NOT NULL CHECK (materias_evaluadas > 0 AND materias_evaluadas <= total_materias),
+    calculado_en        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    calculado_por       VARCHAR(50) NOT NULL DEFAULT 'SISTEMA',
+    validado            BOOLEAN DEFAULT FALSE,
+    validado_por        UUID REFERENCES usuarios(id),
+    validado_en         TIMESTAMP,
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_estudiante_campo_periodo UNIQUE (id_estudiante, id_campo_formativo, id_periodo)
+);
+
+CREATE INDEX idx_nia_estudiante ON niveles_integracion_estudiante(id_estudiante);
+CREATE INDEX idx_nia_periodo ON niveles_integracion_estudiante(id_periodo);
+CREATE INDEX idx_nia_campo ON niveles_integracion_estudiante(id_campo_formativo);
+
 CREATE TABLE usuarios (
 	id                     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 	nombre                 VARCHAR(60) NOT NULL,
 	apepaterno             VARCHAR(60) NOT NULL,
 	apematerno             VARCHAR(60),
-	email                  VARCHAR(100) NOT NULL,
+	email                  VARCHAR(255) NOT NULL,
+	email_excel            VARCHAR(255),
 	password_hash          VARCHAR(255) NOT NULL,
 	rol                    INT NOT NULL REFERENCES cat_roles_usuario(id_rol),
 	escuela_id             UUID REFERENCES escuelas(id),
@@ -407,8 +531,20 @@ CREATE TABLE usuarios (
 	fecha_registro         TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	created_at             TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at             TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	primer_login           BOOLEAN DEFAULT TRUE,
+	intentos_fallidos      INT DEFAULT 0,
 	CONSTRAINT uq_usuarios_email UNIQUE (email)
 );
+
+-- Relación Muchos-a-Muchos entre Usuarios y CCTs (Centros de Trabajo)
+CREATE TABLE usuarios_centros_trabajo (
+	usuario_id        UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+	centro_trabajo_id UUID NOT NULL REFERENCES escuelas(id) ON DELETE CASCADE,
+	PRIMARY KEY (usuario_id, centro_trabajo_id)
+);
+
+CREATE INDEX idx_usuarios_ct_usuario ON usuarios_centros_trabajo(usuario_id);
+CREATE INDEX idx_usuarios_ct_centro ON usuarios_centros_trabajo(centro_trabajo_id);
 
 CREATE TABLE historico_passwords (
 	id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -546,7 +682,7 @@ CREATE TABLE archivos_temporales (
 CREATE TABLE credenciales_eia2 (
 	id                         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 	cct                        VARCHAR(10) NOT NULL UNIQUE,
-	correo_validado            VARCHAR(100) NOT NULL,
+	correo_validado            VARCHAR(255) NOT NULL,
 	password_hash              VARCHAR(255) NOT NULL,
 	primera_carga_valida_fecha TIMESTAMP WITHOUT TIME ZONE,
 	generado_en                TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
@@ -576,8 +712,12 @@ CREATE TABLE solicitudes_eia2 (
 	hash_archivo             VARCHAR(64),
 	usuario_id               UUID REFERENCES usuarios(id),
 	resultados               JSONB DEFAULT '[]'::JSONB,
+	detalles_error           JSONB,
+	equipo_asignado          INT,
+	distributed_at           TIMESTAMP WITHOUT TIME ZONE,
 	created_at               TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at               TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	id_turno                 INT REFERENCES cat_turnos(id_turno),
 	UNIQUE (consecutivo)
 );
 
@@ -626,7 +766,7 @@ CREATE TABLE plantillas_email (
 CREATE TABLE notificaciones_email (
 	id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 	usuario_id       UUID REFERENCES usuarios(id),
-	destinatario     VARCHAR(100) NOT NULL,
+	destinatario     VARCHAR(255) NOT NULL,
 	asunto           VARCHAR(200) NOT NULL,
 	cuerpo           TEXT NOT NULL,
 	tipo             SMALLINT NOT NULL REFERENCES cat_tipo_notificacion(id),
@@ -659,9 +799,28 @@ CREATE TABLE tickets_soporte (
 	resolucion     TEXT,
 	resuelto_en    TIMESTAMP WITHOUT TIME ZONE,
 	cerrado_en     TIMESTAMP WITHOUT TIME ZONE,
+	evidencias     JSONB DEFAULT '[]'::JSONB,
+	deleted_at     TIMESTAMP WITHOUT TIME ZONE,
+	user_fullname  VARCHAR(255),
+	user_cct       VARCHAR(20),
+	user_email     VARCHAR(150),
+	user_turno     VARCHAR(50),
 	created_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );
+
+-- Bitácora de trazabilidad de sincronización y consolidación (RF-15.5)
+CREATE TABLE bitacora_sincronizacion (
+	id           BIGSERIAL PRIMARY KEY,
+	solicitud_id UUID REFERENCES solicitudes_eia2(id) ON DELETE SET NULL,
+	cct          VARCHAR(10) NOT NULL,
+	archivos     TEXT,
+	estado       VARCHAR(50) NOT NULL,
+	created_at   TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_bit_sinc_sol_id ON bitacora_sincronizacion(solicitud_id);
+CREATE INDEX idx_bit_sinc_cct ON bitacora_sincronizacion(cct);
 
 CREATE TABLE comentarios_ticket (
 	id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -675,6 +834,33 @@ CREATE TABLE comentarios_ticket (
 	created_at         TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	updated_at         TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 	CONSTRAINT chk_comentario_longitud CHECK (char_length(trim(comentario)) BETWEEN 10 AND 5000)
+);
+
+CREATE TABLE archivos_tickets (
+	id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	numero_ticket  VARCHAR(20) NOT NULL REFERENCES tickets_soporte(numero_ticket) ON DELETE CASCADE,
+	nombre_archivo VARCHAR(255) NOT NULL,
+	tamanio        BIGINT NOT NULL,
+	extension      VARCHAR(20),
+	ruta           VARCHAR(500) NOT NULL,
+	estado         SMALLINT NOT NULL DEFAULT fn_catalogo_id('cat_estado_archivo_ticket','ACTIVO') REFERENCES cat_estado_archivo_ticket(id),
+	created_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	updated_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	CONSTRAINT chk_archivos_tickets_tamanio CHECK (tamanio > 0),
+	CONSTRAINT chk_archivos_tickets_extension CHECK (extension IS NULL OR extension ~ '^[A-Za-z0-9]{1,20}$')
+);
+
+CREATE TABLE preguntas_frecuentes (
+	id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	pregunta   TEXT NOT NULL,
+	respuesta  TEXT NOT NULL,
+	categoria  VARCHAR(100),
+	activo     BOOLEAN NOT NULL DEFAULT TRUE,
+	orden      INTEGER NOT NULL DEFAULT 0,
+	created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+	CONSTRAINT chk_preguntas_pregunta CHECK (char_length(trim(pregunta)) >= 10),
+	CONSTRAINT chk_preguntas_respuesta CHECK (char_length(trim(respuesta)) >= 20)
 );
 
 CREATE TABLE sesiones (
@@ -691,7 +877,7 @@ CREATE TABLE sesiones (
 CREATE TABLE intentos_login (
 	id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 	usuario_id      UUID REFERENCES usuarios(id),
-	email           VARCHAR(100) NOT NULL,
+	email           VARCHAR(255) NOT NULL,
 	ip_address      INET,
 	user_agent      TEXT,
 	exito           BOOLEAN NOT NULL,
@@ -708,8 +894,6 @@ CREATE TABLE evaluaciones (
 	periodo_id            UUID NOT NULL REFERENCES periodos_evaluacion(id),
 	archivo_frv_id        UUID REFERENCES archivos_frv(id),
 	valoracion            INT NOT NULL,
-	nivel_integracion     VARCHAR(20),
-	competencia_alcanzada BOOLEAN NOT NULL DEFAULT FALSE,
 	observaciones         TEXT,
 	registrado_por        UUID REFERENCES usuarios(id),
 	fecha_evaluacion      TIMESTAMP WITHOUT TIME ZONE,
@@ -1099,8 +1283,12 @@ CREATE INDEX idx_archivos_frv_escuela_ciclo ON archivos_frv(escuela_id, ciclo_es
 CREATE INDEX idx_reportes_escuela_ciclo ON reportes_generados(escuela_id, ciclo_escolar, periodo_id);
 CREATE INDEX idx_reportes_tipo_generado ON reportes_generados(tipo_reporte, generado_en DESC);
 CREATE INDEX idx_tickets_estado_prioridad ON tickets_soporte(estado, prioridad);
+CREATE INDEX idx_archivos_tickets_numero ON archivos_tickets(numero_ticket);
+CREATE INDEX idx_archivos_tickets_estado ON archivos_tickets(estado);
 CREATE INDEX idx_log_usuario_fecha ON log_actividades(id_usuario, fecha_hora);
 CREATE INDEX idx_notificaciones_estado ON notificaciones_email(estado, prioridad, created_at);
+CREATE INDEX idx_preguntas_frecuentes_categoria ON preguntas_frecuentes(categoria);
+CREATE INDEX idx_preguntas_frecuentes_activo_orden ON preguntas_frecuentes(activo, orden);
 
 -- Crear índice parcial para reintentos utilizando el ID del catálogo
 DO $$
@@ -1402,12 +1590,78 @@ CREATE TRIGGER trg_touch_tickets
 CREATE TRIGGER trg_touch_comentarios
 	BEFORE UPDATE ON comentarios_ticket
 	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
+CREATE TRIGGER trg_touch_archivos_tickets
+	BEFORE UPDATE ON archivos_tickets
+	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
 CREATE TRIGGER trg_touch_notificaciones
 	BEFORE UPDATE ON notificaciones_email
 	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
 CREATE TRIGGER trg_touch_evaluaciones
 	BEFORE UPDATE ON evaluaciones
 	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
+CREATE TRIGGER trg_touch_preguntas_frecuentes
+	BEFORE UPDATE ON preguntas_frecuentes
+	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
+CREATE TRIGGER trg_touch_nia
+	BEFORE UPDATE ON niveles_integracion_estudiante
+	FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
+
+-- =====================================================================
+-- NIA CALCULATION LOGIC
+-- =====================================================================
+
+CREATE OR REPLACE FUNCTION calcular_nia_estudiante()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_id_campo_formativo INT;
+    v_promedio NUMERIC(4,2);
+    v_id_nia INT;
+    v_total_materias INT;
+    v_materias_evaluadas INT;
+BEGIN
+    SELECT id_campo_formativo INTO v_id_campo_formativo
+    FROM MATERIAS WHERE id = NEW.materia_id;
+    
+    IF v_id_campo_formativo IS NULL THEN RETURN NEW; END IF;
+
+    SELECT AVG(e.valoracion)::NUMERIC(4,2), COUNT(DISTINCT m.id), COUNT(DISTINCT e.materia_id)
+    INTO v_promedio, v_total_materias, v_materias_evaluadas
+    FROM EVALUACIONES e
+    INNER JOIN MATERIAS m ON e.materia_id = m.id
+    WHERE e.estudiante_id = NEW.estudiante_id
+      AND e.periodo_id = NEW.periodo_id
+      AND m.id_campo_formativo = v_id_campo_formativo
+      AND e.validado = TRUE;
+    
+    IF v_materias_evaluadas > 0 THEN
+        SELECT id_nia INTO v_id_nia FROM CAT_NIVELES_INTEGRACION
+        WHERE v_promedio BETWEEN rango_min AND rango_max AND vigente = TRUE LIMIT 1;
+        
+        INSERT INTO NIVELES_INTEGRACION_ESTUDIANTE (
+            id_estudiante, id_campo_formativo, id_periodo, id_nia,
+            valoracion_promedio, total_materias, materias_evaluadas
+        )
+        VALUES (
+            NEW.estudiante_id, v_id_campo_formativo, NEW.periodo_id, v_id_nia,
+            v_promedio, v_total_materias, v_materias_evaluadas
+        )
+        ON CONFLICT (id_estudiante, id_campo_formativo, id_periodo)
+        DO UPDATE SET
+            id_nia = EXCLUDED.id_nia,
+            valoracion_promedio = EXCLUDED.valoracion_promedio,
+            total_materias = EXCLUDED.total_materias,
+            materias_evaluadas = EXCLUDED.materias_evaluadas,
+            calculado_en = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_calcular_nia_auto
+AFTER INSERT OR UPDATE OF valoracion, validado ON EVALUACIONES
+FOR EACH ROW WHEN (NEW.validado = TRUE)
+EXECUTE FUNCTION calcular_nia_estudiante();
 
 -- =====================================================================
 -- END OF SCRIPT

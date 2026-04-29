@@ -1,3 +1,4 @@
+import { describe, it, expect } from '@jest/globals';
 import * as XLSX from 'xlsx';
 import { parseExcelAssessmentBuffer } from '../../src/workers/excel-parser';
 
@@ -15,51 +16,11 @@ describe('parseExcelAssessmentBuffer', () => {
     XLSX.utils.book_append_sheet(workbook, escSheet, 'ESC');
 
     const data = [
-      [],
-      [],
-      [],
-      [],
-      [],
-      [],
-      [],
-      [],
-      [],
-      {
-        B: 1,
-        C: 'ADRIANA MANGUEN RODRIGUEZ',
-        D: 'M',
-        E: 'A',
-        F: 1,
-        G: 2,
-        H: 3,
-        I: 3,
-        J: 2,
-        K: 1,
-        L: 2,
-        M: 3,
-        N: 1,
-        O: 2,
-        P: 3,
-      },
-      {
-        B: 2,
-        C: 'BERNARDO RUIZ GONZALEZ',
-        D: 'H',
-        E: 'A',
-        F: 2,
-        G: 3,
-        H: 1,
-        I: 2,
-        J: 3,
-        K: 3,
-        L: 1,
-        M: 1,
-        N: 2,
-        O: 2,
-        P: 3,
-      },
+      [], [], [], [], [], [], [], [], [], // Filas 1-9 vacías
+      ['', 1, 'ADRIANA MANGUEN RODRIGUEZ', 'M', 'A', 1, 2, 3, 3, 2, 1, 2, 3, 1, 2, 3], // Fila 10
+      ['', 2, 'BERNARDO RUIZ GONZALEZ', 'H', 'A', 2, 3, 1, 2, 3, 3, 1, 1, 2, 2, 3], // Fila 11
     ];
-    const tercero = XLSX.utils.json_to_sheet(data, { skipHeader: true });
+    const tercero = XLSX.utils.aoa_to_sheet(data);
     tercero['!ref'] = 'A1:P12';
     XLSX.utils.book_append_sheet(workbook, tercero, 'TERCERO');
 
@@ -126,7 +87,8 @@ describe('parseExcelAssessmentBuffer', () => {
     XLSX.utils.book_append_sheet(workbook, tercero, 'TERCERO');
 
     const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
+    const result = parseExcelAssessmentBuffer(buffer);
 
-    expect(() => parseExcelAssessmentBuffer(buffer)).toThrow('el grupo debe ser una sola letra');
+    expect(result.erroresEstructurados?.some(e => e.error.includes('una sola letra'))).toBe(true);
   });
 });

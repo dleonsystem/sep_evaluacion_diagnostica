@@ -197,234 +197,433 @@ CREATE SCHEMA IF NOT EXISTS audit;
 CREATE TEXT SEARCH CONFIGURATION sep_spanish (COPY = spanish);
 ```
 
-#### Paso 2: Crear ENUM Types
+#### Paso 2: Crear Tablas de Catálogos de Estados y Tipos
+
+> **NOTA IMPORTANTE**: Este sistema utiliza **tablas de catálogo** en lugar de tipos ENUM de PostgreSQL para mayor flexibilidad y mantenibilidad. Los catálogos permiten agregar/modificar valores sin cambiar el esquema de la base de datos.
 
 ```sql
 -- ============================================================================
--- 2. TIPOS ENUMERADOS (ENUM)
+-- 2. CATÁLOGOS DE ESTADOS Y TIPOS (ENUM Mirrors)
 -- ============================================================================
+-- Los tipos ENUM fueron reemplazados por tablas de catálogo con estructura unificada:
+-- - id: SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY
+-- - codigo: VARCHAR(50) NOT NULL UNIQUE (valor canónico)
+-- - descripcion: VARCHAR(200) (texto legible)
+-- - orden: SMALLINT NOT NULL (para ordenamiento en UI)
+-- - activo: BOOLEAN NOT NULL DEFAULT TRUE (soft delete)
 
--- 2.1 Estados de solicitudes
-CREATE TYPE estado_solicitud AS ENUM (
-    'PENDIENTE',
-    'EN_VALIDACION',
-    'VALIDADO',
-    'RECHAZADO',
-    'PROCESADO',
-    'ERROR',
-    'CORREGIDO'
+-- 2.1 Catálogo de Niveles Educativos
+CREATE TABLE cat_nivel_educativo (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- 2.2 Estados de archivos
-CREATE TYPE estado_archivo AS ENUM (
-    'SUBIDO',
-    'EN_VALIDACION',
-    'VALIDADO',
-    'RECHAZADO',
-    'PROCESADO',
-    'ELIMINADO'
+INSERT INTO cat_nivel_educativo (codigo, descripcion, orden) VALUES
+    ('PREESCOLAR', 'Preescolar', 1),
+    ('PRIMARIA', 'Primaria', 2),
+    ('SECUNDARIA', 'Secundaria', 3),
+    ('TELESECUNDARIA', 'Telesecundaria', 4);
+
+-- 2.2 Catálogo de Estados de Archivo
+CREATE TABLE cat_estado_archivo (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- 2.3 Tipos de error de validación
-CREATE TYPE tipo_error_validacion AS ENUM (
-    'ERROR_ESTRUCTURA',
-    'ERROR_FORMATO',
-    'ERROR_RANGO',
-    'ERROR_OBLIGATORIO',
-    'ERROR_DUPLICADO',
-    'ERROR_REFERENCIA',
-    'ERROR_LOGICA',
-    'ADVERTENCIA'
+INSERT INTO cat_estado_archivo (codigo, descripcion, orden) VALUES
+    ('CARGADO', 'Cargado', 1),
+    ('VALIDADO', 'Validado', 2),
+    ('PROCESADO', 'Procesado', 3),
+    ('ERROR', 'Error', 4);
+
+-- 2.3 Catálogo de Estados de Archivo Temporal
+CREATE TABLE cat_estado_archivo_temporal (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- 2.4 Niveles de desempeño
-CREATE TYPE nivel_desempeno AS ENUM (
-    'INSUFICIENTE',
-    'ELEMENTAL',
-    'BUENO',
-    'EXCELENTE',
-    'NO_EVALUADO'
+INSERT INTO cat_estado_archivo_temporal (codigo, descripcion, orden) VALUES
+    ('PENDIENTE', 'Pendiente', 1),
+    ('PROCESANDO', 'Procesando', 2),
+    ('COMPLETADO', 'Completado', 3),
+    ('ERROR', 'Error', 4);
+
+-- 2.4 Catálogo de Tipos de Bloqueo
+CREATE TABLE cat_tipo_bloqueo (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- 2.5 Estados de tickets
-CREATE TYPE estado_ticket AS ENUM (
-    'ABIERTO',
-    'EN_ATENCION',
-    'PENDIENTE_USUARIO',
-    'RESUELTO',
-    'CERRADO',
-    'ESCALADO'
+INSERT INTO cat_tipo_bloqueo (codigo, descripcion, orden) VALUES
+    ('AUTOMATICO', 'Automático', 1),
+    ('MANUAL', 'Manual', 2),
+    ('PERMANENTE', 'Permanente', 3);
+
+-- 2.5 Catálogo de Estados de Tickets
+CREATE TABLE cat_estado_ticket (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- 2.6 Prioridades de tickets
-CREATE TYPE prioridad_ticket AS ENUM (
-    'BAJA',
-    'MEDIA',
-    'ALTA',
-    'URGENTE',
-    'CRITICA'
+INSERT INTO cat_estado_ticket (codigo, descripcion, orden) VALUES
+    ('ABIERTO', 'Abierto', 1),
+    ('EN_PROCESO', 'En Proceso', 2),
+    ('RESUELTO', 'Resuelto', 3),
+    ('CERRADO', 'Cerrado', 4);
+
+-- 2.6 Catálogo de Tipos de Reporte
+CREATE TABLE cat_tipo_reporte (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- 2.7 Tipos de reporte
-CREATE TYPE tipo_reporte AS ENUM (
-    'INDIVIDUAL',
-    'GRUPO',
-    'ESCUELA',
-    'CONSOLIDADO',
-    'COMPARATIVO'
+INSERT INTO cat_tipo_reporte (codigo, descripcion, orden) VALUES
+    ('ENS', 'Ensayo', 1),
+    ('HYC', 'Habilidades y Conocimientos', 2),
+    ('LEN', 'Lenguaje', 3),
+    ('SPC', 'Sesión de Pares Complementarios', 4),
+    ('F5', 'Formulario 5', 5);
+
+-- 2.7 Catálogo de Tipos de Notificación
+CREATE TABLE cat_tipo_notificacion (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- 2.8 Formato de reporte
-CREATE TYPE formato_reporte AS ENUM (
-    'PDF',
-    'EXCEL',
-    'CSV',
-    'JSON'
+INSERT INTO cat_tipo_notificacion (codigo, descripcion, orden) VALUES
+    ('RESULTADO_LISTO', 'Resultado Listo', 1),
+    ('TICKET_CREADO', 'Ticket Creado', 2),
+    ('TICKET_ACTUALIZADO', 'Ticket Actualizado', 3),
+    ('TICKET_RESUELTO', 'Ticket Resuelto', 4),
+    ('RECUPERACION_PASSWORD', 'Recuperación Password', 5),
+    ('CREDENCIALES_EIA2', 'Credenciales EIA2', 6),
+    ('EVALUACION_VALIDADA', 'Evaluación Validada', 7);
+
+-- 2.8 Catálogo de Estados de Notificación
+CREATE TABLE cat_estado_notificacion (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- 2.9 Estados de reportes
-CREATE TYPE estado_reporte AS ENUM (
-    'PENDIENTE',
-    'GENERANDO',
-    'GENERADO',
-    'ERROR',
-    'ENVIADO',
-    'DESCARGADO'
+INSERT INTO cat_estado_notificacion (codigo, descripcion, orden) VALUES
+    ('PENDIENTE', 'Pendiente', 1),
+    ('ENVIADO', 'Enviado', 2),
+    ('ERROR', 'Error', 3),
+    ('REINTENTANDO', 'Reintentando', 4);
+
+-- 2.9 Catálogo de Prioridades de Notificación
+CREATE TABLE cat_prioridad_notificacion (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- 2.10 Tipos de notificación
-CREATE TYPE tipo_notificacion AS ENUM (
-    'BIENVENIDA',
-    'CREDENCIALES',
-    'VALIDACION_OK',
-    'VALIDACION_ERROR',
-    'REPORTE_DISPONIBLE',
-    'PASSWORD_RESET',
-    'BLOQUEO_CUENTA',
-    'ADVERTENCIA_SISTEMA'
+INSERT INTO cat_prioridad_notificacion (codigo, descripcion, orden) VALUES
+    ('ALTA', 'Alta', 1),
+    ('MEDIA', 'Media', 2),
+    ('BAJA', 'Baja', 3);
+
+-- 2.10 Catálogo de Operaciones de Auditoría
+CREATE TABLE cat_operacion_auditoria (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- 2.11 Estados de credenciales EIA
-CREATE TYPE estado_credencial AS ENUM (
-    'PENDIENTE',
-    'APROBADA',
-    'RECHAZADA',
-    'EXPIRADA',
-    'BLOQUEADA'
+INSERT INTO cat_operacion_auditoria (codigo, descripcion, orden) VALUES
+    ('INSERT', 'Insertar', 1),
+    ('UPDATE', 'Actualizar', 2),
+    ('DELETE', 'Eliminar', 3);
+
+-- 2.11 Catálogo de Tipos de Configuración
+CREATE TABLE cat_tipo_configuracion (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- 2.12 Aplicaciones EIA
-CREATE TYPE aplicacion_eia AS ENUM (
-    'EIA_1',
-    'EIA_2'
+INSERT INTO cat_tipo_configuracion (codigo, descripcion, orden) VALUES
+    ('STRING', 'Cadena de Texto', 1),
+    ('INTEGER', 'Número Entero', 2),
+    ('BOOLEAN', 'Booleano', 3),
+    ('JSON', 'JSON', 4);
+
+-- 2.12 Catálogo de Origen de Cambio de Password
+CREATE TABLE cat_origen_cambio_password (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- 2.13 Severidad de logs
-CREATE TYPE severidad_log AS ENUM (
-    'DEBUG',
-    'INFO',
-    'WARNING',
-    'ERROR',
-    'CRITICAL'
+INSERT INTO cat_origen_cambio_password (codigo, descripcion, orden) VALUES
+    ('SISTEMA', 'Sistema', 1),
+    ('USUARIO', 'Usuario', 2),
+    ('ADMIN', 'Administrador', 3),
+    ('RECUPERACION', 'Recuperación', 4);
+
+-- 2.13 Catálogo de Estado de Validación EIA2
+CREATE TABLE cat_estado_validacion_eia2 (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
 );
+
+INSERT INTO cat_estado_validacion_eia2 (codigo, descripcion, orden) VALUES
+    ('VALIDO', 'Válido', 1),
+    ('INVALIDO', 'Inválido', 2);
+
+-- 2.14 Catálogo de Motivos de Fallo de Login
+CREATE TABLE cat_motivo_fallo_login (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_motivo_fallo_login (codigo, descripcion, orden) VALUES
+    ('USUARIO_INVALIDO', 'Usuario Inválido', 1),
+    ('PASSWORD_INCORRECTO', 'Password Incorrecto', 2),
+    ('CUENTA_BLOQUEADA', 'Cuenta Bloqueada', 3),
+    ('CUENTA_INACTIVA', 'Cuenta Inactiva', 4),
+    ('CUENTA_ELIMINADA', 'Cuenta Eliminada', 5),
+    ('PASSWORD_EXPIRADO', 'Password Expirado', 6);
+
+-- 2.15 Catálogo de Estados de Archivo de Ticket
+CREATE TABLE cat_estado_archivo_ticket (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_estado_archivo_ticket (codigo, descripcion, orden) VALUES
+    ('ACTIVO', 'Activo', 1),
+    ('ELIMINADO', 'Eliminado', 2),
+    ('CORRUPTO', 'Corrupto', 3),
+    ('EN_CUARENTENA', 'En Cuarentena', 4);
+
+-- 2.16 Catálogo de Referencias de Tipo de Notificación
+CREATE TABLE cat_referencia_tipo_notificacion (
+    id SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    descripcion VARCHAR(200),
+    orden SMALLINT NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+INSERT INTO cat_referencia_tipo_notificacion (codigo, descripcion, orden) VALUES
+    ('TICKET', 'Ticket', 1),
+    ('REPORTE', 'Reporte', 2),
+    ('USUARIO', 'Usuario', 3),
+    ('EVALUACION', 'Evaluación', 4),
+    ('CREDENCIAL', 'Credencial', 5);
+
+-- Función helper para obtener IDs de catálogos por código
+CREATE OR REPLACE FUNCTION fn_catalogo_id(p_catalogo TEXT, p_codigo TEXT)
+RETURNS SMALLINT
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    v_id SMALLINT;
+    v_query TEXT;
+BEGIN
+    -- Construir query dinámico para buscar en el catálogo especificado
+    v_query := format('SELECT id FROM %I WHERE codigo = $1', p_catalogo);
+    EXECUTE v_query INTO v_id USING p_codigo;
+    
+    IF v_id IS NULL THEN
+        RAISE EXCEPTION 'Código % no encontrado en catálogo %', p_codigo, p_catalogo;
+    END IF;
+    
+    RETURN v_id;
+END;
+$$;
+
+COMMENT ON FUNCTION fn_catalogo_id IS 'Obtiene el ID de un catálogo dado su nombre de tabla y código';
+
+-- Ejemplo de uso:
+-- SELECT fn_catalogo_id('cat_estado_archivo', 'VALIDADO'); -- retorna el ID del estado VALIDADO
 ```
 
-#### Paso 3: Crear Tablas de Catálogos (Datos Maestros)
+#### Paso 3: Crear Tablas de Catálogos de Datos Maestros SEP
 
 ```sql
 -- ============================================================================
--- 3. TABLAS DE CATÁLOGOS (DATOS MAESTROS)
+-- 3. CATÁLOGOS DE DATOS MAESTROS SEP
 -- ============================================================================
+-- Estos catálogos contienen información oficial de la SEP que cambia con poca
+-- frecuencia. Usan INT como PK para mantener consistencia con sistemas existentes.
 
 -- 3.1 Catálogo de Ciclos Escolares
-CREATE TABLE CAT_CICLOS_ESCOLARES (
-    id SERIAL PRIMARY KEY,
-    ciclo VARCHAR(9) NOT NULL UNIQUE,  -- Ej: '2024-2025'
+CREATE TABLE cat_ciclos_escolares (
+    id_ciclo INT PRIMARY KEY,
+    nombre VARCHAR(20) NOT NULL UNIQUE,  -- Ej: '2024-2025'
     fecha_inicio DATE NOT NULL,
     fecha_fin DATE NOT NULL,
-    activo BOOLEAN DEFAULT TRUE,
-    descripcion TEXT,
-    created_at TIMESTAMP DEFAULT NOW(),
+    activo BOOLEAN NOT NULL DEFAULT FALSE,  -- Solo un ciclo activo a la vez
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
     
-    CONSTRAINT chk_ciclo_formato CHECK (ciclo ~ '^\d{4}-\d{4}$'),
-    CONSTRAINT chk_ciclo_fechas CHECK (fecha_inicio < fecha_fin)
+    CONSTRAINT chk_cat_ciclos_fechas CHECK (fecha_fin > fecha_inicio)
 );
 
-COMMENT ON TABLE CAT_CICLOS_ESCOLARES IS 'Catálogo de ciclos escolares oficiales SEP';
-COMMENT ON COLUMN CAT_CICLOS_ESCOLARES.ciclo IS 'Formato: YYYY-YYYY (2024-2025)';
+COMMENT ON TABLE cat_ciclos_escolares IS 'Ciclos escolares oficiales SEP';
+COMMENT ON COLUMN cat_ciclos_escolares.nombre IS 'Formato: YYYY-YYYY (2024-2025)';
+COMMENT ON COLUMN cat_ciclos_escolares.activo IS 'Solo un ciclo puede estar activo';
 
 -- 3.2 Catálogo de Entidades Federativas
-CREATE TABLE CAT_ENTIDADES_FEDERATIVAS (
-    id SERIAL PRIMARY KEY,
-    clave CHAR(2) NOT NULL UNIQUE,  -- Clave oficial SEP
+CREATE TABLE cat_entidades_federativas (
+    id_entidad INT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
-    abreviatura VARCHAR(10),
-    region VARCHAR(50),  -- Norte, Sur, Centro, etc.
-    activo BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT NOW()
+    abreviatura VARCHAR(10) NOT NULL UNIQUE,
+    codigo_sep VARCHAR(5) NOT NULL UNIQUE,  -- Clave oficial SEP (2 dígitos)
+    region VARCHAR(50)  -- Norte, Sur, Centro-Norte, Centro-Sur
 );
 
-COMMENT ON TABLE CAT_ENTIDADES_FEDERATIVAS IS 'Catálogo oficial de entidades federativas de México';
+COMMENT ON TABLE cat_entidades_federativas IS 'Catálogo oficial de entidades federativas de México';
+COMMENT ON COLUMN cat_entidades_federativas.codigo_sep IS 'Clave SEP: 01-32';
 
 -- 3.3 Catálogo de Turnos Escolares
-CREATE TABLE CAT_TURNOS (
-    id SERIAL PRIMARY KEY,
+CREATE TABLE cat_turnos (
+    id_turno INT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL,
     codigo VARCHAR(10) NOT NULL UNIQUE,  -- 'MAT', 'VESP', 'NOCT', 'CONT'
-    nombre VARCHAR(50) NOT NULL,
-    descripcion TEXT,
-    activo BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT NOW()
+    descripcion VARCHAR(100)
 );
 
-COMMENT ON TABLE CAT_TURNOS IS 'Catálogo de turnos escolares (Matutino, Vespertino, Nocturno, Continuo)';
+COMMENT ON TABLE cat_turnos IS 'Catálogo de turnos escolares oficiales SEP';
 
--- 3.4 Catálogo de Niveles Educativos
-CREATE TABLE CAT_NIVELES_EDUCATIVOS (
-    id SERIAL PRIMARY KEY,
-    codigo VARCHAR(10) NOT NULL UNIQUE,  -- 'PRE', 'PRI', 'SEC'
-    nombre VARCHAR(50) NOT NULL,
-    descripcion TEXT,
-    orden INT NOT NULL,  -- Para ordenamiento
-    activo BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT NOW(),
+-- Datos de turnos estándar
+INSERT INTO cat_turnos (id_turno, nombre, codigo, descripcion) VALUES
+    (1, 'Matutino', 'MAT', 'Turno matutino (07:00 - 13:00)'),
+    (2, 'Vespertino', 'VESP', 'Turno vespertino (13:00 - 19:00)'),
+    (3, 'Nocturno', 'NOCT', 'Turno nocturno (19:00 - 22:00)'),
+    (4, 'Continuo', 'CONT', 'Turno continuo (jornada completa)')
+ON CONFLICT (id_turno) DO NOTHING;
+
+-- 3.4 Catálogo de Grados
+-- NOTA: Depende de cat_nivel_educativo creado en Paso 2
+CREATE TABLE cat_grados (
+    id_grado INT PRIMARY KEY,
+    nivel_educativo SMALLINT NOT NULL REFERENCES cat_nivel_educativo(id),
+    grado_numero INT NOT NULL,  -- 1, 2, 3, 4, 5, 6
+    grado_nombre VARCHAR(20) NOT NULL,  -- 'Primer Grado', 'Segundo Grado'
+    orden INT,  -- Para ordenamiento en UI
     
-    CONSTRAINT uq_niveles_orden UNIQUE (orden)
+    CONSTRAINT uq_cat_grados UNIQUE (nivel_educativo, grado_numero)
 );
 
-COMMENT ON TABLE CAT_NIVELES_EDUCATIVOS IS 'Catálogo de niveles educativos (Preescolar, Primaria, Secundaria)';
+COMMENT ON TABLE cat_grados IS 'Catálogo de grados escolares vinculados a niveles educativos';
+COMMENT ON COLUMN cat_grados.nivel_educativo IS 'FK a cat_nivel_educativo';
 
--- 3.5 Catálogo de Grados
-CREATE TABLE CAT_GRADOS (
-    id SERIAL PRIMARY KEY,
-    nivel_educativo_id INT NOT NULL REFERENCES CAT_NIVELES_EDUCATIVOS(id),
-    grado INT NOT NULL,  -- 1, 2, 3, 4, 5, 6
-    nombre VARCHAR(50) NOT NULL,  -- 'Primer Grado', 'Segundo Grado'
-    abreviatura VARCHAR(10),  -- '1°', '2°', '3°'
-    activo BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT NOW(),
-    
-    CONSTRAINT uq_grados_nivel UNIQUE (nivel_educativo_id, grado),
-    CONSTRAINT chk_grado_rango CHECK (grado BETWEEN 1 AND 6)
-);
+-- Población de grados por nivel educativo
+INSERT INTO cat_grados (id_grado, nivel_educativo, grado_numero, grado_nombre, orden) VALUES
+    -- Preescolar (nivel_educativo = 1)
+    (1, 1, 1, '1° Preescolar', 1),
+    (2, 1, 2, '2° Preescolar', 2),
+    (3, 1, 3, '3° Preescolar', 3),
+    -- Primaria (nivel_educativo = 2)
+    (4, 2, 1, '1° Primaria', 4),
+    (5, 2, 2, '2° Primaria', 5),
+    (6, 2, 3, '3° Primaria', 6),
+    (7, 2, 4, '4° Primaria', 7),
+    (8, 2, 5, '5° Primaria', 8),
+    (9, 2, 6, '6° Primaria', 9),
+    -- Secundaria (nivel_educativo = 3)
+    (10, 3, 1, '1° Secundaria', 10),
+    (11, 3, 2, '2° Secundaria', 11),
+    (12, 3, 3, '3° Secundaria', 12),
+    -- Telesecundaria (nivel_educativo = 4)
+    (13, 4, 1, '1° Telesecundaria', 13),
+    (14, 4, 2, '2° Telesecundaria', 14),
+    (15, 4, 3, '3° Telesecundaria', 15)
+ON CONFLICT (nivel_educativo, grado_numero) DO NOTHING;
 
-COMMENT ON TABLE CAT_GRADOS IS 'Catálogo de grados escolares por nivel educativo';
-
--- 3.6 Catálogo de Roles de Usuario
-CREATE TABLE CAT_ROLES_USUARIO (
-    id SERIAL PRIMARY KEY,
-    codigo VARCHAR(20) NOT NULL UNIQUE,  -- 'DIRECTOR', 'DOCENTE', 'ADMIN'
+-- 3.5 Catálogo de Roles de Usuario
+CREATE TABLE cat_roles_usuario (
+    id_rol INT PRIMARY KEY,
     nombre VARCHAR(50) NOT NULL,
-    descripcion TEXT,
-    nivel_acceso INT NOT NULL,  -- 1=básico, 10=admin
-    permisos JSONB,  -- {"leer": true, "escribir": false, ...}
-    activo BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT NOW(),
-    
-    CONSTRAINT chk_nivel_acceso CHECK (nivel_acceso BETWEEN 1 AND 10)
+    codigo VARCHAR(20) NOT NULL UNIQUE,  -- 'DIRECTOR', 'DOCENTE', 'ADMIN', etc.
+    descripcion VARCHAR(200),
+    permisos JSONB NOT NULL DEFAULT '{}'::JSONB,  -- Permisos específicos del rol
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE CAT_ROLES_USUARIO IS 'Catálogo de roles y permisos del sistema';
-COMMENT ON COLUMN CAT_ROLES_USUARIO.permisos IS 'JSON con permisos específicos del rol';
+COMMENT ON TABLE cat_roles_usuario IS 'Catálogo de roles y permisos del sistema';
+COMMENT ON COLUMN cat_roles_usuario.permisos IS 'Estructura JSON con permisos del rol';
+
+-- Población de roles estándar
+INSERT INTO cat_roles_usuario (id_rol, nombre, codigo, descripcion, permisos) VALUES
+    (1, 'Administrador SEP', 'ADMIN_SEP', 'Administrador central con permisos totales', 
+        '{"escuelas": {"crear": true, "leer": true, "actualizar": true, "eliminar": true}, "usuarios": {"crear": true, "leer": true, "actualizar": true, "eliminar": true}, "reportes": {"generar": true, "descargar": true}}'::JSONB),
+    (2, 'Director Escuela', 'DIRECTOR', 'Director de escuela con permisos de gestión', 
+        '{"archivos": {"subir": true, "descargar": true}, "reportes": {"descargar": true}, "docentes": {"asignar": true}}'::JSONB),
+    (3, 'Docente', 'DOCENTE', 'Docente con permisos de consulta', 
+        '{"reportes": {"descargar": true, "consultar": true}}'::JSONB),
+    (4, 'Soporte Técnico', 'SOPORTE', 'Soporte técnico con permisos de lectura', 
+        '{"tickets": {"crear": true, "leer": true, "actualizar": true}, "logs": {"leer": true}}'::JSONB)
+ON CONFLICT (id_rol) DO NOTHING;
+
+-- 3.6 Tabla de Materias
+CREATE TABLE materias (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    codigo VARCHAR(10) NOT NULL UNIQUE,
+    nombre VARCHAR(100) NOT NULL,
+    nivel_educativo SMALLINT NOT NULL REFERENCES cat_nivel_educativo(id),
+    orden INT,  -- Para ordenamiento en UI
+    activa BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+COMMENT ON TABLE materias IS 'Catálogo de materias por nivel educativo';
+
+-- 3.7 Tabla de Competencias
+CREATE TABLE competencias (
+    id_competencia INT PRIMARY KEY,
+    id_materia UUID NOT NULL REFERENCES materias(id),
+    codigo VARCHAR(20) NOT NULL,
+    descripcion VARCHAR(500) NOT NULL,
+    nivel_esperado INT NOT NULL,  -- Nivel de desempeño esperado
+    
+    UNIQUE (id_materia, codigo)
+);
+
+COMMENT ON TABLE competencias IS 'Competencias educativas asociadas a materias';
 ```
 
 #### Paso 4: Crear Índices en Catálogos
@@ -434,17 +633,27 @@ COMMENT ON COLUMN CAT_ROLES_USUARIO.permisos IS 'JSON con permisos específicos 
 -- 4. ÍNDICES EN CATÁLOGOS
 -- ============================================================================
 
-CREATE INDEX idx_ciclos_activo ON CAT_CICLOS_ESCOLARES(activo) WHERE activo = TRUE;
-CREATE INDEX idx_ciclos_fechas ON CAT_CICLOS_ESCOLARES(fecha_inicio, fecha_fin);
+-- Índices para cat_ciclos_escolares
+CREATE INDEX idx_ciclos_activo ON cat_ciclos_escolares(activo) WHERE activo = TRUE;
+CREATE INDEX idx_ciclos_fechas ON cat_ciclos_escolares(fecha_inicio, fecha_fin);
 
-CREATE INDEX idx_entidades_clave ON CAT_ENTIDADES_FEDERATIVAS(clave);
-CREATE INDEX idx_entidades_region ON CAT_ENTIDADES_FEDERATIVAS(region);
+-- Índices para cat_entidades_federativas
+CREATE INDEX idx_entidades_codigo_sep ON cat_entidades_federativas(codigo_sep);
+CREATE INDEX idx_entidades_region ON cat_entidades_federativas(region);
 
-CREATE INDEX idx_grados_nivel ON CAT_GRADOS(nivel_educativo_id, grado);
-CREATE INDEX idx_grados_activo ON CAT_GRADOS(activo) WHERE activo = TRUE;
+-- Índices para cat_grados
+CREATE INDEX idx_grados_nivel ON cat_grados(nivel_educativo, grado_numero);
+CREATE INDEX idx_grados_orden ON cat_grados(orden);
 
-CREATE INDEX idx_roles_codigo ON CAT_ROLES_USUARIO(codigo);
-CREATE INDEX idx_roles_nivel ON CAT_ROLES_USUARIO(nivel_acceso);
+-- Índices para cat_roles_usuario
+CREATE INDEX idx_roles_codigo ON cat_roles_usuario(codigo);
+
+-- Índices para materias
+CREATE INDEX idx_materias_nivel ON materias(nivel_educativo);
+CREATE INDEX idx_materias_activa ON materias(activa) WHERE activa = TRUE;
+
+-- Índices para competencias
+CREATE INDEX idx_competencias_materia ON competencias(id_materia);
 ```
 
 ---
@@ -468,29 +677,29 @@ sequenceDiagram
     Admin->>Script: Ejecutar carga_catalogos.py
     Script->>Files: Leer cat_entidades.csv
     Files-->>Script: 32 entidades
-    Script->>DB: INSERT INTO CAT_ENTIDADES_FEDERATIVAS
+    Script->>DB: INSERT INTO cat_entidades_federativas
     DB-->>Script: ✓ 32 registros insertados
     
     Script->>Files: Leer cat_turnos.csv
     Files-->>Script: 4 turnos
-    Script->>DB: INSERT INTO CAT_TURNOS
+    Script->>DB: INSERT INTO cat_turnos
     DB-->>Script: ✓ 4 registros insertados
     
     Script->>Files: Leer cat_niveles.csv
-    Files-->>Script: 3 niveles
-    Script->>DB: INSERT INTO CAT_NIVELES_EDUCATIVOS
-    DB-->>Script: ✓ 3 registros insertados
+    Files-->>Script: 4 niveles
+    Script->>DB: INSERT INTO cat_nivel_educativo
+    DB-->>Script: ✓ 4 registros insertados
     
-    Script->>DB: INSERT INTO CAT_GRADOS (18 grados)
-    DB-->>Script: ✓ 18 registros insertados
+    Script->>DB: INSERT INTO cat_grados (15 grados)
+    DB-->>Script: ✓ 15 registros insertados
     
-    Script->>DB: INSERT INTO CAT_ROLES_USUARIO (5 roles)
-    DB-->>Script: ✓ 5 registros insertados
+    Script->>DB: INSERT INTO cat_roles_usuario (4 roles)
+    DB-->>Script: ✓ 4 registros insertados
     
-    Script->>DB: INSERT INTO CAT_CICLOS_ESCOLARES (ciclo actual)
+    Script->>DB: INSERT INTO cat_ciclos_escolares (ciclo actual)
     DB-->>Script: ✓ 1 registro insertado
     
-    Script-->>Admin: ✓ Carga completa: 62 registros
+    Script-->>Admin: ✓ Carga completa: 60 registros
     Admin->>API: GET /api/catalogos/verificar
     API->>DB: SELECT COUNT(*) FROM cada catálogo
     DB-->>API: Totales correctos
@@ -545,10 +754,10 @@ class CargaCatalogos:
             ))
         
         query = """
-            INSERT INTO CAT_CICLOS_ESCOLARES 
-            (ciclo, fecha_inicio, fecha_fin, activo, descripcion)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (ciclo) DO NOTHING
+            INSERT INTO cat_ciclos_escolares 
+            (nombre, fecha_inicio, fecha_fin, activo, created_at)
+            VALUES (%s, %s, %s, %s, NOW())
+            ON CONFLICT (nombre) DO NOTHING
         """
         
         execute_batch(self.cursor, query, ciclos)
@@ -596,10 +805,10 @@ class CargaCatalogos:
         ]
         
         query = """
-            INSERT INTO CAT_ENTIDADES_FEDERATIVAS 
-            (clave, nombre, abreviatura, region)
+            INSERT INTO cat_entidades_federativas 
+            (codigo_sep, nombre, abreviatura, region)
             VALUES (%s, %s, %s, %s)
-            ON CONFLICT (clave) DO NOTHING
+            ON CONFLICT (codigo_sep) DO NOTHING
         """
         
         execute_batch(self.cursor, query, entidades)
@@ -619,7 +828,7 @@ class CargaCatalogos:
         ]
         
         query = """
-            INSERT INTO CAT_TURNOS (codigo, nombre, descripcion)
+            INSERT INTO cat_turnos (codigo, nombre, descripcion)
             VALUES (%s, %s, %s)
             ON CONFLICT (codigo) DO NOTHING
         """
@@ -634,31 +843,32 @@ class CargaCatalogos:
         print("📚 Cargando niveles educativos...")
         
         niveles = [
-            ('PRE', 'Preescolar', 'Educación preescolar (3-5 años)', 1),
-            ('PRI', 'Primaria', 'Educación primaria (6-11 años)', 2),
-            ('SEC', 'Secundaria', 'Educación secundaria (12-14 años)', 3)
+            ('PREESCOLAR', 'Preescolar', 'Educación preescolar (3-5 años)', 1),
+            ('PRIMARIA', 'Primaria', 'Educación primaria (6-11 años)', 2),
+            ('SECUNDARIA', 'Secundaria', 'Educación secundaria (12-14 años)', 3),
+            ('TELESECUNDARIA', 'Telesecundaria', 'Educación telesecundaria (12-14 años)', 4)
         ]
         
         query = """
-            INSERT INTO CAT_NIVELES_EDUCATIVOS (codigo, nombre, descripcion, orden)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO cat_nivel_educativo (codigo, descripcion, orden)
+            VALUES (%s, %s, %s)
             ON CONFLICT (codigo) DO NOTHING
             RETURNING id
         """
         
         niveles_ids = {}
-        for nivel in niveles:
-            self.cursor.execute(query, nivel)
+        for codigo, _, orden in niveles:
+            self.cursor.execute(query, (codigo, f"{_}", orden))
             result = self.cursor.fetchone()
             if result:
-                niveles_ids[nivel[0]] = result[0]
+                niveles_ids[codigo] = result[0]
             else:
                 # Ya existe, obtener ID
                 self.cursor.execute(
-                    "SELECT id FROM CAT_NIVELES_EDUCATIVOS WHERE codigo = %s",
-                    (nivel[0],)
+                    "SELECT id FROM cat_nivel_educativo WHERE codigo = %s",
+                    (codigo,)
                 )
-                niveles_ids[nivel[0]] = self.cursor.fetchone()[0]
+                niveles_ids[codigo] = self.cursor.fetchone()[0]
         
         self.conn.commit()
         self.log.append(f"✓ Niveles educativos: {len(niveles)} registros")
@@ -675,34 +885,43 @@ class CargaCatalogos:
         # Preescolar: 1°, 2°, 3°
         for grado in range(1, 4):
             grados.append((
-                niveles_ids['PRE'],
+                niveles_ids['PREESCOLAR'],
                 grado,
-                f"{self._numero_a_ordinal(grado)} Grado de Preescolar",
-                f"{grado}° PRE"
+                f"{grado}° Preescolar",
+                grado + 0  # orden 1, 2, 3
             ))
         
         # Primaria: 1° a 6°
         for grado in range(1, 7):
             grados.append((
-                niveles_ids['PRI'],
+                niveles_ids['PRIMARIA'],
                 grado,
-                f"{self._numero_a_ordinal(grado)} Grado de Primaria",
-                f"{grado}° PRI"
+                f"{grado}° Primaria",
+                grado + 3  # orden 4, 5, 6, 7, 8, 9
             ))
         
         # Secundaria: 1° a 3°
         for grado in range(1, 4):
             grados.append((
-                niveles_ids['SEC'],
+                niveles_ids['SECUNDARIA'],
                 grado,
-                f"{self._numero_a_ordinal(grado)} Grado de Secundaria",
-                f"{grado}° SEC"
+                f"{grado}° Secundaria",
+                grado + 9  # orden 10, 11, 12
+            ))
+        
+        # Telesecundaria: 1° a 3°
+        for grado in range(1, 4):
+            grados.append((
+                niveles_ids['TELESECUNDARIA'],
+                grado,
+                f"{grado}° Telesecundaria",
+                grado + 12  # orden 13, 14, 15
             ))
         
         query = """
-            INSERT INTO CAT_GRADOS (nivel_educativo_id, grado, nombre, abreviatura)
+            INSERT INTO cat_grados (nivel_educativo, grado_numero, grado_nombre, orden)
             VALUES (%s, %s, %s, %s)
-            ON CONFLICT (nivel_educativo_id, grado) DO NOTHING
+            ON CONFLICT (nivel_educativo, grado_numero) DO NOTHING
         """
         
         execute_batch(self.cursor, query, grados)
@@ -789,9 +1008,9 @@ class CargaCatalogos:
         ]
         
         query = """
-            INSERT INTO CAT_ROLES_USUARIO 
-            (codigo, nombre, descripcion, nivel_acceso, permisos)
-            VALUES (%s, %s, %s, %s, %s::jsonb)
+            INSERT INTO cat_roles_usuario 
+            (codigo, nombre, descripcion, permisos)
+            VALUES (%s, %s, %s, %s::jsonb)
             ON CONFLICT (codigo) DO NOTHING
         """
         
@@ -817,12 +1036,12 @@ class CargaCatalogos:
         print("\n🔍 Verificando carga de catálogos...")
         
         verificaciones = [
-            ("CAT_CICLOS_ESCOLARES", 11),
-            ("CAT_ENTIDADES_FEDERATIVAS", 32),
-            ("CAT_TURNOS", 4),
-            ("CAT_NIVELES_EDUCATIVOS", 3),
-            ("CAT_GRADOS", 12),
-            ("CAT_ROLES_USUARIO", 5)
+            ("cat_ciclos_escolares", 1),
+            ("cat_entidades_federativas", 32),
+            ("cat_turnos", 4),
+            ("cat_nivel_educativo", 4),
+            ("cat_grados", 15),
+            ("cat_roles_usuario", 4)
         ]
         
         errores = []

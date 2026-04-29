@@ -4,7 +4,7 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
-import { TicketsService } from '../../services/tickets.service';
+import { TicketsService, MotivoTicket } from '../../services/tickets.service';
 import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
@@ -21,7 +21,6 @@ interface TicketSoporte {
   motivoDetalle?: string;
   descripcion: string;
   fecha: string;
-  prioridad: string;
   estatus: 'pendiente' | 'en-proceso' | 'respondido';
   respuestas: Array<{ mensaje: string; fecha: string; autor: 'admin' }>;
   evidencias: Array<{ nombre: string; tamano: number; tipo: string; url: string }>;
@@ -34,12 +33,9 @@ interface TicketSoporte {
   templateUrl: './tickets.component.html',
   styleUrl: './tickets.component.scss'
 })
+/* LISTA DE LAS OPCIONES*/
 export class TicketsComponent implements OnInit {
-  readonly motivos = [
-    'Tengo problemas para subir mi evaluación',
-    'Necesito apoyo con mis credenciales',
-    'Otra'
-  ];
+  motivos: MotivoTicket[] = [];
   readonly maxEvidencias = 10;
   readonly extensionesPermitidas = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
 
@@ -75,11 +71,24 @@ export class TicketsComponent implements OnInit {
     const credenciales = this.estadoCredencialesService.obtener() ?? this.authService.obtenerCredenciales();
     const correoSesion = this.authService.obtenerCorreoSesion();
     this.correoActivo = this.normalizarCorreo(credenciales?.correo ?? correoSesion ?? null);
+    void this.cargarMotivos();
     void this.cargarTickets();
   }
 
+  private async cargarMotivos(): Promise<void> {
+    console.log('Cargando motivos desde el servicio...');
+    try {
+      this.motivos = await firstValueFrom(this.ticketsService.getMotivosTicket());
+      console.log('Motivos cargados:', this.motivos);
+    } catch (error) {
+      console.error('Error cargando motivos:', error);
+      // Fallback simple si falla la carga
+      this.motivos = [];
+    }
+  }
+
   get mostrarMotivoOtro(): boolean {
-    return this.motivoControl.value === 'Otra';
+    return false;
   }
 
   get puedeAgregarEvidencias(): boolean {
@@ -125,18 +134,10 @@ export class TicketsComponent implements OnInit {
     if (!this.motivoControl.valid || !this.descripcionControl.valid) {
       this.motivoControl.markAllAsTouched();
       this.descripcionControl.markAllAsTouched();
-      if (this.mostrarMotivoOtro) {
-        this.motivoOtroControl.markAllAsTouched();
-      }
-      this.mensajeError = 'Completa los campos obligatorios para enviar el ticket.';
+      this.mensajeError = 'Complete los campos obligatorios para enviar el ticket.';
       return;
     }
 
-    if (this.mostrarMotivoOtro && !this.motivoOtroControl.value.trim()) {
-      this.motivoOtroControl.markAllAsTouched();
-      this.mensajeError = 'Indica el motivo cuando seleccionas "Otra".';
-      return;
-    }
 
     try {
       // 1. Convertir evidencias a Base64
@@ -159,7 +160,7 @@ export class TicketsComponent implements OnInit {
       // 3. Éxito
       await Swal.fire({
         title: '¡Ticket enviado!',
-        text: `Tu ticket se registró correctamente con el folio: ${ticketResult.numeroTicket}`,
+        text: `Su ticket se registró correctamente con el folio: ${ticketResult.numeroTicket}`,
         icon: 'success',
         confirmButtonText: 'Entendido',
         confirmButtonColor: '#00695c'
@@ -212,7 +213,6 @@ export class TicketsComponent implements OnInit {
         descripcion: t.descripcion,
         fecha: t.fechaCreacion,
         estatus: this.mapEstatus(t.estado),
-        prioridad: t.prioridad,
         respuestas: (t.respuestas || []).map((r: any) => ({
           mensaje: r.mensaje,
           fecha: r.fecha,

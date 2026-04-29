@@ -22,7 +22,6 @@ export class ArchivosEvaluacionComponent implements OnInit {
   cctActivo: string | null = null;
   filtroTexto = '';
   cargando = false;
-  idRegistroExpandido: string | null = null;
 
   constructor(
     private readonly authService: AuthService,
@@ -38,7 +37,7 @@ export class ArchivosEvaluacionComponent implements OnInit {
 
     const credenciales = this.authService.obtenerCredenciales();
     this.correoActivo = credenciales?.correo ?? this.authService.obtenerCorreoSesion() ?? null;
-    this.cctActivo = credenciales?.cct ?? null;
+    this.cctActivo = credenciales?.cct ?? this.authService.obtenerCctSesion() ?? null;
     void this.cargarRegistros();
   }
 
@@ -47,17 +46,19 @@ export class ArchivosEvaluacionComponent implements OnInit {
     this.cargando = true;
     this.mensajeInfo = null;
 
-    let registrosBackend: SolicitudEia2[] = [];
-
-    // 1. Cargar del backend si hay CCT
-    if (this.cctActivo) {
-      try {
-        this.registros = await firstValueFrom(this.evaluacionesService.getSolicitudes(this.cctActivo));
-      } catch (error) {
-        console.error('Error cargando historial del backend:', error);
-        this.mensajeError = 'No se pudo conectar con el servidor para obtener tu historial.';
-      }
-    } else {
+    try {
+      // Cargar TODOS los registros del usuario autenticado.
+      // El resolver del backend filtra por usuario_id del JWT automáticamente.
+      // NO se pasa cctActivo aqui ya que el usuario puede tener cargas de distintas escuelas.
+      // El CCT (cuando existe) se usa solo como filtro de busqueda en la UI.
+      console.log('[DEBUG] Cargando historial. cctActivo:', this.cctActivo, 'correoActivo:', this.correoActivo);
+      this.registros = await firstValueFrom(
+        this.evaluacionesService.getSolicitudes(undefined, 200)
+      );
+      console.log('[DEBUG] Registros recibidos del API:', this.registros.length, this.registros);
+    } catch (error) {
+      console.error('Error cargando historial del backend:', error);
+      this.mensajeError = 'No se pudo conectar con el servidor para obtener tu historial.';
       this.registros = [];
     }
 
@@ -65,12 +66,12 @@ export class ArchivosEvaluacionComponent implements OnInit {
 
     if (this.registros.length === 0) {
       if (this.cctActivo) {
-        this.mensajeInfo = 'No se han encontrado cargas registradas para tu CCT.';
+        this.mensajeInfo = 'No se han encontrado cargas registradas.';
       } else {
         this.mensajeInfo = 'Inicia sesión para ver tu historial de archivos sincronizados.';
       }
     } else {
-      this.mensajeInfo = 'Se muestran tus cargas sincronizadas con el servidor.';
+      
     }
   }
 
@@ -88,9 +89,6 @@ export class ArchivosEvaluacionComponent implements OnInit {
     });
   }
 
-  alternarDetalle(id: string): void {
-    this.idRegistroExpandido = this.idRegistroExpandido === id ? null : id;
-  }
 
   obtenerEtiquetaNivel(id?: number): string {
     switch (id) {
@@ -137,14 +135,29 @@ export class ArchivosEvaluacionComponent implements OnInit {
     return `${valor.toFixed(valor >= 10 ? 1 : 2)} ${unidades[indice]}`;
   }
 
-  obtenerEstadoDescripcion(estado: number): string {
+  obtenerEstadoDescripcion(registro: SolicitudEia2): string {
+    if (registro.resultados && registro.resultados.length > 0) {
+      return 'ASIGNADO';
+    }
+    
+    const estado = registro.estadoValidacion as any;
+    if (typeof estado === 'string') {
+      if (estado === 'RECHAZADO') return 'ERROR DE VALIDACIÓN';
+      return estado;
+    }
+
     switch (estado) {
       case 1: return 'RECIBIDO';
       case 2: return 'VALIDADO';
-      case 3: return 'PROCESADO';
+      case 3: return 'ERROR DE VALIDACIÓN';
       case 0: return 'LOCAL';
       default: return 'PENDIENTE';
     }
+  }
+
+  esValidoOAsignado(registro: SolicitudEia2): boolean {
+    const estado = this.obtenerEstadoDescripcion(registro);
+    return estado === 'VALIDADO' || estado === 'ASIGNADO';
   }
 
   async descargarArchivo(solicitudId: string, nombre: string): Promise<void> {
@@ -193,10 +206,18 @@ export class ArchivosEvaluacionComponent implements OnInit {
       }
     } catch (error: any) {
       console.error('Error al generar comprobante:', error);
+
+      let mensajeFinal = 'No se pudo generar el comprobante de recepcion en este momento.';
+      if (error.message?.includes('hash_archivo')) {
+        mensajeFinal = 'Tu solicitud aún está siendo procesada por el servidor. Por favor, espera unos minutos e intenta de nuevo.';
+      } else if (error.message) {
+        mensajeFinal = error.message;
+      }
+
       await Swal.fire({
-        icon: 'error',
-        title: 'Error al generar comprobante',
-        text: error.message || 'No se pudo generar el comprobante de recepcion.'
+        icon: 'warning',
+        title: 'Documento en proceso',
+        text: mensajeFinal
       });
     } finally {
       this.cargando = false;
