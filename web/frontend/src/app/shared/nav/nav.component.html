@@ -13,6 +13,7 @@
               <strong> Aviso de privacidad</strong>
             </a>
           </li>
+          <span class="nav-link subnav-link subnav-separator">|</span>
           <li class="nav-item">
             <a class="nav-link subnav-link" [routerLink]="['/inicio']">
               <i class="bi bi-house mr-1" aria-hidden="true"></i>
@@ -20,13 +21,22 @@
             </a>
           </li>
           <!--SEPARADOR-->
-          <span class="nav-link subnav-link subnav-separator">|</span>
-          <li class="nav-item" *ngIf="!isAdminAutenticado">
-            <a class="nav-link subnav-link" [routerLink]="['/preguntas-frecuentes']">
-              <i class="bi bi-person-raised-hand mr-1" aria-hidden="true"></i>
-              <strong> Preguntas Frecuentes</strong>
-            </a>
-          </li>
+          <!-- LA MOCHILA QUE REVISA SI ERES ADMIN -->
+          <ng-container *ngIf="!isAdminAutenticado">
+
+            <!-- EL PALITO AHORA ESTÁ ADENTRO Y PROTEGIDO -->
+            <li class="nav-item d-none d-md-block">
+              <span class="nav-link subnav-link subnav-separator">|</span>
+            </li>
+
+            <!-- EL BOTÓN TAMBIÉN ESTÁ ADENTRO -->
+            <li class="nav-item">
+              <a class="nav-link subnav-link">
+                <strong> Preguntas frecuentes</strong>
+              </a>
+            </li>
+
+          </ng-container>
           <ng-container *ngIf="isAdminAutenticado">
             <li class="nav-item d-none d-md-block">
               <!--SEPARADOR-->
@@ -55,7 +65,7 @@
                 <div class="dropdown-divider"></div>
                 <a class="dropdown-item" href="javascript:void(0)" (click)="cerrarSesionAdmin()">
                   <i class="bi bi-shield-x mr-2" aria-hidden="true"></i>
-                  Salir admin
+                  Cerrar sesión
                 </a>
               </div>
             </li>

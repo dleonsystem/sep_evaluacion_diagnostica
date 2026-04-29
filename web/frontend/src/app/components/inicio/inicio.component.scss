@@ -1443,12 +1443,14 @@ $gray-light: #f7f7f7;
   }
 
   .btn-sirver {
-    color: #9d2449;
-    border: 2px solid #9d2449;
-    background-color: transparent;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    border-radius: 5px; /* Opcional: para redondear bordes */
+    background: #0f766e;
+    padding: 0.8rem 1.2rem;
+    border-radius: 10px;
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 1.3rem;
+    color: #ffff;
   }
   /* Estado: Pasar el mouse por encima (Hover) */
   .btn-sirver:hover {
@@ -1460,7 +1462,7 @@ $gray-light: #f7f7f7;
   }
   /* Estado: Al hacer clic (Active) */
   .btn-sirver:active {
-    background-color: #7e1d3a; /* Un tono más oscuro de guinda */
+    background-color: #0f766e; /* Un tono más oscuro de guinda */
     transform: translateY(0);
   }
   /* Estado: Cuando el botón está seleccionado (Focus) */
