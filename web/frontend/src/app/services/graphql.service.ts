@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface GraphQlResponse<T> {
   data?: T;
@@ -50,17 +51,19 @@ export class GraphqlService {
   }
 
   private resolverEndpoint(): string {
-    const configurado = (window as { EIA_GRAPHQL_ENDPOINT?: string })?.EIA_GRAPHQL_ENDPOINT;
-    if (configurado) {
-      return configurado;
+    // 1. Prioridad: Variable global inyectada por env-config.js (para producción)
+    const globalEndpoint = (window as { EIA_GRAPHQL_ENDPOINT?: string })?.EIA_GRAPHQL_ENDPOINT;
+    if (globalEndpoint) {
+      return globalEndpoint;
     }
 
-    const enDev = window.location.port === '4200';
-    if (enDev) {
-      const hostname = window.location.hostname;
-      return `http://${hostname}:4000/graphql`;
+    // 2. Usar configuración del archivo de environment
+    const apiUrl = environment.apiUrl;
+    if (apiUrl) {
+      return `${apiUrl}${environment.graphqlPath}`;
     }
 
-    return '/graphql';
+    // 3. Fallback: ruta relativa (útil si se usa proxy o mismo servidor)
+    return environment.graphqlPath;
   }
 }
