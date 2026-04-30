@@ -214,6 +214,180 @@ function configureLegacyApi(app: express.Application) {
     })();
   });
 
+  /**
+   * GET /api/legacy/solicitudes
+   * @description Consultar solicitudes por rango de fechas para procesamiento masivo.
+   */
+  router.get('/solicitudes', (req, res) => {
+    void (async () => {
+      const { inicio, fin, cct } = req.query;
+      try {
+        let sql = `SELECT 
+            id, 
+            consecutivo, 
+            cct, 
+            archivo_original as "archivoOriginal", 
+            fecha_carga as "fechaCarga", 
+            estado_validacion as "estadoValidacion"
+          FROM solicitudes_eia2`;
+        const params: any[] = [];
+        const conditions: string[] = [];
+
+        if (cct) {
+          conditions.push(`cct = $${params.length + 1}`);
+          params.push(cct);
+        }
+        if (inicio) {
+          conditions.push(`fecha_carga >= $${params.length + 1}`);
+          params.push(inicio);
+        }
+        if (fin) {
+          const end = (fin as string).includes(' ') ? fin : `${fin} 23:59:59`;
+          conditions.push(`fecha_carga <= $${params.length + 1}`);
+          params.push(end);
+        }
+
+        if (conditions.length > 0) {
+          sql += ` WHERE ` + conditions.join(' AND ');
+        }
+
+        sql += ` ORDER BY fecha_carga DESC`;
+        const dbRes = await query(sql, params);
+        res.json({ 
+          success: true, 
+          count: dbRes.rows.length, 
+          data: dbRes.rows 
+        });
+      } catch (error) {
+        logger.error('REST Legacy API /solicitudes Error:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+      }
+    })();
+  });
+
+  /**
+   * POST /api/legacy/resultados
+   * @description Insertar resultados procesados externamente en una solicitud.
+   */
+  router.post('/resultados', (req, res) => {
+    void (async () => {
+      const { solicitudId, resultados, resultadoPath } = req.body;
+      
+      if (!solicitudId) {
+        res.status(400).json({ success: false, error: 'solicitudId es requerido' });
+        return;
+      }
+
+      try {
+        const updateRes = await query(
+          `UPDATE solicitudes_eia2 
+           SET resultados = $1, 
+               resultado_path = $2,
+               estado_validacion = fn_catalogo_id('cat_estado_validacion_eia2', 'VALIDO'),
+               procesado_externamente = true,
+               updated_at = NOW()
+           WHERE id = $3
+           RETURNING id`,
+          [JSON.stringify(resultados || []), resultadoPath || '', solicitudId]
+        );
+
+        if (updateRes.rows.length === 0) {
+          res.status(404).json({ success: false, error: 'Solicitud no encontrada' });
+          return;
+        }
+
+        // Registrar en log_actividades para auditoría
+        try {
+          const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+          await query(
+            `INSERT INTO log_actividades 
+              (id_usuario, accion, tabla, registro_id, detalle, modulo, ip_address, resultado) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [
+              null, // Sistema externo (sin usuario humano)
+              'CARGA_RESULTADOS_EXTERNA',
+              'solicitudes_eia2',
+              solicitudId,
+              JSON.stringify({ 
+                mensaje: 'Resultados insertados vía API Legacy',
+                path: resultadoPath,
+                archivos: (resultados || []).length 
+              }),
+              'API_LEGACY',
+              clientIp,
+              'SUCCESS'
+            ]
+          );
+        } catch (logErr) {
+          logger.warn('No se pudo registrar la auditoría en log_actividades:', logErr);
+        }
+
+        res.json({ 
+          success: true, 
+          message: 'Resultados insertados y solicitud marcada como procesada.' 
+        });
+      } catch (error) {
+        logger.error('REST Legacy API /resultados Error:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+      }
+    })();
+  });
+
+  /**
+   * POST /api/legacy/resultados/bulk
+   * @description Carga masiva de resultados para múltiples solicitudes en una sola petición.
+   */
+  router.post('/resultados/bulk', (req, res) => {
+    void (async () => {
+      const solicitudes = req.body; // Se espera un array de objetos
+      
+      if (!Array.isArray(solicitudes)) {
+        res.status(400).json({ success: false, error: 'Se esperaba un array de solicitudes' });
+        return;
+      }
+
+      const resultados_proceso = [];
+      const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+      for (const item of solicitudes) {
+        const { solicitudId, resultados, resultadoPath } = item;
+        try {
+          const updateRes = await query(
+            `UPDATE solicitudes_eia2 
+             SET resultados = $1, 
+                 resultado_path = $2,
+                 estado_validacion = fn_catalogo_id('cat_estado_validacion_eia2', 'VALIDO'),
+                 procesado_externamente = true,
+                 updated_at = NOW()
+             WHERE id = $3
+             RETURNING id`,
+            [JSON.stringify(resultados || []), resultadoPath || '', solicitudId]
+          );
+
+          if (updateRes.rows.length > 0) {
+            resultados_proceso.push({ solicitudId, status: 'SUCCESS' });
+            // Auditoría por cada registro (opcional, o consolidada)
+            await query(
+              `INSERT INTO log_actividades (accion, tabla, registro_id, detalle, modulo, ip_address, resultado) 
+               VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+              ['CARGA_RESULTADOS_BULK', 'solicitudes_eia2', solicitudId, JSON.stringify({ archivos: (resultados || []).length }), 'API_LEGACY', clientIp, 'SUCCESS']
+            );
+          } else {
+            resultados_proceso.push({ solicitudId, status: 'NOT_FOUND' });
+          }
+        } catch (err) {
+          resultados_proceso.push({ solicitudId, status: 'ERROR', error: (err as Error).message });
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        processedCount: resultados_proceso.filter(r => r.status === 'SUCCESS').length,
+        details: resultados_proceso 
+      });
+    })();
+  });
+
   app.use('/api/legacy', router);
 }
 

@@ -56,6 +56,8 @@ export const typeDefs = `#graphql
     """
     getSolicitudes(
       cct: String
+      fechaInicio: String
+      fechaFin: String
       limit: Int = 10
       offset: Int = 0
     ): [SolicitudEia2!]!

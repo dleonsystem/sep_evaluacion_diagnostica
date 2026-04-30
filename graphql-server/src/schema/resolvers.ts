@@ -634,7 +634,19 @@ id,
      */
     getSolicitudes: async (
       _: unknown,
-      { cct, limit = 10, offset = 0 }: { cct?: string; limit?: number; offset?: number },
+      {
+        cct,
+        fechaInicio,
+        fechaFin,
+        limit = 10,
+        offset = 0,
+      }: {
+        cct?: string;
+        fechaInicio?: string;
+        fechaFin?: string;
+        limit?: number;
+        offset?: number;
+      },
       context: GraphQLContext
     ) => {
       if (!context.user) throw new Error('No autorizado');
@@ -669,6 +681,18 @@ id,
         if (cct) {
           conditions.push(`s.cct = $${params.length + 1} `);
           params.push(cct);
+        }
+
+        if (fechaInicio) {
+          conditions.push(`s.fecha_carga >= $${params.length + 1} `);
+          params.push(fechaInicio);
+        }
+
+        if (fechaFin) {
+          const end =
+            fechaFin.includes(' ') || fechaFin.includes('T') ? fechaFin : `${fechaFin} 23:59:59`;
+          conditions.push(`s.fecha_carga <= $${params.length + 1} `);
+          params.push(end);
         }
 
         if (!isAdmin) {
