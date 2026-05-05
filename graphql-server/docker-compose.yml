@@ -5,6 +5,8 @@ services:
     image: gql-evaluacion-diagnostica:latest
     ports:
       - "5009:5009"
+    env_file:
+      - .env
     networks:
       - app-net
     deploy:
