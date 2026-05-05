@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  gql-evaluacion-api:
+    image: gql-evaluacion-diagnostica:latest
+    ports:
+      - "5009:5009"
+    networks:
+      - app-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: '8.0'
+          memory: 10G
+        reservations:
+          cpus: '2.0'
+          memory: 4G
+      placement:
+        constraints:
+          - node.hostname == vsaludback
+
+networks:
+  app-net:
+    external: true

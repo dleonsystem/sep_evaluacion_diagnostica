@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  ng-front:
+    image: ng-evaluacion-diagnostica:latest
+    ports:
+      - "80"
+    networks:
+      - app-net
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: '3'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+      placement:
+        constraints:
+          - node.hostname == vsaludfront
+
+
+networks:
+  app-net:
+    external: true
