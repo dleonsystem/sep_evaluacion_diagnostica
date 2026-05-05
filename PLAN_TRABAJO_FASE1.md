@@ -634,41 +634,187 @@ Antes del tag `v1.0.0-fase1` (Día 20), crear los siguientes issues en GitHub pa
 
 ## 2. Ruta Crítica de Pase a Producción y Cierre de Proyecto
 
-Esta sección documenta la ruta crítica y el plan de actividades para la liberación en QA y Producción en el data center institucional (TRIARA/Telmex), alineado a procesos SEP/DGTIC y mejores prácticas DevOps.
+**Actualización:** 29 de abril de 2026
 
-### 2.1 Fases y Actividades Clave
-### 2.1 Fases y Actividades Clave
+**Objetivo:** establecer una ruta ejecutable para que desarrollo, QA, DBA, infraestructura, DevOps, DevSecOps, NUEMS, DGTIC y Comunicación Social tengan claras las actividades necesarias para publicar SiRVER/SiCRER en producción con control de cambios, evidencia, validación funcional, dictamen de seguridad y plan de reversa.
+**Alcance:** preparación de release candidate, infraestructura, configuración, QA, seguridad, diseño institucional, despliegue productivo, monitoreo inicial y cierre formal.
 
-| Fase | Actividad | Dependencias | Responsable | Fecha Inicio | Fecha Fin | Criterio de Éxito | Estado |
-|---|---|---|---|---|---|---|---|
-| 1. Infraestructura y Configuración Inicial | Aprovisionamiento de servidor interno | Aprobación de recursos | Equipo de Desarrollo | 29/04/2026 | 30/04/2026 | Servidor disponible y accesible | ⏳ |
-| 1. Infraestructura y Configuración Inicial | Gestión de DNS y Certificado SSL | Servidor montado | Equipo NUEMS | 01/05/2026 | 03/05/2026 | DNS y certificado emitidos | ⏳ |
-| 1. Infraestructura y Configuración Inicial | Configuración de dominio y seguridad | DNS y SSL emitidos | Equipo de Desarrollo | 04/05/2026 | 05/05/2026 | Acceso seguro por dominio institucional | ⏳ |
-| 2. Dictamen de Seguridad (DGTIC) | Solicitud de análisis de vulnerabilidad | Dominio y SSL activos | Equipo NUEMS | 06/05/2026 | 06/05/2026 | Solicitud enviada a DGTIC | ⏳ |
-| 2. Dictamen de Seguridad (DGTIC) | Respuesta de DGTIC | Solicitud enviada | Equipo DGTIC | 07/05/2026 | 10/05/2026 | Informe de vulnerabilidad recibido | ⏳ |
-| 2. Dictamen de Seguridad (DGTIC) | Atención de observaciones | Informe recibido | Equipo de Desarrollo | 11/05/2026 | 13/05/2026 | Observaciones solventadas | ⏳ |
-| 2. Dictamen de Seguridad (DGTIC) | Visto bueno de seguridad | Observaciones solventadas | Equipo DGTIC | 14/05/2026 | 15/05/2026 | Visto bueno formal | ⏳ |
-| 3. Validación de Diseño y Comunicación | Solicitud de publicación inicial | Visto bueno de seguridad | Equipo NUEMS | 16/05/2026 | 16/05/2026 | Solicitud enviada | ⏳ |
-| 3. Validación de Diseño y Comunicación | Revisión de diseño institucional | Solicitud enviada | Comunicación Social | 17/05/2026 | 19/05/2026 | Observaciones recibidas | ⏳ |
-| 3. Validación de Diseño y Comunicación | Atención de observaciones de diseño | Observaciones recibidas | Equipo de Desarrollo y NUEMS | 20/05/2026 | 22/05/2026 | Cambios aplicados y validados | ⏳ |
-| 3. Validación de Diseño y Comunicación | Visto bueno de diseño | Cambios aplicados | Comunicación Social | 23/05/2026 | 24/05/2026 | Visto bueno formal | ⏳ |
-| 4. Publicación Final a Producción | Solicitud de publicación definitiva | Vistos buenos de seguridad y diseño | Equipo NUEMS | 25/05/2026 | 25/05/2026 | Solicitud enviada a DGTIC/Infraestructura | ⏳ |
-| 4. Publicación Final a Producción | Despliegue productivo y validación | Solicitud aceptada | Equipo de Desarrollo y DGTIC | 26/05/2026 | 27/05/2026 | Sistema operativo en producción, validado | ⏳ |
+### 2.1 Hechos Confirmados
 
-### 2.2 Seguimiento y Control
+| Hecho confirmado | Evidencia revisada | Implicación para producción |
+|---|---|---|
+| El flujo oficial de ramas usa `task/*` hacia `qa`, y `qa` hacia `main` para producción. | `politicas_desarrollo_software.md` | No debe existir trabajo directo sobre `main` o `qa`; todo cambio entra por PR. |
+| El árbol local revisado el 29/04/2026 está limpio en `dev`. | `git status --short --branch` | Esta actualización documental queda aislada y trazable. |
+| Existen ramas remotas activas de carga masiva, UI, seguridad, diseño y documentación. | `git branch --all --verbose --no-abbrev` | Antes del release se debe conciliar qué ramas entran, cuáles se difieren y cuáles se cierran. |
+| Existe un plan institucional base de pase a producción. | `plan_pase_produccion_sirver.md` | Este apartado lo convierte en plan operativo para ejecución del equipo. |
+| El proyecto usa frontend Angular, backend GraphQL/Node, PostgreSQL, Docker/SFTP y configuración por variables de entorno. | `README.md`, `GUIA_ENTORNO_HIBRIDO.md`, `docker-compose.yml` | El despliegue debe validar aplicación, datos, storage, secretos, red y certificados. |
+| La volumetría puede crecer de forma significativa en archivos PDF/resultados y base de datos. | `ESTIMACION_INFRAESTRUCTURA_VOLUMETRIA.md` | Producción requiere validar capacidad, backups, monitoreo y umbrales de almacenamiento. |
 
-- **Herramienta de seguimiento:** Esta tabla debe actualizarse en cada comité de avance y reflejarse en el tablero Kanban y bitácora de cambios.
-- **Criterios de éxito:** Cada actividad debe contar con evidencia documental (captura, correo, ticket, acta) y validación cruzada por el responsable institucional.
-- **Riesgos críticos:**
-  - Retrasos en emisión de DNS/SSL institucional.
-  - Observaciones de seguridad no solventadas en tiempo.
-  - Cambios de diseño institucional de último minuto.
-  - Falta de evidencia documental para auditoría.
+### 2.2 Supuestos Operativos
 
-### 2.3 Notas y Recomendaciones
+| Supuesto | Validación requerida antes de Go/No-Go |
+|---|---|
+| El ambiente productivo será provisto por infraestructura institucional o TRIARA/Telmex. | Ticket, oficio o acta con servidor, IP, DNS, puertos, responsable y ventana de soporte. |
+| El despliegue usará artefactos generados desde commit/tag aprobado. | Hash de commit, PR aprobado, build reproducible y tag de release. |
+| La base de datos productiva será PostgreSQL y tendrá respaldo previo. | Backup completo restaurable, responsable DBA y prueba de conexión. |
+| Los secretos reales estarán fuera del repositorio. | Revisión de `.env.example`, variables de entorno, secretos CI/CD y escaneo básico de credenciales. |
+| DGTIC puede emitir observaciones bloqueantes. | Ventana de remediación reservada y responsables por módulo. |
 
-- El plan está alineado a los lineamientos MAAGTICSI, ATDT, LGPDP y procesos DGTIC/SEP.
-- Se recomienda mantener comunicación continua con NUEMS y DGTIC para evitar cuellos de botella.
-- Todo cambio relevante debe reflejarse en la bitácora y checklist de cierre.
+### 2.3 Ruta de Trabajo por Fases
+
+| Fase | Ventana objetivo | Entregable principal | Responsable líder | Estado |
+|---|---|---|---|---|
+| 0. Control de repositorio y congelamiento | 29/04/2026 - 30/04/2026 | Release candidate definido, PRs conciliados y tablero actualizado | Líder técnico | Pendiente |
+| 1. Infraestructura QA/Producción | 29/04/2026 - 05/05/2026 | Servidor, DNS, SSL, puertos, storage, backups y monitoreo base | Infraestructura / DBA / DevOps | Pendiente |
+| 2. Artefactos y configuración | 04/05/2026 - 07/05/2026 | Build reproducible, variables, migraciones y runbook | DevOps / Backend / Frontend | Pendiente |
+| 3. Validación QA integral | 06/05/2026 - 10/05/2026 | Evidencia de pruebas funcionales, regresión, smoke y datos | QA / Desarrollo / DBA | Pendiente |
+| 4. Dictamen DGTIC y remediación | 06/05/2026 - 15/05/2026 | Solicitud, reporte, remediación y visto bueno de seguridad | NUEMS / DGTIC / Desarrollo | Pendiente |
+| 5. Validación de diseño institucional | 16/05/2026 - 24/05/2026 | Visto bueno de Comunicación Social y ajustes aplicados | NUEMS / Frontend | Pendiente |
+| 6. Publicación final | 25/05/2026 - 27/05/2026 | Producción validada, tag de release y acta de liberación | Líder técnico / DGTIC | Pendiente |
+| 7. Hypercare y cierre | 28/05/2026 - 31/05/2026 | Monitoreo, bitácora, incidencias y lecciones aprendidas | Soporte / QA / DevOps | Pendiente |
+
+### 2.4 Actividades Detalladas por Rol
+
+| ID | Actividad | Tareas ejecutables | Responsable | Dependencias | Evidencia obligatoria | Criterio de aceptación |
+|---|---|---|---|---|---|---|
+| PROD-00 | Congelar alcance de release | Revisar issues abiertos; clasificar P0/P1/P2/P3; decidir qué entra al release; mover pendientes no bloqueantes a Fase 2; documentar Go/No-Go preliminar. | Líder técnico / Product Owner | Tablero GitHub | Minuta o comentario de release | No existen P0/P1 sin decisión formal. |
+| PROD-01 | Conciliar ramas activas | Ejecutar `git fetch`; revisar PRs abiertos; identificar ramas con cambios sobre carga, UI, seguridad y DB; resolver conflictos contra `qa`. | Líder técnico / DevOps | Acceso GitHub | Lista de ramas/PRs revisados | Rama candidata contiene solo cambios aprobados. |
+| PROD-02 | Crear release candidate | Crear rama/PR de release desde `qa`; versionar changelog; asociar issues; usar commits atómicos `docs:`, `fix:`, `test:` o `chore:`. | DevOps | PROD-00, PROD-01 | PR con alcance, riesgos y reversa | PR aprobado y pipeline verde. |
+| PROD-03 | Validar build backend | Instalación limpia; build TypeScript; pruebas Jest críticas; verificación de variables; revisión de JWT/SFTP sin fallback inseguro. | Backend / DevSecOps | Release candidate | Logs de build/test | Backend compila y pruebas críticas pasan. |
+| PROD-04 | Validar build frontend | Build Angular; validar rutas SPA; assets institucionales; textos; compatibilidad Edge/Chrome/Firefox; ausencia de logs internos visibles. | Frontend / QA | Release candidate | Logs y capturas QA | Frontend productivo navega sin errores críticos. |
+| PROD-05 | Preparar base de datos | Inventariar esquema destino; tomar backup; validar migraciones; preparar rollback; crear usuarios de mínimo privilegio; validar índices y secuencias. | DBA | Servidor/BD disponible | Backup, scripts y reporte DBA | Migraciones repetibles y rollback documentado. |
+| PROD-06 | Preparar storage y SFTP | Crear directorios; permisos; cuotas; rotación; validar subida/descarga; verificar retención de evidencias y resultados. | DevOps / Infraestructura | Servidor disponible | Logs/capturas de prueba SFTP | Archivos se guardan, consultan y auditan. |
+| PROD-07 | Configurar servidor productivo | Runtime, firewall, puertos, proxy reverso, TLS, variables de entorno, logs, timezone y reinicio automático de servicios. | Infraestructura / DevOps | DNS/SSL o IP temporal | Runbook y salidas de validación | Servicios reinician y quedan por HTTPS. |
+| PROD-08 | Configurar monitoreo y alertas | Healthchecks, logs, disco, CPU/RAM, errores HTTP, disponibilidad DB/SFTP, certificados y backups. | DevOps / Infraestructura | PROD-07 | Dashboard o capturas | Alertas críticas configuradas y probadas. |
+| PROD-09 | Ejecutar QA funcional | Probar login, cambio de password, carga Excel válida/inválida, PDF confirmación/error, historial, descargas, tickets, admin, filtros y sesiones multi-pestaña. | QA / Desarrollo | Ambiente QA | Matriz de pruebas y defect log | Casos P0/P1 aprobados. |
+| PROD-10 | Ejecutar QA no funcional | Smoke de concurrencia básica, tamaño máximo de archivo, latencia API, compatibilidad navegador, reinicio de servicio y backup/restore. | QA / DevOps / DBA | PROD-08, PROD-09 | Reporte no funcional | KPIs mínimos cumplidos o riesgo aceptado. |
+| PROD-11 | Preparar solicitud DGTIC | Integrar URL, arquitectura, puertos, stack, responsable técnico, tratamiento de datos, HTTPS y checklist de seguridad. | NUEMS / Líder técnico | PROD-07 a PROD-10 | Oficio/ticket de solicitud | Solicitud enviada con anexos completos. |
+| PROD-12 | Atender observaciones DGTIC | Registrar hallazgos como issues; asignar módulo/prioridad; corregir en `task/*`; PR a `qa`; validar; preparar evidencia. | Desarrollo / DevSecOps / QA | Informe DGTIC | Issues, PRs, evidencias | DGTIC emite visto bueno o aceptación formal. |
+| PROD-13 | Validar diseño institucional | Revisar logos, colores, textos, accesibilidad básica, pantallas públicas, mensajes y PDFs. | Frontend / NUEMS | URL QA/temporal | Checklist y capturas | Comunicación Social otorga visto bueno. |
+| PROD-14 | Preparar ventana de despliegue | Fecha/hora, responsables, contactos, comunicación, congelamiento, backup final, Go/No-Go y reversa. | Líder técnico / DevOps / DBA | Vistos buenos | Minuta de despliegue | Ventana autorizada. |
+| PROD-15 | Ejecutar despliegue productivo | Backup; desplegar artefactos; aplicar migraciones; reiniciar servicios; validar healthchecks; smoke test; etiquetar release. | DevOps / DBA / Desarrollo | PROD-14 | Bitácora minuto a minuto, tag y logs | Sistema por HTTPS y smoke aprobado. |
+| PROD-16 | Monitoreo hypercare | Monitorear 72 horas; revisar logs, tickets, recursos, errores; aplicar hotfix solo si existe P0/P1 aprobado. | Soporte / QA / DevOps | PROD-15 | Bitácora diaria | Sin P0 abiertos al cierre. |
+| PROD-17 | Cierre formal | Actualizar bitácora, release notes, evidencias, lecciones aprendidas, riesgos residuales y backlog Fase 2. | Líder técnico / QA / Product Owner | PROD-16 | Acta o minuta de cierre | Proyecto cerrado y trazable. |
+
+### 2.5 Checklist Técnico Mínimo por Componente
+
+#### Frontend Angular
+- [ ] Build productivo generado desde commit/tag aprobado.
+- [ ] Rutas SPA funcionan con recarga directa en navegador.
+- [ ] Assets institucionales cargan correctamente.
+- [ ] No se muestran logs internos, trazas técnicas ni secretos al usuario.
+- [ ] Flujo público de carga válida e inválida probado con archivos reales.
+- [ ] Login, recuperación, sesiones multi-pestaña y cierre de sesión probados.
+- [ ] Compatibilidad mínima validada en Edge, Chrome y Firefox.
+
+#### Backend GraphQL
+- [ ] `JWT_SECRET` fuerte definido por variable de entorno, sin fallback inseguro.
+- [ ] CORS limitado a dominios autorizados.
+- [ ] Resolvers críticos probados: autenticación, carga, comprobante, descargas, tickets y admin.
+- [ ] Healthcheck expone estado de API y DB sin filtrar secretos.
+- [ ] Logs tienen nivel adecuado para producción y no exponen datos personales sensibles.
+- [ ] Timeouts y límites de carga configurados para archivos Excel.
+
+#### Base de Datos
+- [ ] Backup completo tomado antes de migraciones.
+- [ ] Prueba de restauración ejecutada en ambiente controlado.
+- [ ] Migraciones versionadas y con rollback.
+- [ ] Usuarios de aplicación con privilegios mínimos.
+- [ ] Índices, secuencias y constraints críticos validados.
+- [ ] Política de retención y resguardo alineada a datos personales.
+
+#### Infraestructura, Red y Seguridad
+- [ ] DNS productivo resuelve al servidor correcto.
+- [ ] Certificado TLS válido, vigente y emitido para el dominio correcto.
+- [ ] Puertos expuestos limitados a los requeridos.
+- [ ] Firewall/WAF o controles equivalentes habilitados.
+- [ ] Servicios se reinician automáticamente después de reinicio del servidor.
+- [ ] Monitoreo de CPU, RAM, disco, DB, SFTP, certificados y errores HTTP activo.
+- [ ] Backup calendarizado y alertas de falla de backup configuradas.
+
+### 2.6 Flujo de Control de Cambios
+
+1. Todo cambio debe iniciar con issue o ticket identificado.
+2. El responsable crea rama `task/<id>-<descripcion>` desde `qa` para cambios normales.
+3. Cada commit debe ser atómico y trazable: `docs:`, `fix:`, `test:`, `chore:` o `feat:`.
+4. El PR debe incluir objetivo, alcance, evidencia, riesgos, impacto en datos y plan de reversa.
+5. QA valida en ambiente `qa`; solo después se promueve a `main`.
+6. `main` representa producción y debe quedar etiquetado con tag de release.
+7. En incidencias productivas se usa `hotfix/*` desde `main`, con retorno obligatorio a `qa`.
+
+### 2.7 Criterios Go/No-Go
+
+| Categoría | Go | No-Go |
+|---|---|---|
+| Repositorio | PR de release aprobado, pipeline verde, sin conflictos pendientes. | Cambios directos en ramas reservadas, conflictos sin resolver o PRs críticos fuera del release. |
+| Seguridad | Visto bueno DGTIC o aceptación formal de riesgos residuales. | Hallazgos críticos abiertos, secretos expuestos, TLS ausente o CORS/JWT inseguros. |
+| QA funcional | Casos P0/P1 aprobados y defectos residuales documentados. | Fallas en login, carga, PDF, descargas, tickets, admin o persistencia. |
+| Datos | Backup restaurable, migraciones verificadas y rollback disponible. | Sin backup, migraciones manuales no versionadas o pérdida/inconsistencia de datos. |
+| Infraestructura | DNS/SSL/monitoreo/backups/servicios activos. | Recursos insuficientes, certificados inválidos, storage sin margen o servicios no reiniciables. |
+| Operación | Responsables de soporte, comunicación y ventana autorizada. | Sin responsables, sin bitácora, sin plan de comunicación o sin plan de reversa. |
+
+### 2.8 Plan de Reversa
+
+| Escenario | Acción de reversa | Responsable | Tiempo objetivo |
+|---|---|---|---|
+| Falla de build o backend | Restaurar artefacto/tag anterior, reiniciar servicio y validar healthcheck. | DevOps / Backend | 30-60 min |
+| Error en migración DB | Detener aplicación, restaurar backup o ejecutar rollback validado, reconciliar datos de ventana. | DBA / DevOps | 60-120 min |
+| Error frontend crítico | Revertir artefacto web al build anterior, purgar caché si aplica y repetir smoke. | DevOps / Frontend | 30 min |
+| Falla DNS/SSL | Mantener URL temporal autorizada o regresar apuntador anterior; documentar impacto. | Infraestructura / NUEMS | 30-60 min |
+| Incidente de seguridad | Deshabilitar acceso externo, rotar secretos, preservar logs y abrir incidente P0. | DevSecOps / DGTIC | Inmediato |
+
+### 2.9 Evidencias Obligatorias de Liberación
+
+- Hash del commit, tag de release y PR aprobado.
+- Log de build backend y frontend.
+- Resultado de pruebas unitarias/integración disponibles.
+- Matriz de pruebas QA firmada o aceptada por responsable.
+- Backup de base de datos previo y evidencia de restauración.
+- Scripts de migración y rollback aplicados en QA.
+- Capturas de DNS, certificado TLS y página productiva.
+- Evidencia de healthchecks, monitoreo y alertas.
+- Dictamen o visto bueno DGTIC.
+- Visto bueno de Comunicación Social cuando aplique.
+- Bitácora de despliegue productivo minuto a minuto.
+- Release notes y riesgos residuales aceptados.
+
+### 2.10 Riesgos, Hallazgos y Recomendaciones
+
+| Tipo | Descripción | Mitigación |
+|---|---|---|
+| Hallazgo | La sección previa de producción era de alto nivel y no detallaba tareas técnicas ni criterios Go/No-Go. | Se incorpora desglose operativo, evidencias y responsables por fase. |
+| Riesgo | Ramas remotas activas pueden contener cambios no integrados que afecten el release. | Conciliación obligatoria de PRs y ramas antes de congelar release. |
+| Riesgo | Observaciones DGTIC pueden bloquear la fecha objetivo. | Reservar ventana de remediación y registrar hallazgos como issues con prioridad. |
+| Riesgo | Falta de backup/restauración probado antes de migraciones productivas. | No-Go automático si no existe backup restaurable validado por DBA. |
+| Riesgo | Capacidad de storage insuficiente para PDFs/resultados. | Validar volumetría real, umbrales de alerta y plan de expansión antes de publicar. |
+| Recomendación | Separar aprobaciones técnicas, funcionales, seguridad y diseño. | Usar checklist de evidencias por responsable y no cerrar fase sin aceptación explícita. |
+| Recomendación | Mantener hypercare posterior a producción. | Monitorear 72 horas y documentar incidencias, tiempos de respuesta y acciones. |
+
+### 2.11 Cronograma Operativo de Producción
+
+| Fecha | Hito | Responsable | Salida esperada |
+|---|---|---|---|
+| 29/04/2026 | Revisión documental, ramas y alcance | Líder técnico | Plan actualizado y alcance preliminar |
+| 30/04/2026 | Freeze de release candidate | Líder técnico / DevOps | PR/rama candidata definida |
+| 01/05/2026 - 05/05/2026 | Infraestructura, DNS, SSL y servidor | NUEMS / Infraestructura | Servidor accesible y seguro |
+| 04/05/2026 - 07/05/2026 | Build, variables, DB, SFTP y monitoreo | DevOps / DBA / Desarrollo | Ambiente listo para QA |
+| 06/05/2026 - 10/05/2026 | QA funcional y no funcional | QA / Desarrollo | Reporte de pruebas |
+| 06/05/2026 - 15/05/2026 | Dictamen DGTIC y remediación | NUEMS / DGTIC / Desarrollo | Visto bueno de seguridad |
+| 16/05/2026 - 24/05/2026 | Revisión Comunicación Social | NUEMS / Frontend | Visto bueno de diseño |
+| 25/05/2026 | Go/No-Go final | Líder técnico / Stakeholders | Autorización de despliegue |
+| 26/05/2026 - 27/05/2026 | Despliegue productivo | DevOps / DBA / DGTIC | Producción operativa |
+| 28/05/2026 - 31/05/2026 | Hypercare y cierre | Soporte / QA / DevOps | Acta de cierre y lecciones aprendidas |
+
+### 2.12 Documentos Relacionados
+
+- `politicas_desarrollo_software.md`: flujo de issues, ramas, PRs, QA y producción.
+- `plan_pase_produccion_sirver.md`: plan institucional base de pase a producción.
+- `GUIA_ENTORNO_HIBRIDO.md`: consideraciones de entorno y conexión a DB externa.
+- `ESTIMACION_INFRAESTRUCTURA_VOLUMETRIA.md`: volumetría, almacenamiento, backup y escalabilidad.
+- `README.md`: descripción del sistema, stack, advertencias de seguridad y uso.
+- `BITACORA_CAMBIOS.md`: registro formal de cambios del proyecto.
 
 ---
+
+*Documento actualizado el 29 de abril de 2026 para detallar la ejecución del pase a producción.*
+*Responsable de actualización: Equipo de Desarrollo / Líder técnico.*

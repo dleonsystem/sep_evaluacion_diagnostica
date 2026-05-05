@@ -710,9 +710,11 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         );
       }
 
-      // Limpiar el correo tras éxito para evitar que el mensaje de "ya tienes credenciales" 
-      // confunda al usuario si desea hacer una carga nueva/distinta.
-      if (!this.sesionActiva && !evitarReseteo) {
+      // NO reseteamos el campo si acabamos de generar credenciales nuevas que el usuario debe ver
+      const mostroNueva = this.credencialesMostradas?.esNueva && 
+                        this.credencialesMostradas?.usuario === this.correoControl.value;
+
+      if (!this.sesionActiva && !evitarReseteo && !mostroNueva) {
         this.resetearCampoCorreo();
       }
     } catch (error: any) {
@@ -885,7 +887,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
  
       // Resumen final para el usuario
       if (resultadosFolios.length > 0) {
-        const mensajeBase = `Se han sincronizado ${resultadosFolios.length} archivos correctamente.`;
+        const mensajeBase = `Se han guardado ${resultadosFolios.length} archivos correctamente.`;
         const detalleFolios = resultadosFolios.length > 1 
           ? `\nFolios generados:\n${resultadosFolios.join(', ')}` 
           : `\nFolio: ${resultadosFolios[0]}`;
@@ -912,8 +914,11 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         });
       }
       
-      // Limpieza única al final del proceso masivo si no hay sesión
-      if (!this.sesionActiva) {
+      // Limpieza única al final del proceso masivo si no hay sesión y no hay credenciales nuevas críticas
+      const mostroNueva = this.credencialesMostradas?.esNueva && 
+                        this.credencialesMostradas?.usuario === this.correoControl.value;
+
+      if (!this.sesionActiva && !mostroNueva) {
         this.resetearCampoCorreo();
       }
     } finally {
@@ -1098,20 +1103,34 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   }
 
   private establecerCredencialesMostradas(): void {
+    if (this.sesionActiva) {
+      this.credencialesMostradas = null;
+      return;
+    }
+
     const correoInput = this.authService.normalizarCorreo(this.correoControl.value);
+    if (!correoInput) {
+      this.credencialesMostradas = null;
+      return;
+    }
+
     const credencialesExistentes = this.authService.obtenerCredenciales();
     const credencialesGuardadas = this.estadoCredencialesService.obtener();
 
-    // Priorizamos las credenciales que coincidan con el correo del input
-    let fuente = null;
-    if (credencialesGuardadas?.correo === correoInput) fuente = credencialesGuardadas;
-    else if (credencialesExistentes?.correo === correoInput) fuente = credencialesExistentes;
+    // Prioridad absoluta a AuthService para obtener la contraseña real (memoria volátil)
+    // EstadoCredencialesService solo tiene la contraseña enmascarada ('')
+    let fuente: any = null;
+    if (credencialesExistentes && credencialesExistentes.correo === correoInput) {
+      fuente = credencialesExistentes;
+    } else if (credencialesGuardadas && credencialesGuardadas.correo === correoInput) {
+      fuente = credencialesGuardadas;
+    }
 
     if (fuente) {
       this.credencialesMostradas = {
         usuario: fuente.correo,
         contrasena: fuente.contrasena,
-        esNueva: false
+        esNueva: !!(fuente as any).esNueva
       };
     } else {
       this.credencialesMostradas = null;

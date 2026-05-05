@@ -52,18 +52,14 @@
           <th>CCT</th>
           <th>Turno</th>
           <th>Tamaño</th>
-          <th>Fecha de carga</th>
+          <th style="text-align: center;">Fecha de carga</th>
           <th>Estado</th>
-          <th style="text-align: center;">Acciones</th>
+          <th style="text-align: center;">Descargar Archivos</th>
         </tr>
       </thead>
       <tbody>
         <ng-container *ngFor="let registro of registrosFiltrados">
-          <tr 
-            (click)="obtenerEstadoDescripcion(registro) !== 'PENDIENTE' && alternarDetalle(registro.id)" 
-            [style.cursor]="obtenerEstadoDescripcion(registro) === 'PENDIENTE' ? 'default' : 'pointer'" 
-            [class.archivos__row--expandida]="idRegistroExpandido === registro.id"
-          >
+          <tr>
             <td data-label="Folio"><strong>#{{ registro.consecutivo || '?' }}</strong></td>
             <td data-label="Archivo">{{ registro.archivoOriginal }}</td>
             <td data-label="Nivel">{{ obtenerEtiquetaNivel(registro.nivelEducativo) }}</td>
@@ -72,10 +68,7 @@
             <td data-label="Tamaño">{{ formatearTamano(registro.archivoSize) }}</td>
             <td data-label="Fecha">{{ formatearFecha(registro.fechaCarga) }}</td>
             <td data-label="Estado">
-              <span *ngIf="obtenerEstadoDescripcion(registro) === 'PENDIENTE'" class="archivos__texto-estado">
-                PENDIENTE
-              </span>
-              <span *ngIf="obtenerEstadoDescripcion(registro) !== 'PENDIENTE'" class="archivos__badge" [attr.data-estado]="obtenerEstadoDescripcion(registro)">
+              <span class="archivos__texto-estado" [attr.data-estado]="obtenerEstadoDescripcion(registro)">
                 {{ obtenerEstadoDescripcion(registro) }}
               </span>
             </td>
@@ -83,7 +76,7 @@
               <div class="archivos__acciones-celda">
                 <!-- Botón Comprobante PDF (Estado VALIDADO o superior) -->
                 <button 
-                  *ngIf="registro.estadoValidacion >= 2"
+                  *ngIf="esValidoOAsignado(registro)"
                   (click)="descargarComprobante(registro); $event.stopPropagation()" 
                   class="archivos__icon-btn" 
                   title="Descargar Comprobante de Recepción (PDF)"
@@ -98,53 +91,12 @@
                   class="archivos__btn-descargar" 
                   title="Descargar Resultados Procesados"
                 >
-                  Descargar resultados
+                  Resultados
                 </button>
                 
-                <span *ngIf="registro.estadoValidacion < 2" class="archivos__texto-espera">
-                  Pendiente
+                <span *ngIf="!esValidoOAsignado(registro)" class="archivos__texto-espera">
+                  --
                 </span>
-              </div>
-            </td>
-          </tr>
-          <tr *ngIf="idRegistroExpandido === registro.id" class="archivos__resultados-row">
-            <td colspan="9">
-              <div class="archivos__seccion">
-                <h4>Comprobante de recepcion</h4>
-                <p class="archivos__mensaje--info archivos__mensaje-inline">
-                  Descarga el comprobante PDF generado por el backend para esta solicitud.
-                </p>
-                    <!--
-                    <button
-                    (click)="descargarComprobante(registro); $event.stopPropagation()"
-                    class="archivos__btn-descargar archivos__btn-descargar--secundario"
-                    >
-                    Descargar comprobante PDF
-                    </button>-->
-
-              </div>
-
-              <div class="archivos__seccion" *ngIf="registro.resultados && registro.resultados.length">
-                <h4>Resultados Disponibles:</h4>
-                <div class="archivos__grid-resultados">
-                  <div *ngFor="let res of registro.resultados" class="archivos__resultado-item">
-                    <div class="archivos__resultado-info">
-                      <i class="fas fa-file-download archivos__resultado-icon"></i>
-                      <div class="archivos__resultado-text">
-                        <span class="archivos__resultado-nombre">{{ res.nombre }}</span>
-                        <span class="archivos__resultado-size">{{ formatearTamano(res.size) }}</span>
-                      </div>
-                    </div>
-                    <button (click)="descargarArchivo(registro.id, res.nombre); $event.stopPropagation()"
-                      class="archivos__btn-descargar">
-                      Descargar
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="archivos__resultados-meta">
-                Ruta en servidor: <code>{{ registro.archivoPath || 'N/D' }}</code>
               </div>
             </td>
           </tr>

@@ -16,10 +16,11 @@
 .archivos__eyebrow {
   text-transform: uppercase;
   font-weight: 700;
-  font-size: 1.5rem;
-  letter-spacing: 0.08em;
-  color: #611232;
+  font-size: 2rem;
+  letter-spacing: 0.01em;
+  color: #0f766e;
   margin: 0 0 0.35rem;
+
 }
 
 .archivos__titulo {
@@ -190,142 +191,6 @@
     height: 1.15rem;
   }
 
-  .archivos__resultado {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-  }
-
-  .archivos__resultado-nombre {
-    font-weight: 600;
-    color: #13322e;
-    font-size: 1.5rem;
-  }
-
-  .archivos__resultado-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    border: none;
-    background: transparent;
-    color: #1f2937;
-    font-weight: 700;
-    cursor: pointer;
-    padding: 0;
-  }
-
-  .archivos__resultado-toggle svg {
-    transition: transform 0.2s ease;
-  }
-
-  .archivos__resultado-toggle svg[data-expandido='true'] {
-    transform: rotate(90deg);
-  }
-
-  .archivos__resultados-row {
-    background: #f8fafc;
-  }
-
-  .archivos__resultados {
-    padding: 0.75rem 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .archivos__resultados h4 {
-    margin: 0;
-    font-size: 0.95rem;
-    color: #0f172a;
-  }
-
-  .archivos__resultados ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 0.5rem;
-  }
-
-  .archivos__resultados li {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: 0.75rem;
-    align-items: center;
-  }
-
-  .archivos__resultados-meta {
-    color: #64748b;
-    font-size: 0.9rem;
-    margin-top: 0.5rem;
-  }
-
-  .archivos__seccion {
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    background: white;
-    border-radius: 12px;
-    border: 1px solid #e5e7eb;
-
-    h4 {
-      margin-bottom: 0.8rem;
-      color: #13322e;
-      font-weight: 700;
-      font-size: 1.1rem;
-      border-left: 4px solid #9d2449;
-      padding-left: 0.8rem;
-    }
-  }
-
-  .archivos__grid-resultados {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1rem;
-  }
-
-  .archivos__resultado-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem;
-    background: #fdfaf5;
-    border: 1px solid #f6eddc;
-    border-radius: 12px;
-    transition: all 0.2s ease;
-
-    &:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-      background: white;
-    }
-  }
-
-  .archivos__resultado-info {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-  }
-
-  .archivos__resultado-icon {
-    font-size: 1.5rem;
-    color: #9d2449;
-  }
-
-  .archivos__resultado-text {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .archivos__resultado-nombre {
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: #1e293b;
-    word-break: break-all;
-  }
-
-  .archivos__resultado-size {
-    font-size: 0.8rem;
-    color: #64748b;
-  }
 
   .archivos__btn-descargar {
     padding: 0.5rem 1rem;
@@ -370,54 +235,36 @@
     text-decoration: underline;
   }
 
-  .archivos__badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 1.1rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    background: #f2f2f2;
-    color: #666;
-
-
-    &[data-estado="LOCAL"] {
-      background: #fff3e0;
-      color: #ef6c00;
-      border: 1px solid #ffe0b2;
-    }
-
-    &[data-estado="RECIBIDO"] {
-      background: #e1f5fe;
-      color: #0288d1;
-      border: 1px solid #b3e5fc;
-    }
-
-    &[data-estado="VALIDADO"] {
-      background: #e8f5e9;
-      color: #2e7d32;
-      border: 1px solid #c8e6c9;
-    }
-
-    &[data-estado="PROCESADO"] {
-      background: #f3e5f5;
-      color: #7b1fa2;
-      border: 1px solid #e1bee7;
-    }
-    
-    &[data-estado="ASIGNADO"] {
-      background: #e0f7fa;
-      color: #00838f;
-      border: 1px solid #b2ebf2;
-    }
-  }
-
   .archivos__texto-estado {
     color: #888;
     font-weight: 700;
     font-size: 1.1rem;
     text-transform: uppercase;
     display: inline-block;
+
+    &[data-estado="LOCAL"] {
+      color: #ef6c00;
+    }
+
+    &[data-estado="RECIBIDO"] {
+      color: #0288d1;
+    }
+
+    &[data-estado="VALIDADO"] {
+      color: #2e7d32;
+    }
+
+    &[data-estado="PROCESADO"] {
+      color: #7b1fa2;
+    }
+    
+    &[data-estado="ASIGNADO"] {
+      color: #00838f;
+    }
+
+    &[data-estado="ERROR DE VALIDACIÓN"] {
+      color: #9d2449;
+    }
   }
 
   @media (max-width: 720px) {
