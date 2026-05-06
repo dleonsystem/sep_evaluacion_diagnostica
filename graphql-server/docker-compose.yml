@@ -7,6 +7,8 @@ services:
       - "5009:5009"
     env_file:
       - .env
+    environment:
+      TZ: America/Mexico_City
     networks:
       - app-net
     deploy:
