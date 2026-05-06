@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  sftp:
+    image: atmoz/sftp:latest
+    container_name: eia_sftp
+    volumes:
+      - /mnt/archivos/sirver:/home/${SFTP_USER:-eia_user_qa}/upload
+    ports:
+      - "2224:22"
+    environment:
+      SFTP_USERS: "${SFTP_USER:-eia_user_qa}:${SFTP_PASSWORD:-314p4ssw0rd*0526}:1003"
+    networks:
+      - app-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+      placement:
+        constraints:
+          - node.hostname == vsaludback
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "22"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+
+networks:
+  app-net:
+    external: true
