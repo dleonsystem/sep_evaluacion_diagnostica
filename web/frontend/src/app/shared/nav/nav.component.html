@@ -1,120 +1,126 @@
 <nav class="navbar navbar-expand-xl navbar-dark bg-sep-guinda sub-navbar fixed-top">
   <div class="container-fluid px-3">
-    
 
-      <div class="navbar-collapse" [class.show]="menuAbierto">
-        
 
-        <ul class="navbar-nav ml-auto">
+    <div class="navbar-collapse" [class.show]="menuAbierto">
+
+
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+          <a class="nav-link"
+            href="https://ejerciciosintegradores.sep.gob.mx/storage/recursos/2025_01/hxyVy7DgXJ-EIA_2026_AvisoDePrivacidadIntegral.pdf"
+            target="_blank" rel="noopener noreferrer">
+            <i class="bi bi-chat-text-fill"></i>
+
+            <strong> Aviso de privacidad</strong>
+          </a>
+        </li>
+        <span class="nav-link subnav-link subnav-separator">|</span>
+        <li class="nav-item">
+          <a class="nav-link subnav-link" [routerLink]="['/inicio']">
+            <i class="bi bi-house mr-1" aria-hidden="true"></i>
+            <strong> Inicio</strong>
+          </a>
+        </li>
+        <!--SEPARADOR-->
+        <!-- LA MOCHILA QUE REVISA SI ERES ADMIN -->
+        <ng-container *ngIf="!isAdminAutenticado">
+
+          <!-- EL PALITO AHORA ESTÁ ADENTRO Y PROTEGIDO -->
+          <li class="nav-item d-none d-md-block">
+            <span class="nav-link subnav-link subnav-separator">|</span>
+          </li>
+
+          <!-- EL BOTÓN TAMBIÉN ESTÁ ADENTRO -->
           <li class="nav-item">
-            <a class="nav-link" href="https://ejerciciosintegradores.sep.gob.mx/storage/recursos/2025_01/hxyVy7DgXJ-EIA_2026_AvisoDePrivacidadIntegral.pdf" target="_blank" rel="noopener noreferrer">
-              <i class="bi bi-chat-text-fill"></i>
-
-              <strong> Aviso de privacidad</strong>
+            <a class="nav-link subnav-link">
+              <strong> Preguntas frecuentes</strong>
             </a>
           </li>
-          <span class="nav-link subnav-link subnav-separator">|</span>
+
+        </ng-container>
+        <ng-container *ngIf="isAdminAutenticado">
+          <li class="nav-item d-none d-md-block">
+            <!--SEPARADOR-->
+            <span class="nav-link subnav-link subnav-separator">|</span>
+
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link subnav-link dropdown-toggle" href="javascript:void(0)" id="adminDropdown" role="button"
+              (click)="toggleUserMenu()" aria-expanded="false">
+              <i class="bi bi-shield-lock mr-1" aria-hidden="true"></i>
+              <strong>{{ correoAdmin || 'Administrador' }}</strong>
+            </a>
+            <div class="dropdown-menu" [class.show]="userMenuOpen">
+              <a class="dropdown-item" [routerLink]="['/admin/panel']">
+                <i class="bi bi-window-stack mr-2" aria-hidden="true"></i>
+                Panel admin
+              </a>
+              <a class="dropdown-item" [routerLink]="['/admin/dashboard']">
+                <i class="bi bi-speedometer2 mr-2" aria-hidden="true"></i>
+                Dashboard
+              </a>
+              <a class="dropdown-item" [routerLink]="['/descargas']">
+                <i class="bi bi-download mr-2" aria-hidden="true"></i>
+                Descargas
+              </a>
+              <a class="dropdown-item" [routerLink]="['/admin/usuarios']">
+                <i class="bi bi-people-fill mr-2" aria-hidden="true"></i>
+                USUARIOS/OPERADOR
+              </a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="javascript:void(0)" (click)="cerrarSesionAdmin()">
+                <i class="bi bi-shield-x mr-2" aria-hidden="true"></i>
+                Cerrar sesión
+              </a>
+            </div>
+          </li>
+        </ng-container>
+
+        <ng-container *ngIf="isUsuarioAutenticado && !isAdminAutenticado">
+          <li class="nav-item d-none d-md-block">
+            <span class="nav-link subnav-link subnav-separator">|</span>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link subnav-link dropdown-toggle" href="javascript:void(0)" id="userDropdown" role="button"
+              (click)="toggleUserMenu()" aria-expanded="false">
+              <i class="bi bi-person-circle mr-1" aria-hidden="true"></i>
+              <strong>{{ getNombreUsuario() }}</strong>
+            </a>
+            <div class="dropdown-menu" [class.show]="userMenuOpen">
+              <a class="dropdown-item" [routerLink]="['/archivos-evaluacion']">
+                <i class="bi bi-folder2-open mr-2" aria-hidden="true"></i>
+                Cargas realizadas
+              </a>
+              <a class="dropdown-item" [routerLink]="['/tickets']">
+                <i class="bi bi-life-preserver mr-2" aria-hidden="true"></i>
+                Mesa de ayuda
+              </a>
+              <a class="dropdown-item" [routerLink]="['/tickets-historial']">
+                <i class="bi bi-card-list mr-2" aria-hidden="true"></i>
+                Mis tickets
+              </a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="javascript:void(0)" (click)="cerrarSesion()">
+                <i class="bi bi-box-arrow-right mr-2" aria-hidden="true"></i>
+                Cerrar sesión
+              </a>
+            </div>
+          </li>
+        </ng-container>
+
+        <ng-container *ngIf="!isUsuarioAutenticado && !isAdminAutenticado">
+          <li class="nav-item d-none d-md-block">
+            <span class="nav-link subnav-link subnav-separator">|</span>
+          </li>
           <li class="nav-item">
-            <a class="nav-link subnav-link" [routerLink]="['/inicio']">
-              <i class="bi bi-house mr-1" aria-hidden="true"></i>
-              <strong> Inicio</strong>
+            <a class="nav-link subnav-link" href="javascript:void(0)" (click)="iniciarSesion()">
+              <i class="bi bi-box-arrow-in-right mr-1" aria-hidden="true"></i>
+              <strong> Iniciar sesión</strong>
             </a>
           </li>
-          <!--SEPARADOR-->
-          <!-- LA MOCHILA QUE REVISA SI ERES ADMIN -->
-          <ng-container *ngIf="!isAdminAutenticado">
-
-            <!-- EL PALITO AHORA ESTÁ ADENTRO Y PROTEGIDO -->
-            <li class="nav-item d-none d-md-block">
-              <span class="nav-link subnav-link subnav-separator">|</span>
-            </li>
-
-            <!-- EL BOTÓN TAMBIÉN ESTÁ ADENTRO -->
-            <li class="nav-item">
-              <a class="nav-link subnav-link">
-                <strong> Preguntas frecuentes</strong>
-              </a>
-            </li>
-
-          </ng-container>
-          <ng-container *ngIf="isAdminAutenticado">
-            <li class="nav-item d-none d-md-block">
-              <!--SEPARADOR-->
-              <span class="nav-link subnav-link subnav-separator">|</span>
-
-            </li>
-            <li class="nav-item dropdown">
-              <a class="nav-link subnav-link dropdown-toggle" href="javascript:void(0)" id="adminDropdown" role="button"
-                 (click)="toggleUserMenu()" aria-expanded="false">
-                <i class="bi bi-shield-lock mr-1" aria-hidden="true"></i>
-                <strong>{{ correoAdmin || 'Administrador' }}</strong>
-              </a>
-              <div class="dropdown-menu" [class.show]="userMenuOpen">
-                <a class="dropdown-item" [routerLink]="['/admin/panel']">
-                  <i class="bi bi-window-stack mr-2" aria-hidden="true"></i>
-                  Panel admin
-                </a>
-                <a class="dropdown-item" [routerLink]="['/admin/dashboard']">
-                  <i class="bi bi-speedometer2 mr-2" aria-hidden="true"></i>
-                  Dashboard
-                </a>
-                <a class="dropdown-item" [routerLink]="['/descargas']">
-                  <i class="bi bi-download mr-2" aria-hidden="true"></i>
-                  Descargas
-                </a>
-                <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="javascript:void(0)" (click)="cerrarSesionAdmin()">
-                  <i class="bi bi-shield-x mr-2" aria-hidden="true"></i>
-                  Cerrar sesión
-                </a>
-              </div>
-            </li>
-          </ng-container>
-
-          <ng-container *ngIf="isUsuarioAutenticado && !isAdminAutenticado">
-            <li class="nav-item d-none d-md-block">
-              <span class="nav-link subnav-link subnav-separator">|</span>
-            </li>
-            <li class="nav-item dropdown">
-              <a class="nav-link subnav-link dropdown-toggle" href="javascript:void(0)" id="userDropdown" role="button"
-                 (click)="toggleUserMenu()" aria-expanded="false">
-                <i class="bi bi-person-circle mr-1" aria-hidden="true"></i>
-                <strong>{{ getNombreUsuario() }}</strong>
-              </a>
-              <div class="dropdown-menu" [class.show]="userMenuOpen">
-                <a class="dropdown-item" [routerLink]="['/archivos-evaluacion']">
-                  <i class="bi bi-folder2-open mr-2" aria-hidden="true"></i>
-                  Cargas realizadas
-                </a>
-                <a class="dropdown-item" [routerLink]="['/tickets']">
-                  <i class="bi bi-life-preserver mr-2" aria-hidden="true"></i>
-                  Mesa de ayuda
-                </a>
-                <a class="dropdown-item" [routerLink]="['/tickets-historial']">
-                  <i class="bi bi-card-list mr-2" aria-hidden="true"></i>
-                  Mis tickets
-                </a>
-                <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="javascript:void(0)" (click)="cerrarSesion()">
-                  <i class="bi bi-box-arrow-right mr-2" aria-hidden="true"></i>
-                  Cerrar sesión
-                </a>
-              </div>
-            </li>
-          </ng-container>
-
-          <ng-container *ngIf="!isUsuarioAutenticado && !isAdminAutenticado">
-            <li class="nav-item d-none d-md-block">
-              <span class="nav-link subnav-link subnav-separator">|</span>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link subnav-link" href="javascript:void(0)" (click)="iniciarSesion()">
-                <i class="bi bi-box-arrow-in-right mr-1" aria-hidden="true"></i>
-                <strong> Iniciar sesión</strong>
-              </a>
-            </li>
-          </ng-container>
-        </ul>
-      </div>
+        </ng-container>
+      </ul>
     </div>
-  </nav>
+  </div>
+</nav>

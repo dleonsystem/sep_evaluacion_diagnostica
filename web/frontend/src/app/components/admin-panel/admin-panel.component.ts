@@ -66,33 +66,13 @@ export class AdminPanelComponent implements OnInit {
   private readonly uploadHistoryKey = 'adminPanelResultadosHistory';
   private readonly archivosStoragePrefix = 'archivos-resultados';
   private readonly ticketsStorageKey = 'tickets-soporte';
+  ticketParaResponder: TicketSoporte | null = null;
 
-  // Usuarios
-  usuarios: UsuarioCreado[] = [];
-  filtroUsuarioTexto = '';
-  paginaUsuariosActual = 1;
-  totalUsuarios = 0;
-  cargandoUsuarios = false;
   mostrarModalRespuesta = false;
 
   get esCoordinadorFederal(): boolean {
     return this.adminAuthService.obtenerRol() === 'COORDINADOR_FEDERAL';
   }
-  ticketParaResponder: TicketSoporte | null = null;
-
-  // Nuevo Usuario
-  mostrarModalUsuario = false;
-  nuevoUsuario = {
-    email: '',
-    nombre: '',
-    apepaterno: '',
-    apematerno: '',
-    rol: 'CONSULTA' as any,
-    claveCCT: ''
-  };
-  editandoUsuario = false;
-  usuarioSeleccionadoId: string | null = null;
-
   // Catálogo de Escuelas (CU-14)
   escuelas: Escuela[] = [];
   totalEscuelas = 0;
@@ -144,7 +124,6 @@ export class AdminPanelComponent implements OnInit {
     this.cargarExcelDisponibles();
     this.cargarTicketsSoporte();
     this.cargarIncidenciasPublicas();
-    this.cargarUsuarios();
     this.cargarEscuelas();
   }
 
@@ -516,189 +495,6 @@ export class AdminPanelComponent implements OnInit {
       console.error('Error cargando tickets:', error);
     }
   }
-  async cargarUsuarios(): Promise<void> {
-    this.cargandoUsuarios = true;
-    try {
-      const offset = (this.paginaUsuariosActual - 1) * this.tamanioPagina;
-      const resultado = await firstValueFrom(
-        this.usuariosService.listarUsuarios(this.tamanioPagina, offset, this.filtroUsuarioTexto),
-      );
-      this.usuarios = resultado.nodes;
-      this.totalUsuarios = resultado.totalCount;
-    } catch (error) {
-      console.error('Error cargando usuarios:', error);
-    } finally {
-      this.cargandoUsuarios = false;
-    }
-  }
-
-  async enviarPassword(usuario: UsuarioCreado): Promise<void> {
-    const confirmacion = await Swal.fire({
-      title: '¿Enviar contraseña?',
-      text: `Se enviará una nueva contraseña al correo ${usuario.email}. La contraseña anterior dejará de funcionar.`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, enviar',
-      cancelButtonText: 'Cancelar',
-    });
-
-    if (!confirmacion.isConfirmed) {
-      return;
-    }
-
-    try {
-      await firstValueFrom(
-        this.usuariosService.recuperarPassword(usuario.email),
-      );
-      await Swal.fire(
-        'Enviado',
-        `Se ha enviado la nueva contraseña a ${usuario.email}`,
-        'success',
-      );
-    } catch (error: any) {
-      const msg = error.message || 'No se pudo enviar la contraseña.';
-      await Swal.fire('Error', msg, 'error');
-    }
-  }
-
-  irAPaginaUsuarios(pagina: number): void {
-    const totalPaginas = Math.ceil(this.totalUsuarios / this.tamanioPagina);
-    if (pagina < 1 || pagina > totalPaginas) return;
-    this.paginaUsuariosActual = pagina;
-    this.cargarUsuarios();
-  }
-
-  abrirModalUsuario(): void {
-    this.nuevoUsuario = {
-      email: '',
-      nombre: '',
-      apepaterno: '',
-      apematerno: '',
-      rol: 'CONSULTA',
-      claveCCT: ''
-    };
-    this.mostrarModalUsuario = true;
-  }
-
-  cerrarModalUsuario(): void {
-    this.editandoUsuario = false;
-    this.usuarioSeleccionadoId = null;
-    this.mostrarModalUsuario = false;
-  }
-
-  async guardarUsuario(): Promise<void> {
-    if (!this.nuevoUsuario.email || !this.nuevoUsuario.nombre || !this.nuevoUsuario.rol) {
-      return;
-    }
-
-    this.cargandoUsuarios = true;
-    try {
-      if (this.editandoUsuario && this.usuarioSeleccionadoId) {
-        // Modo Edición
-        const input = {
-          nombre: this.nuevoUsuario.nombre,
-          apepaterno: this.nuevoUsuario.apepaterno,
-          apematerno: this.nuevoUsuario.apematerno,
-          rol: this.nuevoUsuario.rol,
-        };
-
-        await firstValueFrom(
-          this.usuariosService.actualizarUsuario(this.usuarioSeleccionadoId, input)
-        );
-
-        await Swal.fire({
-          icon: 'success',
-          title: 'Usuario Actualizado',
-          text: `El usuario ${this.nuevoUsuario.email} ha sido actualizado correctamente.`,
-        });
-      } else {
-        // Modo Creación
-        const password = Math.random().toString(36).slice(-10) + '!A1';
-
-        await firstValueFrom(
-          this.usuariosService.crearUsuario({
-            email: this.nuevoUsuario.email,
-            nombre: this.nuevoUsuario.nombre,
-            apepaterno: this.nuevoUsuario.apepaterno,
-            apematerno: this.nuevoUsuario.apematerno,
-            rol: this.nuevoUsuario.rol,
-            clavesCCT: this.nuevoUsuario.claveCCT ? [this.nuevoUsuario.claveCCT] : [],
-            password: password
-          })
-        );
-
-        await Swal.fire({
-          icon: 'success',
-          title: 'Usuario Creado',
-          text: `El usuario ${this.nuevoUsuario.email} ha sido creado. Se le han enviado sus credenciales por correo electrónico.`,
-        });
-      }
-
-      this.cerrarModalUsuario();
-      await this.cargarUsuarios();
-    } catch (error: any) {
-      console.error('Error al guardar usuario:', error);
-      await Swal.fire('Error', error.message || 'No se pudo procesar la solicitud', 'error');
-    } finally {
-      this.cargandoUsuarios = false;
-    }
-  }
-
-  abrirModalEdicion(usuario: UsuarioCreado): void {
-    this.editandoUsuario = true;
-    this.usuarioSeleccionadoId = usuario.id;
-    this.nuevoUsuario = {
-      email: usuario.email,
-      nombre: usuario.nombre,
-      apepaterno: usuario.apepaterno,
-      apematerno: usuario.apematerno || '',
-      rol: usuario.rol as any,
-      claveCCT: '' // En este sistema la CCT es parte de una tabla intermedia o escuela_id
-    };
-    this.mostrarModalUsuario = true;
-  }
-
-  async cambiarEstadoUsuario(usuario: UsuarioCreado): Promise<void> {
-    const accion = usuario.activo ? 'desactivar' : 'activar';
-    const confirmacion = await Swal.fire({
-      title: `¿${accion.charAt(0).toUpperCase() + accion.slice(1)} usuario?`,
-      text: `¿Estás seguro de que deseas ${accion} al usuario ${usuario.email}?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: `Sí, ${accion}`,
-      cancelButtonText: 'Cancelar',
-    });
-
-    if (!confirmacion.isConfirmed) return;
-
-    try {
-      if (usuario.activo) {
-        // Soft delete
-        await firstValueFrom(this.usuariosService.eliminarUsuario(usuario.id));
-      } else {
-        // Reactivación via update
-        await firstValueFrom(this.usuariosService.actualizarUsuario(usuario.id, { activo: true }));
-      }
-
-      await Swal.fire('Éxito', `Usuario ${accion}do correctamente.`, 'success');
-      await this.cargarUsuarios();
-    } catch (error: any) {
-      await Swal.fire('Error', error.message || `No se pudo ${accion} al usuario.`, 'error');
-    }
-  }
-
-  get usuariosFiltrados(): UsuarioCreado[] {
-    return this.usuarios;
-  }
-
-  get totalPaginasUsuarios(): number {
-    return Math.ceil(this.totalUsuarios / this.tamanioPagina);
-  }
-
-  get paginasUsuariosDisponibles(): number[] {
-    return Array.from({ length: this.totalPaginasUsuarios }, (_, i) => i + 1);
-  }
-
   private mapTicketDBToUI(t: TicketDB): TicketSoporte {
     // Para incidencias públicas, usamos los campos específicos si existen
     const dbCasteada = t as any;
