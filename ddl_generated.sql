@@ -411,6 +411,8 @@ CREATE TABLE cat_roles_usuario (
 	created_at  TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+COMMENT ON COLUMN cat_roles_usuario.permisos IS 'Matriz de permisos en formato JSON (llaves booleanas). Ejemplo: {"view_users": true}';
+
 CREATE TABLE materias (
 	id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 	codigo            VARCHAR(10) NOT NULL UNIQUE,

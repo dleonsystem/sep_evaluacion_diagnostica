@@ -1,0 +1,4 @@
+{
+  "title": "[Fase 1] Perfil de Administrador e integración de menú USUARIOS/OPERADOR",
+  "body": "Propuesta para el Perfil de Administrador\n\nEl SISTEMA deberá mantener un perfil de ADMINISTRADOR, que podrá acceder al sistema general, así como al dashboard, panel de admini, etc...\n\nIntegrar en menú desplegable una opción de USUARIOS/OPERADOR.\n\nEsta opción debe de ir luego de la opción de Descargas."
+}
