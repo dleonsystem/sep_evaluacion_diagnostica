@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 interface PdfExitoPayload {
   correo: string;
@@ -8,234 +9,215 @@ interface PdfExitoPayload {
   cct: string;
   fechaValidacion: string;
   consecutivo: string; // Trazabilidad CU-04v2
+  hashArchivo?: string; // Sello Digital (Issue #260)
+}
+
+export interface GrupoErrores {
+  hoja: string;
+  ubicaciones: Array<{
+    titulo: string;
+    items: string[];
+  }>;
 }
 
 interface PdfErroresPayload {
   correo: string;
-  errores: string[];
+  erroresAgrupados: GrupoErrores[];
   advertencias?: string[];
   archivo: string;
 }
 
-interface PdfContenido {
-  titulo: string;
-  lineas: string[];
-  notas?: string[];
-}
-
 @Injectable({ providedIn: 'root' })
 export class MockPdfService {
-  private readonly probabilidadFalloRed = 0.2;
-  private readonly demoraMs = 900;
+  private readonly demoraMs = 500;
 
-  async generarPdfExito(payload: PdfExitoPayload, simularFallo = true): Promise<Blob> {
-    await this.simularLlamada(simularFallo);
-    const contenido = this.armarContenidoExito(payload);
-    return this.crearPdf(contenido);
+  /**
+   * Genera el PDF de Éxito usando la plantilla
+   */
+  async generarPdfExito(payload: PdfExitoPayload, simularFallo = false): Promise<Blob> {
+    return this.generarPdfDesdePlantilla(true, payload);
   }
 
-  async generarPdfErrores(payload: PdfErroresPayload, simularFallo = true): Promise<Blob> {
-    await this.simularLlamada(simularFallo);
-    const contenido = this.armarContenidoErrores(payload);
-    return this.crearPdf(contenido);
+  /**
+   * Genera el PDF de Errores usando la plantilla
+   */
+  async generarPdfErrores(payload: PdfErroresPayload, simularFallo = false): Promise<Blob> {
+    return this.generarPdfDesdePlantilla(false, payload);
   }
 
-  descargarPdf(blob: Blob, nombre: string): void {
-    const url = URL.createObjectURL(blob);
-    const enlace = document.createElement('a');
-    enlace.href = url;
-    enlace.download = nombre;
-    enlace.click();
-    URL.revokeObjectURL(url);
-  }
-
-  private async simularLlamada(simularFallo: boolean): Promise<void> {
+  /**
+   * Lógica centralizada para dibujar sobre el PDF
+   */
+  private async generarPdfDesdePlantilla(esExito: boolean, payload: any): Promise<Blob> {
+    // Pausa estética para el spinner
     await new Promise((resolve) => setTimeout(resolve, this.demoraMs));
-    const fallo = simularFallo && Math.random() < this.probabilidadFalloRed;
-    if (fallo) {
-      throw new Error('Fallo de red simulado. Intenta nuevamente.');
-    }
-  }
 
-  private crearPdf(contenido: PdfContenido): Blob {
-    const encoder = new TextEncoder();
-    const titulo = this.sanitizarLinea(contenido.titulo);
-    const lineas = contenido.lineas.map((linea) => this.sanitizarLinea(linea));
-    const notas = (contenido.notas ?? []).map((nota) => this.sanitizarLinea(nota));
-    const textoLineas = [...lineas, '', ...notas].filter((linea, index, arr) => {
-      if (linea !== '') {
-        return true;
-      }
-      return index < arr.length - 1 && arr[index + 1] !== '';
-    });
+    try {
+      const response = await fetch('assets/templates/plantilla_eia.pdf');
+      if (!response.ok) throw new Error('No se encontró la plantilla en assets/templates/');
 
-    const contenidoTexto = this.construirTextoPdf(textoLineas, 72, 720, 12, 18);
-    const encabezado = [
-      'q',
-      '0.38 0.07 0.20 rg',
-      '0 756 612 36 re',
-      'f',
-      'Q',
-      'BT',
-      '/F1 16 Tf',
-      '1 1 1 rg',
-      '72 770 Td',
-      `(${this.escaparTextoPdf(titulo)}) Tj`,
-      'ET'
-    ].join('\n');
+      const buffer = await response.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(buffer);
 
-    const stream = `${encabezado}\n${contenidoTexto}\n`;
-    const streamBytes = this.encodeLatin1(stream);
-    const objects: Uint8Array[] = [];
+      // Fuentes estándar
+      const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-    const pushObject = (texto: string): void => {
-      objects.push(encoder.encode(texto));
-    };
+      const pagesList = pdfDoc.getPages();
+      const firstPageTemplate = pagesList[0];
+      const { width, height } = firstPageTemplate.getSize();
 
-    pushObject(`1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`);
-    pushObject(`2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n`);
-    pushObject(
-      `3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`
-    );
-    pushObject(
-      `4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n`
-    );
+      // Embeber la primera página (limpia) para usarla como fondo en todas las páginas del reporte
+      const [backgroundPage] = await pdfDoc.embedPages([firstPageTemplate]);
 
-    const contenidoHeader = encoder.encode(`5 0 obj\n<< /Length ${streamBytes.length} >>\nstream\n`);
-    const contenidoFooter = encoder.encode(`\nendstream\nendobj\n`);
-    const contenidoObject = this.concatBytes([contenidoHeader, streamBytes, contenidoFooter]);
-    objects.push(contenidoObject);
+      // Crear la primera página real del reporte que usaremos para dibujar
+      let currentPage = pdfDoc.addPage([width, height]);
+      currentPage.drawPage(backgroundPage, { x: 0, y: 0, width, height });
 
-    const partes: Uint8Array[] = [];
-    const offsets: number[] = [0];
-    let offset = 0;
+      if (esExito) {
+        const p = payload as PdfExitoPayload;
+        const xLabel = 100; // Posición de las etiquetas
+        const xValue = 220; // Posición de los datos
+        let yPos = height - 165;
 
-    const pushBytes = (bytes: Uint8Array): void => {
-      partes.push(bytes);
-      offset += bytes.length;
-    };
+        const configLabel = { size: 10, font: fontBold, color: rgb(0, 0, 0) };
+        const configVal = { size: 10, font: fontRegular, color: rgb(0, 0, 0) };
 
-    pushBytes(encoder.encode('%PDF-1.4\n'));
-    objects.forEach((obj) => {
-      offsets.push(offset);
-      pushBytes(obj);
-    });
+        // --- IMPRESIÓN DE DATOS CON ETIQUETAS ---
+        currentPage.drawText('CCT:', { x: xLabel, y: yPos, ...configLabel });
+        currentPage.drawText(p.cct || '', { x: xValue, y: yPos, ...configVal });
 
-    const xrefOffset = offset;
-    let xref = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-    offsets.slice(1).forEach((objOffset) => {
-      xref += `${objOffset.toString().padStart(10, '0')} 00000 n \n`;
-    });
-    pushBytes(encoder.encode(xref));
-    pushBytes(
-      encoder.encode(`trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`)
-    );
+        yPos -= 20;
+        currentPage.drawText('Correo electrónico:', { x: xLabel, y: yPos, ...configLabel });
+        currentPage.drawText(p.correo || '', { x: xValue, y: yPos, ...configVal });
 
-    return new Blob(partes, { type: 'application/pdf' });
-  }
+        yPos -= 20;
+        currentPage.drawText('Fecha de validación:', { x: xLabel, y: yPos, ...configLabel });
+        currentPage.drawText(p.fechaValidacion || '', { x: xValue, y: yPos, ...configVal });
 
-  private armarContenidoExito(payload: PdfExitoPayload): PdfContenido {
-    return {
-      titulo: 'Comprobante de validación',
-      lineas: [
-        `Folio Siguiente: ${payload.consecutivo}`, // Trazabilidad
-        'Archivo validado correctamente.',
-        `Fecha disponible para resultados: ${payload.fechaDisponible}`,
-        `CCT: ${payload.cct}`,
-        `Usuario (correo registrado): ${payload.correo}`,
-        `Contraseña generada: ${payload.contrasena}`,
-        `Marca de tiempo de validación: ${payload.fechaValidacion}`,
-        `Total de alumnos validados: ${payload.alumnosValidados}`
-      ],
-      notas: ['Este PDF sustituye temporalmente al emitido por FastAPI.']
-    };
-  }
+        yPos -= 20;
+        currentPage.drawText('Estudiantes validados:', { x: 170, y: yPos, size: 11, font: fontBold });
+        currentPage.drawText(`${p.alumnosValidados}`, { x: 370, y: yPos, size: 11, font: fontRegular });
 
-  private armarContenidoErrores(payload: PdfErroresPayload): PdfContenido {
-    const errores = payload.errores.length
-      ? payload.errores.map((error, idx) => `${idx + 1}. ${error}`)
-      : ['Sin detalles'];
-    const advertencias = (payload.advertencias ?? []).map((adv) => `⚠️ ${adv}`);
-    return {
-      titulo: 'Reporte de errores',
-      lineas: [
-        `El archivo ${payload.archivo} no pasó la validación.`,
-        `Correo capturado: ${payload.correo || 'N/D'}`,
-        'Errores detectados:',
-        ...errores,
-        ...(advertencias.length ? ['Advertencias:', ...advertencias] : [])
-      ],
-      notas: ['Corrige los puntos anteriores y vuelve a cargar el archivo.']
-    };
-  }
-
-  private sanitizarLinea(texto: string): string {
-    return texto.normalize('NFC').replace(/[\u0000-\u001F\u007F]/g, ' ').trim();
-  }
-
-  private escaparTextoPdf(texto: string): string {
-    return texto.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
-  }
-
-
-
-
-  private construirTextoPdf(
-    lineas: string[],
-    margenX: number,
-    margenY: number,
-    fontSize: number,
-    lineHeight: number
-  ): string {
-    const segmentos = lineas.map((linea) => this.escaparTextoPdf(linea));
-    const piezas: string[] = [];
-    piezas.push('BT');
-    piezas.push(`/F1 ${fontSize} Tf`);
-    piezas.push('0 0 0 rg');
-    piezas.push(`${lineHeight} TL`);
-    piezas.push(`${margenX} ${margenY} Td`);
-    segmentos.forEach((segmento, index) => {
-      if (index === 0) {
-        if (segmento) {
-          piezas.push(`(${segmento}) Tj`);
+        // --- SELLO DIGITAL (HASH) ---
+        if (p.hashArchivo) {
+          yPos -= 30;
+          currentPage.drawText('Sello Digital (SHA256):', { x: 170, y: yPos, size: 11, font: fontBold });
+          currentPage.drawText(p.hashArchivo.substring(0, 32), { x: 370, y: yPos, size: 8, font: fontRegular });
+          yPos -= 12;
+          currentPage.drawText(p.hashArchivo.substring(32), { x: 370, y: yPos, size: 8, font: fontRegular });
         }
-        return;
+
+        // --- CONTRASEÑA ---
+        if (p.contrasena && p.contrasena !== '********') {
+          yPos = height - 350;
+          currentPage.drawText('CONTRASEÑA DE ACCESO:', {
+            x: 160, y: yPos, size: 12, font: fontBold, color: rgb(0.41, 0.11, 0.2)
+          });
+
+          yPos -= 30;
+          currentPage.drawText(p.contrasena, {
+            x: 190, y: yPos, size: 22, font: fontBold, color: rgb(0.41, 0.11, 0.2)
+          });
+        } else {
+          // Si es un usuario logueado o ya tiene credenciales previas
+          yPos = height - 350;
+          currentPage.drawText('SU CONTRASEÑA ES LA QUE YA TIENE REGISTRADA EN EL SISTEMA', {
+            x: 100, y: yPos, size: 12, font: fontBold, color: rgb(0.41, 0.11, 0.2)
+          });
+          yPos -= 30; // mantener el espaciado
+        }
+
+        // --- NOTA FINAL ---
+        yPos -= 60;
+        currentPage.drawText(`Sus resultados estarán disponibles el: ${p.fechaDisponible}`, {
+          x: 130, y: yPos, size: 11, font: fontBold
+        });
+      } else {
+        const p = payload as PdfErroresPayload;
+        const lineSpacing = 12;
+
+        const dibujarCabecera = () => {
+          currentPage.drawText('REPORTE DE INCONSISTENCIAS DETECTADAS', {
+            x: 120, y: height - 120, size: 14, font: fontBold, color: rgb(0.41, 0.11, 0.2)
+          });
+          currentPage.drawText(`Archivo: ${p.archivo}`, { x: 120, y: height - 150, size: 10, font: fontBold });
+        };
+
+        // Función auxiliar para manejar el salto de página con fondo institucional
+        const manejarSaltoPagina = async () => {
+          if (yPos < 70) {
+            currentPage = pdfDoc.addPage([width, height]);
+            currentPage.drawPage(backgroundPage, { x: 0, y: 0, width, height });
+            dibujarCabecera();
+            yPos = height - 180;
+            return true;
+          }
+          return false;
+        };
+
+        // Dibujar cabecera en la primera página
+        dibujarCabecera();
+        let yPos = height - 180;
+        const marginX = 80;
+
+        for (const grupo of p.erroresAgrupados) {
+          await manejarSaltoPagina();
+
+          const tituloHoja = grupo.hoja === 'General' ? 'General' : `Hoja ${grupo.hoja}`;
+          currentPage.drawText(tituloHoja, { x: marginX, y: yPos, size: 9, font: fontBold });
+          yPos -= lineSpacing + 2;
+
+          for (const ubicacion of grupo.ubicaciones) {
+            await manejarSaltoPagina();
+
+            currentPage.drawText(ubicacion.titulo, { x: marginX + 10, y: yPos, size: 8, font: fontBold, color: rgb(0, 0.4, 0.4) });
+            yPos -= lineSpacing;
+
+            for (const item of ubicacion.items) {
+              await manejarSaltoPagina();
+
+              // Dibujar punto y texto (con wrap manual simple si es muy largo)
+              const text = `• ${item}`;
+              const maxLength = 100;
+              if (text.length > maxLength) {
+                 currentPage.drawText(text.substring(0, maxLength), { x: marginX + 20, y: yPos, size: 8, font: fontRegular });
+                 yPos -= lineSpacing;
+                 currentPage.drawText(text.substring(maxLength), { x: marginX + 28, y: yPos, size: 8, font: fontRegular });
+              } else {
+                 currentPage.drawText(text, { x: marginX + 20, y: yPos, size: 8, font: fontRegular });
+              }
+              yPos -= lineSpacing;
+            }
+            yPos -= 4; // Espacio entre ubicaciones
+          }
+          yPos -= 8; // Espacio entre grupos
+        }
       }
-      piezas.push('T*');
-      if (segmento) {
-        piezas.push(`(${segmento}) Tj`);
-      }
-    });
-    piezas.push('ET');
-    return piezas.join('\n');
-  }
 
 
+      pdfDoc.removePage(0); // Eliminar la hoja original de la plantilla para que no aparezca al inicio
+      const pdfBytes = await pdfDoc.save();
+      return new Blob([pdfBytes], { type: 'application/pdf' });
 
-
-
-
-
-
-  private encodeLatin1(texto: string): Uint8Array {
-    const bytes = new Uint8Array(texto.length);
-    for (let i = 0; i < texto.length; i += 1) {
-      const code = texto.charCodeAt(i);
-      bytes[i] = code <= 255 ? code : 63;
+    } catch (error) {
+      console.error('Error generando PDF:', error);
+      throw error;
     }
-    return bytes;
   }
 
 
-
-  private concatBytes(partes: Uint8Array[]): Uint8Array {
-    const total = partes.reduce((sum, parte) => sum + parte.length, 0);
-    const resultado = new Uint8Array(total);
-    let offset = 0;
-    partes.forEach((parte) => {
-      resultado.set(parte, offset);
-      offset += parte.length;
-    });
-    return resultado;
+  /**
+   * Método para descargar el archivo en el navegador
+   */
+  descargarPdf(blob: Blob, nombre: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nombre.toLowerCase().endsWith('.pdf') ? nombre : `${nombre}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   }
 }

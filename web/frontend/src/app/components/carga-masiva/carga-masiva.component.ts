@@ -13,7 +13,7 @@ import { EscDatos } from '../../services/excel-validation.service';
 import { Subject, firstValueFrom, takeUntil } from 'rxjs';
 import { EstadoCredencialesService } from '../../services/estado-credenciales.service';
 import { GraphqlService } from '../../services/graphql.service';
-import { MockPdfService } from '../../services/mock-pdf.service';
+import { MockPdfService, GrupoErrores } from '../../services/mock-pdf.service';
 import { UsuariosService } from '../../services/usuarios.service';
 import { EvaluacionesService, ExcelValidationError } from '../../services/evaluaciones.service';
 import { timeout, catchError, throwError, debounceTime, distinctUntilChanged } from 'rxjs';
@@ -25,6 +25,7 @@ interface ResultadoExito {
   credenciales: { usuario: string; contrasena: string; esNueva: boolean };
   totalAlumnos: number;
   consecutivo: string; // Trazabilidad
+  hashArchivo?: string;
 }
 
 interface ResultadoArchivo {
@@ -53,15 +54,9 @@ interface ResultadoArchivo {
   pdfError: string | null;
   pdfNombre: string | null;
   pdfTipo: 'exito' | 'error' | null;
+  pdfBlob?: Blob;
 }
 
-interface GrupoErrores {
-  hoja: string;
-  ubicaciones: Array<{
-    titulo: string;
-    items: string[];
-  }>;
-}
 
 interface CredencialesMostradas {
   usuario: string;
@@ -79,6 +74,7 @@ interface CredencialesMostradas {
 export class CargaMasivaComponent implements OnInit, OnDestroy {
   readonly extensionesPermitidas = ['.xlsx'];
   readonly pesoMaximoMb = 10;
+  readonly maxArchivosMasiva = 10;
   readonly correoPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   readonly correoControl = new FormControl('', {
@@ -94,17 +90,23 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
   credencialesAsociadas = false;
   contrasenaAsociada: string | null = null;
   guardandoTodo = false;
-  intentosFallidos = 0;
+  archivosTotalGuardar = 0;
+  archivosProcesadosGuardar = 0;
+  ultimoFolioProcesado: string | null = null;
+  private historialFallos: Map<string, Map<string, number>> = new Map();
+  private contextoFalloActual: { correo: string, idArchivo: string } | null = null;
+  readonly umbralFallosTicket = 3;
   mostrarModalIncidencia = false;
   isDragging = false;
 
   evidenciasIncidencia: any[] = [];
   readonly maxEvidenciasIncidencia = 5;
-  readonly extensionesEvidencias = ['.pdf', '.jpg', '.jpeg', '.png'];
+  readonly extensionesEvidencias = ['.pdf', '.jpg', '.jpeg', '.png', '.xlsx'];
 
   readonly incidenciaForm = new FormGroup({
     nombreCompleto: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     cct: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(10), Validators.maxLength(10)] }),
+    turno: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
     descripcion: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] })
   });
@@ -182,13 +184,34 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.authService.requiereLoginParaNuevaCarga(this.correoControl.value)) {
-      await this.mostrarAvisoLogin();
+    // 1. Validar si hay una sesión activa que no coincide con el correo ingresado
+    if (this.sesionActiva && this.authService.requiereLoginParaNuevaCarga(this.correoControl.value)) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Correo no coincide',
+        text: 'Estás autenticado con una cuenta diferente. Por favor, usa el correo de tu sesión o cierra sesión para usar uno nuevo.'
+      });
+      this.limpiarSeleccion(input);
+      return;
+    }
+
+    // 2. Validar si el usuario existe en el servidor (esto muestra la alerta de "Iniciar sesión")
+    if (await this.verificarExistenciaUsuario(this.correoControl.value)) {
       this.limpiarSeleccion(input);
       return;
     }
 
     if (!archivos.length) {
+      return;
+    }
+
+    if (this.resultados.length + archivos.length > this.maxArchivosMasiva) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Límite excedido',
+        text: `Solo se permite cargar un máximo de ${this.maxArchivosMasiva} archivos a la vez.`
+      });
+      this.limpiarSeleccion(input);
       return;
     }
 
@@ -199,46 +222,115 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     input.value = '';
   }
 
-  onDragOver(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    if (this.correoControl.valid) {
+  private dragCounter = 0;
+
+  @HostListener('window:dragenter', ['$event'])
+  onWindowDragEnter(event: DragEvent): void {
+    if (this.isOverDropZone(event)) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.dragCounter++;
       this.isDragging = true;
     }
   }
 
-  onDragLeave(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragging = false;
+  @HostListener('window:dragover', ['$event'])
+  onWindowDragOver(event: DragEvent): void {
+    if (this.isOverDropZone(event)) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.isDragging = true;
+    }
   }
 
-  async onDrop(event: DragEvent): Promise<void> {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragging = false;
+  @HostListener('window:dragleave', ['$event'])
+  onWindowDragLeave(event: DragEvent): void {
+    if (this.isOverDropZone(event)) {
+      this.dragCounter--;
+      if (this.dragCounter <= 0) {
+        this.isDragging = false;
+        this.dragCounter = 0;
+      }
+    }
+  }
 
+  @HostListener('window:drop', ['$event'])
+  async onWindowDrop(event: DragEvent): Promise<void> {
+    if (this.isOverDropZone(event)) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.isDragging = false;
+      this.dragCounter = 0;
+
+      const files = event.dataTransfer?.files;
+      if (files && files.length > 0) {
+        await this.handleFiles(files);
+      }
+    }
+  }
+
+  private isOverDropZone(event: DragEvent): boolean {
+    const zone = document.querySelector('.carga__zona');
+    if (!zone) return false;
+    const rect = zone.getBoundingClientRect();
+    return (
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom
+    );
+  }
+
+  private async handleFiles(files: FileList): Promise<void> {
     if (this.correoControl.invalid) {
       this.correoControl.markAllAsTouched();
       await Swal.fire({
         icon: 'warning',
         title: 'Correo requerido',
-        text: 'Ingresa un correo electrónico válido antes de arrastrar tu archivo.'
+        text: 'Ingresa un correo electrónico válido antes de procesar tus archivos.'
       });
       return;
     }
 
-    if (this.authService.requiereLoginParaNuevaCarga(this.correoControl.value)) {
-      await this.mostrarAvisoLogin();
+    // 1. Validar si hay una sesión activa que no coincide con el correo ingresado
+    if (this.sesionActiva && this.authService.requiereLoginParaNuevaCarga(this.correoControl.value)) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Correo no coincide',
+        text: 'Estás autenticado con una cuenta diferente. Por favor, usa el correo de tu sesión o cierra sesión para usar uno nuevo.'
+      });
       return;
     }
 
-    const files = event.dataTransfer?.files;
-    if (files && files.length > 0) {
-      for (let i = 0; i < files.length; i++) {
-        await this.procesarArchivo(files[i]);
-      }
+    // 2. Validar si el usuario existe en el servidor (esto muestra la alerta de "Iniciar sesión")
+    if (await this.verificarExistenciaUsuario(this.correoControl.value)) {
+      return;
     }
+
+    if (this.resultados.length + files.length > this.maxArchivosMasiva) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Límite excedido',
+        text: `Solo se permite cargar un máximo de ${this.maxArchivosMasiva} archivos a la vez.`
+      });
+      return;
+    }
+
+    for (let i = 0; i < files.length; i++) {
+        await this.procesarArchivo(files[i]);
+    }
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+  }
+
+  onDragLeave(event: DragEvent): void {
+    // Redundante con el HostListener
+  }
+
+  async onDrop(event: DragEvent): Promise<void> {
+    // Redundante con el HostListener
   }
 
   private async mostrarAvisoLogin(): Promise<void> {
@@ -334,33 +426,77 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
   }
 
-  private registrarIntentoFallido(): void {
-    console.log('--- Registro de Intento Fallido ---');
-    console.log('Sesión activa:', this.sesionActiva);
-    if (this.sesionActiva) {
-      console.log('Intento ignorado por sesión activa.');
-      return; 
+  private generarIdArchivo(resultado: ResultadoArchivo): string {
+    // Intentar agrupar primariamente por CCT y Turno
+    if (resultado.escDatos?.cct && resultado.escDatos?.turno) {
+      return `${resultado.escDatos.cct}-${resultado.escDatos.turno}`;
     }
     
-    this.intentosFallidos++;
-    console.log('Total de intentos fallidos:', this.intentosFallidos);
+    // Si no se pudo parsear el CCT/Turno por un error estructural, hacemos fallback al nombre del archivo
+    return resultado.archivoOriginal?.name || 'archivo-desconocido';
+  }
+
+  private registrarIntentoFallido(resultadoArchivo: ResultadoArchivo): void {
+    const correo = this.authService.normalizarCorreo(this.correoControl.value || this.correoSesion || '');
+    if (!correo || !resultadoArchivo.archivoOriginal) return;
+
+    const idArchivo = this.generarIdArchivo(resultadoArchivo);
     
-    if (this.intentosFallidos >= 3) {
-      console.log('Umbral alcanzado (>=3). Abriendo modal de incidencia...');
-      this.abrirModalIncidencia();
+    if (!this.historialFallos.has(correo)) {
+      this.historialFallos.set(correo, new Map<string, number>());
+    }
+
+    const fallosUsuario = this.historialFallos.get(correo)!;
+    const conteoActual = (fallosUsuario.get(idArchivo) || 0) + 1;
+    fallosUsuario.set(idArchivo, conteoActual);
+
+    console.log(`--- Registro de Intento Fallido [${correo}] ---`);
+    console.log(`Archivo: ${resultadoArchivo.archivo.name} | Fallos: ${conteoActual}`);
+
+    if (conteoActual >= this.umbralFallosTicket) {
+      console.log(`Umbral alcanzado (>=${this.umbralFallosTicket}). Abriendo modal de incidencia...`);
+      this.contextoFalloActual = { correo, idArchivo };
+      this.abrirModalIncidencia(resultadoArchivo);
     }
   }
 
-  abrirModalIncidencia(): void {
+  abrirModalIncidencia(resultadoArchivo?: ResultadoArchivo): void {
+    let preDescripcion = '';
+    if (resultadoArchivo) {
+      const errString = resultadoArchivo.errores.map((e, index) => `${index + 1}. ${e}`).join('\n');
+      preDescripcion = `Registro técnico (Fallos de Validación):\n${errString}\n\n`;
+
+      // Auto-adjuntar la evidencia generada en PDF del dictamen técnico,
+      // dado que los archivos .xlsx no están permitidos por el formulario de tickets.
+      if (resultadoArchivo.pdfBlob && resultadoArchivo.pdfNombre) {
+        const pdfFile = new File([resultadoArchivo.pdfBlob], resultadoArchivo.pdfNombre, { type: 'application/pdf' });
+        const yaAdjunto = this.evidenciasIncidencia.find(e => e.archivo.name === pdfFile.name);
+        if (!yaAdjunto) {
+          this.evidenciasIncidencia.push({
+            id: Math.random().toString(36).substring(2),
+            archivo: pdfFile
+          });
+        }
+      }
+    }
+
     this.incidenciaForm.patchValue({
-       email: this.correoControl.value
+      email: this.correoControl.value,
+      descripcion: ''
     });
     this.mostrarModalIncidencia = true;
   }
 
   cerrarModalIncidencia(): void {
     this.mostrarModalIncidencia = false;
-    this.intentosFallidos = 0; // Resetear tras cerrar o enviar
+    
+    // Resetear solo el contador del contexto que disparó el modal
+    if (this.contextoFalloActual) {
+      const { correo, idArchivo } = this.contextoFalloActual;
+      this.historialFallos.get(correo)?.delete(idArchivo);
+      this.contextoFalloActual = null;
+    }
+
     this.evidenciasIncidencia = [];
   }
 
@@ -383,8 +519,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
 
     this.evidenciasIncidencia.push({
-       id: Math.random().toString(36).substring(2),
-       archivo
+      id: Math.random().toString(36).substring(2),
+      archivo
     });
   }
 
@@ -412,7 +548,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     try {
       const data = this.incidenciaForm.getRawValue();
-      
+
       const evidenciasBase64 = await Promise.all(
         this.evidenciasIncidencia.map(async ev => ({
           nombre: ev.archivo.name,
@@ -428,11 +564,12 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
           }
         }
       `;
-      
+
       const variables = {
         input: {
           nombreCompleto: data.nombreCompleto,
           cct: data.cct,
+          turno: data.turno,
           email: data.email,
           descripcion: data.descripcion,
           evidencias: evidenciasBase64
@@ -444,7 +581,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       await Swal.fire({
         icon: 'success',
         title: 'Incidencia reportada',
-        text: 'Se ha mandado correctamente su información capturada. El sistema generará un ticket para darle atención.',
+        text: 'Se ha enviado correctamente su información. Sus credenciales de acceso han sido enviadas a su correo electrónico y se ha generado un ticket para dar seguimiento a su incidencia.',
         confirmButtonColor: '#00695c'
       });
 
@@ -456,7 +593,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
   }
 
-  async guardarArchivo(resultado: ResultadoArchivo): Promise<void> {
+  async guardarArchivo(resultado: ResultadoArchivo, evitarReseteo = false): Promise<void> {
     if (this.correoControl.invalid) {
       this.correoControl.markAllAsTouched();
       resultado.errorGuardado = 'Agrega un correo electrónico válido para continuar con la carga.';
@@ -489,22 +626,13 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       this.correoControl.setValue(this.correoSesion);
     }
 
-    // Al intentar guardar, ocultamos la caja de credenciales viejas para que solo se vea 
-    // lo nuevo o lo que corresponda a este envío.
-    this.credencialesMostradas = null;
+    // Solo ocultamos la caja de credenciales si el correo es distinto
+    // así evitamos que "desaparezca" visualmente la contraseña durante la subida.
+    if (this.credencialesMostradas?.usuario !== this.correoControl.value) {
+      this.credencialesMostradas = null;
+    }
 
     try {
-      resultado.mensajeInformativo = 'Registrando usuario y generando credenciales de acceso...';
-      const credencialesListas = await this.registrarUsuarioYCredenciales(resultado);
-
-      if (credencialesListas) {
-        // Ya no iniciamos sesión automáticamente para permitir que el usuario 
-        // pueda cambiar el correo si desea subir archivos de otra persona.
-        this.actualizarEstadoSesion();
-      } else {
-        throw new Error('No se pudieron establecer las credenciales de acceso.');
-      }
-
       resultado.mensajeInformativo = 'Sincronizando con base de datos y SFTP institucional...';
       const base64 = await this.fileToBase64(resultado.archivoOriginal);
 
@@ -537,29 +665,40 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
       resultado.guardado = true;
       resultado.estado = 'exito';
-      resultado.mensajeInformativo = `El archivo se recibió correctamente. Folio de seguimiento: ${respuestaApi.consecutivo || 'Pendiente'}`;
-
-      const textoExito = respuestaApi.consecutivo
-        ? `La información se ha sincronizado. Tu folio de seguimiento es: ${respuestaApi.consecutivo}`
-        : 'La información se ha sincronizado correctamente con el servidor.';
 
       if (resultado.resultadoExito && respuestaApi.consecutivo) {
         resultado.resultadoExito.consecutivo = respuestaApi.consecutivo;
+        resultado.resultadoExito.hashArchivo = respuestaApi.hashArchivo;
       }
 
-      await Swal.fire({
-        icon: 'success',
-        title: 'Archivo cargado',
-        text: textoExito,
-      });
+      resultado.mensajeInformativo = `El archivo se recibió correctamente. Folio de seguimiento: ${respuestaApi.consecutivo || 'Pendiente'}`;
 
-      // Limpiar el correo tras éxito para evitar que el mensaje de "ya tienes credenciales" 
-      // confunda al usuario si desea hacer una carga nueva/distinta.
-      if (!this.sesionActiva) {
-        this.correoControl.setValue('');
-        this.correoControl.markAsPristine();
-        this.correoControl.markAsUntouched();
-        this.actualizarEstadoSesion();
+      // CRÍTICO: SOLO AHORA QUE EL SERVIDOR ACEPTÓ EL ARCHIVO, VINCULAMOS USUARIO
+      resultado.mensajeInformativo = 'Sincronizando claves de acceso...';
+      const credencialesListas = await this.registrarUsuarioYCredenciales(resultado, respuestaApi.generatedPassword);
+
+      if (!credencialesListas) {
+        console.warn('Advertencia: El archivo se subió pero hubo un problema vinculando las credenciales.');
+      }
+
+      // Seguridad: Marcar éxito real para requerir login en futuras subidas distintas
+      if (this.correoControl.value) {
+        this.authService.confirmarCargaExitosa(this.correoControl.value);
+      }
+      
+      const textoExito = respuestaApi.consecutivo
+        ? `Podrá consultar sus resultados a partir de la fecha indicada en el PDF `
+        : 'La información se ha sincronizado correctamente con el servidor.';
+
+      if (!evitarReseteo) {
+        await Swal.fire({
+          icon: 'success',
+          title: 'Archivo cargado',
+          text: textoExito,
+        });
+      } else {
+        // En modo masivo, guardamos el folio para el overlay y el resumen final
+        this.ultimoFolioProcesado = respuestaApi.consecutivo || 'Sincronizado';
       }
 
       if (resultado.escDatos && resultado.resultadoExito && resultado.pdfTipo !== 'exito') {
@@ -569,6 +708,14 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
           resultado.resultadoExito.fechaDisponible,
           resultado.resultadoExito.totalAlumnos,
         );
+      }
+
+      // NO reseteamos el campo si acabamos de generar credenciales nuevas que el usuario debe ver
+      const mostroNueva = this.credencialesMostradas?.esNueva && 
+                        this.credencialesMostradas?.usuario === this.correoControl.value;
+
+      if (!this.sesionActiva && !evitarReseteo && !mostroNueva) {
+        this.resetearCampoCorreo();
       }
     } catch (error: any) {
       resultado.estado = 'error';
@@ -585,12 +732,14 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         ? error.message
         : 'No se pudo cargar el archivo al servidor. Inténtalo de nuevo.';
 
-      await Swal.fire({
-        icon: 'error',
-        title: 'Error de carga',
-        text: resultado.errorGuardado,
-      });
-      this.registrarIntentoFallido();
+      if (!evitarReseteo) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error de carga',
+          text: resultado.errorGuardado,
+        });
+      }
+      this.registrarIntentoFallido(resultado);
     } finally {
       resultado.guardando = false;
     }
@@ -616,7 +765,7 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     );
   }
 
-  private async registrarUsuarioYCredenciales(resultado: ResultadoArchivo): Promise<boolean> {
+  private async registrarUsuarioYCredenciales(resultado: ResultadoArchivo, passwordFromServer?: string): Promise<boolean> {
     if (!resultado.escDatos || !resultado.resultadoExito) {
       resultado.errorGuardado = 'No se encontró la información de la escuela para registrar tus credenciales.';
       await Swal.fire({
@@ -625,6 +774,19 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         text: resultado.errorGuardado
       });
       return false;
+    }
+
+    // SI EL SERVIDOR YA NOS DIO LA CONTRASEÑA (USUARIO NUEVO CREADO EN MUTATION)
+    if (passwordFromServer) {
+      resultado.resultadoExito.credenciales = {
+        usuario: this.correoControl.value,
+        contrasena: passwordFromServer,
+        esNueva: true
+      };
+      this.credencialesMostradas = resultado.resultadoExito.credenciales;
+      this.authService.registrarCredenciales(resultado.escDatos.cct, this.correoControl.value, passwordFromServer);
+      this.actualizarEstadoSesion();
+      return true;
     }
 
     if (this.sesionActiva && this.correoSesion) {
@@ -637,7 +799,6 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
 
     const credencialesExistentes = this.authService.obtenerCredenciales();
-
     const correoActual = this.authService.normalizarCorreo(this.correoControl.value);
 
     if (credencialesExistentes && credencialesExistentes.correo === correoActual) {
@@ -659,75 +820,25 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
       return true;
     }
 
-    const contrasenaGenerada = this.authService.generarContrasenaTemporal();
+    // SI LLEGAMOS AQUÍ Y NO TENEMOS PASSWORD DEL SERVIDOR, EL USUARIO YA EXISTE
+    // Recuperar la contraseña de la memoria de esta misma sesión si es posible
+    const credsSesion = this.authService.obtenerCredenciales();
+    const tieneContrasenaEnMemoria = !!(credsSesion && credsSesion.contrasena && credsSesion.contrasena.length > 3 && credsSesion.contrasena !== '********');
 
-    try {
-      await firstValueFrom(
-        this.usuariosService.crearUsuario({
-          email: this.correoControl.value,
-          rol: 'RESPONSABLE_CCT',
-          clavesCCT: [resultado.escDatos.cct],
-          password: contrasenaGenerada,
-        }),
-      );
-    } catch (error: any) {
-      const errorMessage = error?.message || '';
-      if (
-        errorMessage.includes('ya está registrado') ||
-        errorMessage.includes('already exists')
-      ) {
-        // Si el usuario ya existe, permitimos continuar. 
-        // El backend ahora vincula automáticamente si se envía el correo.
-        console.log('El usuario ya existe, vinculando automáticamente en el servidor.');
-        return true;
-      } else {
-        resultado.errorGuardado =
-          error instanceof Error
-            ? error.message
-            : 'No pudimos registrar el usuario en el sistema. Intenta nuevamente.';
-        await Swal.fire({
-          icon: 'error',
-          title: 'No se pudo registrar',
-          text: resultado.errorGuardado,
-        });
-        return false;
-      }
+    resultado.resultadoExito.credenciales = {
+      usuario: this.correoControl.value,
+      contrasena: tieneContrasenaEnMemoria ? credsSesion!.contrasena! : '********',
+      esNueva: tieneContrasenaEnMemoria
+    };
+
+    if (tieneContrasenaEnMemoria) {
+      this.credencialesMostradas = resultado.resultadoExito.credenciales;
+      this.authService.registrarCredenciales(resultado.escDatos.cct, this.correoControl.value, credsSesion!.contrasena!);
+    } else {
+      this.credencialesMostradas = null;
     }
 
-    try {
-      const nuevasCredenciales = this.authService.registrarCredenciales(
-        resultado.escDatos.cct,
-        this.correoControl.value,
-        contrasenaGenerada
-      );
-      this.estadoCredencialesService.actualizar(
-        this.correoControl.value,
-        nuevasCredenciales.contrasena
-      );
-      resultado.resultadoExito.credenciales = {
-        usuario: this.correoControl.value,
-        contrasena: nuevasCredenciales.contrasena,
-        esNueva: nuevasCredenciales.esNueva
-      };
-      this.credencialesMostradas = {
-        usuario: this.correoControl.value,
-        contrasena: nuevasCredenciales.contrasena,
-        esNueva: nuevasCredenciales.esNueva
-      };
-      this.actualizarEstadoSesion();
-      return true;
-    } catch (error) {
-      resultado.errorGuardado =
-        error instanceof Error
-          ? error.message
-          : 'No pudimos registrar tus credenciales. Intenta nuevamente.';
-      await Swal.fire({
-        icon: 'error',
-        title: 'No se pudo registrar',
-        text: resultado.errorGuardado
-      });
-      return false;
-    }
+    return true;
   }
 
   async guardarTodo(): Promise<void> {
@@ -751,14 +862,78 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     }
 
     this.guardandoTodo = true;
+    this.archivosTotalGuardar = this.resultadosValidosSinGuardar.length;
+    this.archivosProcesadosGuardar = 0;
+    this.ultimoFolioProcesado = null;
 
     try {
+      const resultadosFolios: string[] = [];
+      const errores: string[] = [];
+
       for (const resultado of this.resultadosValidosSinGuardar) {
-        await this.guardarArchivo(resultado);
+        // Incrementamos inmediatamente para que el overlay muestre "1 de 5" en lugar de "0 de 5"
+        this.archivosProcesadosGuardar++;
+        
+        await this.guardarArchivo(resultado, true);
+        
+        if (resultado.estado === 'exito' && resultado.resultadoExito?.consecutivo) {
+          resultadosFolios.push(resultado.resultadoExito.consecutivo);
+        } else if (resultado.estado === 'error') {
+          errores.push(`${resultado.archivo.name}: ${resultado.errorGuardado}`);
+        }
+      }
+ 
+      this.guardandoTodo = false;
+ 
+      // Resumen final para el usuario
+      if (resultadosFolios.length > 0) {
+        const mensajeBase = `Se han guardado ${resultadosFolios.length} archivos correctamente.`;
+        const detalleFolios = resultadosFolios.length > 1 
+          ? `\nFolios generados:\n${resultadosFolios.join(', ')}` 
+          : `\nFolio: ${resultadosFolios[0]}`;
+
+        let icon: 'success' | 'warning' = 'success';
+        let extraText = '';
+        
+        if (errores.length > 0) {
+          icon = 'warning';
+          extraText = `\n\nSin embargo, hubo errores en ${errores.length} archivos:\n${errores.join('\n')}`;
+        }
+
+        await Swal.fire({
+          icon,
+          title: 'Proceso masivo completado',
+          text: mensajeBase + detalleFolios + extraText,
+          confirmButtonText: 'Entendido'
+        });
+      } else if (errores.length > 0) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error en la carga masiva',
+          text: `No se pudo cargar ninguno de los archivos.\n\nDetalles:\n${errores.join('\n')}`,
+        });
+      }
+      
+      // Limpieza única al final del proceso masivo si no hay sesión y no hay credenciales nuevas críticas
+      const mostroNueva = this.credencialesMostradas?.esNueva && 
+                        this.credencialesMostradas?.usuario === this.correoControl.value;
+
+      if (!this.sesionActiva && !mostroNueva) {
+        this.resetearCampoCorreo();
       }
     } finally {
       this.guardandoTodo = false;
+      this.archivosTotalGuardar = 0;
+      this.archivosProcesadosGuardar = 0;
+      this.ultimoFolioProcesado = null;
     }
+  }
+
+  private resetearCampoCorreo(): void {
+    this.correoControl.setValue('');
+    this.correoControl.markAsPristine();
+    this.correoControl.markAsUntouched();
+    this.actualizarEstadoSesion();
   }
 
   private async procesarResultado(
@@ -783,19 +958,40 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     const fechaDisponible = this.calcularFechaDisponible();
     resultadoArchivo.estado = 'exito';
+
+
+
+
     resultadoArchivo.mensajeInformativo =
-      'Validación exitosa. Podrás consultar tus resultados a partir del día: ' +
-      fechaDisponible.toLocaleDateString();
+      'Validación exitosa. Podrá consultar sus resultados a partir del día: ' +
+      fechaDisponible.toLocaleDateString('es-MX', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
+
+    const credsExistentes = this.authService.obtenerCredenciales();
+    const esMismoCorreo = credsExistentes?.correo === this.correoControl.value;
+    const passParaUI = (esMismoCorreo && credsExistentes?.contrasena && credsExistentes.contrasena !== '********')
+      ? credsExistentes.contrasena
+      : '';
+
     resultadoArchivo.resultadoExito = {
-      mensaje: `Podrás consultar tus resultados a partir del día: ${fechaDisponible.toLocaleDateString()}`,
+      mensaje: `Podrá consultar sus resultados a partir del día: ${fechaDisponible.toLocaleDateString('es-MX', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      })
+        }`,
+
       fechaDisponible,
       credenciales: {
         usuario: this.correoControl.value,
-        contrasena: '',
-        esNueva: false
+        contrasena: passParaUI,
+        esNueva: !!passParaUI
       },
       totalAlumnos: resultado.alumnos?.length ?? 0,
-      consecutivo: '0' // Se actualizará al guardar
+      consecutivo: '0' // Se actualizará al guardar real
     };
   }
 
@@ -874,8 +1070,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     });
   }
 
-  private async verificarExistenciaUsuario(email: string): Promise<void> {
-    if (this.sesionActiva) return; // Si ya hay sesión, no bloqueamos
+  private async verificarExistenciaUsuario(email: string): Promise<boolean> {
+    if (this.sesionActiva) return false; // Si ya hay sesión, no bloqueamos
 
     try {
       const response = await firstValueFrom(
@@ -887,32 +1083,54 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
         await Swal.fire({
           icon: 'info',
           title: 'Usuario registrado',
-          text: res.message || 'USUARIO YA REGISTRADO; INICIE SESIÓN PARA CARGAR ARCHIVOS.',
-          confirmButtonText: 'Ir a login',
+          //text: res.message || 'INICIE SESIÓN PARA CARGAR ARCHIVOS.',
+          confirmButtonText: 'Iniciar sesión',
           allowOutsideClick: false
         });
         void this.router.navigate(['/login'], { queryParams: { correo: email, redirect: '/carga-masiva' } });
+        return true;
+      } else {
+        // Si el servidor confirma que no existe, limpiamos el rastro local
+        this.estadoCredencialesService.limpiar();
+        this.credencialesAsociadas = false;
+        this.contrasenaAsociada = null;
       }
+      return false;
     } catch (error) {
       console.warn('Error verificando existencia de usuario:', error);
+      return false;
     }
   }
 
   private establecerCredencialesMostradas(): void {
+    if (this.sesionActiva) {
+      this.credencialesMostradas = null;
+      return;
+    }
+
     const correoInput = this.authService.normalizarCorreo(this.correoControl.value);
+    if (!correoInput) {
+      this.credencialesMostradas = null;
+      return;
+    }
+
     const credencialesExistentes = this.authService.obtenerCredenciales();
     const credencialesGuardadas = this.estadoCredencialesService.obtener();
 
-    // Priorizamos las credenciales que coincidan con el correo del input
-    let fuente = null;
-    if (credencialesGuardadas?.correo === correoInput) fuente = credencialesGuardadas;
-    else if (credencialesExistentes?.correo === correoInput) fuente = credencialesExistentes;
+    // Prioridad absoluta a AuthService para obtener la contraseña real (memoria volátil)
+    // EstadoCredencialesService solo tiene la contraseña enmascarada ('')
+    let fuente: any = null;
+    if (credencialesExistentes && credencialesExistentes.correo === correoInput) {
+      fuente = credencialesExistentes;
+    } else if (credencialesGuardadas && credencialesGuardadas.correo === correoInput) {
+      fuente = credencialesGuardadas;
+    }
 
     if (fuente) {
       this.credencialesMostradas = {
         usuario: fuente.correo,
         contrasena: fuente.contrasena,
-        esNueva: false
+        esNueva: !!(fuente as any).esNueva
       };
     } else {
       this.credencialesMostradas = null;
@@ -945,13 +1163,14 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
 
     try {
       const blob = await this.mockPdfService.generarPdfExito({
-        correo: this.correoControl.value,
+        correo: this.correoSesion || this.correoControl.getRawValue() || this.correoControl.value || '',
         contrasena: resultadoArchivo.resultadoExito?.credenciales.contrasena ?? '',
-        fechaDisponible: fechaDisponible.toLocaleDateString(),
+        fechaDisponible: this.formatearFechaLarga(fechaDisponible),
         alumnosValidados: totalAlumnos,
         cct: esc.cct,
-        fechaValidacion: new Date().toLocaleString(),
-        consecutivo: resultadoArchivo.resultadoExito?.consecutivo ?? 'N/D'
+        fechaValidacion: this.formatearFechaLarga(new Date()),
+        consecutivo: resultadoArchivo.resultadoExito?.consecutivo ?? 'N/D',
+        hashArchivo: resultadoArchivo.resultadoExito?.hashArchivo
       });
       resultadoArchivo.pdfEstado = 'descargando';
       this.mockPdfService.descargarPdf(blob, resultadoArchivo.pdfNombre);
@@ -976,10 +1195,11 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     try {
       const blob = await this.mockPdfService.generarPdfErrores({
         correo: this.correoControl.value,
-        errores: resultadoArchivo.errores,
+        erroresAgrupados: resultadoArchivo.erroresAgrupados,
         advertencias: resultadoArchivo.advertencias,
         archivo: resultadoArchivo.archivo.name
       });
+      resultadoArchivo.pdfBlob = blob;
       resultadoArchivo.pdfEstado = 'descargando';
       this.mockPdfService.descargarPdf(blob, resultadoArchivo.pdfNombre);
       resultadoArchivo.pdfEstado = 'listo';
@@ -1012,8 +1232,8 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     resultadoArchivo.mensajeInformativo =
       resultadoArchivo.mensajeInformativo ??
       this.construirMensajeDeteccion(resultadoArchivo.tipoDetectado, resultadoArchivo.errores[0]);
-    this.registrarIntentoFallido();
     await this.generarPdfErrores(resultadoArchivo);
+    this.registrarIntentoFallido(resultadoArchivo);
   }
 
   private actualizarErrores(resultadoArchivo: ResultadoArchivo, errores: string[], estructurados?: ExcelValidationError[]): void {
@@ -1158,4 +1378,10 @@ export class CargaMasivaComponent implements OnInit, OnDestroy {
     return `Archivo detectado: ${etiqueta}.`;
   }
 
+  private formatearFechaLarga(fecha: Date): string {
+    return new Intl.DateTimeFormat('es-MX', {
+      dateStyle: 'long', // Esto ya devuelve el mes en letras por defecto
+      timeZone: 'America/Mexico_City'
+    }).format(fecha);
+  }
 }

@@ -20,15 +20,31 @@
   color: #0f172a;
 }
 
+.faq__lista {
+  padding-left: 80px;
+  /* ESTO es lo que hace la identación */
+  margin-top: 0;
+  list-style-type: disc;
+  /* Asegura que salgan los puntitos */
+}
+
+.faq__lista li {
+  margin-bottom: 8px;
+  /* Espacio entre un punto y otro */
+  line-height: 1.5;
+  /* Para que se lea mejor si el texto es largo */
+  padding-left: 10px;
+}
+
 .carga__campo-label {
-  font-size: 0.95rem;
+  font-size: 1.95rem;
 }
 
 .carga__campo input {
   padding: 0.75rem 1rem;
   border: 1px solid #cbd5e1;
   border-radius: 0.5rem;
-  font-size: 1rem;
+  font-size: 3rem;
   width: 100%;
 }
 
@@ -44,7 +60,8 @@
 
 .carga__campo-aviso {
   color: #0f5132;
-  font-weight: 500;
+  font-weight: 800;
+  font-size: 2rem;
 }
 
 .carga__encabezado {
@@ -62,7 +79,7 @@
 }
 
 .carga__titulo {
-  font-size: clamp(1.6rem, 2vw, 2rem);
+  font-size: clamp(2.6rem, 2vw, 2rem);
   margin: 0;
 }
 
@@ -72,6 +89,7 @@
   color: #4b5563;
 }
 
+/*
 .carga__sesion {
   display: flex;
   align-items: stretch;
@@ -82,7 +100,7 @@
   background: #fff;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.03);
 }
-
+    */
 .carga__sesion-col {
   display: flex;
   flex-direction: column;
@@ -103,7 +121,9 @@
 
 .carga__sesion--inactiva {
   border-color: #f59e0b;
-  background: linear-gradient(135deg, #fffbeb 0%, #ffffff 80%);
+  background: #e6e6c8;
+  background: linear-gradient(180deg, rgba(230, 230, 200, 1) 0%, rgba(225, 245, 228, 0.04) 23%, rgba(182, 225, 151, 0.17) 47%, rgba(191, 255, 166, 0.12) 98%);
+
 }
 
 .carga__sesion-icono {
@@ -180,7 +200,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.9rem;
+  font-size: 2rem;
   letter-spacing: 0.01em;
 }
 
@@ -211,10 +231,11 @@
 }
 
 .carga__zona {
-  border: 2px dashed #0f766e;
+  border: 2px dashed #942929;
   border-radius: 16px;
   padding: 1.75rem;
-  background: linear-gradient(180deg, #f0fdfa 0%, #ffffff 100%);
+  background: #e6e6c8;
+  background: linear-gradient(360deg, rgba(230, 230, 200, 1) 0%, rgba(225, 245, 228, 0.04) 23%, rgba(182, 225, 151, 0.17) 47%, rgba(191, 255, 166, 0.12) 98%);
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -294,6 +315,11 @@
   transform: scale(1.005);
   box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.1);
   transition: all 0.2s ease-in-out;
+
+  /* Garantizar que los hijos no intercepten el evento de soltado */
+  * {
+    pointer-events: none;
+  }
 }
 
 .carga__input {
@@ -362,12 +388,12 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.8rem;
+  font-size: 2rem;
 }
 
 .carga__estado-titulo {
   margin: 0.2rem 0 0;
-  font-size: 1.25rem;
+  font-size: 3rem;
   color: #111827;
 }
 
@@ -379,7 +405,7 @@
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.03);
 }
 
-.carga__detalle + .carga__detalle {
+.carga__detalle+.carga__detalle {
   margin-top: 0.35rem;
 }
 
@@ -397,19 +423,19 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.85rem;
+  font-size: 2rem;
 }
 
 .carga__detalle h2 {
   margin: 0.15rem 0 0.25rem 0;
-  font-size: 1.1rem;
+  font-size: 3rem;
   line-height: 1.3;
 }
 
 .carga__detalle-metadata {
   margin: 0;
   color: #475569;
-  font-size: 0.95rem;
+  font-size: 2rem;
 }
 
 .carga__detalle ul {
@@ -417,7 +443,7 @@
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 0.3rem;
+  gap: 2rem;
 }
 
 .carga__detalle-status {
@@ -454,14 +480,18 @@
 
 .carga__estado-indicador--error {
   color: #b91c1c;
+  /* APARIENCIA DE BOTON
   border-color: #fecdd3;
-  background: #fef2f2;
+  background: #f8fafc;
+      */
 }
 
 .carga__estado-indicador--exito {
   color: #047857;
+  /* APARIENCIA DE BOTON
   border-color: #a7f3d0;
-  background: #ecfdf3;
+  background: #740f0f;
+  */
 }
 
 .carga__chip {
@@ -471,7 +501,7 @@
   font-weight: 800;
   letter-spacing: 0.01em;
   border: 1px solid transparent;
-  font-size: 0.9rem;
+  font-size: 2rem;
 }
 
 .carga__chip--progreso {
@@ -535,6 +565,16 @@
   gap: 0.5rem;
 }
 
+.carga__fecha {
+  background: #ffffff;
+  border: 1px solid #740f0f;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .carga__credenciales {
   display: flex;
   flex-direction: column;
@@ -559,7 +599,7 @@
   place-items: center;
   border-radius: 14px;
   background: rgba(5, 150, 105, 0.15);
-  font-size: 1.4rem;
+  font-size: 3rem;
 }
 
 .carga__credenciales-titulos h3 {
@@ -572,7 +612,7 @@
   letter-spacing: 0.08em;
   color: #047857;
   font-weight: 800;
-  font-size: 0.85rem;
+  font-size: 2rem;
 }
 
 .carga__credenciales-sub {
@@ -643,6 +683,7 @@
   border: none;
   font-weight: 700;
   cursor: pointer;
+  font-size: 1.3rem
 }
 
 .carga__boton-primario {
@@ -705,8 +746,10 @@
   border-radius: 999px;
   font-weight: 700;
   width: fit-content;
+  /* apariencia de boton
   border: 1px solid #cbd5e1;
   background: #fff;
+      */
 }
 
 .carga__pdf-estado--cargando {
@@ -715,12 +758,13 @@
   background: #fffbeb;
 }
 
+/*
 .carga__pdf-estado--ok {
   color: #065f46;
   border-color: #34d399;
   background: #ecfdf3;
 }
-
+*/
 .carga__pdf-estado--error {
   color: #b91c1c;
   border-color: #fca5a5;
@@ -769,7 +813,7 @@
 }
 
 .carga__guia {
-  background: #f9fafb;
+  background: linear-gradient(180deg, rgba(230, 230, 200, 1) 0%, rgba(230, 206, 154, 0.04) 96%, rgba(225, 205, 151, 1) 35%, rgba(153, 41, 3, 0.63) 100%);
   border: 1px solid #e5e7eb;
   border-radius: 14px;
   padding: 1.5rem;
@@ -785,7 +829,8 @@
 }
 
 .carga__card {
-  background: #fff;
+  background: #e6e6c8;
+  background: linear-gradient(360deg, rgba(230, 230, 200, 1) 0%, rgba(230, 206, 154, 0.04) 96%, rgba(225, 205, 151, 1) 35%, rgba(153, 41, 3, 0.63) 100%);
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 1rem;
@@ -793,6 +838,7 @@
   flex-direction: column;
   gap: 0.4rem;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.02);
+  padding-right: 30px;
 }
 
 .carga__card h3 {
@@ -802,7 +848,8 @@
 
 .carga__card ul {
   margin: 0;
-  padding-left: 1.2rem;
+  padding-left: 20px;
+
   color: #374151;
   line-height: 1.5;
 }
@@ -810,7 +857,9 @@
 /* --- US-1.2: Feedback Visual de Carga --- */
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .spinner {
@@ -834,7 +883,7 @@
   inset: 0;
   background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(4px);
-  z-index: 2000;
+  z-index: 1050; // Debajo de SweetAlert2 (~1060) para no bloquear diálogos interactivos
   display: flex;
   align-items: center;
   justify-content: center;
@@ -879,8 +928,13 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 // --- MODAL DE INCIDENCIAS ---
@@ -889,7 +943,7 @@
   inset: 0;
   background: rgba(15, 23, 42, 0.4);
   backdrop-filter: blur(8px);
-  z-index: 1000;
+  z-index: 1040; // Menor que el overlay de carga masiva
   display: flex;
   align-items: center;
   justify-content: center;
@@ -919,7 +973,7 @@
 
   h3 {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 2rem;
     font-weight: 800;
     color: #0f172a;
   }
@@ -945,12 +999,14 @@
   color: #64748b;
   cursor: pointer;
   line-height: 1;
-  
-  &:hover { color: #0f172a; }
+
+  &:hover {
+    color: #0f172a;
+  }
 }
 
 .carga__modal-body {
-  padding: 1.5rem 2rem 2rem;
+  padding: .5rem 2rem 2rem;
 }
 
 .carga__modal-aviso {
@@ -959,11 +1015,13 @@
   border: 1px solid #fcd34d;
   padding: 1rem 1.25rem;
   border-radius: 12px;
-  font-size: 0.95rem;
+  font-size: 1.5rem;
   line-height: 1.5;
   margin-bottom: 1.5rem;
 
-  strong { color: #78350f; }
+  strong {
+    color: #78350f;
+  }
 }
 
 .carga__modal-form {
@@ -974,8 +1032,8 @@
   textarea {
     border: 1px solid #cbd5e1;
     border-radius: 10px;
-    padding: 0.75rem 1rem;
-    font-size: 0.95rem;
+    padding: 0.4rem 1rem;
+    font-size: 1.5rem;
     resize: vertical;
     font-family: inherit;
 
@@ -993,14 +1051,20 @@
 }
 
 .carga__modal-footer-info {
-  font-size: 0.875rem;
+  font-size: 1.2rem;
   color: #64748b;
   line-height: 1.4;
   display: flex;
   gap: 0.5rem;
 
-  i { color: #0f766e; font-size: 1.1rem; }
-  strong { color: #0f172a; }
+  i {
+    color: #0f766e;
+    font-size: 1.1rem;
+  }
+
+  strong {
+    color: #0f172a;
+  }
 }
 
 .carga__modal-acciones {
@@ -1027,9 +1091,9 @@
 
 .carga__campo-ayuda {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 2rem;
   color: #64748b;
-  font-style: italic;
+  font-variant: small-caps;
 }
 
 .carga__evidencias-lista {
@@ -1059,7 +1123,9 @@
     align-items: center;
     gap: 0.4rem;
 
-    i { color: #0f766e; }
+    i {
+      color: #0f766e;
+    }
   }
 
   .carga__evidencia-quitar {
@@ -1071,7 +1137,9 @@
     padding: 0;
     line-height: 1;
 
-    &:hover { color: #ef4444; }
+    &:hover {
+      color: #ef4444;
+    }
   }
 }
 
@@ -1085,7 +1153,7 @@
   color: #475569;
   padding: 0.5rem 1rem;
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: 1.5rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1098,14 +1166,22 @@
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-20px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @media (max-width: 640px) {
   .carga__modal-row {
     grid-template-columns: 1fr;
   }
+
   .carga__modal-body {
     padding: 1.25rem 1.5rem;
   }

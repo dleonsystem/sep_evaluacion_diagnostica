@@ -1,0 +1,110 @@
+<section class="ticket-detalle">
+  <!-- Shared Layout Header -->
+  <nav class="shared-subnav">
+    <a routerLink="/tickets-historial" class="shared-subnav__link">
+      <i class="bi bi-arrow-left"></i> Volver a Mis Tickets
+    </a>
+  </nav>
+
+  <div *ngIf="cargando" class="ticket-detalle__loading">
+    <div class="spinner"></div>
+    <p>Cargando información del ticket...</p>
+  </div>
+
+  <div *ngIf="!cargando && !ticket" class="ticket-detalle__error">
+    <h2>Error</h2>
+    <p>{{ mensajeInfo || 'No se encontró el ticket.' }}</p>
+    <a routerLink="/tickets-historial" class="btn btn--secundario">Regresar</a>
+  </div>
+
+  <ng-container *ngIf="!cargando && ticket">
+    <header class="ticket-detalle__header">
+      <div class="ticket-detalle__title-wrap">
+        <p class="ticket-detalle__eyebrow">Detalle del Soporte</p>
+        <h1 class="ticket-detalle__title">Ticket #{{ folio }}</h1>
+        <span class="ticket-detalle__badge"
+          [class.ticket-detalle__badge--abierto]="ticket.estado === 'ABIERTO'"
+          [class.ticket-detalle__badge--proceso]="ticket.estado === 'EN_PROCESO'"
+          [class.ticket-detalle__badge--resuelto]="ticket.estado === 'RESUELTO' || ticket.estado === 'CERRADO'">
+          {{ ticket.estado }}
+        </span>
+      </div>
+      <div>
+        <!--<button *ngIf="puedeResponder" (click)="cerrarTicket()" class="btn btn--danger" [disabled]="enviando">
+    <i class="bi bi-check-circle"></i> Marcar como resuelto
+  </button>-->
+      </div>
+    </header>
+
+    <div class="ticket-detalle__container">
+      <!-- MAIN TICKET CONTENT -->
+      <article class="ticket-message ticket-message--original">
+        <div class="ticket-message__header">
+          <span class="ticket-message__author">Motivo: {{ ticket.asunto }}</span>
+          <span class="ticket-message__date">{{ formatearFecha(ticket.fechaCreacion) }}</span>
+        </div>
+        <div class="ticket-message__body">
+          {{ ticket.descripcion }}
+        </div>
+
+        <div class="ticket-message__attachments" *ngIf="ticket.evidencias && ticket.evidencias.length">
+          <h4>Evidencias adjuntas</h4>
+          <ul class="ticket-message__attachments-list">
+            <li *ngFor="let evidencia of ticket.evidencias" (click)="descargarEvidencia(evidencia.url, evidencia.nombre)" class="ticket-attachment-item">
+              <i class="bi bi-file-earmark-arrow-down"></i>
+              <span>{{ evidencia.nombre }}</span>
+              <small class="ticket-attachment-size" *ngIf="evidencia.size">({{ (evidencia.size / 1024).toFixed(1) }} KB)</small>
+            </li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- TIMELINE (RESPUESTAS) -->
+      <div class="ticket-timeline">
+        <article class="ticket-message" *ngFor="let respuesta of ticket.respuestas"
+                 [ngClass]="{'ticket-message--admin': respuesta.esInterno || respuesta.autor === 'admin', 'ticket-message--user': !respuesta.esInterno && respuesta.autor !== 'admin'}">
+          <div class="ticket-message__header">
+            <span class="ticket-message__author">
+              <i class="bi" [ngClass]="(respuesta.esInterno || respuesta.autor === 'admin') ? 'bi-person-badge' : 'bi-person'"></i>
+              {{ (respuesta.esInterno || respuesta.autor === 'admin') ? 'Soporte Técnico' : 'Tú (Directivo)' }}
+            </span>
+            <span class="ticket-message__date">{{ formatearFecha(respuesta.fecha) }}</span>
+          </div>
+          <div class="ticket-message__body">
+            {{ respuesta.mensaje }}
+          </div>
+        </article>
+      </div>
+
+      <!-- REPLY FORM (Habilitado solo si admin ya respondió) -->
+      <div *ngIf="puedeResponder" class="ticket-reply">
+        <h3>Escriba aquí su duda</h3>
+        <p class="ticket-reply__hint" *ngIf="mensajeExito || mensajeInfo"
+           [ngClass]="{'ticket-reply__hint--success': mensajeExito, 'ticket-reply__hint--error': mensajeInfo}">
+          {{ mensajeExito || mensajeInfo }}
+        </p>
+
+        <form [formGroup]="respuestaForm" (ngSubmit)="enviarRespuesta()" class="ticket-reply__form">
+          <div class="form-group">
+            <textarea formControlName="mensaje" rows="4" placeholder="Escribe aquí tu duda, información adicional o contestación para el administrador..."></textarea>
+            <div *ngIf="respuestaForm.get('mensaje')?.invalid && respuestaForm.get('mensaje')?.touched" class="error-msg">
+              <small>El mensaje debe tener al menos 10 caracteres.</small>
+            </div>
+          </div>
+
+          <div class="ticket-reply__actions">
+            <button type="submit" class="btn btn--primario" [disabled]="respuestaForm.invalid || enviando">
+              <i class="bi " [ngClass]="enviando ? 'bi-hourglass-split' : 'bi-send'"></i>
+              {{ enviando ? 'Enviando...' : 'Enviar respuesta' }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div *ngIf="estaCerrado" class="ticket-reply ticket-reply--closed">
+        <i class="bi bi-info-circle"></i>
+        Este reporte técnico ha sido cerrado. Si tienes una nueva incidencia, por favor abre un nuevo ticket.
+      </div>
+    </div>
+  </ng-container>
+</section>

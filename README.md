@@ -330,6 +330,17 @@ El sistema contiene componentes que **requieren atención urgente**:
 - ✅ Actualizar a versión sin componentes Flash
 - ✅ Considerar migración a tecnologías modernas
 
+### 🔐 Seguridad de Infraestructura (SFTP)
+Para garantizar el cumplimiento con **OWASP A02:2021** (Cryptographic Failures), el servicio SFTP ha sido desacoplado de las credenciales por defecto:
+
+1. **Generación de Credenciales**: Nunca use `eia_password`. Genere una clave fuerte:
+   ```bash
+   # Ejemplo Linux/macOS/GitBash
+   openssl rand -base64 16
+   ```
+2. **Configuración**: Copie `.env.example` a `.env` y configure `SFTP_USER` y `SFTP_PASSWORD`.
+3. **Restricción**: El backend verificará la presencia de estas variables. Si faltan en producción, las operaciones de carga de archivos fallarán por seguridad.
+
 ---
 
 ## 🔄 Estado del Proyecto

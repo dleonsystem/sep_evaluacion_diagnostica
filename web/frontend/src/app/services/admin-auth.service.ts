@@ -28,19 +28,23 @@ export class AdminAuthService {
     );
 
     // 2. Validar que tenga un rol administrativo
-    if (usuario.rol !== 'COORDINADOR_FEDERAL' && usuario.rol !== 'COORDINADOR_ESTATAL') {
+    if (!usuario.user || (usuario.user.rol !== 'COORDINADOR_FEDERAL' && usuario.user.rol !== 'COORDINADOR_ESTATAL')) {
       throw new Error('No tienes permisos de administrador.');
     }
 
-    // 3. Limpiar sesión de usuario regular para evitar conflictos
+    const token = usuario.token || btoa(`${usuario.user.email}:${Date.now()}`); // Fallback minimal
+    this.establecerSesion(usuario.user.email, token, usuario.user.rol);
+  }
+
+  establecerSesion(correo: string, token: string, rol: string): void {
+    // Limpiar sesión de usuario regular para evitar conflictos
     this.authService.cerrarSesion();
 
-    // 4. Guardar sesión admin
-    const token = usuario.token || btoa(`${usuario.email}:${Date.now()}`); // Fallback minimal
+    // Guardar sesión admin
     localStorage.setItem(this.tokenKey, token);
     localStorage.setItem('eia-jwt', token);
-    localStorage.setItem(this.correoKey, usuario.email);
-    localStorage.setItem(this.rolKey, usuario.rol);
+    localStorage.setItem(this.correoKey, correo);
+    localStorage.setItem(this.rolKey, rol);
     this.autenticadoSubject.next(true);
   }
 
@@ -50,6 +54,7 @@ export class AdminAuthService {
 
   cerrarSesion(): void {
     localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem('eia-jwt');
     localStorage.removeItem(this.correoKey);
     localStorage.removeItem(this.rolKey);
     this.autenticadoSubject.next(false);

@@ -1,0 +1,289 @@
+/* SHARED ADMIN LAYOUT STYLES - Moved from component scope to shared scope to avoid Sass deprecation warnings */
+
+.admin-panel {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  background-color: #fcfcfc;
+  font-family: 'Inter', sans-serif;
+}
+
+.admin-panel__card {
+  background: #e6e6c8;
+  background: linear-gradient(180deg,rgba(230, 230, 200, 1) 0%, rgba(225, 211, 151, 0.34) 0%, rgba(225, 219, 250, 0.17) 39%, rgba(199, 201, 89, 0.5) 67%, rgba(173, 39, 16, 0.13) 100%);
+  border: 1px solid #e2e8f0;
+  -webkit-box-shadow: 5px 5px 15px 5px #000000;
+  box-shadow: 5px 5px 15px 5px #000000;
+  border-radius: 16px;
+  padding: 3rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+.admin-panel h2 {
+  font-size: 2.2rem;
+  color: var(--color-primary-guinda);
+  border-bottom: 4px solid var(--color-primary-oro-light);
+  margin-bottom: 2.5rem;
+  display: inline-block;
+  font-weight: 800;
+}
+
+/* Base Form Shared Styling */
+.admin-panel__upload-input {
+  display: block;
+  width: 100%;
+  max-width: 600px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 2.15rem;
+  outline: none;
+  transition: border-color 0.2s;
+
+  &:focus {
+    border-color: var(--color-primary-guinda);
+  }
+}
+
+.admin-panel__upload-label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--color-secondary-verde);
+  font-size: 2.25rem;
+}
+
+.admin-panel__helper {
+  color: var(--color-text-muted);
+  font-size: 2.1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Upload Button */
+.admin-panel__upload-button {
+  background: var(--color-primary-guinda);
+  color: white;
+  border: none;
+  padding: 0.75rem 2.5rem;
+  border-radius: 25px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-guinda-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  &:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
+  }
+
+  &.gray {
+    background: #e2e8f0;
+    color: #475569;
+
+    &:hover:not(:disabled) {
+      background: #cbd5e1;
+    }
+  }
+}
+
+/* Table Styles */
+.admin-panel__table-container {
+  overflow-x: auto;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.admin-panel__table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.admin-panel__table th {
+  background: #f8fafc;
+  padding: 1.25rem 1.5rem;
+  font-weight: 700;
+  color: #475569;
+  font-size: 1.15rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.admin-panel__table td {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 1.15rem;
+  color: #1e293b;
+}
+
+/* Badges & Status */
+.admin-panel__badge {
+  padding: 0.35rem 1rem;
+  border-radius: 20px;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.admin-panel__badge--assigned {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-panel__badge--pending {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+/* Modal Overlay & Card (Shared for Usuarios and AdminPanel) */
+.admin-panel__modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.admin-panel__modal {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 650px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.admin-panel__modal-header {
+  padding: 1.5rem 2rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-panel__modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--color-primary-guinda);
+}
+
+.admin-panel__modal-body {
+  padding: 2rem;
+}
+
+.admin-panel__modal-footer {
+  padding: 1.5rem 2rem;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.admin-panel__close-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* Form Layout in Modal */
+.admin-panel__form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.admin-panel__action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-panel__action-group label {
+  font-weight: 700;
+  color: #475569;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Premium Switch Toggle */
+.admin-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+}
+
+.admin-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.admin-switch__slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: .4s;
+  border-radius: 34px;
+
+  &:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+  }
+}
+
+input:checked + .admin-switch__slider {
+  background-color: var(--color-primary-guinda);
+}
+
+input:focus + .admin-switch__slider {
+  box-shadow: 0 0 1px var(--color-primary-guinda);
+}
+
+input:checked + .admin-switch__slider:before {
+  transform: translateX(24px);
+}

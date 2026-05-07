@@ -49,6 +49,11 @@ export class AdminPanelComponent implements OnInit {
   filtroTicketTexto = '';
   filtroTicketEstatus: 'todos' | TicketSoporte['estatus'] = 'todos';
   
+  // Paginación Soporte
+  paginaSoporteActual = 1;
+  paginaIncidenciasActual = 1;
+  tamanioPaginaSoporte = 10;
+  
   // Incidencias Públicas
   incidenciasPublicas: TicketSoporte[] = [];
   incidenciaSeleccionadaId: string | null = null;
@@ -61,31 +66,13 @@ export class AdminPanelComponent implements OnInit {
   private readonly uploadHistoryKey = 'adminPanelResultadosHistory';
   private readonly archivosStoragePrefix = 'archivos-resultados';
   private readonly ticketsStorageKey = 'tickets-soporte';
+  ticketParaResponder: TicketSoporte | null = null;
 
-  // Usuarios
-  usuarios: UsuarioCreado[] = [];
-  filtroUsuarioTexto = '';
-  paginaUsuariosActual = 1;
-  totalUsuarios = 0;
-  cargandoUsuarios = false;
   mostrarModalRespuesta = false;
 
   get esCoordinadorFederal(): boolean {
     return this.adminAuthService.obtenerRol() === 'COORDINADOR_FEDERAL';
   }
-  ticketParaResponder: TicketSoporte | null = null;
-
-  // Nuevo Usuario
-  mostrarModalUsuario = false;
-  nuevoUsuario = {
-    email: '',
-    nombre: '',
-    apepaterno: '',
-    apematerno: '',
-    rol: 'CONSULTA' as any,
-    claveCCT: ''
-  };
-
   // Catálogo de Escuelas (CU-14)
   escuelas: Escuela[] = [];
   totalEscuelas = 0;
@@ -137,7 +124,6 @@ export class AdminPanelComponent implements OnInit {
     this.cargarExcelDisponibles();
     this.cargarTicketsSoporte();
     this.cargarIncidenciasPublicas();
-    this.cargarUsuarios();
     this.cargarEscuelas();
   }
 
@@ -296,6 +282,11 @@ export class AdminPanelComponent implements OnInit {
     const texto = this.filtroTicketTexto.trim().toLowerCase();
     const estatus = this.filtroTicketEstatus;
     return this.ticketsSoporte.filter((ticket) => {
+      // Excluir incidencias públicas de la sección de tickets de usuario para evitar duplicidad
+      if (ticket.folio.startsWith('PUB-')) {
+        return false;
+      }
+
       const coincideTexto =
         !texto ||
         ticket.folio.toLowerCase().includes(texto) ||
@@ -304,6 +295,20 @@ export class AdminPanelComponent implements OnInit {
       const coincideEstatus = estatus === 'todos' || ticket.estatus === estatus;
       return coincideTexto && coincideEstatus;
     });
+  }
+
+  get ticketsSoportePaginados(): TicketSoporte[] {
+    const inicio = (this.paginaSoporteActual - 1) * this.tamanioPaginaSoporte;
+    return this.ticketsSoporteFiltrados.slice(inicio, inicio + this.tamanioPaginaSoporte);
+  }
+
+  get totalPaginasSoporte(): number {
+    return Math.ceil(this.ticketsSoporteFiltrados.length / this.tamanioPaginaSoporte);
+  }
+
+  irAPaginaSoporte(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginasSoporte) return;
+    this.paginaSoporteActual = pagina;
   }
 
   seleccionarTicket(ticket: TicketSoporte): void {
@@ -318,7 +323,12 @@ export class AdminPanelComponent implements OnInit {
   abrirModalRespuesta(ticket: TicketSoporte, event: Event): void {
     event.stopPropagation();
     this.ticketParaResponder = ticket;
-    this.ticketSeleccionadoId = ticket.id; // Expand the row too
+    if (this.tabSoporteActiva === 'publico') {
+      this.incidenciaSeleccionadaId = ticket.id;
+      this.ticketSeleccionadoId = ticket.id; // Also set this for `guardarRespuesta` logic
+    } else {
+      this.ticketSeleccionadoId = ticket.id;
+    }
     this.estatusTicketSeleccionado = ticket.estatus;
     this.respuestaAdmin = '';
     this.mostrarModalRespuesta = true;
@@ -347,7 +357,7 @@ export class AdminPanelComponent implements OnInit {
         this.ticketsService.respondToTicket(
           this.ticketSeleccionadoId,
           mensaje,
-          cerrar,
+          cerrar
         ),
       );
 
@@ -361,7 +371,11 @@ export class AdminPanelComponent implements OnInit {
 
       this.respuestaAdmin = '';
       this.cerrarModalRespuesta();
-      await this.cargarTicketsSoporte();
+      if (this.tabSoporteActiva === 'publico') {
+        await this.cargarIncidenciasPublicas();
+      } else {
+        await this.cargarTicketsSoporte();
+      }
     } catch (error) {
       console.error('Error enviando respuesta:', error);
       await Swal.fire('Error', 'No se pudo enviar la respuesta', 'error');
@@ -481,149 +495,25 @@ export class AdminPanelComponent implements OnInit {
       console.error('Error cargando tickets:', error);
     }
   }
-  async cargarUsuarios(): Promise<void> {
-    this.cargandoUsuarios = true;
-    try {
-      const offset = (this.paginaUsuariosActual - 1) * this.tamanioPagina;
-      const resultado = await firstValueFrom(
-        this.usuariosService.listarUsuarios(this.tamanioPagina, offset),
-      );
-      this.usuarios = resultado.nodes;
-      this.totalUsuarios = resultado.totalCount;
-    } catch (error) {
-      console.error('Error cargando usuarios:', error);
-    } finally {
-      this.cargandoUsuarios = false;
-    }
-  }
-
-  async enviarPassword(usuario: UsuarioCreado): Promise<void> {
-    const confirmacion = await Swal.fire({
-      title: '¿Enviar contraseña?',
-      text: `Se enviará una nueva contraseña al correo ${usuario.email}. La contraseña anterior dejará de funcionar.`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, enviar',
-      cancelButtonText: 'Cancelar',
-    });
-
-    if (!confirmacion.isConfirmed) {
-      return;
-    }
-
-    try {
-      await firstValueFrom(
-        this.usuariosService.recuperarPassword(usuario.email),
-      );
-      await Swal.fire(
-        'Enviado',
-        `Se ha enviado la nueva contraseña a ${usuario.email}`,
-        'success',
-      );
-    } catch (error: any) {
-      const msg = error.message || 'No se pudo enviar la contraseña.';
-      await Swal.fire('Error', msg, 'error');
-    }
-  }
-
-  irAPaginaUsuarios(pagina: number): void {
-    const totalPaginas = Math.ceil(this.totalUsuarios / this.tamanioPagina);
-    if (pagina < 1 || pagina > totalPaginas) return;
-    this.paginaUsuariosActual = pagina;
-    this.cargarUsuarios();
-  }
-
-  abrirModalUsuario(): void {
-    this.nuevoUsuario = {
-      email: '',
-      nombre: '',
-      apepaterno: '',
-      apematerno: '',
-      rol: 'CONSULTA',
-      claveCCT: ''
-    };
-    this.mostrarModalUsuario = true;
-  }
-
-  cerrarModalUsuario(): void {
-    this.mostrarModalUsuario = false;
-  }
-
-  async crearUsuario(): Promise<void> {
-    if (!this.nuevoUsuario.email || !this.nuevoUsuario.nombre || !this.nuevoUsuario.rol) {
-      return;
-    }
-
-    this.cargandoUsuarios = true;
-    try {
-      // Generar contraseña aleatoria temporal
-      const password = Math.random().toString(36).slice(-10) + '!A1';
-
-      await firstValueFrom(
-        this.usuariosService.crearUsuario({
-          email: this.nuevoUsuario.email,
-          nombre: this.nuevoUsuario.nombre,
-          apepaterno: this.nuevoUsuario.apepaterno,
-          apematerno: this.nuevoUsuario.apematerno,
-          rol: this.nuevoUsuario.rol,
-          clavesCCT: this.nuevoUsuario.claveCCT ? [this.nuevoUsuario.claveCCT] : [],
-          password: password
-        })
-      );
-
-      await Swal.fire({
-        icon: 'success',
-        title: 'Usuario Creado',
-        text: `El usuario ${this.nuevoUsuario.email} ha sido creado. Se le han enviado sus credenciales por correo electrónico.`,
-      });
-
-      this.cerrarModalUsuario();
-      await this.cargarUsuarios();
-    } catch (error: any) {
-      console.error('Error creando usuario:', error);
-      await Swal.fire('Error', error.message || 'No se pudo crear el usuario', 'error');
-    } finally {
-      this.cargandoUsuarios = false;
-    }
-  }
-
-  get usuariosFiltrados(): UsuarioCreado[] {
-    if (!this.filtroUsuarioTexto) return this.usuarios;
-    const texto = this.filtroUsuarioTexto.toLowerCase();
-    return this.usuarios.filter(
-      (u) =>
-        u.email.toLowerCase().includes(texto) ||
-        u.nombre.toLowerCase().includes(texto) ||
-        (u.apepaterno && u.apepaterno.toLowerCase().includes(texto)),
-    );
-  }
-
-  get totalPaginasUsuarios(): number {
-    return Math.ceil(this.totalUsuarios / this.tamanioPagina);
-  }
-
-  get paginasUsuariosDisponibles(): number[] {
-    return Array.from({ length: this.totalPaginasUsuarios }, (_, i) => i + 1);
-  }
-
   private mapTicketDBToUI(t: TicketDB): TicketSoporte {
     // Para incidencias públicas, usamos los campos específicos si existen
     const dbCasteada = t as any;
     return {
       id: t.id,
       folio: t.numeroTicket,
-      correo: t.correo || dbCasteada.user_email || 'Sin correo',
-      nombreCompleto: dbCasteada.nombreCompleto || 'Usuario Registrado',
-      cct: dbCasteada.cct || 'N/D',
+      correo: t.correo || 'Sin correo',
+      nombreCompleto: t.nombreCompleto || 'Usuario del Sistema',
       motivo: t.asunto,
       motivoDetalle: t.asunto,
+      cct: t.cct,
+      turno: t.turno,
       descripcion: t.descripcion,
       fecha: t.fechaCreacion,
       estatus: this.mapEstatusDBToUI(t.estado),
       respuestas: (t.respuestas || []).map(r => ({
         mensaje: r.mensaje,
         fecha: r.fecha,
-        autor: 'admin' 
+        autor: r.autor || 'admin' 
       })),
       evidencias: (t.evidencias || []).map((e) => ({
         nombre: e.nombre,
@@ -634,25 +524,7 @@ export class AdminPanelComponent implements OnInit {
     };
   }
 
-  async cargarIncidenciasPublicas(): Promise<void> {
-    try {
-      const tickets = await firstValueFrom(this.ticketsService.getPublicIncidents());
-      this.incidenciasPublicas = tickets.map(t => this.mapTicketDBToUI(t));
-    } catch (error) {
-      console.error('Error al cargar incidencias públicas', error);
-    }
-  }
 
-  get incidenciasPublicasFiltradas(): TicketSoporte[] {
-    return this.incidenciasPublicas.filter(t => {
-      const cumpleTexto = !this.filtroIncidenciaTexto ||
-        t.folio.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()) ||
-        t.correo.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()) ||
-        (t.nombreCompleto && t.nombreCompleto.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()));
-      const cumpleEstatus = this.filtroIncidenciaEstatus === 'todos' || t.estatus === this.filtroIncidenciaEstatus;
-      return cumpleTexto && cumpleEstatus;
-    });
-  }
 
   seleccionarIncidencia(incidencia: TicketSoporte): void {
     this.incidenciaSeleccionadaId = (this.incidenciaSeleccionadaId === incidencia.id) ? null : incidencia.id;
@@ -707,7 +579,7 @@ export class AdminPanelComponent implements OnInit {
         const key = registro.id;
         const nivel = this.obtenerEtiquetaNivel(registro.nivelEducativo);
         const fecha = registro.fechaCarga;
-        const estatus = registro.estadoValidacion === 2 ? 'asignado' : 'pendiente';
+        const estatus = (registro.resultados && registro.resultados.length > 0) ? 'asignado' : 'pendiente';
 
         return {
           key,
@@ -1062,6 +934,39 @@ export class AdminPanelComponent implements OnInit {
     this.paginaEscuelasActual = pagina;
     this.cargarEscuelas();
   }
+  async cargarIncidenciasPublicas(): Promise<void> {
+    try {
+      const tickets = await firstValueFrom(this.ticketsService.getPublicIncidents());
+      this.incidenciasPublicas = tickets.map(t => this.mapTicketDBToUI(t));
+    } catch (error) {
+      console.error('Error al cargar incidencias públicas', error);
+    }
+  }
+
+  get incidenciasPublicasFiltradas(): TicketSoporte[] {
+    return this.incidenciasPublicas.filter(t => {
+      const cumpleTexto = !this.filtroIncidenciaTexto ||
+        t.folio.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()) ||
+        t.correo.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()) ||
+        (t.nombreCompleto && t.nombreCompleto.toLowerCase().includes(this.filtroIncidenciaTexto.toLowerCase()));
+      const cumpleEstatus = this.filtroIncidenciaEstatus === 'todos' || t.estatus === this.filtroIncidenciaEstatus;
+      return cumpleTexto && cumpleEstatus;
+    });
+  }
+
+  get incidenciasPublicasPaginadas(): TicketSoporte[] {
+    const inicio = (this.paginaIncidenciasActual - 1) * this.tamanioPaginaSoporte;
+    return this.incidenciasPublicasFiltradas.slice(inicio, inicio + this.tamanioPaginaSoporte);
+  }
+
+  get totalPaginasIncidencias(): number {
+    return Math.ceil(this.incidenciasPublicasFiltradas.length / this.tamanioPaginaSoporte);
+  }
+
+  irAPaginaIncidencias(pagina: number): void {
+    if (pagina < 1 || pagina > this.totalPaginasIncidencias) return;
+    this.paginaIncidenciasActual = pagina;
+  }
 }
 
 interface ExcelDisponible {
@@ -1083,12 +988,12 @@ interface TicketSoporte {
   correo: string;
   nombreCompleto?: string;
   cct?: string;
+  turno?: string;
   motivo: string;
   motivoDetalle: string;
   descripcion: string;
   fecha: string;
-  prioridad?: string;
   estatus: 'pendiente' | 'en-proceso' | 'respondido';
-  respuestas: Array<{ mensaje: string; fecha: string; autor: 'admin' }>;
+  respuestas: Array<{ mensaje: string; fecha: string; autor: string }>;
   evidencias: Array<{ nombre: string; tamano: number; tipo: string; url: string }>;
 }

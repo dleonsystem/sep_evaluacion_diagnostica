@@ -60,6 +60,7 @@ import { createDataLoaders } from './utils/data-loaders.js';
 import { DistributionService } from './services/distribution.service.js';
 import { EmailWatcherService } from './services/email-watcher.service.js';
 import { verifyToken } from './config/jwt.js';
+import { startSyncLegacyJob, stopSyncLegacyJob } from './jobs/sync-legacy.job.js';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -100,8 +101,10 @@ function createApolloServer(httpServer: http.Server) {
       ApolloServerPluginDrainHttpServer({ httpServer }),
       {
         async requestDidStart() {
+          await Promise.resolve(); // Satisfy require-await
           return {
             async didEncounterErrors(requestContext: any) {
+              await Promise.resolve(); // Satisfy require-await
               logger.error('GraphQL Error', {
                 errors: requestContext.errors,
                 operation: requestContext.operation?.operation,
@@ -112,7 +115,7 @@ function createApolloServer(httpServer: http.Server) {
         },
       },
     ],
-    introspection: process.env.GRAPHQL_INTROSPECTION === 'true',
+    introspection: process.env.NODE_ENV !== 'production' && process.env.GRAPHQL_INTROSPECTION === 'true',
     includeStacktraceInErrorResponses: process.env.NODE_ENV !== 'production',
   });
 }
@@ -166,42 +169,49 @@ function configureLegacyApi(app: express.Application) {
   const router = express.Router();
 
   // Endpoint para obtener estadísticas por CCT
-  router.get('/stats/:cct', async (req, res) => {
-    const { cct } = req.params;
-    try {
-      const dbRes = await query(`
-        SELECT 
-          COUNT(DISTINCT e.id) as total_estudiantes,
-          COUNT(v.id) as total_evaluaciones
-        FROM escuelas esc
-        JOIN grupos g ON g.escuela_id = esc.id
-        JOIN estudiantes e ON e.grupo_id = g.id
-        LEFT JOIN evaluaciones v ON v.estudiante_id = e.id
-        WHERE esc.cct = $1
-      `, [cct]);
+  router.get('/stats/:cct', (req, res) => {
+    void (async () => {
+      const { cct } = req.params;
+      try {
+        const dbRes = await query(
+          `
+          SELECT 
+            COUNT(DISTINCT e.id) as total_estudiantes,
+            COUNT(v.id) as total_evaluaciones
+          FROM escuelas esc
+          JOIN grupos g ON g.escuela_id = esc.id
+          JOIN estudiantes e ON e.grupo_id = g.id
+          LEFT JOIN evaluaciones v ON v.estudiante_id = e.id
+          WHERE esc.cct = $1
+        `,
+          [cct]
+        );
 
-      if (dbRes.rows.length === 0) {
-        return res.status(404).json({ error: 'CCT no encontrada' });
-      }
-
-      const stats = dbRes.rows[0];
-      res.json({
-        cct,
-        success: true,
-        data: {
-          total_estudiantes: parseInt(stats.total_estudiantes),
-          total_evaluaciones: parseInt(stats.total_evaluaciones),
-          porcentaje_completado: stats.total_estudiantes > 0
-            ? (stats.total_evaluaciones / (stats.total_estudiantes * 4) * 100).toFixed(2) + '%'
-            : '0%'
+        if (dbRes.rows.length === 0) {
+          return res.status(404).json({ error: 'CCT no encontrada' });
         }
-      });
-      return; // Added return to match code path expectation
-    } catch (error) {
-      logger.error('Legacy API Error:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
-      return;
-    }
+
+        const stats = dbRes.rows[0];
+        res.json({
+          cct,
+          success: true,
+          data: {
+            total_estudiantes: parseInt(stats.total_estudiantes),
+            total_evaluaciones: parseInt(stats.total_evaluaciones),
+            porcentaje_completado:
+              stats.total_estudiantes > 0
+                ? ((stats.total_evaluaciones / (stats.total_estudiantes * 4)) * 100).toFixed(2) +
+                  '%'
+                : '0%',
+          },
+        });
+        return; // Added return to match code path expectation
+      } catch (error) {
+        logger.error('Legacy API Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+        return;
+      }
+    })();
   });
 
   app.use('/api/legacy', router);
@@ -222,7 +232,7 @@ async function startServer() {
     logger.info('Verificando conexión a PostgreSQL...');
     const dbConnected = await testConnection();
     if (dbConnected) {
-      logger.info('✓ Conexión a PostgreSQL establecida');
+      logger.info(`✓ Conexión a PostgreSQL establecida en host: ${process.env.DB_HOST || 'localhost'}`);
     } else {
       logger.error('❌ Falló la conexión a PostgreSQL. El servidor requiere una BD activa.');
       process.exit(1);
@@ -238,15 +248,18 @@ async function startServer() {
     // 4. Inicializar Servicios de Distribución (CU-06)
     const distributionService = new DistributionService(pool);
     const emailWatcherService = new EmailWatcherService(distributionService);
-    
+
     // Solo iniciar el watcher si están configuradas las credenciales IMAP (evita fallos en dev)
     if (process.env.IMAP_USER && process.env.IMAP_PASSWORD) {
-      emailWatcherService.start().catch(err => {
+      emailWatcherService.start().catch((err) => {
         logger.error('Error al iniciar el servicio de monitoreo de correos:', err);
       });
     } else {
       logger.warn('EmailWatcherService no iniciado: Faltan credenciales IMAP en .env');
     }
+
+    // Iniciar CronJob de resultados legacy (CU-09v2 / Issue #259)
+    startSyncLegacyJob(pool, distributionService);
 
     // 5. Crear servidor Apollo GraphQL
     const server = createApolloServer(httpServer);
@@ -256,15 +269,31 @@ async function startServer() {
     logger.info('✓ Servidor Apollo GraphQL iniciado');
 
     // 6. Configurar middleware de GraphQL
+    const allowedOrigins = (process.env.CORS_ORIGIN || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (process.env.NODE_ENV !== 'development' && allowedOrigins.length === 0) {
+      logger.error('[FATAL] CORS_ORIGIN environment variable is required in production.');
+      throw new Error(
+        '[FATAL] CORS_ORIGIN must be set in production. Server cannot start without it.'
+      );
+    }
+
     app.use(
       GRAPHQL_PATH,
       cors<cors.CorsRequest>({
         origin: (origin, callback) => {
           // En desarrollo, permitimos cualquier origen para evitar problemas de CORS
-          if (!origin || process.env.NODE_ENV === 'development') {
+          const isAllowed =
+            !origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development';
+
+          if (isAllowed) {
             callback(null, true);
           } else {
-            callback(null, process.env.CORS_ORIGIN || '*');
+            logger.warn(`🛑 CORS BLOQUEADO: Origen no permitido: ${origin}`);
+            callback(new Error('CORS policy violation'));
           }
         },
         credentials: true,
@@ -286,10 +315,13 @@ async function startServer() {
 
             // 1. Verificar JWT
             const decodedJwt = verifyToken(token);
-            let email = decodedJwt?.email;
+            const email = decodedJwt?.email;
 
             if (!email) {
-              logger.error('Token JWT inválido o sin email', { hasHeader: !!authHeader, tokenPrefix: token.substring(0, 10) });
+              logger.error('Token JWT inválido o sin email', {
+                hasHeader: !!authHeader,
+                tokenPrefix: token.substring(0, 10),
+              });
               return { user: undefined, loaders, distributionService };
             }
 
@@ -298,27 +330,34 @@ async function startServer() {
               `SELECT 
                 u.id, 
                 u.email, 
-                r.codigo as rol 
+                r.codigo as rol,
+                u.nombre,
+                e.cct,
+                u.password_hash
                FROM usuarios u
                INNER JOIN cat_roles_usuario r ON u.rol = r.id_rol
+               LEFT JOIN escuelas e ON u.escuela_id = e.id
                WHERE LOWER(u.email) = LOWER($1) AND u.activo = true`,
               [email.trim()]
             );
 
             if (result.rows.length > 0) {
               return {
-                user: result.rows[0] as any,
+                user: result.rows[0],
                 loaders,
                 distributionService,
+                req,
               };
             } else {
-              logger.error('Sesión rechazada: Usuario del token no encontrado o inactivo', { email });
+              logger.error('Sesión rechazada: Usuario del token no encontrado o inactivo', {
+                email,
+              });
             }
           } catch (error: any) {
             logger.error('Error fatal procesando token de contexto', { error: error.message });
           }
 
-          return { user: undefined, loaders, distributionService };
+          return { user: undefined, loaders, distributionService, req };
         },
       })
     );
@@ -360,6 +399,9 @@ async function gracefulShutdown(signal: string) {
   logger.info(`Señal ${signal} recibida, cerrando servidor...`);
 
   try {
+    stopSyncLegacyJob();
+    logger.info('✓ Job de sincronización Legacy detenido');
+
     await closePool();
     logger.info('✓ Pool de base de datos cerrado');
 
@@ -372,8 +414,12 @@ async function gracefulShutdown(signal: string) {
 }
 
 // Registrar manejadores de señales
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => {
+  void gracefulShutdown('SIGTERM');
+});
+process.on('SIGINT', () => {
+  void gracefulShutdown('SIGINT');
+});
 
 // Manejo de errores no capturados
 process.on('unhandledRejection', (reason, promise) => {
@@ -382,7 +428,9 @@ process.on('unhandledRejection', (reason, promise) => {
 
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception:', error);
-  process.exit(1);
+  // No salimos del proceso para evitar que caídas de servicios secundarios (como IMAP)
+  // tiren todo el servidor GraphQL. 
+  // process.exit(1); 
 });
 
 // Iniciar servidor

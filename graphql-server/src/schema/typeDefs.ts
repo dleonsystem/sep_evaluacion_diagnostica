@@ -35,6 +35,7 @@ export const typeDefs = `#graphql
     listUsers(
       limit: Int = 10
       offset: Int = 0
+      search: String
     ): UserConnection!
     
     """
@@ -51,7 +52,7 @@ export const typeDefs = `#graphql
 
     """
     Listar solicitudes de carga EIA2
-    @use-case CU-05: Historial de cargas
+    @use-case CU-16: Historial de cargas
     """
     getSolicitudes(
       cct: String
@@ -64,6 +65,7 @@ export const typeDefs = `#graphql
     @use-case CU-13: Mesa de ayuda
     """
     getMyTickets(correo: String): [Ticket!]!
+    getMotivosTicket: [MotivoTicket!]!
     
     """
     Obtener métricas para el dashboard administrativo
@@ -150,6 +152,12 @@ export const typeDefs = `#graphql
     @use-case CU-01: Autenticación
     """
     checkUserExists(email: String!): UserExistsResponse!
+
+    """
+    Listar todos los roles del sistema y sus permisos
+    @requirements RF-01: Control de acceso basado en roles
+    """
+    getRoles: [Role!]!
   }
 
   """
@@ -250,6 +258,12 @@ export const typeDefs = `#graphql
     @use-case CU-02: Actualización de datos de usuario
     """
     updateUser(id: ID!, input: UpdateUserInput!): User!
+
+    """
+    Cambiar contraseña de usuario autenticado
+    @use-case CU-15: Gestión de credenciales
+    """
+    changePassword(input: ChangePasswordInput!): AuthPayload!
     
     """
     Eliminar usuario
@@ -259,7 +273,7 @@ export const typeDefs = `#graphql
     
     """
     Cargar archivo de evaluación
-    @use-case CU-05: Recepción de archivos (EIA2)
+    @use-case CU-16: Recepción de archivos (EIA2)
     @psp Code Review - Validación de formato Excel
     """
     uploadExcelAssessment(input: UploadExcelInput!): UploadExcelResponse!
@@ -280,7 +294,7 @@ export const typeDefs = `#graphql
     Responder a un ticket de soporte (Admin)
     @use-case CU-13: Mesa de ayuda
     """
-    respondToTicket(ticketId: ID!, respuesta: String!, cerrar: Boolean!): Ticket!
+    respondToTicket(ticketId: ID!, respuesta: String!, cerrar: Boolean!, prioridad: String): Ticket!
 
     """
     Borrar lógicamente un ticket (Usuario/Admin)
@@ -307,10 +321,42 @@ export const typeDefs = `#graphql
     simulateReportGeneration(solicitudId: ID!): Boolean!
 
     """
+    Reiniciar contraseña de un usuario (Admin)
+    @use-case CU-02: Gestión de usuarios
+    """
+    resetUserPassword(userId: ID!): ResetPasswordResponse!
+
+    """
     Crear incidencia de carga para usuario no logueado
     @use-case CU-13: Mesa de ayuda (Público)
     """
     createPublicIncident(input: CreatePublicIncidentInput!): Ticket!
+
+    """
+    Crear nueva escuela
+    @use-case CU-14: Administrar Catálogo de Escuelas
+    """
+    createEscuela(input: CreateEscuelaInput!): Escuela!
+
+    """
+    Actualizar escuela existente
+    @use-case CU-14: Administrar Catálogo de Escuelas
+    """
+    updateEscuela(id: ID!, input: UpdateEscuelaInput!): Escuela!
+
+    """
+    Actualizar permisos de un rol
+    @requirements RF-01: Control de acceso basado en roles
+    """
+    updateRolePermissions(roleId: ID!, permisos: JSON!): Role!
+  }
+
+  """
+  Respuesta de reinicio de contraseña
+  """
+  type ResetPasswordResponse {
+    success: Boolean!
+    message: String!
   }
 
   """
@@ -319,6 +365,7 @@ export const typeDefs = `#graphql
   input CreatePublicIncidentInput {
     nombreCompleto: String!
     cct: String!
+    turno: String!
     email: String!
     descripcion: String!
     evidencias: [TicketEvidenciaInput!]
@@ -391,6 +438,7 @@ export const typeDefs = `#graphql
     rol: UserRole!
     activo: Boolean!
     primerLogin: Boolean
+    passwordDebeCambiar: Boolean
     fechaRegistro: String!
     fechaUltimoAcceso: String
     centrosTrabajo: [CentroTrabajo!]!
@@ -406,6 +454,23 @@ export const typeDefs = `#graphql
     RESPONSABLE_CCT
     CONSULTA
   }
+
+  """
+  Estructura de Rol del Sistema
+  @requirements RF-01: Control de acceso basado en roles
+  """
+  type Role {
+    id: ID!
+    codigo: String!
+    nombre: String!
+    descripcion: String
+    permisos: JSON
+  }
+
+  """
+  Escalar personalizado para datos JSON
+  """
+  scalar JSON
   
   """
   Centro de trabajo (CCT)
@@ -588,6 +653,14 @@ export const typeDefs = `#graphql
     email: String!
     password: String!
   }
+
+  """
+  Input para cambiar contraseña
+  """
+  input ChangePasswordInput {
+    currentPassword: String!
+    newPassword: String!
+  }
   
   """
   Input para actualizar usuario
@@ -640,8 +713,10 @@ export const typeDefs = `#graphql
     message: String!
     solicitudId: ID
     consecutivo: String
+    generatedPassword: String
     detalles: ExcelUploadResult
     duplicadoDetectado: Boolean
+    hashArchivo: String
   }
 
   """
@@ -679,10 +754,12 @@ export const typeDefs = `#graphql
     turno: String
     archivoOriginal: String!
     fechaCarga: String!
-    estadoValidacion: Int!
+    fechaActualizacion: String
+    estadoValidacion: EstadoValidacion!
     nivelEducativo: Int
     archivoPath: String
     archivoSize: Int
+    hashArchivo: String
     procesadoExternamente: Boolean!
     errores: [String!]
     resultados: [TicketEvidencia!]
@@ -702,6 +779,7 @@ export const typeDefs = `#graphql
     correo: String
     nombreCompleto: String
     cct: String
+    turno: String
     fechaCreacion: String!
     fechaActualizacion: String!
   }
@@ -724,6 +802,16 @@ export const typeDefs = `#graphql
     nombre: String!
     url: String!
     size: Int
+  }
+
+  """
+  Motivo de Ticket (Catálogo)
+  """
+  type MotivoTicket {
+    id: ID!
+    codigo: String!
+    descripcion: String!
+    orden: Int
   }
 
   """

@@ -13,10 +13,18 @@ export interface Ticket {
   correo?: string;
   nombreCompleto?: string;
   cct?: string;
+  turno?: string;
   fechaCreacion: string;
   fechaActualizacion: string;
   evidencias?: Array<{ nombre: string; url: string; size?: number }>;
   respuestas?: Array<{ id: string; mensaje: string; fecha: string; autor: string; esInterno: boolean }>;
+}
+
+export interface MotivoTicket {
+  id: string;
+  codigo: string;
+  descripcion: string;
+  orden?: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -34,6 +42,9 @@ export class TicketsService {
           estado
           prioridad
           correo
+          nombreCompleto
+          cct
+          turno
           fechaCreacion
           fechaActualizacion
           evidencias {
@@ -94,14 +105,15 @@ export class TicketsService {
     );
   }
 
-  respondToTicket(ticketId: string, respuesta: string, cerrar: boolean): Observable<Ticket> {
+  respondToTicket(ticketId: string, respuesta: string, cerrar: boolean, prioridad?: string): Observable<Ticket> {
     const mutation = `
-      mutation RespondToTicket($ticketId: ID!, $respuesta: String!, $cerrar: Boolean!) {
-        respondToTicket(ticketId: $ticketId, respuesta: $respuesta, cerrar: $cerrar) {
+      mutation RespondToTicket($ticketId: ID!, $respuesta: String!, $cerrar: Boolean!, $prioridad: String) {
+        respondToTicket(ticketId: $ticketId, respuesta: $respuesta, cerrar: $cerrar, prioridad: $prioridad) {
           id
           numeroTicket
           asunto
           estado
+          prioridad
           fechaActualizacion
           respuestas {
             id
@@ -113,7 +125,7 @@ export class TicketsService {
         }
       }
     `;
-    return this.graphqlService.execute<{ respondToTicket: Ticket }>(mutation, { ticketId, respuesta, cerrar }).pipe(
+    return this.graphqlService.execute<{ respondToTicket: Ticket }>(mutation, { ticketId, respuesta, cerrar, prioridad }).pipe(
       map(res => {
         if (res.errors) throw new Error(res.errors[0].message);
         if (!res.data?.respondToTicket) throw new Error('No se pudo responder al ticket');
@@ -191,6 +203,7 @@ export class TicketsService {
           correo
           nombreCompleto
           cct
+          turno
           fechaCreacion
           fechaActualizacion
           respuestas {
@@ -199,6 +212,11 @@ export class TicketsService {
             fecha
             autor
             esInterno
+          }
+          evidencias {
+            nombre
+            url
+            size
           }
         }
       }
@@ -213,8 +231,8 @@ export class TicketsService {
 
   createPublicIncident(input: { nombreCompleto: string; cct: string; email: string; descripcion: string }): Observable<Ticket> {
     const mutation = `
-      mutation CreatePublicIncident($nombreCompleto: String!, $cct: String!, $email: String!, $descripcion: String!) {
-        createPublicIncident(nombreCompleto: $nombreCompleto, cct: $cct, email: $email, descripcion: $descripcion) {
+      mutation CreatePublicIncident($input: CreatePublicIncidentInput!) {
+        createPublicIncident(input: $input) {
           id
           numeroTicket
           asunto
@@ -225,11 +243,30 @@ export class TicketsService {
         }
       }
     `;
-    return this.graphqlService.execute<{ createPublicIncident: Ticket }>(mutation, input).pipe(
+    return this.graphqlService.execute<{ createPublicIncident: Ticket }>(mutation, { input }).pipe(
       map(res => {
         if (res.errors) throw new Error(res.errors[0].message);
         if (!res.data?.createPublicIncident) throw new Error('No se pudo crear la incidencia');
         return res.data.createPublicIncident;
+      })
+    );
+  }
+
+  getMotivosTicket(): Observable<MotivoTicket[]> {
+    const query = `
+      query GetMotivosTicket {
+        getMotivosTicket {
+          id
+          codigo
+          descripcion
+          orden
+        }
+      }
+    `;
+    return this.graphqlService.execute<{ getMotivosTicket: MotivoTicket[] }>(query).pipe(
+      map(res => {
+        if (res.errors) throw new Error(res.errors[0].message);
+        return res.data?.getMotivosTicket || [];
       })
     );
   }

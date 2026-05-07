@@ -44,6 +44,14 @@ temp/
 *.tmp
 storage/
 
+# Prevent debug scripts in root (Issue #346)
+/*.js
+!/jest.config.cjs
+/*.json
+!/package.json
+!/package-lock.json
+!/tsconfig.json
+
 # PSP Metrics (sensitive data)
 psp-metrics-private.json
 time-tracking-personal.log

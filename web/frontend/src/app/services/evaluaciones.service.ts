@@ -37,8 +37,10 @@ export interface UploadExcelResponse {
         message: string;
         solicitudId?: string;
         consecutivo?: string;
+        generatedPassword?: string;
         detalles?: ExcelUploadResult;
         duplicadoDetectado?: boolean;
+        hashArchivo?: string;
     };
 }
 
@@ -49,7 +51,7 @@ export interface SolicitudEia2 {
     turno?: string;
     archivoOriginal: string;
     fechaCarga: string;
-    estadoValidacion: number;
+    estadoValidacion: string;
     nivelEducativo?: number;
     archivoPath?: string;
     archivoSize?: number;

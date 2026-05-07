@@ -1,34 +1,49 @@
 <nav class="navbar navbar-expand-xl navbar-dark bg-sep-guinda sub-navbar fixed-top">
   <div class="container-fluid px-3">
-    <a class="navbar-brand" [routerLink]="['/inicio']">Evaluación diagnóstica</a>
-    <button type="button" class="navbar-toggler" (click)="toggleMenu()" aria-label="Abrir menú">
-      <span class="navbar-toggler-icon"></span>
-    </button>
+
 
     <div class="navbar-collapse" [class.show]="menuAbierto">
+
+
       <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+          <a class="nav-link"
+            href="https://ejerciciosintegradores.sep.gob.mx/storage/recursos/2025_01/hxyVy7DgXJ-EIA_2026_AvisoDePrivacidadIntegral.pdf"
+            target="_blank" rel="noopener noreferrer">
+            <i class="bi bi-chat-text-fill"></i>
+
+            <strong> Aviso de privacidad</strong>
+          </a>
+        </li>
+        <span class="nav-link subnav-link subnav-separator">|</span>
         <li class="nav-item">
           <a class="nav-link subnav-link" [routerLink]="['/inicio']">
             <i class="bi bi-house mr-1" aria-hidden="true"></i>
-            <strong>Inicio</strong>
+            <strong> Inicio</strong>
           </a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link subnav-link" [routerLink]="['/materiales']">
-            <i class="bi bi-file-earmark-arrow-down mr-1" aria-hidden="true"></i>
-            <strong>Materiales</strong>
-          </a>
-        </li>
-        <li class="nav-item" *ngIf="!isAdminAutenticado">
-          <a class="nav-link subnav-link" [routerLink]="['/carga-masiva']">
-            <i class="bi bi-upload mr-1" aria-hidden="true"></i>
-            <strong>Carga masiva</strong>
-          </a>
-        </li>
+        <!--SEPARADOR-->
+        <!-- LA MOCHILA QUE REVISA SI ERES ADMIN -->
+        <ng-container *ngIf="!isAdminAutenticado">
 
-        <ng-container *ngIf="isAdminAutenticado">
+          <!-- EL PALITO AHORA ESTÁ ADENTRO Y PROTEGIDO -->
           <li class="nav-item d-none d-md-block">
             <span class="nav-link subnav-link subnav-separator">|</span>
+          </li>
+
+          <!-- EL BOTÓN TAMBIÉN ESTÁ ADENTRO -->
+          <li class="nav-item">
+            <a class="nav-link subnav-link">
+              <strong> Preguntas frecuentes</strong>
+            </a>
+          </li>
+
+        </ng-container>
+        <ng-container *ngIf="isAdminAutenticado">
+          <li class="nav-item d-none d-md-block">
+            <!--SEPARADOR-->
+            <span class="nav-link subnav-link subnav-separator">|</span>
+
           </li>
           <li class="nav-item dropdown">
             <a class="nav-link subnav-link dropdown-toggle" href="javascript:void(0)" id="adminDropdown" role="button"
@@ -45,14 +60,18 @@
                 <i class="bi bi-speedometer2 mr-2" aria-hidden="true"></i>
                 Dashboard
               </a>
-              <a class="dropdown-item" [routerLink]="['/admin/materiales']">
-                <i class="bi bi-file-earmark-arrow-up mr-2" aria-hidden="true"></i>
-                Publicar materiales
+              <a class="dropdown-item" [routerLink]="['/descargas']">
+                <i class="bi bi-download mr-2" aria-hidden="true"></i>
+                Descargas
+              </a>
+              <a class="dropdown-item" [routerLink]="['/admin/usuarios']">
+                <i class="bi bi-people-fill mr-2" aria-hidden="true"></i>
+                USUARIOS/OPERADOR
               </a>
               <div class="dropdown-divider"></div>
               <a class="dropdown-item" href="javascript:void(0)" (click)="cerrarSesionAdmin()">
                 <i class="bi bi-shield-x mr-2" aria-hidden="true"></i>
-                Salir admin
+                Cerrar sesión
               </a>
             </div>
           </li>
@@ -73,13 +92,9 @@
                 <i class="bi bi-folder2-open mr-2" aria-hidden="true"></i>
                 Cargas realizadas
               </a>
-              <a class="dropdown-item" [routerLink]="['/descargas']" *ngIf="isUsuarioAutenticado && !esUsuarioRol4">
-                <i class="bi bi-download mr-2" aria-hidden="true"></i>
-                Descargas
-              </a>
               <a class="dropdown-item" [routerLink]="['/tickets']">
                 <i class="bi bi-life-preserver mr-2" aria-hidden="true"></i>
-                Soporte
+                Mesa de ayuda
               </a>
               <a class="dropdown-item" [routerLink]="['/tickets-historial']">
                 <i class="bi bi-card-list mr-2" aria-hidden="true"></i>
@@ -101,7 +116,7 @@
           <li class="nav-item">
             <a class="nav-link subnav-link" href="javascript:void(0)" (click)="iniciarSesion()">
               <i class="bi bi-box-arrow-in-right mr-1" aria-hidden="true"></i>
-              <strong>Login</strong>
+              <strong> Iniciar sesión</strong>
             </a>
           </li>
         </ng-container>
