@@ -1,5 +1,7 @@
+@use './app/shared/styles/admin-layout';
 /* Google Fonts - Modern Typography */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
 
 :root {
   /* --- Primary Palette (Institutional & Modern) --- */
@@ -293,3 +295,4 @@ h4,
   color: #991b1b;
   transform: translateY(-2px);
 }
+

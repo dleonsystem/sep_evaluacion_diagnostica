@@ -152,6 +152,12 @@ export const typeDefs = `#graphql
     @use-case CU-01: Autenticación
     """
     checkUserExists(email: String!): UserExistsResponse!
+
+    """
+    Listar todos los roles del sistema y sus permisos
+    @requirements RF-01: Control de acceso basado en roles
+    """
+    getRoles: [Role!]!
   }
 
   """
@@ -337,6 +343,12 @@ export const typeDefs = `#graphql
     @use-case CU-14: Administrar Catálogo de Escuelas
     """
     updateEscuela(id: ID!, input: UpdateEscuelaInput!): Escuela!
+
+    """
+    Actualizar permisos de un rol
+    @requirements RF-01: Control de acceso basado en roles
+    """
+    updateRolePermissions(roleId: ID!, permisos: JSON!): Role!
   }
 
   """
@@ -442,6 +454,23 @@ export const typeDefs = `#graphql
     RESPONSABLE_CCT
     CONSULTA
   }
+
+  """
+  Estructura de Rol del Sistema
+  @requirements RF-01: Control de acceso basado en roles
+  """
+  type Role {
+    id: ID!
+    codigo: String!
+    nombre: String!
+    descripcion: String
+    permisos: JSON
+  }
+
+  """
+  Escalar personalizado para datos JSON
+  """
+  scalar JSON
   
   """
   Centro de trabajo (CCT)

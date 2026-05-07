@@ -327,6 +327,18 @@ Roles de usuario del sistema.
 | permisos | JSONB | Objeto JSON con permisos DEFAULT '{}' |
 | created_at | TIMESTAMP | Fecha de creación DEFAULT NOW() |
 
+**Estructura de Permisos (JSONB)**:
+El campo `permisos` contiene un objeto de llaves booleanas. Ejemplo:
+```json
+{
+  "access_admin_panel": true,
+  "view_users": true,
+  "upload_assessment_data": true,
+  "download_results_pdf": true
+}
+```
+*Véase la lista completa de llaves en `usuarios.component.ts` (catalogoPermisos).*
+
 **Datos iniciales**: Director, Subdirector, Operador SEP, Administrador General.
 
 **Relaciones:**

@@ -41,6 +41,14 @@ export interface UsuarioAutenticado {
   centrosTrabajo?: Array<{ claveCCT: string }>;
 }
 
+export interface Role {
+  id: string;
+  codigo: string;
+  nombre: string;
+  descripcion?: string;
+  permisos: any;
+}
+
 export interface AuthPayload {
   ok: boolean;
   message?: string;
@@ -218,6 +226,49 @@ export class UsuariosService {
         map((res) => {
           if (res.errors) throw new Error(res.errors[0].message);
           return res.data?.deleteUser.success || false;
+        }),
+      );
+  }
+
+  listarRoles(): Observable<Role[]> {
+    const query = `
+      query GetRoles {
+        getRoles {
+          id
+          codigo
+          nombre
+          descripcion
+          permisos
+        }
+      }
+    `;
+    return this.graphqlService
+      .execute<{ getRoles: Role[] }>(query)
+      .pipe(
+        map((res) => {
+          if (res.errors) throw new Error(res.errors[0].message);
+          return res.data?.getRoles || [];
+        }),
+      );
+  }
+
+  actualizarPermisosRol(roleId: string, permisos: any): Observable<Role> {
+    const mutation = `
+      mutation UpdateRolePermissions($roleId: ID!, $permisos: JSON!) {
+        updateRolePermissions(roleId: $roleId, permisos: $permisos) {
+          id
+          codigo
+          nombre
+          permisos
+        }
+      }
+    `;
+    return this.graphqlService
+      .execute<{ updateRolePermissions: Role }>(mutation, { roleId, permisos })
+      .pipe(
+        map((res) => {
+          if (res.errors) throw new Error(res.errors[0].message);
+          return res.data!.updateRolePermissions;
         }),
       );
   }

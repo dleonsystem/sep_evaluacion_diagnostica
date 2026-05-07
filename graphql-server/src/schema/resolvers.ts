@@ -159,6 +159,14 @@ interface AuthPayload {
   user?: UserRow | null;
 }
 
+interface RoleRow {
+  id_rol: string | number;
+  codigo: string;
+  nombre: string;
+  descripcion?: string;
+  permisos: any;
+}
+
 /**
  * Base field selections for optimized queries
  * @psp Code Reuse - Field selection constants
@@ -245,6 +253,30 @@ const buildUpdateQuery = (
  */
 export const resolvers = {
   Query: {
+    /**
+     * Listar todos los roles del sistema y sus permisos
+     * @requirements RF-01: Control de acceso basado en roles
+     */
+    getRoles: async (_: any, __: any, context: GraphQLContext): Promise<RoleRow[]> => {
+      // US-2.5: Solo administradores pueden ver los roles y permisos detallados
+      if (
+        !context.user ||
+        !['COORDINADOR_FEDERAL', 'COORDINADOR_ESTATAL'].includes(context.user.rol)
+      ) {
+        throw new Error('No autorizado: Solo administradores pueden ver los roles del sistema');
+      }
+
+      try {
+        const result = await query(
+          'SELECT id_rol as id, codigo, nombre, descripcion, permisos FROM cat_roles_usuario ORDER BY id_rol'
+        );
+        return result.rows as RoleRow[];
+      } catch (error) {
+        logger.error('Error fetching roles', error);
+        throw new Error('Error al obtener los roles del sistema');
+      }
+    },
+
     /**
      * Health check endpoint
      * @psp Unit Test - Verificación de servicio
@@ -3679,6 +3711,46 @@ t.numero_ticket as "folio",
         client.release();
       }
     },
+
+    /**
+     * Actualizar permisos de un rol
+     * @requirements RF-01: Control de acceso basado en roles
+     */
+    updateRolePermissions: async (
+      _: any,
+      { roleId, permisos }: { roleId: string; permisos: any },
+      context: GraphQLContext
+    ): Promise<RoleRow> => {
+      if (!context.user || context.user.rol !== 'COORDINADOR_FEDERAL') {
+        throw new Error('No autorizado: Solo el Coordinador Federal puede modificar permisos');
+      }
+
+      try {
+        const result = await query(
+          'UPDATE cat_roles_usuario SET permisos = $1 WHERE id_rol = $2 RETURNING id_rol as id, codigo, nombre, descripcion, permisos',
+          [JSON.stringify(permisos), roleId]
+        );
+
+        if (result.rows.length === 0) {
+          throw new Error('Rol no encontrado');
+        }
+
+        // Auditoría
+        try {
+          await query(
+            "INSERT INTO log_actividades (id_usuario, accion, modulo, resultado, detalle) VALUES ($1, 'UPDATE_ROLE_PERMISSIONS', 'SEGURIDAD', 'SUCCESS', $2)",
+            [context.user.id, JSON.stringify({ roleId, permissionsKeys: Object.keys(permisos) })]
+          );
+        } catch (e) {
+          logger.warn('Audit fail', e);
+        }
+
+        return result.rows[0] as RoleRow;
+      } catch (error) {
+        logger.error('Error updating role permissions', error);
+        throw new Error('Error al actualizar los permisos del rol');
+      }
+    },
   },
 
   /**
@@ -3736,6 +3808,21 @@ t.numero_ticket as "folio",
       return context.loaders.ticketResponses.load(parent.id);
     },
   },
+
+  /**
+   * Resolver para el escalar JSON
+   */
+  JSON: {
+    __serialize(value: any) {
+      return value;
+    },
+    __parseValue(value: any) {
+      return value;
+    },
+    __parseLiteral(ast: any) {
+      return ast.value;
+    }
+  }
 };
 
 export default resolvers;

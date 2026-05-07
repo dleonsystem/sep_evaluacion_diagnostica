@@ -18,6 +18,7 @@ import { MaterialesAdminComponent } from './components/admin-panel/materiales/ma
 import { MaterialesPublicosComponent } from './components/materiales-publicos/materiales-publicos.component';
 import { CambioPasswordComponent } from './components/cambio-password/cambio-password.component';
 import { PasswordChangeGuard } from './guards/password-change.guard';
+import { UsuariosComponent } from './components/admin-panel/usuarios/usuarios.component';
 
 export const routes: Routes = [
   {
@@ -82,6 +83,12 @@ export const routes: Routes = [
   {
     path: 'admin/panel',
     component: AdminPanelComponent,
+    canActivate: [AdminGuard],
+    pathMatch: 'full',
+  },
+  {
+    path: 'admin/usuarios',
+    component: UsuariosComponent,
     canActivate: [AdminGuard],
     pathMatch: 'full',
   },
