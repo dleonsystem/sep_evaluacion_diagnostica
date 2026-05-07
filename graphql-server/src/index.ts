@@ -115,7 +115,7 @@ function createApolloServer(httpServer: http.Server) {
         },
       },
     ],
-    introspection: process.env.GRAPHQL_INTROSPECTION === 'true',
+    introspection: process.env.NODE_ENV !== 'production' && process.env.GRAPHQL_INTROSPECTION === 'true',
     includeStacktraceInErrorResponses: process.env.NODE_ENV !== 'production',
   });
 }
